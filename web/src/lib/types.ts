@@ -259,6 +259,7 @@ export type Status = {
     dataDir: string
     listenAddr: string
     lanUrls?: string[] | null // where devices on the home network open Kumo
+    paired?: string[] | null // the Kumos this one is paired with (library sharing): Home's Sync
     webUiForced: boolean
     setupRunning?: boolean // Windows: the window installing Kumo's programs is open
     settings: Settings

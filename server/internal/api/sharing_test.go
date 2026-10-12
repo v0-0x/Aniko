@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -557,4 +558,86 @@ func errorOf(w *httptest.ResponseRecorder) string {
 	}
 	_ = json.Unmarshal(w.Body.Bytes(), &e)
 	return e.Error
+}
+
+// Home's Sync: two paired Kumos on the same AniList account take each
+// other's newer positions now, both ways, also ones the usual exchange
+// missed (saved while the other was away).
+func TestSyncNow(t *testing.T) {
+	const local = "127.0.0.1:5000"
+	host, hostSrv := sharingServer(t)
+	guest, guestSrv := sharingServer(t)
+	for _, s := range []*Server{host, guest} {
+		s.app.Share.User = func() int { return 42 }
+	}
+	// Where the guest answers, as it tells the host.
+	u, _ := url.Parse(guestSrv.URL)
+	cfg := guest.app.Settings.Get()
+	cfg.Server.Port, _ = strconv.Atoi(u.Port())
+	if _, err := guest.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	addr := strings.TrimPrefix(hostSrv.URL, "http://")
+	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("connect: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the library", func() bool {
+		do(guest, "GET", "/api/sharing", local, "", nil)
+		return len(guest.app.Share.Libraries()) == 1
+	})
+	// Saved on each while the other didn't hear of it.
+	now := time.Now().Unix()
+	if _, err := host.app.History.Merge(history.Entry{MediaID: 21, Episode: 5, Position: 300, Duration: 1420, Source: "local", UpdatedAt: now - 100}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := guest.app.History.Merge(history.Entry{MediaID: 21, Episode: 6, Position: 700, Duration: 1420, Source: "local", UpdatedAt: now - 50}); err != nil {
+		t.Fatal(err)
+	}
+	var st struct {
+		Paired []string `json:"paired"`
+	}
+	if w := do(host, "GET", "/api/status", local, "", nil); json.Unmarshal(w.Body.Bytes(), &st) != nil || len(st.Paired) != 1 {
+		t.Fatalf("the host's paired Kumos: %s", w.Body)
+	}
+
+	var res struct {
+		Devices     []string `json:"devices"`
+		Unreachable []string `json:"unreachable"`
+		Updated     int      `json:"updated"`
+	}
+	w := do(host, "POST", "/api/sharing/sync", local, "{}", nil)
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Devices) != 1 || len(res.Unreachable) != 0 || res.Updated != 1 {
+		t.Fatalf("sync: %d %s", w.Code, w.Body)
+	}
+	if e := host.app.History.Get(21, 6); e == nil || e.Position != 700 {
+		t.Errorf("the guest's position didn't come to the host: %+v", e)
+	}
+	if e := guest.app.History.Get(21, 5); e == nil || e.Position != 300 {
+		t.Errorf("the host's position didn't go to the guest: %+v", e)
+	}
+	// And from the guest's side.
+	if _, err := host.app.History.Merge(history.Entry{MediaID: 21, Episode: 7, Position: 90, Duration: 1420, Source: "local", UpdatedAt: now - 10}); err != nil {
+		t.Fatal(err)
+	}
+	if w := do(guest, "POST", "/api/sharing/sync", local, "{}", nil); w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &res) != nil || res.Updated != 1 {
+		t.Fatalf("sync from the guest: %d %s", w.Code, w.Body)
+	}
+	if e := guest.app.History.Get(21, 7); e == nil || e.Position != 90 {
+		t.Errorf("the guest's sync didn't take the host's position: %+v", e)
+	}
+
+	// A Kumo that isn't paired gets no history.
+	other, _ := sharingServer(t)
+	other.app.Share.User = func() int { return 42 }
+	req, _ := http.NewRequest("GET", hostSrv.URL+"/api/peer/history?since=0", nil)
+	if err := other.app.Share.Sign(req, host.app.Share.ID(), host.app.Share.Whoami().Key); err != nil {
+		t.Fatal(err)
+	}
+	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != http.StatusForbidden {
+		t.Errorf("an unpaired Kumo read the history: %v %v", resp, err)
+	}
 }

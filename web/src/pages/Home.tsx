@@ -1,4 +1,4 @@
-import { ArrowDownUp, ChevronLeft, ChevronRight, Download, FolderOpen, FolderSearch, FolderSync, HardDrive, LibraryBig, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
+import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Download, FolderOpen, FolderSearch, FolderSync, HardDrive, LibraryBig, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
 import { useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { EpisodeCard } from "@/components/EpisodeCard"
@@ -90,6 +90,34 @@ export default function HomePage() {
         }
     }
 
+    // Paired with another Kumo (a TV, a computer): Sync brings the watch
+    // history from each to the other now, and the AniList list, so Continue
+    // watching goes on from where it stopped on any of them.
+    const paired = status?.paired ?? []
+    const [syncing, setSyncing] = useState(false)
+    const syncDevices = async () => {
+        setSyncing(true)
+        const id = toast.loading(`Syncing with ${paired.join(", ")}…`)
+        try {
+            const res = await api.post<{ devices: string[]; unreachable: string[]; updated: number; anilist: boolean; anilistError?: string }>("/api/sharing/sync")
+            qc.invalidateQueries({ queryKey: ["collection"] })
+            qc.invalidateQueries({ queryKey: ["entry"] })
+            const missed = res.unreachable.length ? ` ${res.unreachable.join(", ")} didn't answer (is it on, with Kumo open?).` : ""
+            if (res.devices.length === 0 && res.unreachable.length > 0) {
+                toast.error(`Couldn't sync:${missed}`, { id })
+            } else if (res.devices.length === 0) {
+                toast.success(res.anilist ? "Synced with AniList" : "Nothing to sync with", { id })
+            } else {
+                const what = res.updated > 0 ? `${res.updated} position${res.updated === 1 ? "" : "s"} updated` : "already up to date"
+                toast.success(`Synced with ${res.devices.join(", ")}: ${what}.${missed}`, { id })
+            }
+        } catch (e: any) {
+            toast.error(e.message, { id })
+        } finally {
+            setSyncing(false)
+        }
+    }
+
     const isEmpty = !isLoading && !error && (data?.lists?.length ?? 0) === 0 && (data?.localOnly?.length ?? 0) === 0
     const filtered = !!genre || onlyLocal
     const clearFilters = () => {
@@ -124,6 +152,11 @@ export default function HomePage() {
                         <Button size="sm" variant="ghost" loading={scanning || scan.isPending} icon={<FolderSync className="size-4" />} onClick={() => scan.mutate(false)}>
                             Refresh
                         </Button>
+                        {paired.length > 0 && (
+                            <Button size="sm" variant="ghost" loading={syncing} icon={<ArrowLeftRight className="size-4" />} onClick={syncDevices} title={`Continue watching from ${paired.join(", ")}, and your AniList list`}>
+                                Sync
+                            </Button>
+                        )}
                         <Dropdown>
                             <DropdownTrigger asChild>
                                 <IconButton label="Display" size="sm">

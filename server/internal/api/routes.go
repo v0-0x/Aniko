@@ -356,16 +356,18 @@ func (s *Server) status(r *http.Request) (any, error) {
 		"loggedIn":       s.app.Platform.LoggedIn(),
 		"anilistAuthUrl": "https://anilist.co/api/v2/oauth/authorize?client_id=" + cfg.Anilist.ClientID + "&response_type=token",
 		"features":       feat,
-		"client":         kind,
-		"hostname":       host,
-		"platform":       runtime.GOOS,
-		"scanning":       s.app.Scanner.Running(),
-		"dataDir":        s.app.DataDir,
-		"listenAddr":     s.Addr(),
-		"lanUrls":        lan,
-		"webUiForced":    s.ForceWebUI,
-		"setupRunning":   setupRunning(),
-		"settings":       settingsFor(r, cfg),
+		// The Kumos this one is paired with (Home's Sync).
+		"paired":       s.app.Share.Paired(),
+		"client":       kind,
+		"hostname":     host,
+		"platform":     runtime.GOOS,
+		"scanning":     s.app.Scanner.Running(),
+		"dataDir":      s.app.DataDir,
+		"listenAddr":   s.Addr(),
+		"lanUrls":      lan,
+		"webUiForced":  s.ForceWebUI,
+		"setupRunning": setupRunning(),
+		"settings":     settingsFor(r, cfg),
 	}, nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/simo1337s/animetest/server/internal/history"
 	"github.com/simo1337s/animetest/server/internal/player"
@@ -97,17 +98,27 @@ func (s *Server) peerRoutes() {
 	m.HandleFunc("GET /api/peer/whoami", h(func(r *http.Request) (any, error) { return s.app.Share.Whoami(), nil }))
 	m.HandleFunc("GET /api/peer/hello", h(func(r *http.Request) (any, error) { return s.app.Share.Hello(peerOf(r)), nil }))
 	m.HandleFunc("GET /api/peer/files", shared(h(func(r *http.Request) (any, error) { return s.app.Share.SharedFiles() })))
-	// The watch history, for a Kumo it shares with on the same AniList
-	// account: Continue watching goes on there where it stopped here.
-	m.HandleFunc("GET /api/peer/history", shared(h(func(r *http.Request) (any, error) {
+	// The watch history, for a Kumo it's paired with (it shares its library
+	// with it, or that one with it) on the same AniList account: Continue
+	// watching goes on there where it stopped here.
+	paired := func(fn http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if !peerOf(r).Paired {
+				writeJSON(w, http.StatusForbidden, map[string]any{"error": "this Kumo isn't paired with yours"})
+				return
+			}
+			fn(w, r)
+		}
+	}
+	m.HandleFunc("GET /api/peer/history", paired(h(func(r *http.Request) (any, error) {
 		if !peerOf(r).SameUser {
 			return nil, forbidden("not logged into the same AniList account")
 		}
 		since, _ := strconv.ParseInt(r.URL.Query().Get("since"), 10, 64)
 		return s.app.Share.HistorySince(since), nil
 	})))
-	// And where it's watching this Kumo's files, as it happens.
-	m.HandleFunc("POST /api/peer/history", shared(h(func(r *http.Request) (any, error) {
+	// And where it's watching (this Kumo's files, or any), as it happens.
+	m.HandleFunc("POST /api/peer/history", paired(h(func(r *http.Request) (any, error) {
 		if !peerOf(r).SameUser {
 			return nil, forbidden("not logged into the same AniList account")
 		}
@@ -232,6 +243,23 @@ func (s *Server) peerRoutes() {
 		}
 		s.app.Share.Forget(r.PathValue("id"))
 		return s.app.Share.Status(), nil
+	}))
+	// Sync, from Home: the watch history with the Kumos this one is paired
+	// with, now, and the AniList list (Continue watching from both).
+	m.HandleFunc("POST /api/sharing/sync", h(func(r *http.Request) (any, error) {
+		ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
+		defer cancel()
+		res, err := s.app.Share.SyncNow(ctx)
+		if err != nil {
+			return nil, badRequest(err.Error())
+		}
+		_, aerr := s.app.Platform.Collection(ctx, "ANIME", true)
+		s.app.Hub.Publish("history-updated", nil)
+		out := map[string]any{"devices": res.Devices, "unreachable": res.Unreachable, "updated": res.Updated, "anilist": aerr == nil}
+		if aerr != nil {
+			out["anilistError"] = aerr.Error()
+		}
+		return out, nil
 	}))
 	m.HandleFunc("POST /api/sharing/connect", h(func(r *http.Request) (any, error) {
 		if !isTrusted(r) {

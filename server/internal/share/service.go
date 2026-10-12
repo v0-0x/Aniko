@@ -143,6 +143,19 @@ type peer struct {
 	// signed); offset: how far its clock is ahead of this one's.
 	verified time.Time
 	offset   time.Duration
+	// callerUser: the AniList account it said it's on, asking this Kumo.
+	callerUser int
+}
+
+// paired: this Kumo shares its library with it, or it with this one.
+func (p *peer) paired() bool { return p.allowed || p.shares }
+
+// displayName is its name, or what it is when it has none.
+func (p *peer) displayName() string {
+	if p.name != "" {
+		return p.name
+	}
+	return "Another Kumo"
 }
 
 // online: heard from lately. A host that shares with this Kumo is asked
@@ -450,6 +463,8 @@ type Caller struct {
 	// Account: this Kumo shares its AniList login with it; Downloads: it
 	// may download onto this Kumo. Both only with Allowed.
 	Account, Downloads bool
+	// Paired: Allowed, or it shares its library with this Kumo.
+	Paired bool
 }
 
 // Verify checks a request from another Kumo, and notes it as seen. The
@@ -489,7 +504,8 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 		p.addr, p.port = ip, c.port
 	}
 	p.seen, p.verified = now, now
-	caller := Caller{ID: p.id, Name: p.name, Allowed: p.allowed, Account: p.allowed && p.account, Downloads: p.allowed && p.downloads}
+	p.callerUser = c.user
+	caller := Caller{ID: p.id, Name: p.name, Allowed: p.allowed, Account: p.allowed && p.account, Downloads: p.allowed && p.downloads, Paired: p.paired()}
 	s.mu.Unlock()
 	if !wasOnline {
 		s.hub.Publish("sharing-updated", nil)
@@ -786,6 +802,125 @@ func (s *Service) pushHistory() {
 			}
 		}()
 	}
+}
+
+// Paired names the Kumos this one is paired with (it shares its library
+// with them, or they with it), with sharing on.
+func (s *Service) Paired() []string {
+	if !s.settings.Get().Sharing.Enabled {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []string
+	for _, p := range s.peers {
+		if p.paired() {
+			out = append(out, p.displayName())
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// SyncResult is what SyncNow did.
+type SyncResult struct {
+	// Devices: the Kumos synced with; Unreachable: those that didn't answer.
+	Devices     []string `json:"devices"`
+	Unreachable []string `json:"unreachable"`
+	// Updated: the positions that changed here.
+	Updated int `json:"updated"`
+}
+
+// How far back SyncNow goes.
+const syncFor = 180 * 24 * time.Hour
+
+// SyncNow brings this Kumo's watch history in step with the Kumos it's
+// paired with on the same AniList account, both ways, now: each takes what
+// the other has newer, and Continue watching goes on from where an episode
+// was stopped on any of them. As it goes, a guest sends its positions to its
+// hosts when they're saved and takes theirs every askEvery, which misses
+// what was saved while the other was away.
+func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
+	res := SyncResult{Devices: []string{}, Unreachable: []string{}}
+	me := s.user()
+	if s.History == nil || !s.settings.Get().Sharing.Enabled {
+		return res, nil
+	}
+	s.mu.Lock()
+	var with []*peer
+	for _, p := range s.peers {
+		if p.paired() && p.addr != nil && p.port > 0 && me > 0 && (p.user == me || p.callerUser == me) {
+			with = append(with, p)
+		}
+	}
+	s.mu.Unlock()
+	if len(with) == 0 {
+		if me == 0 && len(s.Paired()) > 0 {
+			return res, errors.New("log in to AniList: watch history is kept in step between devices on the same AniList account")
+		}
+		return res, nil
+	}
+	since := time.Now().Add(-syncFor).Unix()
+	mine := s.History.Since(since, historyBatch)
+	body, err := json.Marshal(mine)
+	if err != nil {
+		return res, err
+	}
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for _, p := range with {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.mu.Lock()
+			name := p.displayName()
+			s.mu.Unlock()
+			ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+			defer cancel()
+			var theirs []*history.Entry
+			err := s.getJSON(ctx, p, "/api/peer/history?since="+strconv.FormatInt(since, 10), &theirs)
+			if err == nil {
+				var req *http.Request
+				if req, err = s.request(ctx, p, http.MethodPost, "/api/peer/history", bytes.NewReader(body)); err == nil {
+					req.Header.Set("Content-Type", "application/json")
+					var resp *http.Response
+					if resp, err = s.do(s.api, req); err == nil {
+						resp.Body.Close()
+						if resp.StatusCode != http.StatusOK {
+							err = errors.New(resp.Status)
+						}
+					}
+				}
+			}
+			if err != nil {
+				log.Printf("sharing: sync with %s: %v", name, err)
+				mu.Lock()
+				res.Unreachable = append(res.Unreachable, name)
+				mu.Unlock()
+				return
+			}
+			merged := 0
+			for _, e := range theirs {
+				if e == nil {
+					continue
+				}
+				if ok, err := s.History.Merge(*e); err == nil && ok {
+					merged++
+				}
+			}
+			mu.Lock()
+			res.Devices = append(res.Devices, name)
+			res.Updated += merged
+			mu.Unlock()
+		}()
+	}
+	wg.Wait()
+	sort.Strings(res.Devices)
+	sort.Strings(res.Unreachable)
+	if res.Updated > 0 {
+		s.hub.Publish("history-updated", nil)
+	}
+	return res, nil
 }
 
 // TakeHistory merges positions another Kumo on the same account sent
