@@ -197,6 +197,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                                     {!remote && (
                                         <Tooltip content={streamPlayer() === "mpv" ? "Play in the in-app player" : "Play in mpv"}>
                                             <button
+                                                aria-label={`Episode ${ep.number}: ${streamPlayer() === "mpv" ? "play in the in-app player" : "play in mpv"}`}
                                                 className="grid size-8 place-items-center rounded-lg bg-black/60 text-white backdrop-blur hover:bg-black/80"
                                                 onClick={e => {
                                                     e.stopPropagation()
@@ -209,6 +210,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                                     )}
                                     <Tooltip content="Download to library">
                                         <button
+                                            aria-label={`Episode ${ep.number}: download to the library`}
                                             className="grid size-8 place-items-center rounded-lg bg-black/60 text-white backdrop-blur hover:bg-black/80"
                                             onClick={e => {
                                                 e.stopPropagation()

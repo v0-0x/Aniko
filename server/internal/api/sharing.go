@@ -174,8 +174,20 @@ func (s *Server) peerRoutes() {
 	m.HandleFunc("GET /api/peer/torrents/list", torrents(h(s.torrentList)))
 	m.HandleFunc("POST /api/peer/torrents/action", torrents(h(s.torrentAction)))
 	m.HandleFunc("POST /api/peer/torrents/start", torrents(h(func(r *http.Request) (any, error) { return nil, s.app.Torrents.StartClient(r.Context()) })))
-	// Downloads from a Kumo allowed to download onto this one.
+	// Downloads from a Kumo allowed to download onto this one, and the
+	// list of them (its Downloads page shows this one's).
 	m.HandleFunc("POST /api/peer/downloads/{kind}", shared(h(s.peerDownload)))
+	m.HandleFunc("GET /api/peer/downloads/list", torrents(h(func(r *http.Request) (any, error) { return s.app.Downloads.List(), nil })))
+	m.HandleFunc("POST /api/peer/downloads/{id}/{op}", torrents(h(func(r *http.Request) (any, error) {
+		switch id := r.PathValue("id"); r.PathValue("op") {
+		case "cancel":
+			s.app.Downloads.Cancel(id)
+			return nil, nil
+		case "retry":
+			return nil, s.app.Downloads.Retry(id)
+		}
+		return nil, notFound("no such thing to do")
+	})))
 	m.HandleFunc("GET /api/peer/local/probe", s.sharedFile(h(func(r *http.Request) (any, error) {
 		return s.app.Local.Probe(r.Context(), r.URL.Query().Get("path"))
 	})))

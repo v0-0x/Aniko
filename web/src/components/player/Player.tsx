@@ -808,7 +808,13 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     // Keys go to the player, not to what had the focus on the page behind it:
     // the episode card that opened it plays it again on Space or Enter.
     useEffect(() => {
+        // TV: closed, the remote's focus goes back to what opened it (the
+        // episode's card), not to the top of the page.
+        const opener = document.activeElement as HTMLElement | null
         containerRef.current?.focus({ preventScroll: true })
+        return () => {
+            if (tv && opener && opener !== document.body && opener.isConnected && !opener.closest("[data-tv-scope]")) opener.focus({ preventScroll: true })
+        }
     }, [])
     useEffect(() => {
         // Typing, or in one of the player's menus: the keys are theirs.
@@ -877,7 +883,15 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     break
                 case "Escape":
                     if (document.fullscreenElement) handled = false
-                    else close()
+                    // TV: Back hides the controls first, then closes.
+                    else if (tv && controls && !paused) {
+                        setControls(false)
+                        box?.focus({ preventScroll: true })
+                        // Not shown again (poke) by this key.
+                        e.preventDefault()
+                        e.stopPropagation()
+                        return
+                    } else close()
                     break
                 default:
                     if (/^[0-9]$/.test(e.key) && v) seekTo(((duration || v.duration) * Number(e.key)) / 10)
@@ -949,6 +963,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         if (hideTimer.current) clearTimeout(hideTimer.current)
         hideTimer.current = setTimeout(() => {
             if (videoRef.current?.paused) return
+            // Not while one of its menus is open (subtitles, audio…).
+            if (document.querySelector('[role="menu"]')) return poke()
             setControls(false)
             // TV: the remote's focus doesn't stay on hidden buttons.
             if (tv && containerRef.current?.querySelector("[data-tv-controls]:focus-within")) containerRef.current.focus()

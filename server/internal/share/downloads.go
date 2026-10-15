@@ -133,6 +133,19 @@ func (s *Service) SendDownload(ctx context.Context, kind string, what any) (stri
 // its torrents are this one's then, a TV's are its computer's. ok is false
 // when the downloads are this one's own.
 func (s *Service) TorrentsHost(ctx context.Context, op string, body any) (raw json.RawMessage, host string, ok bool, err error) {
+	return s.askDownloadHost(ctx, "/api/peer/torrents/"+op, body)
+}
+
+// DownloadsHost asks the Kumo this one's downloads go to about its
+// downloads (op: list; or <id>/cancel, <id>/retry with a body): a TV's
+// Downloads page shows its computer's. ok as for TorrentsHost.
+func (s *Service) DownloadsHost(ctx context.Context, op string, body any) (raw json.RawMessage, host string, ok bool, err error) {
+	return s.askDownloadHost(ctx, "/api/peer/downloads/"+op, body)
+}
+
+// askDownloadHost asks the Kumo this one's downloads go to (GET without a
+// body, else POST).
+func (s *Service) askDownloadHost(ctx context.Context, path string, body any) (raw json.RawMessage, host string, ok bool, err error) {
 	name, err := s.DownloadHost()
 	if err != nil {
 		return nil, name, true, err
@@ -153,7 +166,7 @@ func (s *Service) TorrentsHost(ctx context.Context, op string, body any) (raw js
 		}
 		method, rd = http.MethodPost, bytes.NewReader(b)
 	}
-	req, err := s.request(ctx, p, method, "/api/peer/torrents/"+op, rd)
+	req, err := s.request(ctx, p, method, path, rd)
 	if err != nil {
 		return nil, name, true, err
 	}

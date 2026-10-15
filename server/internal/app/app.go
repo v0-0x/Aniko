@@ -188,6 +188,12 @@ func (a *App) wire() {
 			a.Hub.Publish("collection-updated", nil)
 		}
 	}
+	// The auto downloader sends what it finds where this Kumo's downloads
+	// go (a TV's computer), like a torrent added by hand.
+	a.AutoDL.Send = func(ctx context.Context, mediaID int, uris []string) (bool, error) {
+		host, err := a.Share.SendDownload(ctx, share.DownloadTorrent, share.TorrentDownload{MediaID: mediaID, URIs: uris})
+		return host != "" || err != nil, err
+	}
 	a.Share.User = func() int {
 		if v := a.Platform.Viewer(); v != nil {
 			return v.ID

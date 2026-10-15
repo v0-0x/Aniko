@@ -91,7 +91,7 @@ function applyTvWidth() {
 type Dir = "up" | "down" | "left" | "right"
 const DIRS: Record<string, Dir> = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" }
 
-const FOCUSABLE = [
+export const FOCUSABLE = [
     "a[href]",
     "button:not([disabled])",
     "input:not([disabled]):not([type=hidden])",

@@ -21,11 +21,13 @@ export default function DiscoverPage() {
     const { data, isLoading, error, refetch, isFetching } = useDiscover()
     const featured = (data?.trending ?? []).filter(m => m.bannerImage).slice(0, 6)
     const [i, setI] = useState(0)
+    // Not while the focus is on it (a TV remote's): its buttons would go.
+    const [hold, setHold] = useState(false)
     useEffect(() => {
-        if (featured.length < 2) return
+        if (featured.length < 2 || hold) return
         const t = setInterval(() => setI(x => (x + 1) % featured.length), 9000)
         return () => clearInterval(t)
-    }, [featured.length])
+    }, [featured.length, hold])
 
     if (error)
         return (
@@ -49,7 +51,7 @@ export default function DiscoverPage() {
 
     return (
         <div className="min-h-full pb-24">
-            {isLoading ? <Skeleton className="h-[440px] rounded-none" /> : featured[i] && <Featured media={featured[i]} index={i} count={featured.length} onIndex={setI} />}
+            {isLoading ? <Skeleton className="h-[440px] rounded-none" /> : featured[i] && <Featured media={featured[i]} index={i} count={featured.length} onIndex={setI} onHold={setHold} />}
             {/* Without a hero banner there is nothing to overlap. */}
             <div className={cn("relative z-10 flex flex-col gap-10 px-6 md:px-8 xl:px-10", hero ? "-mt-14" : "pt-8")}>
                 <PluginSlot slot="after-discover-screen-header" />
@@ -102,10 +104,14 @@ export default function DiscoverPage() {
     )
 }
 
-function Featured({ media, index, count, onIndex }: { media: Media; index: number; count: number; onIndex: (i: number) => void }) {
+function Featured({ media, index, count, onIndex, onHold }: { media: Media; index: number; count: number; onIndex: (i: number) => void; onHold: (on: boolean) => void }) {
     const desc = cleanDescription(media.description)
     return (
-        <div className="relative h-[440px] overflow-hidden">
+        <div
+            className="relative h-[440px] overflow-hidden"
+            onFocus={() => onHold(true)}
+            onBlur={e => !e.currentTarget.contains(e.relatedTarget as Node | null) && onHold(false)}
+        >
             <img key={media.id} src={banner(media)} alt="" className="absolute inset-0 size-full object-cover fade-in" />
             <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-bg/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-bg/90 via-bg/40 to-transparent" />

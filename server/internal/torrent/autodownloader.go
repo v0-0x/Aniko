@@ -48,6 +48,10 @@ type AutoDownloader struct {
 	files    *library.Store
 	hub      *events.Hub
 	mu       sync.Mutex
+	// Send, when set, sends a release where this Kumo's downloads go (the
+	// computer a TV's go to), and reports whether it did; else it goes to
+	// the torrent client here.
+	Send func(ctx context.Context, mediaID int, uris []string) (bool, error)
 }
 
 func NewAutoDownloader(d *db.DB, t *Manager, p *anilist.Platform, f *library.Store, hub *events.Hub) *AutoDownloader {
@@ -296,6 +300,18 @@ func (a *AutoDownloader) grab(ctx context.Context, r *Rule, media *anilist.Media
 			log.Printf("auto downloader rule %d: %s: %v", r.ID, res.Name, err)
 			continue
 		}
+		// Where this Kumo's downloads go, when it isn't here.
+		if a.Send != nil {
+			sent, err := a.Send(ctx, media.ID, []string{magnet})
+			if sent && err != nil {
+				return added, err
+			}
+			if sent {
+				a.record(r, ep, res.Name)
+				added++
+				continue
+			}
+		}
 		// A torrent the client already has (the episode was grabbed by
 		// hand) counts as added, so that it is recorded.
 		if err := a.torrents.Add(ctx, []string{magnet}, savePath); err != nil {
@@ -305,14 +321,19 @@ func (a *AutoDownloader) grab(ctx context.Context, r *Rule, media *anilist.Media
 			log.Printf("auto downloader rule %d: %s: %v", r.ID, res.Name, err)
 			continue
 		}
-		if _, err := a.db.Write(`INSERT OR IGNORE INTO autodownload_items(key, rule_id, title, created_at) VALUES(?, ?, ?, ?)`,
-			episodeKey(r.MediaID, ep), r.ID, res.Name, time.Now().Unix()); err != nil {
-			log.Printf("auto downloader rule %d: %v", r.ID, err)
-		}
-		a.hub.Success("Auto downloader: added " + res.Name)
+		a.record(r, ep, res.Name)
 		added++
 	}
 	return added, nil
+}
+
+// record notes a release as grabbed, so that it isn't again.
+func (a *AutoDownloader) record(r *Rule, ep int, name string) {
+	if _, err := a.db.Write(`INSERT OR IGNORE INTO autodownload_items(key, rule_id, title, created_at) VALUES(?, ?, ?, ?)`,
+		episodeKey(r.MediaID, ep), r.ID, name, time.Now().Unix()); err != nil {
+		log.Printf("auto downloader rule %d: %v", r.ID, err)
+	}
+	a.hub.Success("Auto downloader: added " + name)
 }
 
 // Loop runs the auto downloader periodically while enabled.

@@ -205,6 +205,7 @@ export function Carousel({ children, className, itemClassName }: { children: Rea
             </div>
             {edges.left && (
                 <button
+                    aria-label="Scroll left"
                     onClick={() => scroll(-1)}
                     className="absolute top-[38%] -left-3 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-surface-3 text-fg opacity-0 shadow-lg shadow-black/50 transition group-hover/carousel:opacity-100 hover:bg-surface-4"
                 >
@@ -213,6 +214,7 @@ export function Carousel({ children, className, itemClassName }: { children: Rea
             )}
             {edges.right && children.length > 4 && (
                 <button
+                    aria-label="Scroll right"
                     onClick={() => scroll(1)}
                     className="absolute top-[38%] -right-3 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-surface-3 text-fg opacity-0 shadow-lg shadow-black/50 transition group-hover/carousel:opacity-100 hover:bg-surface-4"
                 >

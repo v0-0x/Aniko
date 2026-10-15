@@ -15,6 +15,7 @@ import { usePlay } from "@/lib/play"
 import { fetchLanguageMode, useCollection, useScan, useStatus } from "@/lib/queries"
 import { scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
+import { androidApp } from "@/lib/tv"
 import { banner, cn, cover, img as imgUrl, title } from "@/lib/utils"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/lib/toast"
@@ -238,6 +239,7 @@ export default function HomePage() {
                     <Welcome
                         loggedIn={!!status?.loggedIn}
                         hasDir={!!status?.settings.library.dir}
+                        paired={(status?.paired?.length ?? 0) > 0}
                         onLogin={() => setLoginOpen(true)}
                     />
                 )}
@@ -455,18 +457,45 @@ function GenreBar({ genres, value, onChange }: { genres: string[]; value: string
     )
 }
 
-function Welcome({ loggedIn, hasDir, onLogin }: { loggedIn: boolean; hasDir: boolean; onLogin: () => void }) {
-    const steps = [
+function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; hasDir: boolean; paired: boolean; onLogin: () => void }) {
+    // Kumo's Android app (a TV's): the anime are on the computer, and so is
+    // the AniList login, which it can share.
+    const steps = androidApp
+        ? [
+              {
+                  done: paired,
+                  icon: <FolderOpen className="size-5" />,
+                  title: "Watch your computer's library",
+                  text: "On your computer's Kumo, open Settings › Local Anime Library, turn sharing on and share with this device. It shows up here by itself.",
+                  action: (
+                      <Link to="/settings?tab=library">
+                          <Button size="sm">See devices</Button>
+                      </Link>
+                  ),
+              },
+              {
+                  done: loggedIn,
+                  icon: <LogIn className="size-5" />,
+                  title: "Use your AniList account",
+                  text: "Easiest from the computer: next to this device in its Settings › Local Anime Library, turn on “Share my AniList account”. Or log in here.",
+                  action: (
+                      <Button size="sm" onClick={onLogin}>
+                          Log in here
+                      </Button>
+                  ),
+              },
+          ]
+        : [
         { done: loggedIn, icon: <LogIn className="size-5" />, title: "Connect AniList", text: "Sync your lists, progress and scores (optional — Kumo works offline too).", action: <Button size="sm" variant="primary" onClick={onLogin}>Log in</Button> },
         { done: hasDir, icon: <FolderOpen className="size-5" />, title: "Choose your library folder", text: "Kumo scans it, matches every file to AniList and grabs artwork, descriptions and episode titles.", action: <Link to="/settings?tab=library"><Button size="sm">Open settings</Button></Link> },
         { done: false, icon: <Puzzle className="size-5" />, title: "Add extensions", text: "Install streaming, torrent and manga providers or plugins from the marketplace.", action: <Link to="/extensions?tab=marketplace"><Button size="sm">Browse marketplace</Button></Link> },
-    ]
+          ]
     return (
         <div className="card overflow-hidden rise-in">
             <div className="p-7">
                 <h2 className="text-xl font-semibold tracking-tight">Let’s set things up</h2>
-                <p className="mt-1 text-sm text-muted">Three quick steps and your anime library is ready.</p>
-                <div className="mt-6 grid gap-3 md:grid-cols-3">
+                <p className="mt-1 text-sm text-muted">{androidApp ? "Two steps on your computer and this device is ready." : "Three quick steps and your anime library is ready."}</p>
+                <div className={cn("mt-6 grid gap-3", androidApp ? "md:grid-cols-2" : "md:grid-cols-3")}>
                     {steps.map((s, i) => (
                         <div key={i} className={cn("flex flex-col gap-3 rounded-lg bg-white/[0.03] p-5", s.done && "opacity-60")}>
                             <div className="flex items-center gap-3">

@@ -16,7 +16,7 @@ import {
     Tv,
     Users,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { EpisodeCard, WatchedToggle } from "@/components/EpisodeCard"
@@ -41,10 +41,6 @@ export default function EntryPage() {
     const id = Number(params.get("id"))
     const { data: entry, isLoading, error } = useEntry(id)
     const { data: status } = useStatus()
-
-    useEffect(() => {
-        document.getElementById("main-scroll")?.scrollTo({ top: 0 })
-    }, [id])
 
     const defaultTab: Tab = entry ? (entry.localCount + (entry.sharedCount ?? 0) > 0 ? "episodes" : status?.settings.onlineStream.enabled !== false ? "stream" : "torrents") : "episodes"
     const tab = (params.get("tab") as Tab) || defaultTab
@@ -312,7 +308,11 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                                 {(ep.aired || ep.hasFile) && <WatchedToggle watched={ep.watched} disabled={marker.pending} onToggle={() => marker.mark(ep.number, !ep.watched)} />}
                                 <Dropdown>
                                     <DropdownTrigger asChild>
-                                        <button onClick={e => e.stopPropagation()} className="grid size-7 place-items-center rounded-md bg-black/70 text-white transition-colors hover:bg-black/85">
+                                        <button
+                                            onClick={e => e.stopPropagation()}
+                                            aria-label={`More for episode ${ep.number}`}
+                                            className="grid size-7 place-items-center rounded-md bg-black/70 text-white transition-colors hover:bg-black/85"
+                                        >
                                             <MoreHorizontal className="size-4" />
                                         </button>
                                     </DropdownTrigger>

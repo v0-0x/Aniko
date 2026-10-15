@@ -96,8 +96,12 @@ const NAV: { items: { id: SectionId; label: string; icon: React.ReactNode }[] }[
     },
 ]
 
+// Not in Kumo's Android app (a TV's): it has no mpv, Discord or ffmpeg.
+const NOT_ON_ANDROID: SectionId[] = ["mpv", "transcode", "discord"]
+const SHOWN_NAV = androidApp ? NAV.map(g => ({ items: g.items.filter(i => !NOT_ON_ANDROID.includes(i.id)) })) : NAV
+
 const ALIASES: Record<string, SectionId> = { "anicli": "streaming", "online-streaming": "streaming" }
-const SECTION_IDS: string[] = NAV.flatMap(g => g.items.map(i => i.id))
+const SECTION_IDS: string[] = SHOWN_NAV.flatMap(g => g.items.map(i => i.id))
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -159,7 +163,7 @@ export default function SettingsPage() {
 
     if (!draft || !status) return null
     const set = <K extends keyof Settings>(k: K, v: Partial<Settings[K]>) => setDraft(d => (d ? { ...d, [k]: { ...d[k], ...v } } : d))
-    const current = NAV.flatMap(g => g.items).find(i => i.id === section) ?? NAV[0].items[0]
+    const current = SHOWN_NAV.flatMap(g => g.items).find(i => i.id === section) ?? NAV[0].items[0]
 
     const onSave = () => {
         const oldPort = status.settings.server.port
@@ -181,7 +185,7 @@ export default function SettingsPage() {
             <aside className="w-full shrink-0 md:sticky md:top-8 md:w-52 md:self-start lg:w-56">
                 <h1 className="mb-5 px-2.5 text-[1.75rem] font-semibold tracking-tight">Settings</h1>
                 <div className="flex flex-col gap-4">
-                    {NAV.map((g, i) => (
+                    {SHOWN_NAV.map((g, i) => (
                         <div key={i} className="flex flex-col gap-0.5">
                             {g.items.map(it => (
                                 <button
@@ -519,16 +523,19 @@ function AppSection({ draft, set }: SectionProps) {
             </Group>
 
             <Group title="Web UI & network" description="Kumo only ever talks to this computer and — if you allow it — your home network. Connections from the internet are always refused.">
-                <Row
-                    label="Web UI"
-                    help={
-                        status?.webUiForced
-                            ? "Running without the desktop app, so the browser UI is always on."
-                            : `Use Kumo from any browser at http://127.0.0.1:${draft.server.port}`
-                    }
-                >
-                    <Switch checked={draft.server.webUi || !!status?.webUiForced} disabled={!isDesktop || status?.webUiForced} onChange={v => set("server", { webUi: v })} />
-                </Row>
+                {/* The Android app is its own window, on its own port. */}
+                {!androidApp && (
+                    <Row
+                        label="Web UI"
+                        help={
+                            status?.webUiForced
+                                ? "Running without the desktop app, so the browser UI is always on."
+                                : `Use Kumo from any browser at http://127.0.0.1:${draft.server.port}`
+                        }
+                    >
+                        <Switch checked={draft.server.webUi || !!status?.webUiForced} disabled={!isDesktop || status?.webUiForced} onChange={v => set("server", { webUi: v })} />
+                    </Row>
+                )}
                 <Row label="Allow devices on my network" help="Phones, tablets, TVs and other computers on your home network can open Kumo in a browser.">
                     <Switch checked={draft.server.allowLan} disabled={lan} onChange={v => set("server", { allowLan: v, webUi: v ? true : draft.server.webUi })} />
                 </Row>
@@ -538,10 +545,12 @@ function AppSection({ draft, set }: SectionProps) {
                         <Password value={draft.server.password} onChange={v => set("server", { password: v })} placeholder="Leave empty for no password" />
                     </Stack>
                 )}
-                <Row label="Port" help="Restart-free: Kumo moves to the new port when you save.">
-                    <Input type="number" className="w-28" disabled={lan} value={draft.server.port} onChange={e => set("server", { port: Number(e.target.value) })} />
-                </Row>
-                {!isDesktop && !lan && <p className="px-4 py-3 text-xs text-amber-200/80">Turning the Web UI off is only possible from the desktop app, so you can't lock yourself out.</p>}
+                {!androidApp && (
+                    <Row label="Port" help="Restart-free: Kumo moves to the new port when you save.">
+                        <Input type="number" className="w-28" disabled={lan} value={draft.server.port} onChange={e => set("server", { port: Number(e.target.value) })} />
+                    </Row>
+                )}
+                {!isDesktop && !lan && !androidApp && <p className="px-4 py-3 text-xs text-amber-200/80">Turning the Web UI off is only possible from the desktop app, so you can't lock yourself out.</p>}
             </Group>
 
             <Group title="Library sharing">
@@ -554,7 +563,7 @@ function AppSection({ draft, set }: SectionProps) {
 
             <DesktopGroup />
 
-            <ProgramsGroup />
+            {!androidApp && <ProgramsGroup />}
 
             <Group title="Extensions">
                 <Stack label="Marketplace URL" help="Any compatible extension index works.">
@@ -957,7 +966,7 @@ function LibrarySection({ draft, set }: SectionProps) {
                                 <div className="flex-1">
                                     <PathInput value={d} onChange={v => set("library", { extraDirs: extra.map((x, j) => (j === i ? v : x)) })} />
                                 </div>
-                                <button onClick={() => set("library", { extraDirs: extra.filter((_, j) => j !== i) })} className="grid size-10 place-items-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-rose-300">
+                                <button onClick={() => set("library", { extraDirs: extra.filter((_, j) => j !== i) })} aria-label="Remove this folder" className="grid size-10 place-items-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-rose-300">
                                     <X className="size-4" />
                                 </button>
                             </div>
@@ -1010,17 +1019,19 @@ function PlaybackSection({ draft, set }: SectionProps) {
     return (
         <>
             <Group title="Player">
-                <Row label="Default player for local files" help="mpv opens in its own window; the in-app player works everywhere (and on other devices).">
-                    <Select
-                        className="w-48"
-                        value={p.defaultPlayer}
-                        onChange={v => set("playback", { defaultPlayer: v as "mpv" })}
-                        options={[
-                            { value: "builtin", label: "In-app player" },
-                            { value: "mpv", label: "mpv" },
-                        ]}
-                    />
-                </Row>
+                {!androidApp && (
+                    <Row label="Default player for local files" help="mpv opens in its own window; the in-app player works everywhere (and on other devices).">
+                        <Select
+                            className="w-48"
+                            value={p.defaultPlayer}
+                            onChange={v => set("playback", { defaultPlayer: v as "mpv" })}
+                            options={[
+                                { value: "builtin", label: "In-app player" },
+                                { value: "mpv", label: "mpv" },
+                            ]}
+                        />
+                    </Row>
+                )}
                 <Row label="Resume where I left off" help="Episodes continue from the saved position in mpv and the in-app player">
                     <Switch checked={p.resumePlayback} onChange={v => set("playback", { resumePlayback: v })} />
                 </Row>

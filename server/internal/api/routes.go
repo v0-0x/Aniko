@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -160,6 +161,32 @@ func (s *Server) routes() {
 
 	// --- downloads
 	m.HandleFunc("GET /api/downloads", h(func(r *http.Request) (any, error) { return s.app.Downloads.List(), nil }))
+	// The downloads of the Kumo this one's go to (a TV's computer): its list,
+	// and cancel or retry there.
+	m.HandleFunc("GET /api/downloads/host", h(func(r *http.Request) (any, error) {
+		raw, host, ok, err := s.app.Share.DownloadsHost(r.Context(), "list", nil)
+		out := map[string]any{"host": host, "items": raw}
+		if !ok {
+			out["items"] = nil
+		} else if err != nil {
+			out["items"], out["error"] = nil, err.Error()
+		}
+		return out, nil
+	}))
+	m.HandleFunc("POST /api/downloads/host/{id}/{op}", h(func(r *http.Request) (any, error) {
+		op := r.PathValue("op")
+		if op != "cancel" && op != "retry" {
+			return nil, notFound("no such thing to do")
+		}
+		raw, _, ok, err := s.app.Share.DownloadsHost(r.Context(), url.PathEscape(r.PathValue("id"))+"/"+op, map[string]any{})
+		if !ok {
+			return nil, badRequest("downloads are saved on this device")
+		}
+		if err != nil {
+			return nil, badRequest(err.Error())
+		}
+		return raw, nil
+	}))
 	m.HandleFunc("POST /api/downloads/{id}/cancel", h(func(r *http.Request) (any, error) { s.app.Downloads.Cancel(r.PathValue("id")); return nil, nil }))
 	m.HandleFunc("POST /api/downloads/{id}/retry", h(func(r *http.Request) (any, error) { return nil, s.app.Downloads.Retry(r.PathValue("id")) }))
 	m.HandleFunc("DELETE /api/downloads/{id}", h(func(r *http.Request) (any, error) { s.app.Downloads.Remove(r.PathValue("id")); return nil, nil }))

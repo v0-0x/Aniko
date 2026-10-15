@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { Lock } from "lucide-react"
-import { lazy, Suspense, useEffect, useState } from "react"
-import { Route, Routes, useLocation, useNavigate } from "react-router-dom"
+import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react"
+import { Route, Routes, useLocation, useNavigate, useNavigationType } from "react-router-dom"
 import { Toaster } from "sonner"
 import { NowPlaying, ScanIndicator } from "./components/NowPlaying"
 import { PlayerOverlay } from "./components/player/Player"
@@ -13,6 +13,7 @@ import { api, onPasswordRequired } from "./lib/api"
 import { connectEvents, setNavigate } from "./lib/events"
 import { useStatus } from "./lib/queries"
 import { accentPreviewStore, passwordStore, useStore } from "./lib/store"
+import { keepFocus, openPage } from "./lib/pages"
 import { initTV, tv } from "./lib/tv"
 import { setTitleLanguage } from "./lib/utils"
 import HomePage from "./pages/Home"
@@ -43,6 +44,11 @@ export default function App() {
     const needsPassword = useStore(passwordStore)
 
     useEffect(() => connectEvents(qc), [qc])
+    // Back finds a page as it was left (scrolled, focused); a new one starts
+    // at its top. Before the page is drawn: its scroll isn't the last one's.
+    const navType = useNavigationType()
+    useLayoutEffect(() => openPage(location.key, navType), [location.key, navType])
+    useEffect(() => keepFocus(), [])
     useEffect(() => setNavigate(navigate), [navigate])
     // The remote's Back (TV mode): the page before, then Home, then out.
     useEffect(

@@ -209,3 +209,45 @@ func TestAutoDownloaderNeedsProgress(t *testing.T) {
 		t.Fatal("ran a 'recent' rule without the anime list")
 	}
 }
+
+// Where this Kumo's downloads go elsewhere (a TV's computer), the releases
+// go there, not to a torrent client here (there's none), and are recorded;
+// when that Kumo can't take them, the rule stops.
+func TestAutoDownloaderSendsElsewhere(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	a := newTestAutoDownloader(t, srv)
+	srv.Close() // no torrent client here
+	var sent []string
+	var refuse error
+	a.Send = func(_ context.Context, mediaID int, uris []string) (bool, error) {
+		if mediaID != 42 {
+			t.Errorf("sent for %d", mediaID)
+		}
+		if refuse != nil {
+			return true, refuse
+		}
+		sent = append(sent, uris...)
+		return true, nil
+	}
+	best := map[int]*SearchResult{
+		2: {Name: "b", MagnetLink: "magnet:?xt=urn:btih:2"},
+		1: {Name: "a", MagnetLink: "magnet:?xt=urn:btih:1"},
+	}
+	n, err := a.grab(context.Background(), &Rule{ID: 1, MediaID: 42}, &anilist.Media{ID: 42}, &Nyaa{}, best)
+	if err != nil || n != 2 || strings.Join(sent, " ") != "magnet:?xt=urn:btih:1 magnet:?xt=urn:btih:2" {
+		t.Fatalf("sent: %d %v %v", n, sent, err)
+	}
+	if !a.seen(episodeKey(42, 1)) || !a.seen(episodeKey(42, 2)) {
+		t.Error("sent episodes weren't recorded")
+	}
+	refuse = io.ErrUnexpectedEOF
+	n, err = a.grab(context.Background(), &Rule{ID: 1, MediaID: 42}, &anilist.Media{ID: 42}, &Nyaa{}, map[int]*SearchResult{3: {Name: "c", MagnetLink: "magnet:?xt=urn:btih:3"}})
+	if err == nil || n != 0 || a.seen(episodeKey(42, 3)) {
+		t.Fatalf("refused: %d %v", n, err)
+	}
+	// Downloads here again: the client here (down) is used.
+	a.Send = func(context.Context, int, []string) (bool, error) { return false, nil }
+	if n, err := a.grab(context.Background(), &Rule{ID: 1, MediaID: 42}, &anilist.Media{ID: 42}, &Nyaa{}, map[int]*SearchResult{3: {Name: "c", MagnetLink: "magnet:?xt=urn:btih:3"}}); err == nil || n != 0 {
+		t.Fatalf("here: %d %v", n, err)
+	}
+}

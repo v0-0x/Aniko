@@ -537,6 +537,27 @@ func TestDownloadsToHost(t *testing.T) {
 		t.Fatalf("another Kumo listed the host's torrents: %v %v", resp, err)
 	}
 
+	// Its Downloads page shows the host's downloads; another Kumo can't
+	// read them.
+	var dl struct {
+		Host  string            `json:"host"`
+		Items []json.RawMessage `json:"items"`
+		Error string            `json:"error"`
+	}
+	if w := do(guest, "GET", "/api/downloads/host", local, "", nil); w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &dl) != nil || dl.Host != hostName || dl.Error != "" {
+		t.Fatalf("host downloads: %d %s", w.Code, w.Body)
+	}
+	if w := do(guest, "POST", "/api/downloads/host/nope/cancel", local, "{}", nil); w.Code != http.StatusOK {
+		t.Fatalf("cancel on the host: %d %s", w.Code, w.Body)
+	}
+	req, _ = http.NewRequest("GET", hostSrv.URL+"/api/peer/downloads/list", nil)
+	if err := other.app.Share.Sign(req, hid, host.app.Share.Whoami().Key); err != nil {
+		t.Fatal(err)
+	}
+	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode == http.StatusOK {
+		t.Fatalf("another Kumo listed the host's downloads: %v %v", resp, err)
+	}
+
 	// Not allowed any more: saved here again.
 	no := false
 	if err := host.app.Share.SetGrants(gid, share.Grants{Downloads: &no}); err != nil {
@@ -546,6 +567,9 @@ func TestDownloadsToHost(t *testing.T) {
 	st.Host = ""
 	if w := do(guest, "GET", "/api/torrent-client/status", local, "", nil); json.Unmarshal(w.Body.Bytes(), &st) != nil || st.Host != "" {
 		t.Fatalf("status still the host's: %s", w.Body)
+	}
+	if w := do(guest, "GET", "/api/downloads/host", local, "", nil); json.Unmarshal(w.Body.Bytes(), &dl) != nil || dl.Host != "" {
+		t.Fatalf("host downloads after: %s", w.Body)
 	}
 	// Its own client again, the body read there.
 	if w := do(guest, "POST", "/api/torrent-client/action", local, `{"hashes":["ab"],"action":"pause"}`, nil); strings.Contains(errorOf(w), "JSON") || strings.HasPrefix(errorOf(w), hostName) {

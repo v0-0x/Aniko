@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast"
 import { api, desktop } from "@/lib/api"
 import { loginStarted } from "@/lib/login"
 import { useStatus } from "@/lib/queries"
+import { androidApp } from "@/lib/tv"
 import { Button, Dialog, Field, Input } from "./ui"
 
 // AniList login. The client id (13985) uses AniList's PIN page as redirect,
@@ -56,6 +57,13 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             description="Sync your lists, progress and scores with your AniList account."
         >
             <div className="flex flex-col gap-5">
+                {/* A TV has no easy way to copy a token: the computer can share its login. */}
+                {androidApp && (
+                    <p className="rounded-lg border border-brand/30 bg-brand-soft p-4 text-sm text-fg/90">
+                        Easiest on a TV: on your computer's Kumo, open Settings › Local Anime Library and turn on “Share my AniList account” next to this device. It logs in here by
+                        itself.
+                    </p>
+                )}
                 <div className="rounded-lg bg-white/[0.03] p-5">
                     <p className="text-sm text-muted">
                         {desktop()
