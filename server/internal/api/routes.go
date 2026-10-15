@@ -35,6 +35,11 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/events", s.events)
 	m.HandleFunc("POST /api/auth/anilist", h(s.anilistLogin))
 	m.HandleFunc("POST /api/auth/logout", h(func(r *http.Request) (any, error) {
+		// The account is this computer's: a phone on the network logging
+		// out would log it out too.
+		if !isTrusted(r) {
+			return nil, forbidden("log out on the computer Kumo runs on: from here, it would log that computer out")
+		}
 		s.app.Platform.Logout()
 		s.app.Share.LoggedOut()
 		return nil, nil

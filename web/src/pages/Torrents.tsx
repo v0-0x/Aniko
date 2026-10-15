@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, FolderOpen, Magnet, Pause, Play, Plus, Power, Setti
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "@/lib/toast"
-import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, IconButton, Input, Progress, Tabs } from "@/components/ui"
+import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Progress, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus, useTorrentList } from "@/lib/queries"
 import type { Torrent } from "@/lib/types"
@@ -37,7 +37,7 @@ export default function TorrentsPage() {
     const on = host ? ` on ${host}` : ""
     // The host didn't answer: no client to speak of.
     const hostDown = !!host && !clientStatus?.client
-    const { data: list, isLoading } = useTorrentList(!!clientStatus?.connected)
+    const { data: list, isLoading, error: listError, refetch: refetchList, isFetching: listFetching } = useTorrentList(!!clientStatus?.connected)
     const [filter, setFilter] = useState<"all" | "active" | "done">("all")
     const [addOpen, setAddOpen] = useState(false)
     const [starting, setStarting] = useState(false)
@@ -142,7 +142,8 @@ export default function TorrentsPage() {
                         ]}
                     />
                     {isLoading && <div className="card h-40 shimmer" />}
-                    {!isLoading && torrents.length === 0 && <EmptyState icon={<Magnet className="size-6" />} title="No torrents" />}
+                    {!isLoading && listError && !list && <ErrorState title="Couldn't read the torrent list" error={listError} retrying={listFetching} onRetry={() => refetchList()} />}
+                    {!isLoading && !(listError && !list) && torrents.length === 0 && <EmptyState icon={<Magnet className="size-6" />} title="No torrents" />}
                     <div className="flex flex-col gap-3">
                         {torrents.map(t => (
                             <TorrentRow key={t.hash} t={t} onAction={a => act([t.hash], a)} canOpen={status?.client !== "lan" && !host} />
@@ -204,7 +205,7 @@ function TorrentRow({ t, onAction, canOpen }: { t: Torrent; onAction: (a: string
                     </DropdownTrigger>
                     <DropdownContent>
                         <DropdownItem onSelect={() => onAction("remove")}>Remove torrent (keep files)</DropdownItem>
-                        <DropdownItem danger onSelect={() => onAction("removeData")}>
+                        <DropdownItem danger onSelect={() => confirm("Remove this torrent and delete its downloaded files?") && onAction("removeData")}>
                             Remove torrent and delete files
                         </DropdownItem>
                     </DropdownContent>

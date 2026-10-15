@@ -42,6 +42,11 @@ export default function ExtensionsPage() {
     const tab = params.get("tab") === "marketplace" ? "marketplace" : "installed"
     const { data: installed } = useExtensions()
     const [manualOpen, setManualOpen] = useState(false)
+    // From another device on the network: what's installed is shown, but only
+    // the computer Kumo runs on installs and sets up extensions (the server
+    // refuses the rest).
+    const { data: status } = useStatus()
+    const lan = status?.client === "lan"
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -49,10 +54,13 @@ export default function ExtensionsPage() {
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Extensions</h1>
                     <p className="mt-1 max-w-2xl text-muted">Streaming, torrent and manga providers plus plugins, from the extension marketplace.</p>
                 </div>
-                <Button icon={<Link2 className="size-4" />} onClick={() => setManualOpen(true)}>
-                    Install from URL
-                </Button>
+                {!lan && (
+                    <Button icon={<Link2 className="size-4" />} onClick={() => setManualOpen(true)}>
+                        Install from URL
+                    </Button>
+                )}
             </div>
+            {lan && <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-muted">Extensions are installed and set up on the computer Kumo runs on; from here you can see them.</p>}
             <Tabs
                 className="mb-8"
                 value={tab}
@@ -62,7 +70,9 @@ export default function ExtensionsPage() {
                     { value: "marketplace", label: "Marketplace" },
                 ]}
             />
-            {tab === "installed" ? <Installed /> : <Marketplace />}
+            <fieldset disabled={lan} className="m-0 min-w-0 border-0 p-0">
+                {tab === "installed" ? <Installed /> : <Marketplace />}
+            </fieldset>
             <InstallUrlDialog open={manualOpen} onOpenChange={setManualOpen} />
         </div>
     )

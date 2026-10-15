@@ -181,7 +181,8 @@ function handlePluginEvent(p: { pluginId: string; type: string; payload: any }) 
             trayOpenStore.set(null)
             break
         case "open-url":
-            if (p.payload?.url) window.open(p.payload.url, "_blank", "noopener")
+            // Web pages only (not javascript: or file: links).
+            if (typeof p.payload?.url === "string" && /^https?:\/\//i.test(p.payload.url)) window.open(p.payload.url, "_blank", "noopener")
             break
         case "clipboard":
             navigator.clipboard?.writeText(p.payload?.text ?? "").catch(() => {})

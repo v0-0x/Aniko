@@ -212,6 +212,11 @@ export default function SettingsPage() {
                 <div className="mb-7 border-b border-line pb-5 lg:mt-[3.25rem]">
                     <h2 className="text-xl font-semibold tracking-tight">{current.label}</h2>
                     <p className="mt-0.5 text-sm text-muted">{SUBTITLES[current.id]}</p>
+                    {status.client === "lan" && (
+                        <p className="mt-3 rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-muted">
+                            You're using Kumo from another device: dimmed settings (folders, programs, network, logins) can only be changed on the computer it runs on.
+                        </p>
+                    )}
                 </div>
                 <div key={section} className="flex flex-col gap-8 fade-in">
                     {section === "app" && <AppSection draft={draft} set={set} />}
@@ -389,6 +394,18 @@ function DirPicker({ open, onOpenChange, onPick, start }: { open: boolean; onOpe
     )
 }
 
+// Settings only the computer Kumo runs on may change (from a device on the
+// network the server keeps them as they are): shown, not editable there.
+function Locked({ children }: { children: React.ReactNode }) {
+    const { data: status } = useStatus()
+    if (status?.client !== "lan") return <>{children}</>
+    return (
+        <fieldset disabled title="Only the computer Kumo runs on can change this" className="m-0 min-w-0 border-0 p-0 opacity-55">
+            {children}
+        </fieldset>
+    )
+}
+
 function PathInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
     const [open, setOpen] = useState(false)
     const { data: status } = useStatus()
@@ -496,7 +513,9 @@ function AppSection({ draft, set }: SectionProps) {
                             <p className="text-xs text-subtle">Your list is stored locally until you log in.</p>
                         </div>
                     )}
-                    {status?.user ? (
+                    {status?.user && lan ? (
+                        <p className="max-w-56 text-right text-xs text-subtle">The computer Kumo runs on is logged in: log out there.</p>
+                    ) : status?.user ? (
                         <Button
                             variant="danger"
                             size="sm"
@@ -517,9 +536,11 @@ function AppSection({ draft, set }: SectionProps) {
                         </Button>
                     )}
                 </div>
-                <Stack label="AniList client ID" help="Kumo opens anilist.co/api/v2/oauth/authorize?client_id=…&response_type=token">
-                    <Input value={draft.anilist.clientId} onChange={e => set("anilist", { clientId: e.target.value })} />
-                </Stack>
+                <Locked>
+                    <Stack label="AniList client ID" help="Kumo opens anilist.co/api/v2/oauth/authorize?client_id=…&response_type=token">
+                        <Input value={draft.anilist.clientId} onChange={e => set("anilist", { clientId: e.target.value })} />
+                    </Stack>
+                </Locked>
             </Group>
 
             <Group title="Web UI & network" description="Kumo only ever talks to this computer and — if you allow it — your home network. Connections from the internet are always refused.">
@@ -566,9 +587,11 @@ function AppSection({ draft, set }: SectionProps) {
             {!androidApp && <ProgramsGroup />}
 
             <Group title="Extensions">
-                <Stack label="Marketplace URL" help="Any compatible extension index works.">
-                    <Input value={draft.extensions.marketplaceUrl} onChange={e => set("extensions", { marketplaceUrl: e.target.value })} />
-                </Stack>
+                <Locked>
+                    <Stack label="Marketplace URL" help="Any compatible extension index works.">
+                        <Input value={draft.extensions.marketplaceUrl} onChange={e => set("extensions", { marketplaceUrl: e.target.value })} />
+                    </Stack>
+                </Locked>
             </Group>
 
             <Group title="Data">
@@ -865,7 +888,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                                 <Switch checked={p.allowed} disabled={!trusted} onChange={v => call(() => api.post(`/api/sharing/peers/${p.id}`, { allowed: v }))} />
                                 {!p.online && trusted && (
                                     <button
-                                        onClick={() => call(() => api.del(`/api/sharing/peers/${p.id}`))}
+                                        onClick={() => confirm(`Remove ${p.name} from the list? It shows up again when it's back on the network.`) && call(() => api.del(`/api/sharing/peers/${p.id}`))}
                                         className="grid size-8 place-items-center rounded-lg text-muted hover:bg-white/[0.06] hover:text-rose-300"
                                         aria-label={`Remove ${p.name}`}
                                         title="Remove"
@@ -956,26 +979,28 @@ function LibrarySection({ draft, set }: SectionProps) {
     return (
         <>
             <Group title="Local library">
-                <Stack label="Library directory" help="Path of the directory where your media files are located.">
-                    <PathInput value={draft.library.dir} onChange={v => set("library", { dir: v })} placeholder="/mnt/big/Media/Anime" />
-                </Stack>
-                <Stack label="Additional library directories" help="Include additional directory paths if your library is spread across multiple locations.">
-                    <div className="flex flex-col gap-2">
-                        {extra.map((d, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                                <div className="flex-1">
-                                    <PathInput value={d} onChange={v => set("library", { extraDirs: extra.map((x, j) => (j === i ? v : x)) })} />
+                <Locked>
+                    <Stack label="Library directory" help="Path of the directory where your media files are located.">
+                        <PathInput value={draft.library.dir} onChange={v => set("library", { dir: v })} placeholder="/mnt/big/Media/Anime" />
+                    </Stack>
+                    <Stack label="Additional library directories" help="Include additional directory paths if your library is spread across multiple locations.">
+                        <div className="flex flex-col gap-2">
+                            {extra.map((d, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                        <PathInput value={d} onChange={v => set("library", { extraDirs: extra.map((x, j) => (j === i ? v : x)) })} />
+                                    </div>
+                                    <button onClick={() => set("library", { extraDirs: extra.filter((_, j) => j !== i) })} aria-label="Remove this folder" className="grid size-10 place-items-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-rose-300">
+                                        <X className="size-4" />
+                                    </button>
                                 </div>
-                                <button onClick={() => set("library", { extraDirs: extra.filter((_, j) => j !== i) })} aria-label="Remove this folder" className="grid size-10 place-items-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-rose-300">
-                                    <X className="size-4" />
-                                </button>
-                            </div>
-                        ))}
-                        <button onClick={() => set("library", { extraDirs: [...extra, ""] })} className="grid size-9 place-items-center rounded-full bg-white/[0.07] text-fg hover:bg-white/[0.12]" aria-label="Add directory">
-                            <Plus className="size-4" />
-                        </button>
-                    </div>
-                </Stack>
+                            ))}
+                            <button onClick={() => set("library", { extraDirs: [...extra, ""] })} className="grid size-9 place-items-center rounded-full bg-white/[0.07] text-fg hover:bg-white/[0.12]" aria-label="Add directory">
+                                <Plus className="size-4" />
+                            </button>
+                        </div>
+                    </Stack>
+                </Locked>
             </Group>
             <Group title="Scanning">
                 <Row label="Automatically refresh library" help="Watch the folders and pick up new or removed files on their own">
@@ -1075,15 +1100,17 @@ function MpvSection({ draft, set }: SectionProps) {
             <Row label="Status">
                 <Detect ok={status?.features.mpv} label="mpv" />
             </Row>
-            <Stack
-                label="Executable"
-                help={`Name or full path, e.g. mpv or ${exampleMpvPath(status?.platform)} (install with: ${installHint(status?.platform, "mpv")})`}
-            >
-                <Input value={draft.mpv.path} onChange={e => set("mpv", { path: e.target.value })} icon={<Terminal className="size-4" />} />
-            </Stack>
-            <Stack label="Extra arguments" help="Passed to every mpv launch, e.g. --profile=gpu-hq --hwdec=auto">
-                <Input value={draft.mpv.extraArgs} onChange={e => set("mpv", { extraArgs: e.target.value })} />
-            </Stack>
+            <Locked>
+                <Stack
+                    label="Executable"
+                    help={`Name or full path, e.g. mpv or ${exampleMpvPath(status?.platform)} (install with: ${installHint(status?.platform, "mpv")})`}
+                >
+                    <Input value={draft.mpv.path} onChange={e => set("mpv", { path: e.target.value })} icon={<Terminal className="size-4" />} />
+                </Stack>
+                <Stack label="Extra arguments" help="Passed to every mpv launch, e.g. --profile=gpu-hq --hwdec=auto">
+                    <Input value={draft.mpv.extraArgs} onChange={e => set("mpv", { extraArgs: e.target.value })} />
+                </Stack>
+            </Locked>
             <Row label="Start in fullscreen">
                 <Switch checked={draft.mpv.fullscreen} onChange={v => set("mpv", { fullscreen: v })} />
             </Row>
@@ -1129,21 +1156,25 @@ function TranscodeSection({ draft, set }: SectionProps) {
                     />
                 </Row>
                 {t.hwAccel === "vaapi" && (
-                    <Stack label="VA-API device">
-                        <Input value={t.vaapiNode} onChange={e => set("transcode", { vaapiNode: e.target.value })} />
-                    </Stack>
+                    <Locked>
+                        <Stack label="VA-API device">
+                            <Input value={t.vaapiNode} onChange={e => set("transcode", { vaapiNode: e.target.value })} />
+                        </Stack>
+                    </Locked>
                 )}
                 <Row label="x264 preset" help="Faster presets use less CPU">
                     <Select className="w-40" value={t.preset} onChange={v => set("transcode", { preset: v })} options={["ultrafast", "superfast", "veryfast", "faster", "fast", "medium"].map(p => ({ value: p, label: p }))} />
                 </Row>
             </Group>
             <Group title="Paths">
-                <Stack label="ffmpeg">
-                    <Input value={t.ffmpegPath} onChange={e => set("transcode", { ffmpegPath: e.target.value })} />
-                </Stack>
-                <Stack label="ffprobe">
-                    <Input value={t.ffprobePath} onChange={e => set("transcode", { ffprobePath: e.target.value })} />
-                </Stack>
+                <Locked>
+                    <Stack label="ffmpeg">
+                        <Input value={t.ffmpegPath} onChange={e => set("transcode", { ffmpegPath: e.target.value })} />
+                    </Stack>
+                    <Stack label="ffprobe">
+                        <Input value={t.ffprobePath} onChange={e => set("transcode", { ffprobePath: e.target.value })} />
+                    </Stack>
+                </Locked>
             </Group>
         </>
     )
@@ -1256,7 +1287,9 @@ function TorrentClientSection({ draft, set }: SectionProps) {
                             </span>
                             <ChevronDown className={cn("size-5 text-muted transition-transform", open === c && "rotate-180")} />
                         </button>
-                        {open === c && <ClientFields value={draft[c]} onChange={v => set(c, v)} showTags={c === "qbittorrent"} />}
+                        <Locked>
+                            {open === c && <ClientFields value={draft[c]} onChange={v => set(c, v)} showTags={c === "qbittorrent"} />}
+                        </Locked>
                     </div>
                 ))}
             </div>
@@ -1334,9 +1367,11 @@ function StreamingSection({ draft, set }: SectionProps) {
                         <InstallProgramsButton />
                     </Row>
                 )}
-                <Stack label="Executable">
-                    <Input value={a.path} onChange={e => set("aniCli", { path: e.target.value })} icon={<Terminal className="size-4" />} />
-                </Stack>
+                <Locked>
+                    <Stack label="Executable">
+                        <Input value={a.path} onChange={e => set("aniCli", { path: e.target.value })} icon={<Terminal className="size-4" />} />
+                    </Stack>
+                </Locked>
                 <Row label="Default audio">
                     <div className="flex rounded-lg bg-white/[0.04] p-0.5">
                         {(["sub", "dub"] as const).map(m => (
@@ -1372,9 +1407,11 @@ function StreamingSection({ draft, set }: SectionProps) {
                         ]}
                     />
                 </Row>
-                <Stack label="Download folder" help={`Empty = your library folder (${status?.settings.library.dir || "not set"}). Downloads are matched automatically.`}>
-                    <PathInput value={a.downloadDir} onChange={v => set("aniCli", { downloadDir: v })} placeholder="Library folder" />
-                </Stack>
+                <Locked>
+                    <Stack label="Download folder" help={`Empty = your library folder (${status?.settings.library.dir || "not set"}). Downloads are matched automatically.`}>
+                        <PathInput value={a.downloadDir} onChange={v => set("aniCli", { downloadDir: v })} placeholder="Library folder" />
+                    </Stack>
+                </Locked>
             </Group>
         </>
     )
@@ -1423,9 +1460,11 @@ function DiscordSection({ draft, set }: SectionProps) {
             <Row label="Show what I'm watching">
                 <Switch checked={draft.discord.richPresence} onChange={v => set("discord", { richPresence: v })} />
             </Row>
-            <Stack label="Discord application ID" help="Create an application at discord.com/developers and paste its Application ID.">
-                <Input value={draft.discord.clientId} onChange={e => set("discord", { clientId: e.target.value })} />
-            </Stack>
+            <Locked>
+                <Stack label="Discord application ID" help="Create an application at discord.com/developers and paste its Application ID.">
+                    <Input value={draft.discord.clientId} onChange={e => set("discord", { clientId: e.target.value })} />
+                </Stack>
+            </Locked>
         </Group>
     )
 }

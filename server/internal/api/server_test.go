@@ -339,3 +339,20 @@ func TestTorrentActionNeedsHashes(t *testing.T) {
 		}
 	}
 }
+
+// The AniList account is the computer's: a device on the network can't log
+// it out.
+func TestLogoutOnlyHere(t *testing.T) {
+	s := newTestServer(t)
+	cfg := s.app.Settings.Get()
+	cfg.Server.AllowLAN = true
+	if _, err := s.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if w := do(s, "POST", "/api/auth/logout", "192.168.1.30:5000", "", nil); w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "log out on the computer") {
+		t.Fatalf("logout from the network: %d %s", w.Code, w.Body)
+	}
+	if w := do(s, "POST", "/api/auth/logout", "127.0.0.1:5000", "", nil); w.Code != http.StatusOK {
+		t.Fatalf("logout here: %d %s", w.Code, w.Body)
+	}
+}

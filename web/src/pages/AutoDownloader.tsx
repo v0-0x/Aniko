@@ -106,6 +106,7 @@ function RuleCard({ rule, onEdit }: { rule: AutoRule; onEdit: () => void }) {
         }
     }
     const del = async () => {
+        if (!confirm(`Delete the rule for ${media?.media ? title(media.media) : rule.title}?`)) return
         try {
             await api.del(`/api/autodownloader/rules/${rule.id}`)
             qc.invalidateQueries({ queryKey: ["auto-rules"] })

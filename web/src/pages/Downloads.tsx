@@ -2,7 +2,7 @@ import { CheckCircle2, Download, Loader2, RotateCcw, Trash2, X, XCircle } from "
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
 import { toast } from "@/lib/toast"
-import { Badge, Button, EmptyState, IconButton, Progress } from "@/components/ui"
+import { Badge, Button, EmptyState, ErrorState, IconButton, Progress } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useDownloads, useStatus } from "@/lib/queries"
 import type { DownloadItem } from "@/lib/types"
@@ -11,7 +11,7 @@ import { cn, img } from "@/lib/utils"
 const RUNNING = ["queued", "resolving", "downloading"]
 
 export default function DownloadsPage() {
-    const { data, isLoading } = useDownloads()
+    const { data, isLoading, error, refetch, isFetching } = useDownloads()
     const { data: status } = useStatus()
     // This device's downloads go to another Kumo (a TV's to its computer):
     // that one's list is shown, as it's where they are.
@@ -44,7 +44,8 @@ export default function DownloadsPage() {
                     </Button>
                 )}
             </div>
-            {!isLoading && items.length === 0 && (
+            {error && !data && <ErrorState title="Couldn't load the downloads" error={error} retrying={isFetching} onRetry={() => refetch()} />}
+            {!isLoading && !error && items.length === 0 && (
                 <EmptyState icon={<Download className="size-6" />} title="No downloads yet">
                     Open an anime, go to <b>Watch online</b> and hit the download button on any episode.
                 </EmptyState>

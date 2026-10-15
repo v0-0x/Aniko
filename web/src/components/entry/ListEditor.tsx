@@ -2,7 +2,7 @@ import { Check, ChevronDown, Minus, Plus, Star, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useDeleteEntry, useUpdateEntry } from "@/lib/queries"
 import type { Media } from "@/lib/types"
-import { cn, LIST_STATUS, LIST_STATUS_MANGA, totalEpisodes } from "@/lib/utils"
+import { cn, LIST_STATUS, LIST_STATUS_MANGA, totalEpisodes, title } from "@/lib/utils"
 import { Button, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger } from "../ui"
 
 type Entry = { status: string; progress: number; score: number } | null | undefined
@@ -39,7 +39,7 @@ export function ListStatusButton({ media, entry }: { media: Media; entry: Entry 
                 {entry && (
                     <>
                         <DropdownSeparator />
-                        <DropdownItem danger icon={<Trash2 />} onSelect={() => del.mutate()}>
+                        <DropdownItem danger icon={<Trash2 />} onSelect={() => confirm(`Remove ${title(media)} from your list? Its progress and score go with it.`) && del.mutate()}>
                             Remove from list
                         </DropdownItem>
                     </>
