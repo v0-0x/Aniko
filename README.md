@@ -2,7 +2,7 @@
 
 <h1 align="center">Kumo</h1>
 
-<p align="center">An anime app for Arch Linux,Windows,Mac os: your AniList, your local library, ani-cli streaming, torrents and an extension marketplace — in one desktop app that only ever talks to your own computer and home network.</p>
+<p align="center">An anime app for Arch Linux, Windows, macOS and Android TV (Fire TV): your AniList, your local library, ani-cli streaming, torrents and an extension marketplace — in one app that only ever talks to your own computer and home network.</p>
 
 ---
 
@@ -13,7 +13,7 @@
 - Works with **every video format**: mkv, mp4, avi, webm, mov, wmv, flv, ts/m2ts, ogm, rmvb, vob, 3gp, divx and more.
 - **Auto refresh**: watches the folders and rescans when files appear, and refreshes on startup.
 - **Local library** page with only the anime you have on disk: recently added, filters by list status, sort by added/unwatched/size, grid or list view with downloaded episode ranges, size, resolution and release group, and one-click "play next".
-- **Library sharing** between the Kumo apps on your computers at home: they find each other by themselves (or by address). On the computer with the anime, turn on **Share my library** for the others in **Settings › Local Anime Library › Library sharing**: its anime show up on theirs (a tab on the Local library page, and on each anime's page) and play like local files, converted by the computer that has them when needed. Watching updates the list (AniList or local) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second (live to the computer whose files you watch), and episodes watched on any device come first.
+- **Library sharing** between the Kumo apps on your computers at home: they find each other by themselves (or by address). On the computer with the anime, turn on **Share my library** for the others in **Settings › Local Anime Library › Library sharing**: its anime show up on theirs (a tab on the Local library page, and on each anime's page) and play like local files, converted by the computer that has them when needed. Watching updates the list (AniList or local) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second (live to the computer whose files you watch), and episodes watched on any device come first; positions saved while the other was off are sent when it's back, and **Sync** on Home brings both up to date at once.
 - Library tools to fix matches by hand, change episode numbers, lock files and ignore junk.
 - Safe with removable drives: an unplugged or unmounted library folder keeps its matches; symlinked folders are followed.
 - **Artwork & metadata**: covers, banners, fanart, descriptions, genres, studios, characters, relations, recommendations, **episode titles, summaries and thumbnails** (AniList + ani.zip). All artwork is **downloaded to a local cache**, so it loads instantly and still shows offline.
@@ -57,7 +57,8 @@
 | The desktop window | Always (authenticated with a per-run token) |
 | A browser on this PC | Only when **Settings › App › Web UI** is on (`http://127.0.0.1:43211`) |
 | Devices on your home network | Only when **Allow devices on my network** is on. They can be password protected, and can't change paths/programs or browse folders. |
-| Kumo on your other computers | With **Library sharing** on: they see it, and only those you turn on get the library, and nothing else (each Kumo has its own key pair; requests are signed, and play only files of the library). |
+| Kumo on your other computers and TVs | With **Library sharing** on: they see it, and only those you turn on get the library, and nothing else unless you also share your AniList account or let them download there (each Kumo has its own key pair; requests are signed, and play only files of the library). |
+| Other apps on an Android TV or phone | **Never**: the Kumo app's own window proves itself with a per-install token. |
 | Anything on the internet | **Never** (connections from public IP addresses are refused) |
 
 The server also rejects other websites' requests (Origin check) and DNS rebinding tricks (Host check). Extensions and the stream/image proxies can't connect to localhost or your LAN. Plugins get no file or command access. Nothing is sent anywhere except the services you use (AniList, ani.zip, AniSkip, the torrent and stream sites you search).
@@ -81,7 +82,17 @@ When GitHub has a newer Kumo, the **Home** page shows it with an **Update** butt
 
 Update checks need no GitHub account. Without a password dialog (e.g. when Kumo runs as the `kumo-server` service), Kumo builds the update and shows the `sudo pacman -U …` command to run.
 
-You can still update by hand: `cd kumo && git pull && cd packaging/arch && makepkg -sif` (`-f` rebuilds; without it makepkg reinstalls the package it built last time).
+You can still update by hand, in the folder you cloned Kumo into:
+
+```bash
+pkill -f /usr/lib/kumo          # Kumo can't be replaced while it runs
+git remote set-url origin https://github.com/v0-0x/kumo-anime.git   # once, for a clone of the old address
+git pull && cd packaging/arch && makepkg -sif
+```
+
+`-f` rebuilds (without it makepkg reinstalls the package it built last time). Build from a `git clone`, not a downloaded ZIP: without git the package's version can't be read and stays 1.0.0, which pacman then calls a downgrade and the updater an old version.
+
+The **Update** button asks for your password with your desktop's polkit agent. Desktops like GNOME and KDE have one; on a bare window manager (Hyprland, Sway, i3…) start one (e.g. `polkit-gnome`'s `/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1`), or Kumo shows the `sudo pacman -U …` command to run instead.
 
 ### First run
 1. **Settings › Local Anime Library**: pick your folder (e.g. `/mnt/big/Media/Anime`) and save. The first scan starts on its own.
@@ -92,8 +103,9 @@ You can still update by hand: `cd kumo && git pull && cd packaging/arch && makep
 ### Headless / other devices
 ```bash
 systemctl --user enable --now kumo-server   # server only, web UI on 127.0.0.1:43211
+loginctl enable-linger "$USER"              # and started at boot, before you log in
 ```
-Turn on **Allow devices on my network** (with a password) to use Kumo from your phone or TV at `http://<pc-name>.local:43211`. The desktop app attaches to the running server.
+With linger on, the PC's library is there for the TV as soon as the PC is on, not only once you've logged in. Turn on **Allow devices on my network** (with a password) to use Kumo from your phone or a browser at `http://<pc-name>.local:43211`. The desktop app attaches to the running server.
 
 ## Windows
 
@@ -109,7 +121,9 @@ How to open it the first time, where it keeps its data, how to build it: [packag
 
 ## Android / Fire TV
 
-Kumo for Android is made for TVs (a Fire TV Stick, Android TV) and plays the libraries the computers at home share, with the remote: get `Kumo-X.Y.Z-android.apk` from the newest **Kumo X.Y.Z for Android** [release](https://github.com/v0-0x/kumo-anime/releases) (tag `android-vX.Y.Z`). On a Fire TV, install the **Downloader** app, allow it in Settings › My Fire TV › Developer options › Install unknown apps, and open the APK's address in it. Then, on a computer with Kumo, turn on **Library sharing** (Settings › Local Anime Library): the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses your account, with no login on the TV) and **Let it download here** (the TV's downloads and torrents go to that computer, and it becomes where the TV downloads by default). The app updates itself from its Home page; see [android/README.md](android/README.md).
+Kumo for Android is made for TVs (a Fire TV Stick, Android TV) and plays the libraries the computers at home share, with the remote: get `Kumo-X.Y.Z-android.apk` from the newest **Kumo X.Y.Z for Android** [release](https://github.com/v0-0x/kumo-anime/releases) (tag `android-vX.Y.Z`). On a Fire TV, install the **Downloader** app, allow it in Settings › My Fire TV › Developer options › Install unknown apps, and open the APK's address in it. Then, on a computer with Kumo, turn on **Library sharing** (Settings › Local Anime Library): the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses your account, with no login on the TV) and **Let it download here** (the TV's downloads and torrents go to that computer, and it becomes where the TV downloads by default). Its downloads page and auto downloader then work on that computer. The app updates itself from its Home page (if Android's install question was cancelled, **Install** asks again); see [android/README.md](android/README.md).
+
+When something doesn't play right on the TV (no picture, it stops), the TV writes what it saw to its log and to the computer's (Settings › Logs & Cache), which helps find out why.
 
 ## Development
 

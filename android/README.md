@@ -7,14 +7,19 @@ The app runs Kumo's server, the same as on a computer, built for Android
 (`libkumo.so`, which Android extracts somewhere it may run it), and shows its
 web UI full screen. On a TV the web UI is in TV mode (`web/src/lib/tv.ts`):
 the remote's arrows move the focus, OK presses, Back closes what's open or
-goes back, and the play/pause, rewind and fast-forward keys drive the
-player.
+goes back (at Home, Kumo goes to the background: its server stays, so the
+computers still reach it), ☰ lists what a right-click would, and the media
+keys drive the player (Play, Pause, Play/Pause, rewind, fast-forward, Next
+for the next episode).
 
 - `app/src/main/java/app/kumo/MainActivity.java`: the screen, the remote's
   keys, and what the page asks of the app (`window.KumoAndroid`: keeping the
   screen on while a video plays, installing an update).
 - `KumoServer.java`: starts the server (data in the app's files) and waits for
-  it to answer.
+  it to answer. The server stops by itself when the app is gone (its standard
+  input closes, `--exit-with-stdin`), saving where a video was; the app
+  starts it again (and reloads the page) if it stops, and opens the page
+  again if the WebView's process crashes.
 - `Installer.java`: installs an update the server downloaded (the newest
   `android-v<version>` release's APK); Android asks first.
 

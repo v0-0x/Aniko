@@ -21,6 +21,9 @@
 param(
     # The GitHub repository Kumo updates from.
     [string]$Repo = "v0-0x/kumo-anime",
+    # The same repository by its number, as Kumo's updater asks for it: it
+    # stays the same when the repository is renamed or moves.
+    [string]$RepoID = "1406820679",
     # Close the window at the end without waiting for Enter.
     [switch]$NoPause
 )
@@ -112,7 +115,7 @@ try {
     # would take a GitHub sign-in, which the GitHub CLI keeps.
     $public = $true
     try {
-        Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo" -Headers @{ "User-Agent" = "Kumo-setup" } | Out-Null
+        Invoke-RestMethod -Uri "https://api.github.com/repositories/$RepoID" -Headers @{ "User-Agent" = "Kumo-setup" } | Out-Null
     } catch {
         $public = $false
     }

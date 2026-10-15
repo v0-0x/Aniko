@@ -56,9 +56,12 @@ build() {
     make server GO_LDFLAGS="${ldflags}"
 }
 
+# The quick tests (Kumo's own updater skips them: --nocheck): the file name
+# parser, ani-cli's driver, extensions, sharing between Kumos, the watch
+# history they exchange, and the updater.
 check() {
     cd "${_root}/server"
-    go test ./internal/library/ ./internal/anicli/ ./internal/extensions/
+    go test ./internal/library/ ./internal/anicli/ ./internal/extensions/ ./internal/share/ ./internal/history/ ./internal/update/
 }
 
 package() {
