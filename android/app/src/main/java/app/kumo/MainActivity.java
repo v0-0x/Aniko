@@ -1,6 +1,7 @@
 package app.kumo;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.UiModeManager;
 import android.content.Context;
@@ -9,6 +10,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -24,6 +26,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -51,16 +54,16 @@ public class MainActivity extends Activity {
     private WifiManager.MulticastLock multicast;
     private boolean loaded;
     private boolean starting;
+    private boolean resumed;
+    // Checks the server runs, while Kumo shows (see watch).
+    private final Runnable watcher = this::watch;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(11, 11, 15));
-        web = new WebView(this);
-        web.setBackgroundColor(Color.rgb(11, 11, 15));
-        web.setVisibility(View.INVISIBLE);
-        setUpWebView();
+        web = newWebView();
         root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         message = new TextView(this);
         message.setTextColor(Color.rgb(230, 230, 235));
@@ -87,8 +90,16 @@ public class MainActivity extends Activity {
         onNewIntent(getIntent());
     }
 
+    private WebView newWebView() {
+        WebView w = new WebView(this);
+        w.setBackgroundColor(Color.rgb(11, 11, 15));
+        w.setVisibility(View.INVISIBLE);
+        setUpWebView(w);
+        return w;
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
-    private void setUpWebView() {
+    private void setUpWebView(final WebView web) {
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
@@ -128,14 +139,40 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError err) {
                 if (req.isForMainFrame() && !KumoServer.get(MainActivity.this).running()) {
-                    loaded = false;
-                    web.setVisibility(View.INVISIBLE);
-                    messageScroll.setVisibility(View.VISIBLE);
-                    startServer();
+                    restartServer("Starting Kumo…");
                 }
+            }
+
+            // The page's process crashed (or Android ended it for memory):
+            // a new WebView, the page opened again, rather than Kumo closing.
+            @TargetApi(26)
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                if (view != MainActivity.this.web) return true;
+                Log.e("kumo", "the page stopped" + (detail.didCrash() ? " (crashed)" : "") + ": opening it again");
+                exitFullscreen();
+                root.removeView(view);
+                view.destroy();
+                MainActivity.this.web = newWebView();
+                root.addView(MainActivity.this.web, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                loaded = false;
+                messageScroll.setVisibility(View.VISIBLE);
+                showMessage("Opening Kumo again…", false);
+                if (KumoServer.get(MainActivity.this).running()) openPage(KumoServer.get(MainActivity.this));
+                else startServer();
+                return true;
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            // Black until a video's first frame (Android draws a grey
+            // picture with a play button otherwise).
+            @Override
+            public Bitmap getDefaultVideoPoster() {
+                Bitmap b = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+                b.eraseColor(Color.BLACK);
+                return b;
+            }
+
             // The player's fullscreen (on a phone; a TV is all screen).
             @Override
             public void onShowCustomView(View view, CustomViewCallback done) {
@@ -207,14 +244,39 @@ public class MainActivity extends Activity {
                     return;
                 }
                 showMessage("Starting Kumo…", false);
-                // The cookie that proves the WebView is Kumo's (KumoServer.token).
-                CookieManager cookies = CookieManager.getInstance();
-                cookies.setAcceptCookie(true);
-                cookies.setCookie(KumoServer.URL, "kumo_shell=" + server.token() + "; Path=/; HttpOnly; SameSite=Strict");
-                cookies.flush();
-                web.loadUrl(KumoServer.URL);
+                openPage(server);
             });
         }, "kumo-start").start();
+    }
+
+    /** Opens Kumo's page (the server answers). */
+    private void openPage(KumoServer server) {
+        // The cookie that proves the WebView is Kumo's (KumoServer.token).
+        CookieManager cookies = CookieManager.getInstance();
+        cookies.setAcceptCookie(true);
+        cookies.setCookie(KumoServer.URL, "kumo_shell=" + server.token() + "; Path=/; HttpOnly; SameSite=Strict");
+        cookies.flush();
+        web.loadUrl(KumoServer.URL);
+    }
+
+    /** The server stopped: the starting screen, and the server again. */
+    private void restartServer(String why) {
+        loaded = false;
+        web.setVisibility(View.INVISIBLE);
+        messageScroll.setVisibility(View.VISIBLE);
+        showMessage(why, false);
+        startServer();
+    }
+
+    /** While Kumo shows: the server stopped (crashed, or Android ended it), it's started again. */
+    private void watch() {
+        main.removeCallbacks(watcher);
+        if (!resumed) return;
+        if (loaded && !starting && !KumoServer.get(this).running()) {
+            Log.e("kumo", "the server stopped: starting it again");
+            restartServer("Kumo's server stopped: starting it again…");
+        }
+        main.postDelayed(watcher, 5000);
     }
 
     /** The screen before Kumo shows: starting, or why it didn't. */
@@ -231,18 +293,26 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        resumed = true;
+        web.onResume();
         // Android may have stopped it while Kumo was in the background.
-        if (!starting && !KumoServer.get(this).running()) {
-            loaded = false;
-            web.setVisibility(View.INVISIBLE);
-            messageScroll.setVisibility(View.VISIBLE);
-            showMessage("Starting Kumo…", false);
-            startServer();
-        }
+        if (!starting && !KumoServer.get(this).running()) restartServer("Starting Kumo…");
+        main.postDelayed(watcher, 5000);
+    }
+
+    /** Home pressed, or another app on top: a video playing pauses (its position is saved). */
+    @Override
+    protected void onPause() {
+        resumed = false;
+        main.removeCallbacks(watcher);
+        js("document.querySelectorAll('video').forEach(function(v){v.pause()})");
+        web.onPause();
+        super.onPause();
     }
 
     @Override
     protected void onDestroy() {
+        main.removeCallbacks(watcher);
         if (multicast != null && multicast.isHeld()) multicast.release();
         if (isFinishing()) KumoServer.get(this).stop();
         web.destroy();
@@ -261,9 +331,18 @@ public class MainActivity extends Activity {
                 if (!down && !e.isCanceled()) back();
                 return true;
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-            case KeyEvent.KEYCODE_MEDIA_PLAY:
-            case KeyEvent.KEYCODE_MEDIA_PAUSE:
                 if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('playpause')");
+                return true;
+            // Play and Pause, on remotes that have both: only that.
+            case KeyEvent.KEYCODE_MEDIA_PLAY:
+                if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('play')");
+                return true;
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('pause')");
+                return true;
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+                // The next episode.
+                if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('next')");
                 return true;
             case KeyEvent.KEYCODE_MENU:
                 // ☰: what a right-click opens.
@@ -290,7 +369,11 @@ public class MainActivity extends Activity {
         return super.dispatchKeyEvent(e);
     }
 
-    /** Back: the page closes what's open or goes back; at Home, Kumo closes. */
+    /**
+     * Back: the page closes what's open or goes back; at Home, Kumo goes to
+     * the background (to the TV's home), its server still there: opened
+     * again, it's as it was, and the other devices still reach it.
+     */
     private void back() {
         if (fullscreen != null) {
             exitFullscreen();
@@ -301,7 +384,7 @@ public class MainActivity extends Activity {
             return;
         }
         web.evaluateJavascript("(window.kumoBack&&window.kumoBack())?1:0", v -> {
-            if (!"1".equals(v)) finish();
+            if (!"1".equals(v)) moveTaskToBack(true);
         });
     }
 

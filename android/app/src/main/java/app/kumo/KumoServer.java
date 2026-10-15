@@ -11,7 +11,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.util.ArrayDeque;
@@ -36,6 +39,9 @@ final class KumoServer {
 
     private final Context ctx;
     private Process process;
+    // Its standard input, kept open: closed (this app gone, even killed),
+    // the server stops by itself, as it should (--exit-with-stdin).
+    private OutputStream stdin;
     private Thread logs;
     // The server's last lines, to show when it doesn't start.
     private final ArrayDeque<String> last = new ArrayDeque<>();
@@ -70,6 +76,15 @@ final class KumoServer {
         if (!bin.isFile()) {
             throw new IOException("Android didn't install its program (" + bin + " is missing). " + device());
         }
+        // The one this app started before it was ended may still be
+        // stopping (saving where a video was): this one waits for its port.
+        // One that doesn't stop by itself (started by an older Kumo, which
+        // didn't ask that) is asked to.
+        waitForPort(40);
+        if (portTaken()) {
+            stopOthers();
+            waitForPort(40);
+        }
         File files = ctx.getFilesDir();
         File data = new File(files, "kumo");
         File cache = ctx.getCacheDir();
@@ -82,6 +97,7 @@ final class KumoServer {
         cmd.add(data.getAbsolutePath());
         cmd.add("--port");
         cmd.add(String.valueOf(PORT));
+        cmd.add("--exit-with-stdin");
         ProcessBuilder pb = new ProcessBuilder(cmd).directory(files).redirectErrorStream(true);
         environment(pb.environment());
         // The app's WebView proves it's Kumo's with it (a cookie): other
@@ -92,6 +108,7 @@ final class KumoServer {
         }
         final Process p = pb.start();
         process = p;
+        stdin = p.getOutputStream();
         logs = new Thread(() -> {
             try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
                 String line;
@@ -122,11 +139,85 @@ final class KumoServer {
         env.put("KUMO_DEVICE_NAME", deviceName());
     }
 
-    /** Stops the server (the app is closing). */
+    /**
+     * Stops the server (the app is closing): it's asked to (its input
+     * closed), and saves what it has, then ended if it doesn't in a few
+     * seconds (Android's destroy ends it at once).
+     */
     synchronized void stop() {
-        if (process != null) {
-            process.destroy();
-            process = null;
+        final Process p = process;
+        final OutputStream in = stdin;
+        process = null;
+        stdin = null;
+        if (p == null) return;
+        new Thread(() -> {
+            try {
+                if (in != null) in.close();
+            } catch (IOException ignored) {
+            }
+            long until = System.currentTimeMillis() + 5000;
+            while (System.currentTimeMillis() < until) {
+                try {
+                    p.exitValue();
+                    return;
+                } catch (IllegalThreadStateException e) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ie) {
+                        break;
+                    }
+                }
+            }
+            p.destroy();
+        }, "kumo-stop").start();
+    }
+
+    private static void waitForPort(int quarters) {
+        for (int i = 0; i < quarters && portTaken(); i++) {
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                return;
+            }
+        }
+    }
+
+    /** Asks the servers this app started before (not this one's) to stop. */
+    private void stopOthers() {
+        File[] procs = new File("/proc").listFiles();
+        if (procs == null) return;
+        int mine = process == null ? -1 : pid(process);
+        for (File d : procs) {
+            int pid;
+            try {
+                pid = Integer.parseInt(d.getName());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            if (pid == mine || pid == android.os.Process.myPid()) continue;
+            String cmd;
+            try (java.io.FileInputStream in = new java.io.FileInputStream(new File(d, "cmdline"))) {
+                byte[] b = new byte[512];
+                int n = in.read(b);
+                cmd = n > 0 ? new String(b, 0, n) : "";
+            } catch (IOException e) {
+                continue; // another app's: not readable
+            }
+            // Kumo's server, wherever an older install put it.
+            if (cmd.contains("/libkumo.so")) {
+                Log.i(TAG, "stopping the server left from before (" + pid + ")");
+                android.os.Process.sendSignal(pid, 15); // SIGTERM: it saves, then stops
+            }
+        }
+    }
+
+    /** Whether something answers on the server's port. */
+    private static boolean portTaken() {
+        try (Socket s = new Socket()) {
+            s.connect(new InetSocketAddress("127.0.0.1", PORT), 300);
+            return true;
+        } catch (IOException e) {
+            return false;
         }
     }
 

@@ -361,7 +361,12 @@ export function initTV(goBack: () => boolean) {
             if (!tvMenuStore.get() && !document.querySelector('[role="menu"]')) openMenu()
             return
         }
-        const k = { playpause: " ", rewind: "j", forward: "l" }[key]
-        if (k && document.querySelector("[data-tv-scope]")) press(k)
+        const player = document.querySelector("[data-tv-scope]")
+        if (!player) return
+        // Play and Pause (separate keys on some remotes) only ever do that.
+        const video = player.querySelector("video")
+        if ((key === "play" && video && !video.paused) || (key === "pause" && (!video || video.paused))) return
+        const k = ({ playpause: " ", play: " ", pause: " ", rewind: "j", forward: "l", next: "n" } as Record<string, string>)[key]
+        if (k) press(k)
     }
 }

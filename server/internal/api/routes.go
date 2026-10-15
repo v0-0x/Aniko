@@ -25,6 +25,7 @@ import (
 func (s *Server) routes() {
 	m := s.mux
 	s.peerRoutes()
+	s.noteRoutes()
 
 	// --- core
 	m.HandleFunc("GET /api/status", h(s.status))

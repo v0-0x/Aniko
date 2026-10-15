@@ -36,6 +36,8 @@ type Server struct {
 	logins loginGuard
 	// One rebind at a time (Start).
 	rebindMu sync.Mutex
+	// The players' notes (POST /api/playback/note).
+	notes noteGuard
 	// ForceWebUI is set when no desktop shell can exist (headless mode).
 	ForceWebUI bool
 	// AppOnly: on this device other apps reach 127.0.0.1 too (Android), so

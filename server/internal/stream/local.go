@@ -409,15 +409,29 @@ func (pl plan) args(cfg config.Settings, p *Probe, path string, start float64) [
 // keyframe + seekMargin, and a keyframe followed that closely by another
 // one (a scene cut) is passed over for the next.
 func (l *Local) SeekPoint(ctx context.Context, path string, t float64, audio int, method string, caps Caps, hls bool) (float64, error) {
+	start, _, err := l.Seek(ctx, path, t, audio, method, caps, hls)
+	return start, err
+}
+
+// Seek is SeekPoint, and the method to ask the stream with: "transcode"
+// when the video would be copied but its keyframe at t isn't known (the
+// file couldn't be read in time), as a copy would then start at an unknown
+// frame (a grey picture until the next keyframe, its times off), where
+// converted video starts at t exactly. Otherwise the method asked for.
+func (l *Local) Seek(ctx context.Context, path string, t float64, audio int, method string, caps Caps, hls bool) (float64, string, error) {
 	path, err := l.resolve(path)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	p, err := l.Probe(ctx, path)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	return l.startFor(ctx, path, l.plan(p, method, audio, caps, hls), t), nil
+	start, known := l.startFor(ctx, path, l.plan(p, method, audio, caps, hls), t)
+	if !known {
+		return t, "transcode", nil
+	}
+	return start, method, nil
 }
 
 const seekMargin = 0.4
@@ -428,17 +442,20 @@ const seekMargin = 0.4
 // ending then isn't partly heard again.
 const seekAhead = 1.5
 
-func (l *Local) startFor(ctx context.Context, path string, pl plan, t float64) float64 {
+// startFor is where a stream with this plan asked to start at t starts,
+// and whether that's known: for copied video, whether its keyframe could
+// be found (see Seek).
+func (l *Local) startFor(ctx context.Context, path string, pl plan, t float64) (float64, bool) {
 	if t <= 0 {
-		return 0
+		return 0, true
 	}
 	if !pl.videoCopy {
-		return t
+		return t, true
 	}
 	if k, ok := l.seekKeyframe(ctx, path, t); ok {
-		return k
+		return k, true
 	}
-	return t
+	return t, false
 }
 
 // seekKeyframe finds the keyframe a copy asked to start at t starts at: the

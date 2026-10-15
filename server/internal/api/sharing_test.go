@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -732,4 +733,64 @@ func TestForgetAndUnshareDropGrants(t *testing.T) {
 			t.Errorf("shared again with what came before: %+v", p)
 		}
 	}
+}
+
+// The player's notes (what went wrong) go to the log here, and for a
+// shared file to its host's too, where it can be looked into; from a Kumo
+// the host doesn't share with, nothing.
+func TestPlayerNoteReachesTheHost(t *testing.T) {
+	const local = "127.0.0.1:5000"
+	host, hostSrv := sharingServer(t)
+	guest, _ := sharingServer(t)
+	// After the servers: they log to their own Logs page too.
+	var mu sync.Mutex
+	var logged bytes.Buffer
+	log.SetOutput(lockedWriter{&mu, &logged})
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	seen := func(s string) bool { mu.Lock(); defer mu.Unlock(); return strings.Contains(logged.String(), s) }
+	path, _ := addEpisode(t, host, 21, 1)
+	addr := strings.TrimPrefix(hostSrv.URL, "http://")
+	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("connect: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	remote := share.RemotePath(host.app.Share.ID(), path)
+
+	// Not shared with yet: only the guest's log.
+	if w := do(guest, "POST", "/api/playback/note", local, `{"path":"`+remote+`","text":"first\nnote"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("note: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the note in the guest's log", func() bool { return seen("player: first note") })
+	time.Sleep(time.Second)
+	if seen("sharing: the player on") {
+		t.Fatal("a Kumo the host doesn't share with wrote to its log")
+	}
+
+	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the library", func() bool {
+		do(guest, "GET", "/api/sharing", local, "", nil)
+		return len(guest.app.Share.Libraries()) == 1
+	})
+	time.Sleep(2100 * time.Millisecond) // one note every 2 seconds
+	do(guest, "POST", "/api/playback/note", local, `{"path":"`+remote+`","text":"no picture"}`, nil)
+	eventually(t, "the note in the host's log", func() bool { return seen(": no picture") && seen("sharing: the player on") })
+	// Not more than one every 2 seconds.
+	do(guest, "POST", "/api/playback/note", local, `{"path":"","text":"too soon"}`, nil)
+	time.Sleep(300 * time.Millisecond)
+	if seen("too soon") {
+		t.Error("notes aren't limited")
+	}
+}
+
+type lockedWriter struct {
+	mu *sync.Mutex
+	w  io.Writer
+}
+
+func (l lockedWriter) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.w.Write(p)
 }

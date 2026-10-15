@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "@/lib/toast"
-import { api, qs } from "@/lib/api"
+import { api, ApiError, qs } from "@/lib/api"
 import { prefersHls, randomId, videoCaps } from "@/lib/playback"
 import { useSettings } from "@/lib/queries"
 import { playerStore, type PlayerRequest } from "@/lib/store"
@@ -93,6 +93,22 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     const pictureTries = useRef(0)
     // Streams that stopped early, opened again (see onEnded).
     const earlyEnds = useRef(0)
+    // Where the episode is at (absolute), also while the video loads: where
+    // it was asked to start (see where).
+    const expected = useRef(0)
+    // A broken connection (Wi-Fi, the computer asleep): opened again from
+    // there, a few times (see retry).
+    const netRetries = useRef(0)
+    const retriedAt = useRef(0)
+    const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    // The video plays, since it was (re)opened: the spinner shows until then.
+    const [started, setStarted] = useState(false)
+    // Seeks pressed in a row (a remote's Left/Right): one restart of the
+    // converted stream from where they end, not one each (see seekBy).
+    const seekTarget = useRef<number | null>(null)
+    const seekTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    // How long Left/Right has been held (bigger steps).
+    const held = useRef(0)
     // stream
     const [sources, setSources] = useState<StreamSource[]>([])
     const [sourceIdx, setSourceIdx] = useState(0)
@@ -129,6 +145,12 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     const clientId = useMemo(() => randomId(), [])
     const base = req.kind === "local" && method !== "direct" && stream ? stream.base : offset
     const absTime = (v: HTMLVideoElement) => v.currentTime + base
+    // Where the episode is at: the video's time once it has one, and until
+    // then (loading, failed before it loaded) where it was to start.
+    const where = (v: HTMLVideoElement | null = videoRef.current) => (v && v.readyState >= 1 && v.currentTime > 0 ? absTime(v) : expected.current)
+    // A line for the log (here, and the computer's for its files): what
+    // went wrong in the player.
+    const note = (text: string) => api.post("/api/playback/note", { path: req.kind === "local" ? req.path : "", text: `${title || "episode"}: ${text}` }).catch(() => {})
 
     // ------------------------------------------------------------------ load
     useEffect(() => {
@@ -295,11 +317,20 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     if (!cancelled) setStream({ url: s.url, base: s.start, hls: true, id: s.id })
                 } else {
                     const c = caps.join(",")
+                    // Where the stream starts, and how: converted when the
+                    // keyframe there isn't known (a copy would start at an
+                    // unknown frame), or the server didn't say.
                     const sp = await api
-                        .get<{ start: number }>(`/api/local/seekpoint${qs({ path: req.path, t: offset.toFixed(3), audio: audioIndex, method, caps: c })}`)
-                        .catch(() => ({ start: offset }))
+                        .get<{ start: number; method?: string }>(`/api/local/seekpoint${qs({ path: req.path, t: offset.toFixed(3), audio: audioIndex, method, caps: c })}`)
+                        // Not reached (the stream won't be either, and is
+                        // tried again): as asked.
+                        .catch(e => ({ start: offset, method: e instanceof ApiError && offset > 0 ? "transcode" : undefined }))
                     if (!cancelled)
-                        setStream({ url: `/api/local/transcode${qs({ path: req.path, start: sp.start.toFixed(3), audio: audioIndex, method, caps: c })}`, base: sp.start, hls: false })
+                        setStream({
+                            url: `/api/local/transcode${qs({ path: req.path, start: sp.start.toFixed(3), audio: audioIndex, method: sp.method || method, caps: c })}`,
+                            base: sp.start,
+                            hls: false,
+                        })
                 }
             } catch (e: any) {
                 if (!cancelled) setError(e.message || String(e))
@@ -337,12 +368,15 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         if (!v || !videoSrc) return
         hlsRef.current?.destroy()
         hlsRef.current = null
+        setStarted(false)
         const src = sources[sourceIdx]
         const localHls = req.kind === "local" && method !== "direct" && !!stream?.hls
         // HLS can start right where asked; the progressive stream starts at
         // its keyframe (stream.base).
         const resume = localHls ? Math.max(0, offset - stream!.base) : req.kind === "local" ? (method === "direct" ? startAt.current : 0) : startAt.current
+        expected.current = (req.kind === "local" && method !== "direct" && stream ? stream.base : offset) + resume
         const isHls = localHls || (req.kind === "stream" && (src?.type === "m3u8" || /m3u8/i.test(src?.originalUrl ?? "")))
+        let onMeta: (() => void) | null = null
         if (isHls && Hls.isSupported()) {
             // A local session's playlist grows while it's converted: give a
             // start, or players begin at its end like a live stream.
@@ -357,17 +391,31 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             })
             hls.loadSource(videoSrc)
             hls.attachMedia(v)
+            let recoveries = 0
             hls.on(Hls.Events.ERROR, (_, data) => {
                 if (!data.fatal) return
+                // A decoding hiccup: hls.js starts the decoder over, then
+                // with the audio codec swapped, before anything else.
+                if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recoveries < 2) {
+                    if (++recoveries === 2) hls.swapAudioCodec()
+                    hls.recoverMediaError()
+                    return
+                }
+                // The connection broke: the same again from there.
+                if (data.type === Hls.ErrorTypes.NETWORK_ERROR && netRetries.current < (localHls ? MAX_RETRIES : 2)) {
+                    retry()
+                    return
+                }
                 if (localHls) {
-                    // The session ended (e.g. paused for a long time): start
-                    // a new one here. Anything else: convert everything.
-                    const at = v.currentTime + (stream?.base ?? 0)
+                    // Anything else: convert everything.
+                    const at = where(v)
                     startAt.current = 0
                     setOffset(at)
-                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) setRestart(n => n + 1)
-                    else if (method === "remux") setMethod("transcode")
-                    else setError("This video could not be played (" + data.details + ")")
+                    if (method === "remux") setMethod("transcode")
+                    else {
+                        note(`the converted video can't be played here (${data.details})`)
+                        setError("This video could not be played (" + data.details + ")")
+                    }
                     return
                 }
                 if (sourceIdx + 1 < sources.length) {
@@ -379,19 +427,26 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         } else {
             v.src = videoSrc
             if (resume > 0) {
-                const onMeta = () => {
+                onMeta = () => {
                     v.currentTime = resume
-                    v.removeEventListener("loadedmetadata", onMeta)
                 }
-                v.addEventListener("loadedmetadata", onMeta)
+                v.addEventListener("loadedmetadata", onMeta, { once: true })
             }
         }
         v.volume = volume
         v.playbackRate = rate
-        v.play().catch(() => {})
+        // Not allowed to play by itself: the play button shows, not the spinner.
+        v.play().catch(e => e?.name === "NotAllowedError" && setStarted(true))
         return () => {
+            // Not this source's start for the next one.
+            if (onMeta) v.removeEventListener("loadedmetadata", onMeta)
             hlsRef.current?.destroy()
             hlsRef.current = null
+            // Let go of it: a video element left with its source keeps its
+            // connection (and the computer's conversion) and a decoder.
+            v.pause()
+            v.removeAttribute("src")
+            v.load()
         }
         // A seek within one keyframe interval sets up the same stream again:
         // it still has to reload.
@@ -406,7 +461,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     // converted too.
     useEffect(() => {
         const v = videoRef.current
-        if (!v || !videoSrc || req.kind !== "local" || pictureTries.current >= 2) return
+        // Not for a file without video (sound only).
+        if (!v || !videoSrc || req.kind !== "local" || pictureTries.current >= 2 || (probe && !probe.video?.length)) return
         // Frames shown (requestVideoFrameCallback), or else decoded.
         const rvfc = "requestVideoFrameCallback" in v
         let frames = 0
@@ -419,9 +475,16 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         const decoded = () => ("getVideoPlaybackQuality" in v ? v.getVideoPlaybackQuality().totalVideoFrames : 1)
         const shown = () => (rvfc ? frames : decoded()) > 0
         let from = -1
+        // Counted again from a seek; not while Kumo is in the background
+        // (nothing is drawn then).
+        const onSeek = () => void (from = -1)
+        v.addEventListener("seeking", onSeek)
         const timer = setInterval(() => {
             if (shown()) return clearInterval(timer)
-            if (v.paused || v.readyState < 3) return
+            if (v.paused || v.readyState < 3 || v.seeking || document.hidden) {
+                from = -1
+                return
+            }
             if (from < 0) {
                 from = v.currentTime
                 return
@@ -430,14 +493,14 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             clearInterval(timer)
             const at = absTime(v)
             const tries = ++pictureTries.current
+            const vt = probe?.video?.[0]
+            note(
+                `no picture after 3s of sound (try ${tries}, ${method}${stream?.hls ? " hls" : ""}, from ${Math.round(at)}s, ` +
+                    `${vt?.codec ?? "?"} ${vt?.height ?? "?"}p, ${decoded()} decoded, ${rvfc ? frames + " shown" : "no frame callback"}, ` +
+                    `${v.videoWidth}x${v.videoHeight}, ready ${v.readyState})`,
+            )
             if (tries === 1) {
-                startAt.current = method === "direct" ? at : 0
-                if (method !== "direct") {
-                    setStream(null)
-                    setOffset(at)
-                    setRestart(n => n + 1)
-                }
-                setVideoKey(k => k + 1)
+                reopen(at)
             } else if (decoded() === 0 && method !== "transcode") {
                 toast.info("Converting the video for this device…")
                 startAt.current = 0
@@ -447,6 +510,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         }, 500)
         return () => {
             clearInterval(timer)
+            v.removeEventListener("seeking", onSeek)
             if (rvfc && handle) v.cancelVideoFrameCallback(handle)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -517,7 +581,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             const now = Date.now()
             if (!force && now - lastReport.current < 5000) return
             lastReport.current = now
-            const position = absTime(v)
+            const position = where(v)
             const dur = duration || v.duration || 0
             if (position < 3 && !didEnd) return
             api.post("/api/playback/progress", { mediaId, episode, position, duration: dur, source, ended: didEnd, title, paused: v.paused }).catch(() => {})
@@ -558,23 +622,37 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     }
 
     // --------------------------------------------------------------- actions
+    const clampTime = (t: number) => {
+        const v = videoRef.current
+        const total = duration || v?.duration || 0
+        return Math.max(0, Math.min(total > 0 ? total - 0.5 : t, t))
+    }
+    // HLS can seek within what's converted so far.
+    const inHls = (t: number) => {
+        const v = videoRef.current
+        if (!v || !stream?.hls || !v.seekable.length) return false
+        const rel = t - stream.base
+        return rel >= 0 && rel < v.seekable.end(v.seekable.length - 1) - 1
+    }
+    // Going to t starts the converted stream over.
+    const restarts = (t: number) => req.kind === "local" && method !== "direct" && !inHls(t)
     const seekTo = (t: number) => {
         const v = videoRef.current
         if (!v) return
-        const total = duration || v.duration || 0
-        t = Math.max(0, Math.min(total > 0 ? total - 0.5 : t, t))
+        if (seekTimer.current) clearTimeout(seekTimer.current)
+        seekTimer.current = null
+        seekTarget.current = null
+        t = clampTime(t)
+        expected.current = t
         if (req.kind === "local" && method !== "direct") {
-            // HLS can seek within what's converted so far.
-            if (stream?.hls && v.seekable.length) {
-                const rel = t - stream.base
-                if (rel >= 0 && rel < v.seekable.end(v.seekable.length - 1) - 1) {
-                    v.currentTime = rel
-                    return
-                }
+            if (inHls(t)) {
+                v.currentTime = t - stream!.base
+                return
             }
             // Otherwise the stream starts over from there.
             v.pause()
             startAt.current = 0
+            setStarted(false)
             setOffset(t)
             setRestart(n => n + 1)
             setTime(t)
@@ -584,7 +662,49 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     }
     const seekBy = (d: number) => {
         const v = videoRef.current
-        if (v) seekTo(absTime(v) + d)
+        if (!v) return
+        const t = clampTime((seekTarget.current ?? where(v)) + d)
+        if (seekTarget.current === null && !restarts(t)) return seekTo(t)
+        // A restart: a moment later, from where the presses in a row end.
+        seekTarget.current = t
+        setTime(t)
+        if (seekTimer.current) clearTimeout(seekTimer.current)
+        seekTimer.current = setTimeout(() => {
+            const to = seekTarget.current
+            seekTimer.current = null
+            seekTarget.current = null
+            if (to !== null) seekTo(to)
+        }, 600)
+    }
+    useEffect(
+        () => () => {
+            if (seekTimer.current) clearTimeout(seekTimer.current)
+            if (retryTimer.current) clearTimeout(retryTimer.current)
+        },
+        [],
+    )
+    // The same video again from at, in a new video element (as closing and
+    // opening the player would).
+    const reopen = (at: number) => {
+        expected.current = at
+        startAt.current = method === "direct" || req.kind !== "local" ? at : 0
+        if (req.kind === "local" && method !== "direct") {
+            setStream(null)
+            setOffset(at)
+            setRestart(n => n + 1)
+        }
+        setVideoKey(k => k + 1)
+    }
+    // The connection broke (Wi-Fi, the computer asleep or gone): the same
+    // again from where it was, after a moment (longer each time), rather
+    // than converting it or saying it can't be played.
+    const retry = (at = where()) => {
+        const n = ++netRetries.current
+        retriedAt.current = at
+        setStarted(false)
+        toast.info(n === 1 ? "Connection lost: trying again…" : `Still trying to reach it (${n})…`)
+        if (retryTimer.current) clearTimeout(retryTimer.current)
+        retryTimer.current = setTimeout(() => reopen(at), 1000 * Math.min(8, 2 ** (n - 1)))
     }
     const togglePlay = () => {
         const v = videoRef.current
@@ -597,8 +717,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         else containerRef.current?.requestFullscreen().catch(() => {})
     }
     const changeAudio = (i: number) => {
-        const v = videoRef.current
-        const at = v ? absTime(v) : 0
+        const at = where()
         setAudioIndex(i)
         if (method === "direct") setMethod("remux")
         startAt.current = 0
@@ -634,7 +753,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     }
     const openInMpv = async () => {
         const v = videoRef.current
-        const at = v ? absTime(v) : 0
+        const at = where(v)
         try {
             if (req.kind === "local") await api.post("/api/playback/local", { path: req.path, mediaId, episode, player: "mpv", start: at })
             else {
@@ -725,11 +844,13 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     else handled = false
                     break
                 case "ArrowLeft":
-                    seekBy(tv ? -10 : -5)
+                case "ArrowRight": {
+                    // Held on a remote: bigger steps the longer it is.
+                    held.current = e.repeat ? held.current + 1 : 0
+                    const step = tv ? (held.current > 12 ? 60 : held.current > 4 ? 30 : 10) : 5
+                    seekBy(e.key === "ArrowLeft" ? -step : step)
                     break
-                case "ArrowRight":
-                    seekBy(tv ? 10 : 5)
-                    break
+                }
                 case "j":
                     seekBy(-10)
                     break
@@ -854,6 +975,9 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                 ref={videoRef}
                 className="absolute inset-0 size-full"
                 playsInline
+                // Black until the first frame (Android's WebView draws a grey
+                // one with a play button otherwise).
+                poster={BLANK}
                 crossOrigin="anonymous"
                 onClick={togglePlay}
                 onDoubleClick={toggleFullscreen}
@@ -867,11 +991,18 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     report(true)
                 }}
                 onWaiting={() => setBuffering(true)}
-                onPlaying={() => setBuffering(false)}
+                onPlaying={() => {
+                    setBuffering(false)
+                    setStarted(true)
+                }}
                 onCanPlay={() => setBuffering(false)}
                 onTimeUpdate={e => {
                     const v = e.currentTarget
-                    setTime(absTime(v))
+                    if (v.currentTime > 0) expected.current = absTime(v)
+                    // Played on well after the connection came back.
+                    if (netRetries.current && Math.abs(expected.current - retriedAt.current) > 30) netRetries.current = 0
+                    // Seeks waiting to happen show where they go.
+                    if (seekTarget.current === null) setTime(absTime(v))
                     if (v.buffered.length) setBuffered(v.buffered.end(v.buffered.length - 1) + base)
                     report()
                 }}
@@ -890,14 +1021,9 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     // episode as watched and playing the next one.
                     if (v && total > 0 && total - at > 20 && earlyEnds.current < 3) {
                         earlyEnds.current++
+                        note(`the video stopped at ${Math.round(at)}s of ${Math.round(total)}s (${method})`)
                         toast.info("The video stopped early: going on from there…")
-                        startAt.current = method === "direct" || req.kind !== "local" ? at : 0
-                        if (req.kind === "local" && method !== "direct") {
-                            setStream(null)
-                            setOffset(at)
-                            setRestart(n => n + 1)
-                        }
-                        setVideoKey(k => k + 1)
+                        reopen(at)
                         return
                     }
                     ended.current = true
@@ -905,27 +1031,48 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     if (settings?.playback.autoPlayNext && nextEp) playNext()
                 }}
                 onError={() => {
-                    if (req.kind === "local" && method === "direct") {
-                        toast.info("Switching to compatibility mode…")
-                        const v = videoRef.current
-                        startAt.current = 0
-                        setOffset(v ? v.currentTime : 0)
-                        setMethod("remux")
-                    } else if (req.kind === "local" && method === "remux") {
-                        const v = videoRef.current
-                        setOffset(v ? absTime(v) : offset)
-                        setMethod("transcode")
-                    } else if (req.kind === "stream" && !hlsRef.current) {
-                        if (sourceIdx + 1 < sources.length) setSourceIdx(i => i + 1)
-                        else setError(`This video could not be played${mediaErrorText(videoRef.current)}.`)
-                    } else if (req.kind === "local") {
-                        // Converted, and still not playable here.
-                        setError(`This device can't play the converted video${mediaErrorText(videoRef.current)}.`)
-                    }
+                    const v = videoRef.current
+                    if (!v?.error) return
+                    const code = v.error.code
+                    const at = where(v)
+                    const why = mediaErrorText(v)
+                    // The browser can't tell a video it can't fetch (the
+                    // computer asleep, the connection gone) from one it can't
+                    // play: it's fetched to see, before trying another way.
+                    const check: Promise<Fetchable> =
+                        code === MediaError.MEDIA_ERR_DECODE ? Promise.resolve("ok") : code === MediaError.MEDIA_ERR_NETWORK && !hlsRef.current ? Promise.resolve("down") : fetchable(videoSrc)
+                    check.then(state => {
+                        // Another video by now (closed, or opened again).
+                        if (videoRef.current !== v) return
+                        if (state === "down") {
+                            if (netRetries.current < MAX_RETRIES) retry(at)
+                            else {
+                                note(`the video can't be reached${why}`)
+                                setError("The video can't be reached. Is the computer that has it on, and on the network? Close the player and play it again to retry.")
+                            }
+                            return
+                        }
+                        if (req.kind === "local" && method === "direct") {
+                            toast.info("Switching to compatibility mode…")
+                            startAt.current = 0
+                            setOffset(at)
+                            setMethod("remux")
+                        } else if (req.kind === "local" && method === "remux") {
+                            setOffset(at)
+                            setMethod("transcode")
+                        } else if (req.kind === "stream" && !hlsRef.current) {
+                            if (sourceIdx + 1 < sources.length) setSourceIdx(i => i + 1)
+                            else setError(`This video could not be played${why}.`)
+                        } else if (req.kind === "local") {
+                            // Converted, and still not playable here.
+                            note(`the converted video can't be played here${why}`)
+                            setError(`This device can't play the converted video${why}.`)
+                        }
+                    })
                 }}
             />
 
-            {(loading || buffering) && !error && (
+            {(loading || buffering || !started) && !error && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
                     <Loader2 className="size-12 animate-spin text-white/80" />
                 </div>
@@ -1145,6 +1292,31 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         </div>
     )
 }
+
+// How many times a broken connection is tried again (see retry).
+const MAX_RETRIES = 6
+
+type Fetchable = "ok" | "down" | "error"
+
+// Whether a video can be fetched (its first bytes): "down" when the
+// connection fails, or the computer that has it doesn't answer.
+async function fetchable(src: string): Promise<Fetchable> {
+    if (!src) return "error"
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), 20_000)
+    try {
+        const r = await fetch(src, { headers: { Range: "bytes=0-1" }, signal: ctl.signal, credentials: "same-origin", cache: "no-store" })
+        return r.ok ? "ok" : r.status >= 502 && r.status <= 504 ? "down" : "error"
+    } catch {
+        return "down"
+    } finally {
+        clearTimeout(timer)
+        ctl.abort()
+    }
+}
+
+// An empty picture (a transparent pixel): the video's poster.
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 
 function CtrlButton({ children, onClick, label }: { children: React.ReactNode; onClick: () => void; label: string }) {
     return (

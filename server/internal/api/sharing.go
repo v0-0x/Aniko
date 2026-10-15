@@ -363,11 +363,16 @@ func (s *Server) localSeekPoint(r *http.Request) (any, error) {
 	q := r.URL.Query()
 	t, _ := strconv.ParseFloat(q.Get("t"), 64)
 	audio, _ := strconv.Atoi(q.Get("audio"))
-	start, err := s.app.Local.SeekPoint(r.Context(), q.Get("path"), t, audio, q.Get("method"), stream.ParseCaps(q.Get("caps")), q.Get("hls") == "1")
+	method := q.Get("method")
+	start, use, err := s.app.Local.Seek(r.Context(), q.Get("path"), t, audio, method, stream.ParseCaps(q.Get("caps")), q.Get("hls") == "1")
 	if err != nil {
 		return nil, err
 	}
-	return map[string]float64{"start": start}, nil
+	// The method the player asks the stream with, when not its own.
+	if use != method {
+		return map[string]any{"start": start, "method": use}, nil
+	}
+	return map[string]any{"start": start}, nil
 }
 
 func (s *Server) localSubtitle(w http.ResponseWriter, r *http.Request) {

@@ -125,6 +125,37 @@ func TestSeekPointIsTheKeyframe(t *testing.T) {
 	}
 }
 
+// A keyframe that can't be found (the file can't be read in time): the
+// stream is converted from the time asked, not copied from an unknown frame.
+func TestSeekWithoutKeyframeConverts(t *testing.T) {
+	l, video := newFfmpegLocal(t, "libx264")
+	ctx := context.Background()
+	if _, err := l.Probe(ctx, video); err != nil { // kept: only the keyframes are asked for again
+		t.Fatal(err)
+	}
+	if start, method, err := l.Seek(ctx, video, 12, 0, "remux", nil, false); err != nil || start != 10 || method != "remux" {
+		t.Fatalf("Seek = %v %q %v; want 10 remux", start, method, err)
+	}
+	cfg := l.settings.Get()
+	cfg.Transcode.FfprobePath = filepath.Join(t.TempDir(), "no-ffprobe")
+	if _, err := l.settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if start, method, err := l.Seek(ctx, video, 12, 0, "remux", nil, false); err != nil || start != 12 || method != "transcode" {
+		t.Fatalf("Seek without the keyframe = %v %q %v; want 12 transcode", start, method, err)
+	}
+	// From the start: no keyframe needed.
+	if start, method, _ := l.Seek(ctx, video, 0, 0, "remux", nil, false); start != 0 || method != "remux" {
+		t.Errorf("Seek from 0 = %v %q", start, method)
+	}
+	h := NewHLS(l, t.TempDir())
+	t.Cleanup(h.Close)
+	s, err := h.Start(ctx, HLSRequest{Path: video, Start: 12, Method: "remux"})
+	if err != nil || s.Start != 12 || s.Method != "transcode" {
+		t.Fatalf("HLS without the keyframe = %+v %v; want from 12, transcoded", s, err)
+	}
+}
+
 func probeDuration(t *testing.T, mp4 []byte) float64 {
 	t.Helper()
 	f := filepath.Join(t.TempDir(), "out.mp4")

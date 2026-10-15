@@ -268,3 +268,24 @@ func (s *Service) StopHLS(ctx context.Context, id string) {
 		resp.Body.Close()
 	}
 }
+
+// Note sends a line about a shared file's playback (what went wrong in the
+// player) to the file's host, for its log.
+func (s *Service) Note(ctx context.Context, path, text string) error {
+	p, _, err := s.hostOf(path)
+	if err != nil {
+		return err
+	}
+	body, _ := json.Marshal(map[string]string{"text": text})
+	req, err := s.request(ctx, p, http.MethodPost, "/api/peer/note", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.do(s.api, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return answerError(resp)
+}

@@ -8,6 +8,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInstaller;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.widget.Toast;
 
@@ -80,6 +82,20 @@ final class Installer {
             }
             return;
         }
+        // Copied to Android's installer away from the screen's thread (an
+        // APK of tens of MB takes a while on a TV), which then asks.
+        final File file = apk;
+        final Context app = a.getApplicationContext();
+        new Thread(() -> {
+            String failed = copy(app, file);
+            if (failed != null) {
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(app, failed, Toast.LENGTH_LONG).show());
+            }
+        }, "kumo-install").start();
+    }
+
+    /** Hands the APK to Android's installer; what went wrong, or null. */
+    private static String copy(Context a, File apk) {
         PackageInstaller installer = a.getPackageManager().getPackageInstaller();
         PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
         params.setAppPackageName(a.getPackageName());
@@ -93,7 +109,7 @@ final class Installer {
                 while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
                 session.fsync(out);
             }
-            Intent back = new Intent(a, MainActivity.class).setAction(ACTION).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            Intent back = new Intent(a, MainActivity.class).setAction(ACTION).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK)
                     .putExtra(EXTRA_SECRET, secret(a));
             int flags = PendingIntent.FLAG_UPDATE_CURRENT;
             // The installer adds the result to it.
@@ -102,9 +118,10 @@ final class Installer {
             session.commit(result.getIntentSender());
             session.close();
             session = null;
+            return null;
         } catch (IOException | RuntimeException e) {
-            Toast.makeText(a, "The update couldn't be installed: " + e.getMessage(), Toast.LENGTH_LONG).show();
             if (session != null) session.abandon();
+            return "The update couldn't be installed: " + e.getMessage();
         }
     }
 }

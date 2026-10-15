@@ -111,6 +111,22 @@ export function UpdateBanner() {
             />
         )
 
+    // Android: the update is downloaded and Android asks before installing
+    // it; asked again from here (the last time was cancelled, say).
+    if (u.state === "installing" && u.installFile && status.platform === "android")
+        return (
+            <Panel
+                icon={<Icon><Download /></Icon>}
+                title={`Kumo ${latest} is ready to install`}
+                text="Android asks before installing it. Cancelled? Press Install again."
+                actions={
+                    <Button size="sm" variant="primary" icon={<Download className="size-4" />} loading={apply.isPending} onClick={() => apply.mutate()}>
+                        Install
+                    </Button>
+                }
+            />
+        )
+
     if (busy) {
         const last = u.log?.at(-1)
         return (
