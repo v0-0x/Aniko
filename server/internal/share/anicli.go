@@ -137,7 +137,7 @@ func (r aniCliRemote) call(ctx context.Context, op string, req AniCliRequest) (*
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		return nil, fmt.Errorf("%s doesn't answer: %v", r.s.nameOf(p), err)
+		return nil, fmt.Errorf("%s doesn't answer: %s", r.s.nameOf(p), plainError(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

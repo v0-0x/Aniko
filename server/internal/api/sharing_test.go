@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -508,6 +509,20 @@ func TestDownloadsToHost(t *testing.T) {
 		t.Fatal(err)
 	}
 	eventually(t, "downloads to go to the host", asked(func() bool { return guest.app.Settings.Get().Sharing.DownloadTo == hid }))
+	// Not more than so many at once.
+	uris := make([]string, 51)
+	for i := range uris {
+		uris[i] = fmt.Sprintf("magnet:?xt=urn:btih:%040d", i)
+	}
+	many, _ := json.Marshal(map[string]any{"mediaId": 21, "uris": uris})
+	req, _ = http.NewRequest("POST", hostSrv.URL+"/api/peer/downloads/torrent", bytes.NewReader(many))
+	if err := guest.app.Share.Sign(req, hid, host.app.Share.Whoami().Key); err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("51 torrents at once: %v %v", resp, err)
+	}
 
 	// A torrent added on the guest goes to the host's torrent client (none
 	// here: its answer says so, from the host).

@@ -88,7 +88,7 @@ func (s *Service) forwardEdit(w http.ResponseWriter, r *http.Request, p *peer, m
 	resp, err := s.do(s.media, req)
 	if err != nil {
 		if r.Context().Err() == nil {
-			http.Error(w, fmt.Sprintf("%s doesn't answer: %v", s.nameOf(p), err), http.StatusBadGateway)
+			http.Error(w, fmt.Sprintf("%s doesn't answer: %v", s.nameOf(p), plainError(err)), http.StatusBadGateway)
 		}
 		return
 	}
@@ -149,8 +149,11 @@ func (s *Service) Probe(ctx context.Context, path string) (*stream.Probe, error)
 	if err != nil {
 		return nil, err
 	}
+	// A file read for the first time on a sleeping disk takes a while.
+	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
+	defer cancel()
 	var pr stream.Probe
-	if err := s.getJSON(ctx, p, "/api/peer/local/probe?"+url.Values{"path": {onHost}}.Encode(), &pr); err != nil {
+	if err := s.getJSONWith(ctx, s.slow, p, "/api/peer/local/probe?"+url.Values{"path": {onHost}}.Encode(), &pr); err != nil {
 		return nil, err
 	}
 	return &pr, nil
@@ -209,7 +212,7 @@ func (s *Service) StartHLS(ctx context.Context, req stream.HLSRequest) (*stream.
 	hr.Header.Set("Content-Type", "application/json")
 	resp, err := s.do(s.media, hr)
 	if err != nil {
-		return nil, fmt.Errorf("%s doesn't answer: %w", s.nameOf(p), err)
+		return nil, fmt.Errorf("%s doesn't answer: %s", s.nameOf(p), plainError(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -253,13 +256,16 @@ func (s *Service) ForwardHLS(w http.ResponseWriter, r *http.Request, id, name st
 	s.forwardEdit(w, r, p, http.MethodGet, "/api/peer/local/hls/"+url.PathEscape(session)+"/"+url.PathEscape(name), nil, edit)
 }
 
-// StopHLS ends an HLS session on its host.
+// StopHLS ends an HLS session on its host, also when the player that asked
+// is gone already (closed): the host would go on converting.
 func (s *Service) StopHLS(ctx context.Context, id string) {
 	host, session, ok := remoteSession(id)
 	p := s.host(host)
 	if !ok || p == nil {
 		return
 	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
 	req, err := s.request(ctx, p, http.MethodDelete, "/api/peer/local/hls/"+url.PathEscape(session), nil)
 	if err != nil {
 		return

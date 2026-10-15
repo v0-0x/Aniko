@@ -92,7 +92,9 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) serve(ln net.Listener, addr string) {
-	srv := &http.Server{Handler: s.middleware(s.mux), ReadHeaderTimeout: 15 * time.Second}
+	// Connections left open by phones and TVs on the network don't pile up;
+	// streams take as long as they take (no write timeout).
+	srv := &http.Server{Handler: s.middleware(s.mux), ReadHeaderTimeout: 15 * time.Second, IdleTimeout: 2 * time.Minute}
 	s.mu.Lock()
 	s.srv, s.addr = srv, addr
 	s.mu.Unlock()

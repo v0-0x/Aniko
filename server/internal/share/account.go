@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"slices"
+	"time"
 )
 
 // A host can share its AniList login with a Kumo it shares its library with
@@ -98,10 +99,13 @@ func (s *Service) saveAccount(st accountState) {
 
 // AccountHost is the host whose AniList login this Kumo uses ("": none).
 func (s *Service) AccountHost() string {
-	s.accountMu.Lock()
-	defer s.accountMu.Unlock()
+	// Not under accountMu: taking an account holds it over the network,
+	// and Settings asks this every few seconds.
 	return s.loadAccount().Host
 }
+
+// How long after failing to take a host's AniList account it's tried again.
+const accountRetry = 5 * time.Minute
 
 // followAccount follows what a host says of its AniList login (tag, "" when
 // it doesn't share it).
@@ -125,10 +129,20 @@ func (s *Service) followAccount(ctx context.Context, p *peer, tag string) {
 			log.Printf("sharing: %s's AniList account: %v", s.nameOf(p), err)
 		}
 	case tag != "" && !using && s.accountToken() == "" && !slices.Contains(st.Declined, p.id):
+		// It failed lately (AniList didn't answer): not again at each
+		// question, but every few minutes.
+		if t, ok := s.accountFailed[p.id+"|"+tag]; ok && time.Since(t) < accountRetry {
+			return
+		}
 		if err := s.takeAccount(ctx, p, tag, &st); err != nil {
+			if s.accountFailed == nil {
+				s.accountFailed = map[string]time.Time{}
+			}
+			s.accountFailed[p.id+"|"+tag] = time.Now()
 			log.Printf("sharing: %s's AniList account: %v", s.nameOf(p), err)
 			return
 		}
+		delete(s.accountFailed, p.id+"|"+tag)
 		s.hub.Success("Logged into AniList with " + s.nameOf(p) + "'s account.")
 	}
 }

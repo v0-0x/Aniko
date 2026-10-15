@@ -109,7 +109,7 @@ func (s *Service) SendDownload(ctx context.Context, kind string, what any) (stri
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := s.do(s.api, req)
 	if err != nil {
-		return "", fmt.Errorf("%s doesn't answer: %w", name, err)
+		return "", fmt.Errorf("%s doesn't answer: %s", name, plainError(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -175,7 +175,7 @@ func (s *Service) askDownloadHost(ctx context.Context, path string, body any) (r
 	}
 	resp, err := s.do(s.api, req)
 	if err != nil {
-		return nil, name, true, fmt.Errorf("%s doesn't answer: %w", name, err)
+		return nil, name, true, fmt.Errorf("%s doesn't answer: %s", name, plainError(err))
 	}
 	defer resp.Body.Close()
 	raw, err = io.ReadAll(io.LimitReader(resp.Body, 16<<20))

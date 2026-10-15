@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"slices"
 	"sort"
@@ -39,6 +40,13 @@ const (
 	// A Kumo that proved who it is this lately keeps its address: beacons
 	// don't move it (see heard).
 	verifiedFor = time.Minute
+	// How often Settings (open) has the others asked again (they answer
+	// from their library's version, read at most every few seconds).
+	refreshEvery = 3 * time.Second
+	// How many Kumos only heard of (not paired, not added by hand) are kept.
+	maxStrangers = 64
+	// The largest request body read from a Kumo that isn't paired.
+	maxUnpairedBody = 1 << 20
 	// Failed requests in a row after which a host's library is gone.
 	maxFails = 3
 )
@@ -91,6 +99,13 @@ type Service struct {
 	DropAccount  func()
 
 	accountMu sync.Mutex
+	// When taking a host's AniList account last failed, by host (it isn't
+	// tried again at every question for a while).
+	accountFailed map[string]time.Time
+	// The library's version for the others (sharedVersion).
+	versionMu sync.Mutex
+	version   string
+	versionAt time.Time
 
 	pushMu    sync.Mutex
 	pending   map[[2]int]history.Entry
@@ -430,6 +445,7 @@ func (s *Service) heard(b beacon, from net.IP) {
 	r := s.running
 	p, known := s.peers[b.ID]
 	if !known {
+		s.makeRoom()
 		p = &peer{id: b.ID, pub: pub}
 		s.peers[b.ID] = p
 	}
@@ -437,15 +453,19 @@ func (s *Service) heard(b beacon, from net.IP) {
 	wasOnline := p.online(now)
 	p.name, p.version, p.seen = cleanName(b.Name), b.Version, now
 	// One added by hand keeps its address, and one that proved who it is
-	// lately too: anyone can repeat its beacons from elsewhere.
-	if p.manual == "" && now.Sub(p.verified) > verifiedFor && (!p.addr.Equal(from) || p.port != b.Port) {
+	// lately too: anyone can repeat its beacons from elsewhere. Unless it
+	// doesn't answer there (its address changed, say): then where it says.
+	moved := !p.addr.Equal(from) || p.port != b.Port
+	failing := p.fails > 0
+	if moved && (failing || p.manual == "" && now.Sub(p.verified) > verifiedFor) {
 		p.addr, p.port = from, b.Port
 		if p.allowed || p.shares {
 			s.save()
 		}
 	}
-	// Anyone can repeat a beacon: at most every 2 seconds.
-	ask := b.Ask && now.Sub(p.asked) > 2*time.Second
+	// Anyone can repeat a beacon: at most every 2 seconds. One that didn't
+	// answer is asked again at once when it's heard from.
+	ask := (b.Ask || failing && moved) && now.Sub(p.asked) > 2*time.Second
 	if ask {
 		p.asked = time.Time{}
 	}
@@ -493,6 +513,17 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 	if !isLocalNetwork(ip) {
 		return Caller{}, errors.New("not from the local network")
 	}
+	// A large body is read (to check it) only from a Kumo paired with this
+	// one: anyone else could have it read megabytes for nothing.
+	if r.ContentLength > maxUnpairedBody || r.ContentLength < 0 && r.Body != nil && r.Body != http.NoBody {
+		s.mu.Lock()
+		p := s.peers[r.Header.Get(headerID)]
+		paired := p != nil && p.paired()
+		s.mu.Unlock()
+		if !paired {
+			return Caller{}, errors.New("too large")
+		}
+	}
 	now := time.Now()
 	c, sig, err := s.id.verify(r, now)
 	if sig != nil {
@@ -508,6 +539,7 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 	s.mu.Lock()
 	p, known := s.peers[c.id]
 	if !known {
+		s.makeRoom()
 		p = &peer{id: c.id, pub: c.pub}
 		s.peers[c.id] = p
 	}
@@ -515,11 +547,15 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 	if c.name != "" {
 		p.name = c.name
 	}
-	// Where it answers, unless it was added by hand.
-	if c.port > 0 && c.port <= 65535 && p.manual == "" {
-		p.addr, p.port = ip, c.port
+	// Where it answers, unless it was added by hand, or the request is a
+	// ticket (mpv's, repeated for hours, maybe from another address).
+	if !c.ticket {
+		if c.port > 0 && c.port <= 65535 && p.manual == "" {
+			p.addr, p.port = ip, c.port
+		}
+		p.verified = now
 	}
-	p.seen, p.verified = now, now
+	p.seen = now
 	if p.callerUser != c.user {
 		p.callerUser = c.user
 		if p.paired() {
@@ -616,8 +652,7 @@ type Hello struct {
 func (s *Service) Hello(c Caller) Hello {
 	h := Hello{ID: s.id.ID, Name: s.Name(), Key: s.id.PublicKey(), Version: config.AppVersion, Shares: c.Allowed}
 	if c.Allowed {
-		files, _ := s.SharedFiles()
-		h.Files = filesVersion(files)
+		h.Files = s.sharedVersion()
 		h.User = s.user()
 		if c.Account {
 			h.Account = accountTag(s.accountToken())
@@ -648,6 +683,19 @@ func (s *Service) SharedFiles() ([]*library.LocalFile, error) {
 		}
 	}
 	return out, nil
+}
+
+// sharedVersion is filesVersion of SharedFiles, read again at most every
+// few seconds: each Kumo it shares with asks for it.
+func (s *Service) sharedVersion() string {
+	s.versionMu.Lock()
+	defer s.versionMu.Unlock()
+	if time.Since(s.versionAt) < 5*time.Second && s.version != "" {
+		return s.version
+	}
+	files, _ := s.SharedFiles()
+	s.version, s.versionAt = filesVersion(files), time.Now()
+	return s.version
 }
 
 // Shares reports a file this Kumo shares (see SharedFiles).
@@ -722,6 +770,10 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	changed, visible := false, false
 	if err != nil {
 		p.fails++
+		// Added by name: maybe at another address now (a new DHCP lease).
+		if p.manual != "" && p.fails%2 == 0 {
+			go s.resolveManual(p)
+		}
 		if p.fails == maxFails {
 			visible = true
 			if p.files != nil {
@@ -1048,6 +1100,14 @@ func plainError(err error) string {
 	if errors.As(err, &oe) {
 		return "it isn't reachable"
 	}
+	// Not the request's address (a file's path on that computer, say).
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		if errors.Is(ue.Err, io.EOF) || errors.Is(ue.Err, io.ErrUnexpectedEOF) {
+			return "the connection closed"
+		}
+		return ue.Err.Error()
+	}
 	return err.Error()
 }
 
@@ -1176,6 +1236,7 @@ func (s *Service) do(c *http.Client, req *http.Request) (*http.Response, error) 
 		if sr == nil {
 			return nil, errors.New("unsigned request")
 		}
+		sent := time.Now()
 		resp, err := c.Do(req)
 		if err != nil {
 			return nil, err
@@ -1186,9 +1247,12 @@ func (s *Service) do(c *http.Client, req *http.Request) (*http.Response, error) 
 			resp.Body.Close()
 			return nil, fmt.Errorf("the answer can't be checked as %s's (is the latest Kumo running there, with library sharing on?)", s.nameOf(sr.p))
 		}
+		// The host dates its answer as it gets the request (Verify), however
+		// long the answer then takes (a file read from a sleeping disk):
+		// against when it was sent, not when the answer came.
 		off := sr.offset
 		if t, err := http.ParseTime(date); err == nil {
-			off = time.Until(t).Round(time.Second)
+			off = t.Sub(sent).Round(time.Second)
 		}
 		s.mu.Lock()
 		sr.p.verified, sr.p.offset = time.Now(), off
@@ -1222,11 +1286,15 @@ func (s *Service) Sign(req *http.Request, hostID, hostKey string) error {
 }
 
 func (s *Service) getJSON(ctx context.Context, p *peer, path string, out any) error {
+	return s.getJSONWith(ctx, s.api, p, path, out)
+}
+
+func (s *Service) getJSONWith(ctx context.Context, c *http.Client, p *peer, path string, out any) error {
 	req, err := s.request(ctx, p, http.MethodGet, path, nil)
 	if err != nil {
 		return err
 	}
-	resp, err := s.do(s.api, req)
+	resp, err := s.do(c, req)
 	if err != nil {
 		return err
 	}
@@ -1343,6 +1411,13 @@ func (s *Service) view(p *peer, now time.Time) PeerView {
 	if v.Name == "" {
 		v.Name = "Kumo " + p.id[:6]
 	}
+	// Two named alike (two Fire TVs): told apart. Must be called with mu held.
+	for _, o := range s.peers {
+		if o != p && o.name != "" && strings.EqualFold(o.name, p.name) {
+			v.Name += " (" + p.id[:4] + ")"
+			break
+		}
+	}
 	if p.fails >= maxFails {
 		v.Error = "Not answering"
 	}
@@ -1458,12 +1533,59 @@ func (s *Service) Refresh() {
 	now := time.Now()
 	s.mu.Lock()
 	for _, p := range s.peers {
-		if now.Sub(p.asked) > 3*time.Second {
+		if now.Sub(p.asked) > refreshEvery {
 			p.asked = time.Time{}
 		}
 	}
 	s.mu.Unlock()
 	s.wake()
+}
+
+// resolveManual finds a Kumo added by name (not an address) again.
+func (s *Service) resolveManual(p *peer) {
+	s.mu.Lock()
+	manual := p.manual
+	s.mu.Unlock()
+	host, portStr, err := net.SplitHostPort(manual)
+	if err != nil || net.ParseIP(host) != nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	ips, err := net.DefaultResolver.LookupIP(ctx, "ip4", host)
+	if err != nil || len(ips) == 0 || !isLocalNetwork(ips[0]) {
+		return
+	}
+	port, _ := strconv.Atoi(portStr)
+	s.mu.Lock()
+	if p.manual == manual && !p.addr.Equal(ips[0]) {
+		p.addr, p.port, p.asked = ips[0], port, time.Time{}
+		s.save()
+		log.Printf("sharing: %s is at %s now", manual, ips[0])
+	}
+	s.mu.Unlock()
+	s.wake()
+}
+
+// makeRoom keeps the Kumos this one only heard of to a few: anyone on the
+// network can make up new ones. Must be called with mu held.
+func (s *Service) makeRoom() {
+	var strangers []*peer
+	for _, p := range s.peers {
+		if !p.paired() && p.manual == "" {
+			strangers = append(strangers, p)
+		}
+	}
+	if len(strangers) < maxStrangers {
+		return
+	}
+	oldest := strangers[0]
+	for _, p := range strangers[1:] {
+		if p.lastAround().Before(oldest.lastAround()) {
+			oldest = p
+		}
+	}
+	delete(s.peers, oldest.id)
 }
 
 // Forget removes a Kumo from the list (one added by hand, or gone).

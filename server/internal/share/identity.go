@@ -324,6 +324,8 @@ type caller struct {
 	id, name   string
 	pub        []byte
 	port, user int
+	// ticket: a request mpv repeats (see isTicket), maybe from elsewhere.
+	ticket bool
 }
 
 // isTicket reports a request mpv may repeat: a GET of a shared file.
@@ -374,6 +376,7 @@ func (id *Identity) verify(r *http.Request, now time.Time) (*caller, *signature,
 		return nil, sig, errReplay
 	}
 	c.pub = pub
+	c.ticket = nonce == ""
 	c.name, _ = url.QueryUnescape(r.Header.Get(headerName))
 	c.name = cleanName(c.name)
 	c.port, _ = strconv.Atoi(r.Header.Get(headerPort))

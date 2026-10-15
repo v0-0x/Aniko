@@ -1007,13 +1007,9 @@ func (s *Server) torrentAdd(r *http.Request) (any, error) {
 		}
 		return map[string]string{"host": host}, nil
 	}
-	title := ""
-	if body.MediaID > 0 {
-		if media, err := s.app.Platform.MediaLite(r.Context(), body.MediaID); err == nil {
-			title = media.FolderTitle()
-		}
-	}
-	return nil, s.app.Torrents.Add(r.Context(), []string{body.Magnet}, s.app.Torrents.SavePathFor(title))
+	// Into the anime's folder, where its other episodes are (addTorrents).
+	_, err := s.addTorrents(r.Context(), body.MediaID, []string{body.Magnet})
+	return nil, err
 }
 
 func (s *Server) saveRule(r *http.Request) (any, error) {

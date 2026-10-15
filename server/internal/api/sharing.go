@@ -305,6 +305,12 @@ func (s *Server) peerRoutes() {
 
 // peerDownload downloads what a Kumo allowed to download onto this one asks
 // for, into this one's library (which it shares back).
+// What a Kumo may download onto this one in one go.
+const (
+	maxPeerEpisodes = 200
+	maxPeerTorrents = 50
+)
+
 func (s *Server) peerDownload(r *http.Request) (any, error) {
 	c := peerOf(r)
 	if !c.Downloads {
@@ -319,6 +325,10 @@ func (s *Server) peerDownload(r *http.Request) (any, error) {
 		var body share.StreamDownload
 		if err := decode(r, &body); err != nil {
 			return nil, err
+		}
+		// A season at a time, not the whole of One Piece by mistake.
+		if len(body.Episodes) > maxPeerEpisodes {
+			return nil, badRequest(fmt.Sprintf("at most %d episodes at once", maxPeerEpisodes))
 		}
 		items, err := s.queueStreamDownload(r.Context(), body)
 		if err != nil {
@@ -338,6 +348,9 @@ func (s *Server) peerDownload(r *http.Request) (any, error) {
 		}
 		if len(body.URIs) == 0 {
 			return nil, badRequest("nothing to download")
+		}
+		if len(body.URIs) > maxPeerTorrents {
+			return nil, badRequest(fmt.Sprintf("at most %d torrents at once", maxPeerTorrents))
 		}
 		save, err := s.addTorrents(r.Context(), body.MediaID, body.URIs)
 		if err != nil {
