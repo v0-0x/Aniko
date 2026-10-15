@@ -781,7 +781,11 @@ func TestPlayerNoteReachesTheHost(t *testing.T) {
 	remote := share.RemotePath(host.app.Share.ID(), path)
 
 	// Not shared with yet: only the guest's log.
-	if w := do(guest, "POST", "/api/playback/note", local, `{"path":"`+remote+`","text":"first\nnote"}`, nil); w.Code != http.StatusOK {
+	note := func(path, text string) *httptest.ResponseRecorder {
+		b, _ := json.Marshal(map[string]string{"path": path, "text": text})
+		return do(guest, "POST", "/api/playback/note", local, string(b), nil)
+	}
+	if w := note(remote, "first\nnote"); w.Code != http.StatusOK {
 		t.Fatalf("note: %d %s", w.Code, w.Body)
 	}
 	eventually(t, "the note in the guest's log", func() bool { return seen("player: first note") })
@@ -798,10 +802,10 @@ func TestPlayerNoteReachesTheHost(t *testing.T) {
 		return len(guest.app.Share.Libraries()) == 1
 	})
 	time.Sleep(2100 * time.Millisecond) // one note every 2 seconds
-	do(guest, "POST", "/api/playback/note", local, `{"path":"`+remote+`","text":"no picture"}`, nil)
+	note(remote, "no picture")
 	eventually(t, "the note in the host's log", func() bool { return seen(": no picture") && seen("sharing: the player on") })
 	// Not more than one every 2 seconds.
-	do(guest, "POST", "/api/playback/note", local, `{"path":"","text":"too soon"}`, nil)
+	note("", "too soon")
 	time.Sleep(300 * time.Millisecond)
 	if seen("too soon") {
 		t.Error("notes aren't limited")
