@@ -115,7 +115,7 @@ function RuleCard({ rule, onEdit }: { rule: AutoRule; onEdit: () => void }) {
     }
     return (
         <div className="card flex items-center gap-4 p-3 pr-4">
-            {media?.media && <img src={cover(media.media)} alt="" className="h-20 w-14 rounded-lg object-cover" />}
+            {media?.media && <img src={cover(media.media, "thumb")} alt="" className="h-20 w-14 rounded-lg object-cover" />}
             <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{media?.media ? title(media.media) : rule.title}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">

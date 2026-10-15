@@ -60,7 +60,7 @@ export function MediaPicker({
                         }}
                         className="flex items-center gap-4 rounded-xl p-2 text-left transition hover:bg-white/[0.06]"
                     >
-                        <img src={cover(m)} alt="" className="h-16 w-11 rounded-lg object-cover" />
+                        <img src={cover(m, "thumb")} alt="" className="h-16 w-11 rounded-lg object-cover" />
                         <div className="min-w-0 flex-1">
                             <p className="truncate font-semibold">{title(m)}</p>
                             <p className="truncate text-sm text-muted">

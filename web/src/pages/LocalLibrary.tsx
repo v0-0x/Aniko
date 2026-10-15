@@ -414,7 +414,7 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
         <div className="card overflow-hidden">
             <div className="flex items-center gap-4 p-3 pr-4">
                 <Link to={entryUrl(m)} className="shrink-0">
-                    <img src={cover(m)} alt="" loading="lazy" className="h-24 w-16 rounded-lg object-cover ring-1 ring-line" style={{ backgroundColor: m.coverImage?.color || undefined }} />
+                    <img src={cover(m, "thumb")} alt="" loading="lazy" className="h-24 w-16 rounded-lg object-cover ring-1 ring-line" style={{ backgroundColor: m.coverImage?.color || undefined }} />
                 </Link>
                 <div className="min-w-0 flex-1">
                     <Link to={entryUrl(m)} className="line-clamp-1 text-[15px] font-semibold hover:underline">

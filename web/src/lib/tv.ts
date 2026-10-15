@@ -112,26 +112,54 @@ function scope(): HTMLElement {
     return document.body
 }
 
-function candidates(root: HTMLElement, current: Element | null = null): HTMLElement[] {
+// What a D-pad press looks at, measured once per press (a TV is slow at
+// it): where each focusable thing is, and styles as they're needed.
+type Look = { rect: (el: Element) => DOMRect; style: (el: Element) => CSSStyleDeclaration }
+
+function look(): Look {
+    const rects = new Map<Element, DOMRect>()
+    const styles = new Map<Element, CSSStyleDeclaration>()
+    return {
+        rect: el => {
+            let r = rects.get(el)
+            if (!r) rects.set(el, (r = el.getBoundingClientRect()))
+            return r
+        },
+        style: el => {
+            let st = styles.get(el)
+            if (!st) styles.set(el, (st = getComputedStyle(el)))
+            return st
+        },
+    }
+}
+
+// The focusable things in root that are on the page at all (cheap checks).
+function focusables(root: HTMLElement, l: Look): HTMLElement[] {
     return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => {
         if (el.closest('[aria-hidden="true"], [inert], [data-tv-skip-nav]')) return false
-        const r = el.getBoundingClientRect()
-        if (r.width < 2 || r.height < 2) return false
-        const cs = getComputedStyle(el)
-        if (cs.visibility === "hidden" || cs.display === "none") return false
-        for (let n: HTMLElement | null = el; n && n !== root; n = n.parentElement) {
-            const ns = getComputedStyle(n)
-            // Shown only on mouse hover (a card's extra buttons): not on a TV.
-            if (ns.opacity === "0") return false
-            // Scrolled out of a row (or a list) the focus isn't in: as far
-            // as the remote goes, it isn't there. In it, it's next in line.
-            if (n !== el && (ns.overflowX !== "visible" || ns.overflowY !== "visible") && !(current && n.contains(current))) {
-                const b = n.getBoundingClientRect()
-                if (r.right <= b.left || r.left >= b.right || r.bottom <= b.top || r.top >= b.bottom) return false
-            }
-        }
-        return true
+        const r = l.rect(el)
+        return r.width >= 2 && r.height >= 2
     })
+}
+
+// Whether the remote can go to it (the costly checks, made only for the
+// ones it might go to).
+function reachable(el: HTMLElement, root: HTMLElement, current: Element | null, l: Look): boolean {
+    const r = l.rect(el)
+    const cs = l.style(el)
+    if (cs.visibility === "hidden" || cs.display === "none") return false
+    for (let n: HTMLElement | null = el; n && n !== root; n = n.parentElement) {
+        const ns = l.style(n)
+        // Shown only on mouse hover (a card's extra buttons): not on a TV.
+        if (ns.opacity === "0") return false
+        // Scrolled out of a row (or a list) the focus isn't in: as far
+        // as the remote goes, it isn't there. In it, it's next in line.
+        if (n !== el && (ns.overflowX !== "visible" || ns.overflowY !== "visible") && !(current && n.contains(current))) {
+            const b = l.rect(n)
+            if (r.right <= b.left || r.left >= b.right || r.bottom <= b.top || r.top >= b.bottom) return false
+        }
+    }
+    return true
 }
 
 // The area something is in: a menu at the side (the app's, a page's), or
@@ -143,15 +171,14 @@ const areaOf = (el: Element | null) => (inSidebar(el) ? el!.closest("aside") : (
 
 // The nearest candidate in a direction: the closest along it, much
 // preferring those in line with the focused one (the same row or column).
-function nearest(from: DOMRect, dir: Dir, cands: HTMLElement[], current: Element | null): HTMLElement | null {
+function nearest(from: DOMRect, dir: Dir, cands: HTMLElement[], current: Element | null, l: Look, ok: (el: HTMLElement) => boolean): HTMLElement | null {
     const fx = from.left + from.width / 2
     const fy = from.top + from.height / 2
     const area = areaOf(current)
-    let best: HTMLElement | null = null
-    let bestScore = Infinity
+    const ranked: { el: HTMLElement; score: number }[] = []
     for (const el of cands) {
         if (el === current || el.contains(current) || (current && current.contains(el))) continue
-        const r = el.getBoundingClientRect()
+        const r = l.rect(el)
         const cx = r.left + r.width / 2
         const cy = r.top + r.height / 2
         let along: number, across: number, offset: number
@@ -188,12 +215,11 @@ function nearest(from: DOMRect, dir: Dir, cands: HTMLElement[], current: Element
         if ((dir === "up" || dir === "down") && inSidebar(el) !== inSidebar(current)) continue
         let score = along + across * 0.6 + offset * 0.1
         if ((dir === "up" || dir === "down") && otherArea) score += 100000
-        if (score < bestScore) {
-            bestScore = score
-            best = el
-        }
+        ranked.push({ el, score })
     }
-    return best
+    // The nearest the remote can go to.
+    ranked.sort((a, b) => a.score - b.score)
+    return ranked.find(c => ok(c.el))?.el ?? null
 }
 
 // The distance between two ranges (0 when they overlap).
@@ -203,9 +229,9 @@ function gap(a1: number, a2: number, b1: number, b2: number) {
 
 // Where the focus starts: what's on screen nearest the top left of the page
 // (not the sidebar), when nothing is focused yet.
-function first(cands: HTMLElement[]): HTMLElement | null {
+function first(cands: HTMLElement[], l: Look): HTMLElement | null {
     const onScreen = cands.filter(el => {
-        const r = el.getBoundingClientRect()
+        const r = l.rect(el)
         return r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth
     })
     const pool = onScreen.length ? onScreen : cands
@@ -214,7 +240,7 @@ function first(cands: HTMLElement[]): HTMLElement | null {
     let best: HTMLElement | null = null
     let bestScore = Infinity
     for (const el of inMain.length ? inMain : pool) {
-        const r = el.getBoundingClientRect()
+        const r = l.rect(el)
         const score = r.top * 2 + r.left
         if (score < bestScore) {
             bestScore = score
@@ -236,13 +262,15 @@ export function focusEl(el: HTMLElement) {
 // move moves the focus in a direction; false when there's nowhere to go.
 export function move(dir: Dir, root: HTMLElement = scope()): boolean {
     const current = document.activeElement as HTMLElement | null
-    const cands = candidates(root, current)
-    const inside = current && current !== document.body && root.contains(current) && cands.includes(current)
-    let next = inside ? nearest(current!.getBoundingClientRect(), dir, cands, current) : first(cands)
+    const l = look()
+    const cands = focusables(root, l)
+    const ok = (el: HTMLElement) => reachable(el, root, current, l)
+    const inside = current && current !== document.body && root.contains(current) && cands.includes(current) && ok(current)
+    let next = inside ? nearest(l.rect(current!), dir, cands, current, l, ok) : first(cands.filter(ok), l)
     if (!next) return false
     // Into the sidebar: at the page that's open.
     if (inSidebar(next) && !inSidebar(current)) {
-        const open = cands.find(el => inSidebar(el) && el.getAttribute("aria-current") === "page")
+        const open = cands.find(el => inSidebar(el) && el.getAttribute("aria-current") === "page" && ok(el))
         if (open) next = open
     }
     focusEl(next)

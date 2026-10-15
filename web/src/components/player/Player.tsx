@@ -109,6 +109,10 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     const seekTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     // How long Left/Right has been held (bigger steps).
     const held = useRef(0)
+    // The second shown, and the buffered end: drawn again when they change,
+    // not at each of the video's time updates (a TV is slow at it).
+    const shownSecond = useRef(-1)
+    const shownBuffered = useRef(-1)
     // stream
     const [sources, setSources] = useState<StreamSource[]>([])
     const [sourceIdx, setSourceIdx] = useState(0)
@@ -1018,8 +1022,16 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     // Played on well after the connection came back.
                     if (netRetries.current && Math.abs(expected.current - retriedAt.current) > 30) netRetries.current = 0
                     // Seeks waiting to happen show where they go.
-                    if (seekTarget.current === null) setTime(absTime(v))
-                    if (v.buffered.length) setBuffered(v.buffered.end(v.buffered.length - 1) + base)
+                    const now = absTime(v)
+                    if (seekTarget.current === null && Math.floor(now) !== shownSecond.current) {
+                        shownSecond.current = Math.floor(now)
+                        setTime(now)
+                    }
+                    const end = v.buffered.length ? v.buffered.end(v.buffered.length - 1) + base : 0
+                    if (Math.abs(end - shownBuffered.current) >= 1) {
+                        shownBuffered.current = end
+                        setBuffered(end)
+                    }
                     report()
                 }}
                 onLoadedMetadata={e => {

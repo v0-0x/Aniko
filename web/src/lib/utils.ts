@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { Media } from "./types"
+import { tv } from "./tv"
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -41,8 +42,13 @@ export function img(url?: string | null) {
     return url
 }
 
-export function cover(m?: Media | null) {
-    return img(m?.coverImage?.extraLarge || m?.coverImage?.large || m?.coverImage?.medium || "")
+// A cover the size it's shown: "poster" (an anime's page), "card" (a grid's;
+// on a TV the smaller one does, at its scale, and takes a quarter of the
+// memory), "thumb" (small, in lists).
+export function cover(m?: Media | null, size: "poster" | "card" | "thumb" = "card") {
+    const c = m?.coverImage
+    const big = size === "poster" || (size === "card" && !tv)
+    return img((big ? c?.extraLarge || c?.large : c?.large || c?.extraLarge) || c?.medium || "")
 }
 
 export function banner(m?: Media | null) {

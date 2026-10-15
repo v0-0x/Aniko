@@ -13,7 +13,7 @@ import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { usePlay } from "@/lib/play"
 import { fetchLanguageMode, useCollection, useScan, useStatus } from "@/lib/queries"
-import { scanStore, useStore } from "@/lib/store"
+import { createStore, scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
 import { androidApp } from "@/lib/tv"
 import { banner, cn, cover, img as imgUrl, title } from "@/lib/utils"
@@ -36,10 +36,6 @@ export default function HomePage() {
     const libraryMenu = useLibraryCardMenu()
 
     const continueItems = data?.continueWatching ?? []
-    const [heroIdx, setHeroIdx] = useState(0)
-    // Removing items can leave the index past the end.
-    const heroAt = Math.min(heroIdx, Math.max(0, continueItems.length - 1))
-    const hero = continueItems[heroAt] ?? null
 
     const filterItems = (items: CollectionItem[]) => {
         let out = items
@@ -136,10 +132,7 @@ export default function HomePage() {
         <div className="relative min-h-full pb-24">
             <UpdateBanner />
             <Hero
-                item={hero}
-                count={continueItems.length}
-                index={heroAt}
-                onIndex={setHeroIdx}
+                items={continueItems}
                 loading={isLoading}
                 toolbar={
                     <div className="glass flex items-center gap-0.5 rounded-lg p-1 [&_button]:text-white/80 [&_button:hover]:bg-white/10 [&_button:hover]:text-white [&_button[data-state=open]]:bg-white/10">
@@ -224,7 +217,7 @@ export default function HomePage() {
                 <PluginSlot slot="after-home-screen-toolbar" />
                 <ProgramsNotice />
 
-                {continueItems.length > 0 && <ContinueRow items={continueItems} onFocus={setHeroIdx} />}
+                {continueItems.length > 0 && <ContinueRow items={continueItems} onFocus={heroStore.set} />}
                 {isLoading && (
                     <div className="flex gap-5">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -301,7 +294,16 @@ export default function HomePage() {
     )
 }
 
-function Hero({ item, count, index, onIndex, loading, toolbar }: { item: ContinueItem | null; count: number; index: number; onIndex: (i: number) => void; loading: boolean; toolbar: React.ReactNode }) {
+// Which Continue watching item the banner shows: its own store, so moving
+// along the row (a TV remote's) redraws the banner, not the whole page.
+const heroStore = createStore(0)
+
+function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boolean; toolbar: React.ReactNode }) {
+    // Removing items can leave the index past the end.
+    const count = items.length
+    const index = Math.min(useStore(heroStore), Math.max(0, count - 1))
+    const item = items[index] ?? null
+    const onIndex = heroStore.set
     // The sharp AniList banner, like the anime page: episode thumbnails are
     // often small, blurry screenshots.
     const img = !item ? "" : item.media.bannerImage ? banner(item.media) : imgUrl(item.image) || cover(item.media)

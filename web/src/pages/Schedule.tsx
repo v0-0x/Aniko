@@ -73,7 +73,7 @@ export default function SchedulePage() {
                                     const aired = it.airingAt < now
                                     return (
                                         <Link key={it.id} to={`/entry?id=${it.media.id}`} className={cn("card group flex items-center gap-4 overflow-hidden p-0 transition hover:border-line-strong", aired && "opacity-60")}>
-                                            <img src={cover(it.media)} alt="" loading="lazy" className="h-24 w-16 shrink-0 object-cover" />
+                                            <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-24 w-16 shrink-0 object-cover" />
                                             <div className="min-w-0 flex-1 py-3">
                                                 <p className="truncate font-semibold group-hover:text-white">{title(it.media)}</p>
                                                 <p className="mt-0.5 text-sm text-muted">

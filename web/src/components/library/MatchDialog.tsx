@@ -158,7 +158,7 @@ export function MatchDialog({
         >
             {target && (
                 <div className="flex items-center gap-4 rounded-xl border border-line bg-surface-2/60 p-3">
-                    <img src={cover(target)} alt="" className="h-20 w-14 rounded-lg object-cover" />
+                    <img src={cover(target, "thumb")} alt="" className="h-20 w-14 rounded-lg object-cover" />
                     <div className="min-w-0">
                         <p className="truncate font-semibold">{title(target)}</p>
                         <p className="text-sm text-muted">{[formatLabel(target.format), target.seasonYear, total ? `${total} episodes` : ""].filter(Boolean).join(" · ")}</p>
