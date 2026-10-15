@@ -713,6 +713,9 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	s.mu.Lock()
 	p.asking = false
 	if ctx.Err() != nil {
+		// Sharing stopped or started over meanwhile (its settings
+		// changed): the next run asks again at once, not 30s later.
+		p.asked = time.Time{}
 		s.mu.Unlock()
 		return
 	}
