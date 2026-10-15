@@ -333,7 +333,9 @@ func (a *App) wire() {
 
 	anilist.SetTitleLanguage(a.Settings.Get().UI.TitleLanguage)
 	a.Settings.OnChange(func(old, cur config.Settings) {
-		anilist.SetTitleLanguage(cur.UI.TitleLanguage)
+		// Listeners run apart: two saves close together may arrive in either
+		// order, so what's set follows the settings now.
+		anilist.SetTitleLanguage(a.Settings.Get().UI.TitleLanguage)
 		if !cur.Discord.RichPresence || cur.Discord.ClientID != old.Discord.ClientID {
 			clearPresence() // turned off: don't leave "Watching…" behind
 		}
@@ -413,11 +415,13 @@ func (a *App) Start() {
 
 func (a *App) Shutdown() {
 	a.cancel()
+	// The player first: it saves where it stopped, which sharing then sends
+	// to the other Kumos before it stops.
+	a.Player.Stop()
 	a.Share.Stop()
 	a.Update.Stop()
 	a.HLS.Close()
 	a.Scanner.StopWatcher()
-	a.Player.Stop()
 	a.Discord.Clear()
 	a.Extensions.Shutdown()
 	_ = a.DB.Close()

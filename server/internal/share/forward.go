@@ -113,24 +113,32 @@ func (s *Service) forwardEdit(w http.ResponseWriter, r *http.Request, p *peer, m
 		return
 	}
 	w.WriteHeader(resp.StatusCode)
-	copyFlushing(w, resp.Body)
+	if err := copyFlushing(w, resp.Body); err != nil && r.Context().Err() == nil {
+		// The host stopped answering midway: the player must see the
+		// stream broken, not ended (it would count the episode as watched).
+		panic(http.ErrAbortHandler)
+	}
 }
 
 // copyFlushing copies a stream as it comes (a video being converted comes
-// slowly at first).
-func copyFlushing(w http.ResponseWriter, r io.Reader) {
+// slowly at first). It returns why the stream from the host stopped early
+// (nil at its end, or when the player went away).
+func copyFlushing(w http.ResponseWriter, r io.Reader) error {
 	rc := http.NewResponseController(w)
 	buf := make([]byte, 128<<10)
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
 			if _, werr := w.Write(buf[:n]); werr != nil {
-				return
+				return nil
 			}
 			_ = rc.Flush()
 		}
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
 		if err != nil {
-			return
+			return err
 		}
 	}
 }

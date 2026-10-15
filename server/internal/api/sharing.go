@@ -114,7 +114,16 @@ func (s *Server) peerRoutes() {
 		if !peerOf(r).SameUser {
 			return nil, forbidden("not logged into the same AniList account")
 		}
-		since, _ := strconv.ParseInt(r.URL.Query().Get("since"), 10, 64)
+		q := r.URL.Query()
+		switch {
+		case q.Get("latest") == "1":
+			return s.app.Share.HistoryLatest(), nil
+		case q.Has("after"):
+			after, _ := strconv.ParseInt(q.Get("after"), 10, 64)
+			return s.app.Share.HistoryAfter(after), nil
+		}
+		// An older Kumo asks by time.
+		since, _ := strconv.ParseInt(q.Get("since"), 10, 64)
 		return s.app.Share.HistorySince(since), nil
 	})))
 	// And where it's watching (this Kumo's files, or any), as it happens.
@@ -255,7 +264,7 @@ func (s *Server) peerRoutes() {
 		}
 		_, aerr := s.app.Platform.Collection(ctx, "ANIME", true)
 		s.app.Hub.Publish("history-updated", nil)
-		out := map[string]any{"devices": res.Devices, "unreachable": res.Unreachable, "updated": res.Updated, "anilist": aerr == nil}
+		out := map[string]any{"devices": res.Devices, "unreachable": res.Unreachable, "skipped": res.Skipped, "updated": res.Updated, "anilist": aerr == nil}
 		if aerr != nil {
 			out["anilistError"] = aerr.Error()
 		}

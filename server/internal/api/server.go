@@ -34,6 +34,8 @@ type Server struct {
 	addr string
 	// Wrong server passwords, by address (serverLogin).
 	logins loginGuard
+	// One rebind at a time (Start).
+	rebindMu sync.Mutex
 	// ForceWebUI is set when no desktop shell can exist (headless mode).
 	ForceWebUI bool
 	// AppOnly: on this device other apps reach 127.0.0.1 too (Android), so
@@ -66,12 +68,19 @@ func (s *Server) Start() error {
 	}
 	s.serve(ln, addr)
 	s.app.Settings.OnChange(func(old, cur config.Settings) {
-		next := ListenAddr(cur)
-		if next == ListenAddr(old) {
+		if ListenAddr(cur) == ListenAddr(old) {
+			return
+		}
+		time.Sleep(500 * time.Millisecond) // let the settings response reach the client
+		// Where the settings say now: listeners run apart, and two saves
+		// close together may arrive in either order.
+		s.rebindMu.Lock()
+		defer s.rebindMu.Unlock()
+		next := ListenAddr(s.app.Settings.Get())
+		if next == s.Addr() {
 			return
 		}
 		log.Printf("network settings changed, rebinding to %s", next)
-		time.Sleep(500 * time.Millisecond) // let the settings response reach the client
 		if err := s.rebind(next); err != nil {
 			log.Printf("rebind failed: %v", err)
 			s.app.Hub.Error("Could not listen on " + next + ": " + err.Error())

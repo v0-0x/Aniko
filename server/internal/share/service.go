@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/simo1337s/animetest/server/internal/config"
@@ -52,7 +53,9 @@ type Library interface {
 // Kumos on the same AniList account keep in step (see syncHistory).
 type History interface {
 	Since(t int64, limit int) []*history.Entry
-	Merge(e history.Entry) (bool, error)
+	After(seq int64, limit int) []*history.Entry
+	Latest(limit int) []*history.Entry
+	MergeAll(entries []history.Entry) ([]history.Entry, error)
 }
 
 type Service struct {
@@ -128,8 +131,9 @@ type peer struct {
 	asked    time.Time
 	asking   bool
 	fails    int
-	// historySince: the newest of its history entries this Kumo has.
-	historySince int64
+	// historySeq: the last of its history entries (in the order it stored
+	// them) this Kumo has; pushedSeq: the last of this Kumo's it sent it.
+	historySeq, pushedSeq int64
 	// user: the AniList account it's logged into, as it told (it shares
 	// with this Kumo).
 	user int
@@ -245,6 +249,11 @@ type savedPeer struct {
 	Downloads bool `json:"downloads,omitempty"`
 	// It takes this Kumo's downloads (it shares, see downloads.go).
 	TakesDownloads bool `json:"takesDownloads,omitempty"`
+	// Its AniList account, as it told; where the watch histories are at.
+	User       int   `json:"user,omitempty"`
+	CallerUser int   `json:"callerUser,omitempty"`
+	HistorySeq int64 `json:"historySeq,omitempty"`
+	PushedSeq  int64 `json:"pushedSeq,omitempty"`
 }
 
 func (s *Service) load() {
@@ -261,6 +270,7 @@ func (s *Service) load() {
 			id: id, name: sp.Name, pub: pub, addr: net.ParseIP(sp.Addr), port: sp.Port,
 			manual: sp.Manual, allowed: sp.Allowed, shares: sp.Shares, lastSeen: time.Unix(sp.Seen, 0),
 			account: sp.Account, downloads: sp.Downloads, hostDownloads: sp.TakesDownloads,
+			user: sp.User, callerUser: sp.CallerUser, historySeq: sp.HistorySeq, pushedSeq: sp.PushedSeq,
 		}
 	}
 }
@@ -277,6 +287,7 @@ func (s *Service) save() {
 		sp := savedPeer{
 			Name: p.name, Key: base64.StdEncoding.EncodeToString(p.pub), Port: p.port, Manual: p.manual, Allowed: p.allowed, Shares: p.shares, Seen: p.lastAround().Unix(),
 			Account: p.account, Downloads: p.downloads, TakesDownloads: p.hostDownloads,
+			User: p.user, CallerUser: p.callerUser, HistorySeq: p.historySeq, PushedSeq: p.pushedSeq,
 		}
 		if p.addr != nil {
 			sp.Addr = p.addr.String()
@@ -296,13 +307,18 @@ func (s *Service) Start() {
 	s.apply(s.settings.Get())
 	s.settings.OnChange(func(old, cur config.Settings) {
 		if old.Sharing.Enabled != cur.Sharing.Enabled || old.Sharing.Name != cur.Sharing.Name || old.Server.Port != cur.Server.Port {
-			s.apply(cur)
+			// The settings now, not these: listeners run apart, and two
+			// saves close together may arrive in either order.
+			s.apply(s.settings.Get())
 		}
 	})
 }
 
 // Stop ends sharing (Kumo is quitting).
-func (s *Service) Stop() { s.apply(config.Settings{}) }
+func (s *Service) Stop() {
+	s.flushPush()
+	s.apply(config.Settings{})
+}
 
 func (s *Service) apply(cfg config.Settings) {
 	s.applyMu.Lock()
@@ -504,7 +520,12 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 		p.addr, p.port = ip, c.port
 	}
 	p.seen, p.verified = now, now
-	p.callerUser = c.user
+	if p.callerUser != c.user {
+		p.callerUser = c.user
+		if p.paired() {
+			s.save()
+		}
+	}
 	caller := Caller{ID: p.id, Name: p.name, Allowed: p.allowed, Account: p.allowed && p.account, Downloads: p.allowed && p.downloads, Paired: p.paired()}
 	s.mu.Unlock()
 	if !wasOnline {
@@ -529,6 +550,31 @@ func (s *Service) HistorySince(t int64) []*history.Entry {
 		return []*history.Entry{}
 	}
 	out := s.History.Since(t, historyBatch)
+	if out == nil {
+		out = []*history.Entry{}
+	}
+	return out
+}
+
+// HistoryAfter is this Kumo's watch history stored after seq (see
+// history.Store.After), for another Kumo on the same account.
+func (s *Service) HistoryAfter(seq int64) []*history.Entry {
+	if s.History == nil {
+		return []*history.Entry{}
+	}
+	out := s.History.After(seq, historyBatch)
+	if out == nil {
+		out = []*history.Entry{}
+	}
+	return out
+}
+
+// HistoryLatest is the latest of this Kumo's watch history (Sync).
+func (s *Service) HistoryLatest() []*history.Entry {
+	if s.History == nil {
+		return []*history.Entry{}
+	}
+	out := s.History.Latest(historyBatch)
 	if out == nil {
 		out = []*history.Entry{}
 	}
@@ -736,6 +782,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	}
 	if h.Shares && h.User > 0 && h.User == s.user() {
 		s.syncHistory(ctx, p)
+		s.pushMissed(ctx, p)
 	}
 }
 
@@ -788,20 +835,85 @@ func (s *Service) pushHistory() {
 	}
 	s.mu.Unlock()
 	body, _ := json.Marshal(entries)
+	var wg sync.WaitGroup
 	for _, p := range to {
+		wg.Add(1)
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer wg.Done()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			req, err := s.request(ctx, p, http.MethodPost, "/api/peer/history", bytes.NewReader(body))
-			if err != nil {
-				return
-			}
-			req.Header.Set("Content-Type", "application/json")
-			if resp, err := s.do(s.api, req); err == nil {
-				resp.Body.Close()
-			}
+			_ = s.sendHistory(ctx, p, body)
 		}()
 	}
+	wg.Wait()
+}
+
+// flushPush sends the positions waiting to go (pushHistory) now: Kumo is
+// closing, and the last one saved would be lost otherwise.
+func (s *Service) flushPush() {
+	s.pushMu.Lock()
+	if s.pushTimer != nil {
+		s.pushTimer.Stop()
+	}
+	waiting := len(s.pending) > 0
+	s.pushMu.Unlock()
+	if waiting {
+		s.pushHistory()
+	}
+}
+
+// pushMissed sends a host on the same account what this Kumo stored since
+// the last it sent it: what didn't reach it as it was saved (it was away),
+// or came from another Kumo.
+func (s *Service) pushMissed(ctx context.Context, p *peer) {
+	if s.History == nil {
+		return
+	}
+	s.mu.Lock()
+	after := p.pushedSeq
+	s.mu.Unlock()
+	entries := s.History.After(after, historyBatch)
+	if len(entries) == 0 {
+		return
+	}
+	body, err := json.Marshal(entries)
+	if err != nil || s.sendHistory(ctx, p, body) != nil {
+		return
+	}
+	s.mu.Lock()
+	p.pushedSeq = max(p.pushedSeq, entries[len(entries)-1].Seq)
+	s.save()
+	s.mu.Unlock()
+}
+
+// sendHistory sends positions (JSON) to a Kumo on the same account.
+func (s *Service) sendHistory(ctx context.Context, p *peer, body []byte) error {
+	req, err := s.request(ctx, p, http.MethodPost, "/api/peer/history", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.do(s.api, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return answerError(resp)
+}
+
+// answerError is what a Kumo's answer (not OK) says went wrong, in words.
+func answerError(resp *http.Response) error {
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+	var e struct {
+		Error string `json:"error"`
+	}
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if json.Unmarshal(raw, &e) != nil || e.Error == "" {
+		e.Error = resp.Status
+	}
+	return errors.New(e.Error)
 }
 
 // Paired names the Kumos this one is paired with (it shares its library
@@ -824,24 +936,23 @@ func (s *Service) Paired() []string {
 
 // SyncResult is what SyncNow did.
 type SyncResult struct {
-	// Devices: the Kumos synced with; Unreachable: those that didn't answer.
+	// Devices: the Kumos synced with. Unreachable: those that couldn't be
+	// (why, after the name). Skipped: paired Kumos not synced with (why).
 	Devices     []string `json:"devices"`
 	Unreachable []string `json:"unreachable"`
+	Skipped     []string `json:"skipped"`
 	// Updated: the positions that changed here.
 	Updated int `json:"updated"`
 }
 
-// How far back SyncNow goes.
-const syncFor = 180 * 24 * time.Hour
-
 // SyncNow brings this Kumo's watch history in step with the Kumos it's
 // paired with on the same AniList account, both ways, now: each takes what
-// the other has newer, and Continue watching goes on from where an episode
-// was stopped on any of them. As it goes, a guest sends its positions to its
-// hosts when they're saved and takes theirs every askEvery, which misses
-// what was saved while the other was away.
+// the other has newer (the latest stored on each), and Continue watching
+// goes on from where an episode was stopped on any of them. As it goes, a
+// guest takes its hosts' positions every askEvery and sends them its own,
+// which this does at once.
 func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
-	res := SyncResult{Devices: []string{}, Unreachable: []string{}}
+	res := SyncResult{Devices: []string{}, Unreachable: []string{}, Skipped: []string{}}
 	me := s.user()
 	if s.History == nil || !s.settings.Get().Sharing.Enabled {
 		return res, nil
@@ -849,20 +960,33 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 	s.mu.Lock()
 	var with []*peer
 	for _, p := range s.peers {
-		if p.paired() && p.addr != nil && p.port > 0 && me > 0 && (p.user == me || p.callerUser == me) {
+		if !p.paired() {
+			continue
+		}
+		user := p.user
+		if user == 0 {
+			user = p.callerUser
+		}
+		switch {
+		case me == 0:
+		case user == 0:
+			res.Skipped = append(res.Skipped, p.displayName()+" (it hasn't said its AniList account yet: open Kumo there)")
+		case user != me:
+			res.Skipped = append(res.Skipped, p.displayName()+" (another AniList account)")
+		case p.addr == nil || p.port <= 0:
+			res.Unreachable = append(res.Unreachable, p.displayName()+" (its address isn't known yet)")
+		default:
 			with = append(with, p)
 		}
 	}
 	s.mu.Unlock()
-	if len(with) == 0 {
-		if me == 0 && len(s.Paired()) > 0 {
+	if me == 0 {
+		if len(s.Paired()) > 0 {
 			return res, errors.New("log in to AniList: watch history is kept in step between devices on the same AniList account")
 		}
 		return res, nil
 	}
-	since := time.Now().Add(-syncFor).Unix()
-	mine := s.History.Since(since, historyBatch)
-	body, err := json.Marshal(mine)
+	body, err := json.Marshal(s.History.Latest(historyBatch))
 	if err != nil {
 		return res, err
 	}
@@ -878,36 +1002,18 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 			ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 			defer cancel()
 			var theirs []*history.Entry
-			err := s.getJSON(ctx, p, "/api/peer/history?since="+strconv.FormatInt(since, 10), &theirs)
+			err := s.getJSON(ctx, p, "/api/peer/history?latest=1", &theirs)
 			if err == nil {
-				var req *http.Request
-				if req, err = s.request(ctx, p, http.MethodPost, "/api/peer/history", bytes.NewReader(body)); err == nil {
-					req.Header.Set("Content-Type", "application/json")
-					var resp *http.Response
-					if resp, err = s.do(s.api, req); err == nil {
-						resp.Body.Close()
-						if resp.StatusCode != http.StatusOK {
-							err = errors.New(resp.Status)
-						}
-					}
-				}
+				err = s.sendHistory(ctx, p, body)
 			}
 			if err != nil {
 				log.Printf("sharing: sync with %s: %v", name, err)
 				mu.Lock()
-				res.Unreachable = append(res.Unreachable, name)
+				res.Unreachable = append(res.Unreachable, name+" ("+plainError(err)+")")
 				mu.Unlock()
 				return
 			}
-			merged := 0
-			for _, e := range theirs {
-				if e == nil {
-					continue
-				}
-				if ok, err := s.History.Merge(*e); err == nil && ok {
-					merged++
-				}
-			}
+			merged := s.merge(theirs)
 			mu.Lock()
 			res.Devices = append(res.Devices, name)
 			res.Updated += merged
@@ -917,10 +1023,29 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 	wg.Wait()
 	sort.Strings(res.Devices)
 	sort.Strings(res.Unreachable)
+	sort.Strings(res.Skipped)
 	if res.Updated > 0 {
 		s.hub.Publish("history-updated", nil)
 	}
 	return res, nil
+}
+
+// plainError says what went wrong talking to another Kumo, in a few words.
+func plainError(err error) string {
+	var ne net.Error
+	switch {
+	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &ne) && ne.Timeout()):
+		return "it didn't answer in time"
+	case errors.Is(err, syscall.ECONNREFUSED):
+		return "Kumo isn't running there"
+	case errors.Is(err, syscall.EHOSTUNREACH) || errors.Is(err, syscall.ENETUNREACH):
+		return "it isn't on the network"
+	}
+	var oe *net.OpError
+	if errors.As(err, &oe) {
+		return "it isn't reachable"
+	}
+	return err.Error()
 }
 
 // TakeHistory merges positions another Kumo on the same account sent
@@ -929,14 +1054,15 @@ func (s *Service) TakeHistory(entries []history.Entry) {
 	if s.History == nil {
 		return
 	}
-	merged, finished := 0, false
-	for _, e := range entries {
-		if ok, err := s.History.Merge(e); err == nil && ok {
-			merged++
-			finished = finished || e.Percent() >= 0.85
-		}
+	merged, err := s.History.MergeAll(entries)
+	if err != nil {
+		log.Printf("sharing: history: %v", err)
 	}
-	if merged > 0 {
+	finished := false
+	for _, e := range merged {
+		finished = finished || e.Percent() >= 0.85
+	}
+	if len(merged) > 0 {
 		s.hub.Publish("history-updated", nil)
 	}
 	if finished && s.OnWatchedElsewhere != nil {
@@ -944,34 +1070,50 @@ func (s *Service) TakeHistory(entries []history.Entry) {
 	}
 }
 
+// merge takes positions from another Kumo, and says how many changed here.
+func (s *Service) merge(entries []*history.Entry) int {
+	in := make([]history.Entry, 0, len(entries))
+	for _, e := range entries {
+		if e != nil {
+			in = append(in, *e)
+		}
+	}
+	merged, err := s.History.MergeAll(in)
+	if err != nil {
+		log.Printf("sharing: history: %v", err)
+	}
+	return len(merged)
+}
+
 // syncHistory takes what's newer in a host's watch history, both being
 // logged into the same AniList account: where each episode was stopped,
 // and when it was watched. Continue watching then goes on from there,
-// to the second; the list itself (progress) is AniList's.
+// to the second; the list itself (progress) is AniList's. It asks for what
+// the host stored after the last it took, whatever their times (one from
+// another Kumo comes late with an older time).
 func (s *Service) syncHistory(ctx context.Context, p *peer) {
 	if s.History == nil {
 		return
 	}
 	s.mu.Lock()
-	since := p.historySince
+	after := p.historySeq
 	s.mu.Unlock()
 	var entries []*history.Entry
-	if err := s.getJSON(ctx, p, "/api/peer/history?since="+strconv.FormatInt(since, 10), &entries); err != nil {
+	if err := s.getJSON(ctx, p, "/api/peer/history?after="+strconv.FormatInt(after, 10), &entries); err != nil {
 		return
 	}
-	merged := 0
-	newest := since
+	merged := s.merge(entries)
+	last := after
 	for _, e := range entries {
-		if e == nil {
-			continue
+		if e != nil {
+			last = max(last, e.Seq)
 		}
-		if ok, err := s.History.Merge(*e); err == nil && ok {
-			merged++
-		}
-		newest = max(newest, e.UpdatedAt)
 	}
 	s.mu.Lock()
-	p.historySince = max(p.historySince, newest)
+	if last > p.historySeq {
+		p.historySeq = last
+		s.save()
+	}
 	s.mu.Unlock()
 	if merged > 0 {
 		s.hub.Publish("history-updated", nil)
@@ -1276,6 +1418,11 @@ func (s *Service) SetGrants(id string, g Grants) error {
 	if ok {
 		if g.Allowed != nil {
 			p.allowed = *g.Allowed
+			// Not shared with any more: nor what came with it, which
+			// sharing again mustn't give back unasked.
+			if !p.allowed {
+				p.account, p.downloads = false, false
+			}
 		}
 		if g.Account != nil {
 			p.account = *g.Account
@@ -1325,10 +1472,27 @@ func (s *Service) Forget(id string) {
 		s.save()
 	}
 	s.mu.Unlock()
-	if ok {
-		s.publish(p.files != nil)
-		s.hub.Publish("sharing-updated", nil)
+	if !ok {
+		return
 	}
+	// Nothing of it stays: where downloads went, its AniList login.
+	if cfg := s.settings.Get(); cfg.Sharing.DownloadTo == id {
+		cfg.Sharing.DownloadTo = ""
+		if _, err := s.settings.Save(cfg); err != nil {
+			log.Printf("sharing: %v", err)
+		}
+	}
+	s.accountMu.Lock()
+	if st := s.loadAccount(); st.Host == id {
+		if s.DropAccount != nil {
+			s.DropAccount()
+		}
+		st.Host, st.Tag = "", ""
+		s.saveAccount(st)
+	}
+	s.accountMu.Unlock()
+	s.publish(p.files != nil)
+	s.hub.Publish("sharing-updated", nil)
 }
 
 // Connect adds a Kumo by its address, for networks where they can't find

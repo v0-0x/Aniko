@@ -327,3 +327,15 @@ func TestAppOnly(t *testing.T) {
 		t.Errorf("the app's window: %d", w.Code)
 	}
 }
+
+// A torrent action names its torrents: with none, the clients would act on
+// all of them (and "remove and delete files" delete every download).
+func TestTorrentActionNeedsHashes(t *testing.T) {
+	s := newTestServer(t)
+	local := "127.0.0.1:5000"
+	for _, body := range []string{`{"action":"removeData"}`, `{"action":"removeData","hashes":[]}`, `{"action":"removeData","hashes":["all"]}`, `{"action":"pause","hashes":["1"]}`} {
+		if w := do(s, "POST", "/api/torrent-client/action", local, body, nil); w.Code != http.StatusBadRequest || !strings.Contains(errorOf(w), "torrent") {
+			t.Errorf("%s: %d %s", body, w.Code, w.Body)
+		}
+	}
+}

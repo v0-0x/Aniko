@@ -641,3 +641,95 @@ func TestSyncNow(t *testing.T) {
 		t.Errorf("an unpaired Kumo read the history: %v %v", resp, err)
 	}
 }
+
+// What the usual exchange missed comes over later by itself: a position
+// saved on the guest before the host shared with it, one the host took
+// late from a third Kumo (with an older time), and the last one saved as
+// the guest quits.
+func TestHistoryCatchesUp(t *testing.T) {
+	const local = "127.0.0.1:5000"
+	host, hostSrv := sharingServer(t)
+	guest, _ := sharingServer(t)
+	for _, s := range []*Server{host, guest} {
+		s.app.Share.User = func() int { return 42 }
+	}
+	addr := strings.TrimPrefix(hostSrv.URL, "http://")
+	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("connect: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	asked := func(ok func() bool) func() bool {
+		return func() bool { do(guest, "GET", "/api/sharing", local, "", nil); return ok() }
+	}
+	has := func(s *Server, ep int, pos float64) func() bool {
+		return func() bool { e := s.app.History.Get(21, ep); return e != nil && e.Position == pos }
+	}
+
+	// Saved on the guest while the host didn't share with it: not sent then.
+	if err := guest.app.History.Save(history.Entry{MediaID: 21, Episode: 8, Position: 500, Duration: 1420, Source: "local"}); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(2500 * time.Millisecond)
+	if has(host, 8, 500)() {
+		t.Fatal("sent to a Kumo that doesn't share with this one")
+	}
+	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the missed position to reach the host", asked(has(host, 8, 500)))
+
+	// Taken by the host from another Kumo after the guest had asked, with
+	// an hour-old time: the guest still gets it.
+	if _, err := host.app.History.Merge(history.Entry{MediaID: 21, Episode: 9, Position: 250, Duration: 1420, Source: "local", UpdatedAt: time.Now().Add(-time.Hour).Unix()}); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the late position to reach the guest", asked(has(guest, 9, 250)))
+
+	// Saved as the guest quits: sent before it stops, not 2 seconds later.
+	if err := guest.app.History.Save(history.Entry{MediaID: 21, Episode: 10, Position: 610, Duration: 1420, Source: "local"}); err != nil {
+		t.Fatal(err)
+	}
+	guest.app.Share.Stop()
+	if !has(host, 10, 610)() {
+		t.Fatal("the last position didn't go before the guest stopped")
+	}
+}
+
+// Forgetting a host leaves nothing of it: downloads don't go there any
+// more. Not sharing with a Kumo any more drops what came with it, which
+// sharing again doesn't give back.
+func TestForgetAndUnshareDropGrants(t *testing.T) {
+	const local = "127.0.0.1:5000"
+	host, hostSrv := sharingServer(t)
+	guest, _ := sharingServer(t)
+	addr := strings.TrimPrefix(hostSrv.URL, "http://")
+	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("connect: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	gid, hid := guest.app.Share.ID(), host.app.Share.ID()
+	yes := true
+	if err := host.app.Share.SetGrants(gid, share.Grants{Allowed: &yes, Account: &yes, Downloads: &yes}); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "downloads to go to the host", func() bool {
+		do(guest, "GET", "/api/sharing", local, "", nil)
+		return guest.app.Settings.Get().Sharing.DownloadTo == hid
+	})
+	guest.app.Share.Forget(hid)
+	if to := guest.app.Settings.Get().Sharing.DownloadTo; to != "" {
+		t.Errorf("downloads still go to a forgotten Kumo: %q", to)
+	}
+
+	if err := host.app.Share.SetAllowed(gid, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := host.app.Share.SetAllowed(gid, true); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range host.app.Share.Status().Peers {
+		if p.ID == gid && (p.Account || p.Downloads) {
+			t.Errorf("shared again with what came before: %+v", p)
+		}
+	}
+}

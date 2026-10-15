@@ -139,7 +139,49 @@ func Open(path string) (*DB, error) {
 			return nil, fmt.Errorf("migrate: %w", err)
 		}
 	}
+	for _, c := range columns {
+		if err := addColumn(conn, c.table, c.name, c.def); err != nil {
+			return nil, fmt.Errorf("migrate: %w", err)
+		}
+	}
+	for _, stmt := range afterColumns {
+		if _, err := conn.Exec(stmt); err != nil {
+			return nil, fmt.Errorf("migrate: %w", err)
+		}
+	}
 	return &DB{DB: conn}, nil
+}
+
+// columns are added to tables made by an older Kumo.
+var columns = []struct{ table, name, def string }{
+	// The order this Kumo stored each position in (see history.Store): the
+	// others on the same account ask for what came after what they have.
+	{"watch_history", "seq", "INTEGER NOT NULL DEFAULT 0"},
+}
+
+var afterColumns = []string{
+	`CREATE INDEX IF NOT EXISTS idx_watch_history_seq ON watch_history(seq)`,
+	// Positions stored before there was an order: by their time.
+	`UPDATE watch_history SET seq = updated_at WHERE seq = 0`,
+}
+
+func addColumn(conn *sql.DB, table, name, def string) error {
+	rows, err := conn.Query(`SELECT name FROM pragma_table_info(?)`, table)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var n string
+		if rows.Scan(&n) == nil && n == name {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	_, err = conn.Exec(`ALTER TABLE ` + table + ` ADD COLUMN ` + name + ` ` + def)
+	return err
 }
 
 // Exec runs a write statement while holding the writer lock.

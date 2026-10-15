@@ -91,6 +91,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     // A new <video> element (see the picture watchdog).
     const [videoKey, setVideoKey] = useState(0)
     const pictureTries = useRef(0)
+    // Streams that stopped early, opened again (see onEnded).
+    const earlyEnds = useRef(0)
     // stream
     const [sources, setSources] = useState<StreamSource[]>([])
     const [sourceIdx, setSourceIdx] = useState(0)
@@ -879,6 +881,25 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                 }}
                 onEnded={() => {
                     if (ended.current) return
+                    const v = videoRef.current
+                    const at = v ? absTime(v) : 0
+                    const total = duration || (v && Number.isFinite(v.duration) ? v.duration : 0)
+                    // Stopped well before the episode's end: the stream broke
+                    // (the computer went to sleep, its connection dropped), it
+                    // didn't end. Go on from there, rather than counting the
+                    // episode as watched and playing the next one.
+                    if (v && total > 0 && total - at > 20 && earlyEnds.current < 3) {
+                        earlyEnds.current++
+                        toast.info("The video stopped early: going on from there…")
+                        startAt.current = method === "direct" || req.kind !== "local" ? at : 0
+                        if (req.kind === "local" && method !== "direct") {
+                            setStream(null)
+                            setOffset(at)
+                            setRestart(n => n + 1)
+                        }
+                        setVideoKey(k => k + 1)
+                        return
+                    }
                     ended.current = true
                     report(true, true)
                     if (settings?.playback.autoPlayNext && nextEp) playNext()

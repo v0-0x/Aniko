@@ -99,17 +99,23 @@ export default function HomePage() {
         setSyncing(true)
         const id = toast.loading(`Syncing with ${paired.join(", ")}…`)
         try {
-            const res = await api.post<{ devices: string[]; unreachable: string[]; updated: number; anilist: boolean; anilistError?: string }>("/api/sharing/sync")
+            const res = await api.post<{ devices: string[]; unreachable: string[]; skipped?: string[]; updated: number; anilist: boolean; anilistError?: string }>(
+                "/api/sharing/sync",
+            )
             qc.invalidateQueries({ queryKey: ["collection"] })
             qc.invalidateQueries({ queryKey: ["entry"] })
-            const missed = res.unreachable.length ? ` ${res.unreachable.join(", ")} didn't answer (is it on, with Kumo open?).` : ""
-            if (res.devices.length === 0 && res.unreachable.length > 0) {
-                toast.error(`Couldn't sync:${missed}`, { id })
-            } else if (res.devices.length === 0) {
-                toast.success(res.anilist ? "Synced with AniList" : "Nothing to sync with", { id })
+            // What didn't go as it should, each with why (the server says).
+            const notes = [
+                ...res.unreachable.map(d => `Couldn't sync with ${d}.`),
+                ...(res.skipped ?? []).map(d => `Not synced with ${d}.`),
+                ...(res.anilistError ? [`AniList: ${res.anilistError}`] : []),
+            ].join(" ")
+            if (res.devices.length === 0) {
+                if (notes) toast.error(notes, { id })
+                else toast.success("Synced with AniList", { id })
             } else {
                 const what = res.updated > 0 ? `${res.updated} position${res.updated === 1 ? "" : "s"} updated` : "already up to date"
-                toast.success(`Synced with ${res.devices.join(", ")}: ${what}.${missed}`, { id })
+                toast.success(`Synced with ${res.devices.join(", ")}: ${what}.${notes ? " " + notes : ""}`, { id })
             }
         } catch (e: any) {
             toast.error(e.message, { id })

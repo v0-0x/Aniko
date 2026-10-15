@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -933,6 +934,9 @@ func (s *Server) torrentList(r *http.Request) (any, error) {
 	return list, nil
 }
 
+// torrentHash is a torrent's info hash (v1, or v2 for qBittorrent).
+var torrentHash = regexp.MustCompile(`^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$`)
+
 func (s *Server) torrentAction(r *http.Request) (any, error) {
 	var body struct {
 		Hashes []string `json:"hashes"`
@@ -940,6 +944,16 @@ func (s *Server) torrentAction(r *http.Request) (any, error) {
 	}
 	if err := decode(r, &body); err != nil {
 		return nil, err
+	}
+	// Each torrent by its hash: none (or "all") is every torrent to the
+	// clients, and "remove and delete files" would take them all.
+	if len(body.Hashes) == 0 {
+		return nil, badRequest("no torrent given")
+	}
+	for _, h := range body.Hashes {
+		if !torrentHash.MatchString(h) {
+			return nil, badRequest("not a torrent: " + h)
+		}
 	}
 	c, err := s.app.Torrents.Client()
 	if err != nil {
