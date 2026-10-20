@@ -44,6 +44,7 @@ import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
 import { accentPreviewStore, useStore } from "@/lib/store"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
+import { systemNotifications } from "@/lib/alerts"
 import { androidApp, setTvWidth, TV_WIDTHS, tv, tvWidth } from "@/lib/tv"
 import type { Settings, SharingPeer, Status } from "@/lib/types"
 import { cn, compareVersions, copyText, formatBytes, img, relativeTime } from "@/lib/utils"
@@ -581,6 +582,8 @@ function AppSection({ draft, set }: SectionProps) {
                 {!isDesktop && !lan && !androidApp && <p className="px-4 py-3 text-xs text-amber-200/80">Turning the Web UI off is only possible from the desktop app, so you can't lock yourself out.</p>}
             </Group>
 
+            <AlertsGroup draft={draft} set={set} />
+
             <Group title="Library sharing">
                 <Row label="Share libraries with Kumo on your other computers" help={draft.sharing.enabled ? "On: who gets this computer's library, and the libraries shared with it, are in Devices." : "In Devices: turn it on there, on each computer."}>
                     <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "devices" })}>
@@ -726,6 +729,33 @@ function ProgramsGroup() {
                     <InstallProgramsButton />
                 </Row>
             )}
+        </Group>
+    )
+}
+
+// Alerts: an episode of what's being watched aired, one is ready in the
+// library. A toast, or a notification of the system when Kumo isn't in front
+// (the desktop app's, also with its window closed; a browser's once allowed).
+function AlertsGroup({ draft, set }: SectionProps) {
+    const notify = draft.notify ?? { newEpisodes: true, downloads: true }
+    const [permission, setPermission] = useState(systemNotifications)
+    const desktopApp = !!desktop
+    return (
+        <Group title="Alerts" description="Muted with the bell next to Settings, like Kumo's other messages.">
+            <Row label="New episodes" help="When an episode of an anime you're watching comes out.">
+                <Switch checked={notify.newEpisodes} onChange={v => set("notify", { ...notify, newEpisodes: v })} />
+            </Row>
+            <Row label="Episodes ready to watch" help="When a download finishes, or new episodes show up in your library (a torrent that finished).">
+                <Switch checked={notify.downloads} onChange={v => set("notify", { ...notify, downloads: v })} />
+            </Row>
+            {!desktopApp && !androidApp && permission === "default" && (
+                <Row label="Notifications of this browser" help="So alerts show while Kumo's tab isn't in front.">
+                    <Button size="sm" onClick={() => Notification.requestPermission().then(() => setPermission(systemNotifications()))}>
+                        Allow
+                    </Button>
+                </Row>
+            )}
+            {!desktopApp && !androidApp && permission === "denied" && <p className="px-4 py-3 text-xs text-subtle">This browser blocks Kumo's notifications: alerts show in Kumo only (allow them in the site's settings).</p>}
         </Group>
     )
 }

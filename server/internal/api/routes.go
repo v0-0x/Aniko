@@ -32,6 +32,15 @@ func (s *Server) routes() {
 	// --- core
 	m.HandleFunc("GET /api/status", h(s.status))
 	m.HandleFunc("GET /api/settings", h(func(r *http.Request) (any, error) { return settingsFor(r, s.app.Settings.Get()), nil }))
+	// The Stats page: what was watched in Kumo, month by month.
+	m.HandleFunc("GET /api/stats/monthly", h(func(r *http.Request) (any, error) {
+		n := queryInt(r, "months")
+		if n <= 0 {
+			n = 12
+		}
+		n = min(n, 36)
+		return s.app.History.Monthly(n, s.app.Settings.Get().Playback.CompletionThreshold, time.Now(), time.Local)
+	}))
 	m.HandleFunc("PUT /api/settings", h(s.saveSettings))
 	m.HandleFunc("GET /api/events", s.events)
 	m.HandleFunc("POST /api/auth/anilist", h(s.anilistLogin))

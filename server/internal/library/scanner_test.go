@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/simo1337s/animetest/server/internal/config"
 	"github.com/simo1337s/animetest/server/internal/db"
@@ -380,5 +381,48 @@ func TestScanRematchesAfterMatcherUpgrade(t *testing.T) {
 	rescan()
 	if searches != 0 || matchedTo(ep) != 1575 {
 		t.Errorf("matched again after the upgrade (%d searches)", searches)
+	}
+}
+
+// New files are told about, not on a library's first scan, and not those
+// moved (a folder renamed).
+func TestScanTellsNewFiles(t *testing.T) {
+	dir := t.TempDir()
+	s, _ := newTestScanner(t, dir)
+	got := make(chan []string, 4)
+	s.OnNewFiles = func(fs []*LocalFile) {
+		var names []string
+		for _, f := range fs {
+			names = append(names, f.Name)
+		}
+		sort.Strings(names)
+		got <- names
+	}
+	next := func() []string {
+		select {
+		case n := <-got:
+			return n
+		case <-time.After(300 * time.Millisecond):
+			return nil
+		}
+	}
+	touch(t, filepath.Join(dir, "Show", "Show - 01.mkv"))
+	scan(t, s)
+	if n := next(); n != nil {
+		t.Fatalf("first scan told: %v", n)
+	}
+	touch(t, filepath.Join(dir, "Show", "Show - 02.mkv"))
+	scan(t, s)
+	if n := next(); len(n) != 1 || n[0] != "Show - 02.mkv" {
+		t.Fatalf("new file: %v", n)
+	}
+	// The folder renamed: its files aren't new.
+	if err := os.Rename(filepath.Join(dir, "Show"), filepath.Join(dir, "Show (2024)")); err != nil {
+		t.Fatal(err)
+	}
+	touch(t, filepath.Join(dir, "Show (2024)", "Show - 03.mkv"))
+	scan(t, s)
+	if n := next(); len(n) != 1 || n[0] != "Show - 03.mkv" {
+		t.Fatalf("after a rename: %v", n)
 	}
 }

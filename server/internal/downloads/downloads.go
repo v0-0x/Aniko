@@ -79,6 +79,9 @@ type Manager struct {
 	files    *library.Store
 
 	Resolvers map[string]Resolver
+	// Done tells about a finished download, instead of the usual toast when
+	// it returns true (package notify).
+	Done func(Item) bool
 
 	// saveMu orders the writes of an item (database row and UI event) with
 	// its deletion, so a late update can't bring a removed item back.
@@ -398,7 +401,9 @@ func (m *Manager) execute(r *run) {
 	m.save(it, true)
 	switch done.Status {
 	case StatusCompleted:
-		m.hub.Success(fmt.Sprintf("Downloaded %s — episode %d", done.AnimeTitle, done.Episode))
+		if m.Done == nil || !m.Done(done) {
+			m.hub.Success(fmt.Sprintf("Downloaded %s — episode %d", done.AnimeTitle, done.Episode))
+		}
 	case StatusFailed:
 		m.hub.Error(fmt.Sprintf("Download failed (%s ep %d): %s", done.AnimeTitle, done.Episode, done.Error))
 	}

@@ -3,6 +3,7 @@ import {
     BellOff,
     BookOpen,
     CalendarDays,
+    ChartColumn,
     Compass,
     Download,
     FolderSearch,
@@ -84,6 +85,7 @@ export function Sidebar() {
             { to: "/schedule", label: "Schedule", icon: <CalendarDays /> },
             ...(settings?.manga.enabled !== false ? [{ to: "/manga", label: "Manga", icon: <BookOpen />, match: (p: string) => p.startsWith("/manga") }] : []),
             { to: "/lists", label: "My lists", icon: <ListChecks /> },
+            { to: "/stats", label: "Stats", icon: <ChartColumn /> },
         ],
         [
             { to: "/discover", label: "Discover", icon: <Compass /> },

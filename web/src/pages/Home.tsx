@@ -1,4 +1,4 @@
-import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Download, FolderOpen, FolderSearch, FolderSync, HardDrive, LibraryBig, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
+import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Download, FolderOpen, FolderSearch, FolderSync, HardDrive, LibraryBig, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
 import { useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { EpisodeCard } from "@/components/EpisodeCard"
@@ -11,6 +11,7 @@ import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { ProgramsNotice } from "@/components/ProgramsNotice"
 import { Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Skeleton } from "@/components/ui"
 import { UpdateBanner } from "@/components/UpdateBanner"
+import { WatchPicker } from "@/components/WatchPicker"
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { usePlay } from "@/lib/play"
@@ -93,6 +94,7 @@ export default function HomePage() {
     // history from each to the other now, and the AniList list, so Continue
     // watching goes on from where it stopped on any of them.
     const paired = status?.paired ?? []
+    const [picking, setPicking] = useState(false)
     const [syncing, setSyncing] = useState(false)
     const syncDevices = async () => {
         setSyncing(true)
@@ -132,6 +134,7 @@ export default function HomePage() {
 
     return (
         <div className="relative min-h-full pb-24">
+            <WatchPicker open={picking} onOpenChange={setPicking} />
             <UpdateBanner />
             <SleepingHosts />
             <DevicePrompts />
@@ -152,6 +155,9 @@ export default function HomePage() {
                         </IconButton>
                         <IconButton label="Downloads" size="sm" onClick={() => navigate("/downloads")}>
                             <Download className="size-4" />
+                        </IconButton>
+                        <IconButton label="What should I watch?" size="sm" onClick={() => setPicking(true)}>
+                            <Dices className="size-4" />
                         </IconButton>
                         <Button size="sm" variant="ghost" loading={scanning || scan.isPending} icon={<FolderSync className="size-4" />} onClick={() => scan.mutate(false)}>
                             Refresh

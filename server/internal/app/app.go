@@ -30,6 +30,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/lifecycle"
 	"github.com/simo1337s/animetest/server/internal/manga"
 	"github.com/simo1337s/animetest/server/internal/metadata"
+	"github.com/simo1337s/animetest/server/internal/notify"
 	"github.com/simo1337s/animetest/server/internal/player"
 	"github.com/simo1337s/animetest/server/internal/share"
 	"github.com/simo1337s/animetest/server/internal/stream"
@@ -66,6 +67,8 @@ type App struct {
 	Awake *awake.Keeper
 	// Trash holds the files put away from Library tools › Clean up.
 	Trash *library.Trash
+	// Notify tells about aired episodes and episodes ready in the library.
+	Notify *notify.Service
 	// Exits ends Kumo from inside, e.g. to restart it after an update;
 	// cmd/kumo waits for it, next to the signals.
 	Exits *lifecycle.Exits
@@ -144,6 +147,7 @@ func New(dataDir string) (*App, error) {
 		ctx: ctx, cancel: cancel, DataDir: dataDir, prefetch: newPrefetcher(),
 	}
 	a.HLS = stream.NewHLS(a.Local, hlsDir(dataDir))
+	a.Notify = notify.New(settings, hub, d, platform)
 	a.Trash = library.NewTrash(d, files, func() []string {
 		cfg := a.Settings.Get()
 		return append([]string{cfg.Library.Dir}, cfg.Library.ExtraDirs...)
@@ -186,6 +190,10 @@ func (a *App) wire() {
 	// Anime with files get all their data, also those shared with this
 	// Kumo (prefetch.go).
 	a.Scanner.OnScanned = a.prefetchLibrary
+	a.Scanner.OnNewFiles = a.Notify.NewFiles
+	a.Downloads.Done = func(it downloads.Item) bool {
+		return a.Notify.Downloaded(it.MediaID, it.Episode, it.AnimeTitle, it.Output)
+	}
 	a.Share.OnFiles = a.prefetchLibrary
 	// Kumos on the same AniList account keep their watch histories in step,
 	// as positions are saved.
@@ -400,6 +408,7 @@ func (a *App) Start() {
 	a.Update.Start()
 	a.Scanner.StartWatcher()
 	go a.Torrents.RunCounter(a.ctx)
+	go a.Notify.Run(a.ctx)
 	// What's been in the trash a month goes, now and daily.
 	go func() {
 		for {

@@ -23,6 +23,7 @@ const DiscoverPage = lazy(() => import("./pages/Discover"))
 const SearchPage = lazy(() => import("./pages/Search"))
 const SchedulePage = lazy(() => import("./pages/Schedule"))
 const ListsPage = lazy(() => import("./pages/Lists"))
+const StatsPage = lazy(() => import("./pages/Stats"))
 const TorrentsPage = lazy(() => import("./pages/Torrents"))
 const DownloadsPage = lazy(() => import("./pages/Downloads"))
 const AutoDownloaderPage = lazy(() => import("./pages/AutoDownloader"))
@@ -114,6 +115,7 @@ export default function App() {
                                 <Route path="/search" element={<SearchPage />} />
                                 <Route path="/schedule" element={<SchedulePage />} />
                                 <Route path="/lists" element={<ListsPage />} />
+                                <Route path="/stats" element={<StatsPage />} />
                                 <Route path="/torrent-list" element={<TorrentsPage />} />
                                 <Route path="/downloads" element={<DownloadsPage />} />
                                 <Route path="/auto-downloader" element={<AutoDownloaderPage />} />

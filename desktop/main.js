@@ -322,7 +322,8 @@ function windowIcon() {
     return iconPath ? nativeImage.createFromPath(iconPath) : undefined
 }
 
-function createWindow() {
+// createWindow opens Kumo's window, at a page of it (path, "" for Home).
+function createWindow(path = "") {
     mainWindow = new BrowserWindow({
         width: 1600,
         height: 1000,
@@ -367,7 +368,7 @@ function createWindow() {
     // Windows is shutting down or signing out, which stops the server too:
     // that isn't worth an error box (the event only exists on Windows).
     mainWindow.on("query-session-end", () => (app.isQuitting = true))
-    mainWindow.loadURL(baseUrl)
+    mainWindow.loadURL(baseUrl + path)
 }
 
 // AniList login: open the authorize page in a separate window and capture
@@ -496,18 +497,81 @@ async function restartIfOutdated(url) {
 let restarting = false
 
 // showWindow brings Kumo's window back, or opens a new one after it was
-// closed while Kumo kept running.
-async function showWindow() {
+// closed while Kumo kept running (the tray's and the Dock's handlers: what
+// they pass isn't a page).
+function showWindow() {
+    return showWindowAt("")
+}
+
+// showWindowAt does, at a page of it when path is given ("/entry?id=1").
+async function showWindowAt(path) {
     if (!baseUrl || restarting) return
     // Updated since it started: the new version opens instead.
     if (await restartIfOutdated(baseUrl)) {
         restarting = true
         return
     }
-    if (!mainWindow) return createWindow()
+    if (!mainWindow) return createWindow(path)
+    if (path) {
+        parkedUrl = null
+        mainWindow.loadURL(baseUrl + path)
+    }
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.show()
     mainWindow.focus()
+}
+
+// Alerts from the server (an episode of an anime being watched aired, one
+// is ready in the library) while the window is closed, or its page let go
+// (the computer locked): the page shows them itself otherwise.
+let alertsListening = false
+function listenForAlerts() {
+    if (alertsListening || !baseUrl) return
+    alertsListening = true
+    let done = false
+    const again = () => {
+        if (done) return
+        done = true
+        alertsListening = false
+        if (!app.isQuitting) setTimeout(listenForAlerts, 5000)
+    }
+    const req = http.get(baseUrl + "/api/events", { headers: { "X-Kumo-Shell": readToken() || "", Accept: "text/event-stream" } }, res => {
+        if (res.statusCode !== 200) {
+            res.resume()
+            return again()
+        }
+        res.setEncoding("utf8")
+        let buf = ""
+        res.on("data", chunk => {
+            buf += chunk
+            for (let i = buf.indexOf("\n\n"); i >= 0; i = buf.indexOf("\n\n")) {
+                const data = buf
+                    .slice(0, i)
+                    .split("\n")
+                    .filter(l => l.startsWith("data:"))
+                    .map(l => l.slice(5).trimStart())
+                    .join("\n")
+                buf = buf.slice(i + 2)
+                try {
+                    const ev = JSON.parse(data)
+                    if (ev?.type === "notify") backgroundAlert(ev.payload)
+                } catch {
+                    // a keep-alive, or not an event
+                }
+            }
+        })
+        res.on("end", again)
+        res.on("error", again)
+    })
+    req.on("error", again)
+}
+
+function backgroundAlert(a) {
+    if ((mainWindow && !parkedUrl) || !Notification.isSupported() || typeof a?.title !== "string") return
+    const n = new Notification({ title: a.title, body: String(a.body || "") })
+    const id = Number(a.mediaId)
+    n.on("click", () => showWindowAt(id > 0 ? `/entry?id=${id}` : "/local"))
+    n.show()
 }
 
 // The tray icon, while Kumo keeps running with its window closed (Windows
@@ -619,6 +683,7 @@ async function boot() {
     // Started with the computer: in the background, if Kumo runs without
     // its window (the tray icon or the Dock opens it).
     if (!(startedAtLogin() && prefs.keepRunning)) createWindow()
+    listenForAlerts()
     updateTray()
     updateDesktopShortcuts()
     powerMonitor.on("lock-screen", () => {

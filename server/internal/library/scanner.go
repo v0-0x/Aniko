@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
@@ -27,6 +28,9 @@ type Scanner struct {
 	hub      *events.Hub
 	// OnScanned runs after each scan that went through (in the background).
 	OnScanned func()
+	// OnNewFiles gets the files a scan found that weren't in the library
+	// before (not on the first scan of a library), matched or not.
+	OnNewFiles func([]*LocalFile)
 	// newMatcher makes the scan's matcher (tests replace it).
 	newMatcher func(threshold float64, outsideList bool) *Matcher
 
@@ -165,7 +169,7 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 	upgrade := version < matcherVersion && !opts.SkipMatching
 
 	res = &ScanResult{Total: len(found)}
-	var changed []*LocalFile
+	var changed, added []*LocalFile
 	var toMatch []*LocalFile
 	for path, info := range found {
 		old := byPath[path]
@@ -195,6 +199,7 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 			}
 		} else {
 			res.Added++
+			added = append(added, f)
 		}
 		if !f.Locked && !f.Ignored {
 			toMatch = append(toMatch, f)
@@ -255,6 +260,25 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 	s.hub.Publish(events.LibraryUpdated, nil)
 	if s.OnScanned != nil {
 		go s.OnScanned()
+	}
+	if s.OnNewFiles != nil && len(added) > 0 && len(byPath) > 0 {
+		// A file that went from one place to another (a folder renamed) isn't
+		// new: one gone with its name and size.
+		moved := map[string]bool{}
+		for _, p := range removed {
+			if f := byPath[p]; f != nil {
+				moved[fmt.Sprintf("%s|%d", f.Name, f.Size)] = true
+			}
+		}
+		var fresh []*LocalFile
+		for _, f := range added {
+			if !moved[fmt.Sprintf("%s|%d", f.Name, f.Size)] {
+				fresh = append(fresh, f)
+			}
+		}
+		if len(fresh) > 0 {
+			go s.OnNewFiles(fresh)
+		}
 	}
 	return res, nil
 }

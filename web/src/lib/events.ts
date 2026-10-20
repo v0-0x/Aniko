@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { toast } from "@/lib/toast"
+import { showAlert, type Alert } from "./alerts"
 import { playbackStore, pluginStore, scanStore, torrentCountStore, trayOpenStore } from "./store"
 import { installIfWanted } from "./tv"
 import type { DownloadItem, PluginState, Status, UpdateStatus } from "./types"
@@ -97,6 +98,9 @@ export function connectEvents(qc: QueryClient) {
                 break
             case "plugin-ui":
                 handlePluginEvent(p)
+                break
+            case "notify":
+                showAlert(qc, p as Alert, navigateFn)
                 break
             case "update-status": {
                 // Only this computer installs updates (GET /api/update says
