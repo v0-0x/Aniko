@@ -7,6 +7,7 @@ import { NowPlaying, ScanIndicator } from "./components/NowPlaying"
 import { PlayerOverlay } from "./components/player/Player"
 import { TvMenu } from "./components/TvMenu"
 import { QuickSearch } from "./components/QuickSearch"
+import { WhatsNew } from "./components/WhatsNew"
 import { KumoLogo, Sidebar } from "./components/Sidebar"
 import { Button, Input, Spinner, TooltipProvider } from "./components/ui"
 import { api, onPasswordRequired } from "./lib/api"
@@ -138,6 +139,7 @@ export default function App() {
             <ScanIndicator />
             <QuickSearch />
             <PlayerOverlay />
+            <WhatsNew />
             {tv && <TvMenu />}
             <Toaster
                 theme="dark"

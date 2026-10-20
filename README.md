@@ -13,8 +13,8 @@
 - Works with **every video format**: mkv, mp4, avi, webm, mov, wmv, flv, ts/m2ts, ogm, rmvb, vob, 3gp, divx and more.
 - **Auto refresh**: watches the folders and rescans when files appear, and refreshes on startup.
 - **Local library** page with only the anime you have on disk: recently added, filters by list status, sort by added/unwatched/size, grid or list view with downloaded episode ranges, size, resolution and release group, and one-click "play next".
-- **Library sharing** between the Kumo apps on your computers at home: they find each other by themselves (or by address). On the computer with the anime, turn on **Share my library** for the others in **Settings › Devices**: its anime show up on theirs (a tab on the Local library page, and on each anime's page) and play like local files, converted by the computer that has them when needed. Watching updates the list (AniList or local) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second (live to the computer whose files you watch), and episodes watched on any device come first; positions saved while the other was off are sent when it's back, and **Sync** on Home brings both up to date at once.
-- Library tools to fix matches by hand, change episode numbers, lock files and ignore junk.
+- **Library sharing** between the Kumo apps on your computers at home: they find each other by themselves (or by address). On the computer with the anime, turn on **Share my library** for the others in **Settings › Devices**: its anime show up on theirs (a tab on the Local library page, and on each anime's page) and play like local files, converted by the computer that has them when needed. Watching updates the list (AniList or local) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second (live to the computer whose files you watch), and episodes watched on any device come first; positions saved while the other was off are sent when it's back, it syncs by itself when a device comes back on the network or the TV app is opened again, and **Sync** on Home brings both up to date at once. A computer that's asleep can be **woken from the TV** (Home or Settings › Devices; Wake-on-LAN on in its settings), and it **stays awake while another device plays its anime**. Settings › Devices lists every Kumo with its version, and Home asks whether to share with a new one (a TV) when it shows up.
+- Library tools to fix matches by hand, change episode numbers, lock files and ignore junk; **Missing episodes** (the gaps in the library and the episodes aired since, with torrents a click away); **Clean up** (how full the drive is, episodes watched a while ago, episodes there twice, put away into a trash that can be undone for 30 days).
 - Safe with removable drives: an unplugged or unmounted library folder keeps its matches; symlinked folders are followed.
 - **Artwork & metadata**: covers, banners, fanart, descriptions, genres, studios, characters, relations, recommendations, **episode titles, summaries and thumbnails** (AniList + ani.zip). All artwork is **downloaded to a local cache**, so it loads instantly and still shows offline.
 
@@ -23,7 +23,8 @@
 - In-app player plays any file: direct play when the browser can, otherwise ffmpeg **remuxes or transcodes on the fly** (VA-API / NVENC / QSV supported). Embedded and external subtitles (ASS/SRT/VTT) and audio-track switching are supported.
 - **Resume exactly where you stopped**: the position is saved every few seconds, in both players.
 - **Remembers your audio and subtitle track per anime.** Pick "Japanese + English Full Subs" once and every next episode opens with the same tracks, matched by language and title, so it works even when the track order changes.
-- Auto skip openings (AniSkip), auto play next, "Continue watching" row, now-playing bar for mpv.
+- Auto skip openings, endings, recaps and the next episode's preview (AniSkip), an **Up next** card in the ending, auto play next, Start over, "Continue watching" row, now-playing bar for mpv.
+- **Previews on the seek bar** (also where Left/Right go on a TV), and **subtitles your way**: size, background and position for each device, timing moved with z / x (kept per anime).
 - Progress syncs to AniList automatically after an episode passes the completion threshold you set.
 
 **Streaming & downloads (ani-cli)**
@@ -47,6 +48,11 @@
 - Runs **online-streaming, torrent and manga providers** in a sandboxed JavaScript runtime with the APIs marketplace extensions use (`fetch`, `LoadDoc`, `CryptoJS`, `$store`, `$storage`, `$habari`, user config…).
 - **UI plugins**: trays, anime-page buttons, webviews, toasts, storage, AniList access, `$ui.register`, `ctx.state/effect/fieldRef`, … All 15 most-starred marketplace plugins load. Plugins that rewrite the app's own pages (`ctx.dom`) or need file/command access only partly work, because Kumo deliberately doesn't allow either.
 - **Manga** reader (long strip, single pages or two-page spreads, LTR / RTL) using manga provider extensions.
+
+**Your anime**
+- **Alerts** when a new episode of what you're watching airs, or episodes are ready to watch (a download or a torrent finished): in Kumo, or as the system's notifications.
+- **What should I watch?** (the dice on Home) picks an anime from your list. **Stats**: your anime in numbers, and what you watched month by month.
+- **Backup and restore** (Settings › App): settings, watch history, list, choices, matches, auto downloader rules and extensions as one file; restoring merges with what's there.
 
 **Extras**: can keep running in the tray (or the Dock) when its window is closed, so streaming to other devices and downloads go on, and start in the background when you log in (Settings › App › Desktop app, both off unless you turn them on); updates itself from the Home page, Discord rich presence (local IPC), accent colours, spoiler blur, Ctrl+K quick search, server logs and cache viewer.
 

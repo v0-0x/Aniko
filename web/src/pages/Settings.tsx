@@ -37,6 +37,7 @@ import { toast } from "@/lib/toast"
 import { LoginDialog } from "@/components/LoginDialog"
 import { Badge, Button, Dialog, Input, Select, Switch, Textarea } from "@/components/ui"
 import { versionName } from "@/components/UpdateBanner"
+import { whatsNewStore } from "@/components/WhatsNew"
 import { api, desktop, type DesktopPrefs } from "@/lib/api"
 import { useCheckUpdate, useOnlineProviders, useSaveSettings, useSharing, useStatus, useUpdateStatus } from "@/lib/queries"
 import { exampleMpvPath, installHint, installSource, platformName } from "@/lib/platform"
@@ -1766,6 +1767,11 @@ function AboutSection() {
                             </code>
                         )}
                     </span>
+                </Row>
+                <Row label="What's new" help="What came with the latest versions.">
+                    <Button size="sm" variant="ghost" onClick={() => whatsNewStore.set("all")}>
+                        Show
+                    </Button>
                 </Row>
             </Group>
             <Group title="Updates" description="Kumo looks for a newer version on GitHub and shows it on the Home page, where you can install it.">
