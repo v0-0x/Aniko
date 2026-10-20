@@ -584,6 +584,8 @@ function AppSection({ draft, set }: SectionProps) {
 
             <AlertsGroup draft={draft} set={set} />
 
+            {!androidApp && !lan && <BackupGroup />}
+
             <Group title="Library sharing">
                 <Row label="Share libraries with Kumo on your other computers" help={draft.sharing.enabled ? "On: who gets this computer's library, and the libraries shared with it, are in Devices." : "In Devices: turn it on there, on each computer."}>
                     <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "devices" })}>
@@ -731,6 +733,88 @@ function ProgramsGroup() {
             )}
         </Group>
     )
+}
+
+// Backup: the data of this Kumo as one file (settings, watch history, list,
+// choices, matches made by hand, auto downloader rules, extensions), and
+// back. A restore merges, then Kumo starts again.
+function BackupGroup() {
+    const [logins, setLogins] = useState(false)
+    const [restoring, setRestoring] = useState(false)
+    const restore = async (file: File) => {
+        let text: string
+        let info: { kumo?: number; version?: string; createdAt?: number; computer?: string; logins?: boolean; history?: unknown[] }
+        try {
+            text = await file.text()
+            info = JSON.parse(text)
+        } catch {
+            toast.error("That isn't a Kumo backup")
+            return
+        }
+        if (!info?.kumo) {
+            toast.error("That isn't a Kumo backup")
+            return
+        }
+        const when = info.createdAt ? new Date(info.createdAt * 1000).toLocaleString() : "an unknown date"
+        if (
+            !confirm(
+                `Restore the backup of ${info.computer || "a computer"} from ${when}?\n\n` +
+                    "It's merged with what's here: positions and list entries newer here stay, and so do this computer's network and sharing settings. " +
+                    "What's here now is saved first, in Kumo's data folder. Kumo starts again after.",
+            )
+        )
+            return
+        setRestoring(true)
+        try {
+            const res = await fetch("/api/backup/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: text, credentials: "same-origin" })
+            const sum = await res.json().catch(() => null)
+            if (!res.ok) throw new Error(sum?.error || res.statusText)
+            const parts = [sum.history && `${sum.history} positions`, sum.list && `${sum.list} list entries`, sum.extensions && `${sum.extensions} extensions`, sum.rules && `${sum.rules} auto downloader rules`].filter(Boolean)
+            toast.success(`Restored${parts.length ? `: ${parts.join(", ")}` : ""}. Kumo is starting again…`, { duration: 15_000 })
+            // Back once it answers again, with everything read afresh.
+            await waitForRestart()
+            location.reload()
+        } catch (e: any) {
+            toast.error(e.message)
+            setRestoring(false)
+        }
+    }
+    return (
+        <Group title="Backup" description="Your settings, watch history, list, audio and subtitle choices, matches made by hand, auto downloader rules and extensions, as one file. Put it back here, or on another computer.">
+            <Row label="Include logins and passwords" help="Your AniList login and the torrent clients' passwords. Keep a backup with them private.">
+                <Switch checked={logins} onChange={setLogins} />
+            </Row>
+            <Row label="Make a backup" help="Downloads the file.">
+                <a href={`/api/backup?logins=${logins ? 1 : 0}`} download>
+                    <Button size="sm">Download backup</Button>
+                </a>
+            </Row>
+            <Row label="Restore a backup" help="Merged with what's here; Kumo starts again after.">
+                <label>
+                    <input type="file" accept=".json,application/json" className="sr-only" disabled={restoring} onChange={e => e.target.files?.[0] && restore(e.target.files[0])} />
+                    <span className={cn("inline-flex h-8 cursor-pointer items-center rounded-lg bg-white/[0.07] px-3 text-[13px] font-medium hover:bg-white/[0.12]", restoring && "pointer-events-none opacity-60")}>
+                        {restoring ? "Restoring…" : "Choose a backup…"}
+                    </span>
+                </label>
+            </Row>
+        </Group>
+    )
+}
+
+// waitForRestart waits for Kumo to go and answer again (a minute at most).
+async function waitForRestart() {
+    const answers = () =>
+        fetch("/api/status", { cache: "no-store", credentials: "same-origin" })
+            .then(r => r.ok)
+            .catch(() => false)
+    const until = Date.now() + 60_000
+    let wentAway = false
+    while (Date.now() < until) {
+        await new Promise(r => setTimeout(r, 1000))
+        const up = await answers()
+        if (!up) wentAway = true
+        else if (wentAway || Date.now() > until - 50_000) return
+    }
 }
 
 // Alerts: an episode of what's being watched aired, one is ready in the

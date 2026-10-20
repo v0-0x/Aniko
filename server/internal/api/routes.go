@@ -28,6 +28,7 @@ func (s *Server) routes() {
 	s.peerRoutes()
 	s.noteRoutes()
 	s.cleanupRoutes()
+	s.backupRoutes()
 
 	// --- core
 	m.HandleFunc("GET /api/status", h(s.status))

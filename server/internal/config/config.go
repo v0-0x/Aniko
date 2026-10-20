@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -352,6 +353,18 @@ func NewStore(d *db.DB) (*Store, error) {
 		}
 	}
 	return s, nil
+}
+
+// Decode reads settings saved as JSON (a backup's, say) as they're loaded:
+// on top of the defaults, brought up to this version.
+func Decode(raw []byte) (Settings, error) {
+	s := Defaults()
+	s.SchemaVersion = 0
+	if err := json.Unmarshal(raw, &s); err != nil {
+		return Defaults(), err
+	}
+	migrate(&s)
+	return sanitize(s), nil
 }
 
 // Get returns a copy of the settings. Slices are copied too: callers decode
