@@ -20,6 +20,7 @@ declare global {
         KumoAndroid?: AndroidBridge
         kumoBack?: () => boolean
         kumoKey?: (key: string) => void
+        kumoResumed?: () => void // the app back from the home screen (events.ts)
     }
 }
 

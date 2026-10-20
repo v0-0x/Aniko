@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 import { toast } from "@/lib/toast"
 import { playbackStore, pluginStore, scanStore, torrentCountStore, trayOpenStore } from "./store"
 import { installIfWanted } from "./tv"
@@ -143,10 +144,23 @@ export function connectEvents(qc: QueryClient) {
         }
     }
     connect()
+
+    // The app shown again (a TV's, back from its home screen; a tab): watch
+    // history synced with the paired Kumos, if that's on (the server skips
+    // those synced a moment ago). Only this computer's app asks.
+    const resumed = () => {
+        if (qc.getQueryData<Status>(["status"])?.client === "lan") return
+        api.post("/api/sharing/autosync").catch(() => {})
+    }
+    const onVisible = () => document.visibilityState === "visible" && resumed()
+    document.addEventListener("visibilitychange", onVisible)
+    window.kumoResumed = resumed // the Android app's onResume
     return () => {
         closed = true
         if (retry) clearTimeout(retry)
         es?.close()
+        document.removeEventListener("visibilitychange", onVisible)
+        delete window.kumoResumed
     }
 }
 

@@ -837,3 +837,80 @@ func (l lockedWriter) Write(p []byte) (int, error) {
 	defer l.mu.Unlock()
 	return l.w.Write(p)
 }
+
+// A position saved on the TV that didn't reach the computer (it was off):
+// the computer takes it by itself (here, as the app opens again), without
+// Sync; not when that's turned off. Within a second or two: the TV's own
+// questions (every 30s) don't come in between.
+func TestAutoSyncWhenBack(t *testing.T) {
+	const local = "127.0.0.1:5000"
+	host, hostSrv := sharingServer(t)
+	guest, guestSrv := sharingServer(t)
+	for _, s := range []*Server{host, guest} {
+		s.app.Share.User = func() int { return 42 }
+	}
+	var mu sync.Mutex
+	refreshed := 0
+	host.app.Share.OnWatchedElsewhere = func() { mu.Lock(); refreshed++; mu.Unlock() }
+	u, _ := url.Parse(guestSrv.URL)
+	cfg := guest.app.Settings.Get()
+	cfg.Server.Port, _ = strconv.Atoi(u.Port())
+	if _, err := guest.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	addr := strings.TrimPrefix(hostSrv.URL, "http://")
+	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("connect: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the library", func() bool {
+		do(guest, "GET", "/api/sharing", local, "", nil)
+		return len(guest.app.Share.Libraries()) == 1
+	})
+	time.Sleep(500 * time.Millisecond)
+	// Saved on the TV, not sent (as when the computer was off).
+	if _, err := guest.app.History.Merge(history.Entry{MediaID: 21, Episode: 9, Position: 640, Duration: 1420, Source: "local", UpdatedAt: time.Now().Unix() - 30}); err != nil {
+		t.Fatal(err)
+	}
+	has := func() bool { e := host.app.History.Get(21, 9); return e != nil && e.Position == 640 }
+
+	// Turned off: nothing by itself.
+	cfg = host.app.Settings.Get()
+	cfg.Sharing.AutoSync = false
+	if _, err := host.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if w := do(host, "POST", "/api/sharing/autosync", local, "", nil); w.Code != http.StatusOK {
+		t.Fatalf("autosync: %d %s", w.Code, w.Body)
+	}
+	time.Sleep(1500 * time.Millisecond)
+	if has() {
+		t.Fatal("synced while turned off")
+	}
+
+	cfg.Sharing.AutoSync = true
+	if _, err := host.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	do(host, "POST", "/api/sharing/autosync", local, "", nil)
+	deadline := time.Now().Add(5 * time.Second)
+	for !has() {
+		if time.Now().After(deadline) {
+			t.Fatal("the TV's position didn't reach the computer")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	eventually(t, "AniList's list to be read again", func() bool { mu.Lock(); defer mu.Unlock(); return refreshed > 0 })
+	// Not again a moment later.
+	if _, err := guest.app.History.Merge(history.Entry{MediaID: 21, Episode: 10, Position: 300, Duration: 1420, Source: "local", UpdatedAt: time.Now().Unix() - 20}); err != nil {
+		t.Fatal(err)
+	}
+	do(host, "POST", "/api/sharing/autosync", local, "", nil)
+	time.Sleep(1500 * time.Millisecond)
+	if e := host.app.History.Get(21, 10); e != nil {
+		t.Errorf("synced again at once: %+v", e)
+	}
+}

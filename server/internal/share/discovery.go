@@ -28,6 +28,8 @@ type beacon struct {
 	Port    int    `json:"port"`
 	Key     string `json:"key"` // public key (base64)
 	Version string `json:"version"`
+	// Platform: what it runs on ("android" on a TV), for the others' lists.
+	Platform string `json:"platform,omitempty"`
 	// Reply: an answer to a beacon, not to be answered.
 	Reply bool `json:"reply,omitempty"`
 	// Ask: what this Kumo shares with the one it's sent to changed: ask

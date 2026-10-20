@@ -159,6 +159,20 @@ export function relativeTime(unix: number) {
     return new Date(unix * 1000).toLocaleDateString()
 }
 
+// Compares two Kumo versions (1.0.<number of commits>): null when either
+// isn't one, or is 1.0.0 (built by hand: its version is unknown).
+export function compareVersions(a?: string, b?: string): number | null {
+    const parse = (v?: string) => {
+        const m = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(v ?? "")
+        return m && v !== "1.0.0" ? m.slice(1).map(Number) : null
+    }
+    const x = parse(a)
+    const y = parse(b)
+    if (!x || !y) return null
+    for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1
+    return 0
+}
+
 // AniList descriptions contain a little HTML (<br>, <i>, <b>).
 export function cleanDescription(html?: string) {
     if (!html) return ""

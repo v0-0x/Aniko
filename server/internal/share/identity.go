@@ -408,6 +408,20 @@ func (id *Identity) firstUse(nonce string, until, now time.Time) bool {
 }
 
 // cleanName keeps a peer's name printable and short.
+// cleanPlatform keeps a platform name another Kumo sent if it looks like one
+// (runtime.GOOS: "linux", "android"…).
+func cleanPlatform(s string) string {
+	if len(s) == 0 || len(s) > 16 {
+		return ""
+	}
+	for _, r := range s {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') {
+			return ""
+		}
+	}
+	return s
+}
+
 func cleanName(s string) string {
 	s = strings.Map(func(r rune) rune {
 		if r < 32 || r == 127 {

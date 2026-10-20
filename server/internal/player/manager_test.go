@@ -467,22 +467,24 @@ func TestMpvStartsWatchingOncePerViewing(t *testing.T) {
 }
 
 func TestMpvSkipsWhatTheSettingsSay(t *testing.T) {
-	// Recaps play: the one at the start, and the next episode's preview
-	// after the ending, which AniSkip calls a recap too.
+	// A recap at the start, and the next episode's preview after the
+	// ending, which AniSkip calls a recap too: both skipped with recaps on.
 	skips := []SkipInterval{{Type: "recap", Start: 5, End: 60}, {Type: "op", Start: 90, End: 180}, {Type: "mixed-ed", Start: 1290, End: 1380}, {Type: "recap", Start: 1385, End: 1415}}
 	cases := []struct {
-		name         string
-		intro, outro bool
-		want         []string // what mpv was told: "<new position> <text>"
+		name                string
+		intro, outro, recap bool
+		want                []string // what mpv was told: "<new position> <text>"
 	}{
-		{"openings", true, false, []string{"180 Skipped opening"}},
-		{"endings", false, true, []string{"1380 Skipped ending"}},
-		{"both", true, true, []string{"180 Skipped opening", "1380 Skipped ending"}},
+		{"openings", true, false, false, []string{"180 Skipped opening"}},
+		{"endings", false, true, false, []string{"1380 Skipped ending"}},
+		{"both", true, true, false, []string{"180 Skipped opening", "1380 Skipped ending"}},
+		{"recaps", false, false, true, []string{"60 Skipped recap", "1415 Skipped preview"}},
+		{"all", true, true, true, []string{"60 Skipped recap", "180 Skipped opening", "1380 Skipped ending", "1415 Skipped preview"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			m, l := newTestManager(t, func(c *config.Settings) {
-				c.Playback.SkipIntroAniSkip, c.Playback.SkipOutroAniSkip = tc.intro, tc.outro
+				c.Playback.SkipIntroAniSkip, c.Playback.SkipOutroAniSkip, c.Playback.SkipRecapAniSkip = tc.intro, tc.outro, tc.recap
 			})
 			m.skipTimes = func(_ context.Context, mediaID, episode int, length float64) []SkipInterval {
 				if mediaID != 6 || episode != 2 || length != 1420 {
@@ -513,15 +515,19 @@ func TestMpvSkipsWhatTheSettingsSay(t *testing.T) {
 				return out
 			}
 			// The recap, the opening, then the ending and the preview; a seek
-			// here doesn't move the position, as no time-pos comes back.
+			// here doesn't move the position, as no time-pos comes back. Each
+			// skip is waited for, so they're told in order.
+			skipsAt := []bool{tc.recap, tc.intro, false, tc.outro, tc.recap}
+			n := 0
 			for i, pos := range []float64{10, 95, 600, 1300, 1390} {
 				f.prop("time-pos", pos)
 				waitFor(t, fmt.Sprint("the position to reach ", pos), func() bool {
 					st := m.Status()
 					return st != nil && st.Position == pos
 				})
-				if i == 1 && tc.intro {
-					waitFor(t, "the opening to be skipped", func() bool { return len(told()) == 1 })
+				if skipsAt[i] {
+					n++
+					waitFor(t, fmt.Sprint("skip ", n), func() bool { return len(told()) == n })
 				}
 			}
 			waitFor(t, "the skips", func() bool { return len(told()) >= len(tc.want) })

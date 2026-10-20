@@ -60,7 +60,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 {/* A TV has no easy way to copy a token: the computer can share its login. */}
                 {androidApp && (
                     <p className="rounded-lg border border-brand/30 bg-brand-soft p-4 text-sm text-fg/90">
-                        Easiest on a TV: on your computer's Kumo, open Settings › Local Anime Library and turn on “Share my AniList account” next to this device. It logs in here by
+                        Easiest on a TV: on your computer's Kumo, open Settings › Devices and turn on “Share my AniList account” next to this device. It logs in here by
                         itself.
                     </p>
                 )}

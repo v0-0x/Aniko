@@ -14,6 +14,7 @@ import {
     Play,
     RotateCcw,
     RotateCw,
+    SkipBack,
     SkipForward,
     Volume1,
     Volume2,
@@ -24,7 +25,8 @@ import { toast } from "@/lib/toast"
 import { api, ApiError, qs } from "@/lib/api"
 import { prefersHls, randomId, videoCaps } from "@/lib/playback"
 import { useSettings } from "@/lib/queries"
-import { playerStore, type PlayerRequest } from "@/lib/store"
+import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
+import { formatDelay, setSubDelay, subDelay, subLine, subStyleStore, subStyleVars } from "@/lib/subtitles"
 import type { EntryView, Probe, StreamSource, TrackPrefs } from "@/lib/types"
 import { android, androidApp, move, tv } from "@/lib/tv"
 import { cn, formatDuration, title as animeTitle } from "@/lib/utils"
@@ -33,10 +35,14 @@ import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparat
 
 type SubOption = { key: string; label: string; lang: string; title: string; index: number; url: string; bitmap?: boolean }
 type Skip = { type: string; start: number; end: number }
-// The AniSkip intervals the player skips: openings and endings. Recaps play
-// (AniSkip calls the next episode's preview one too).
-const SKIPPED = ["op", "mixed-op", "ed", "mixed-ed"]
-const skipName = (type: string) => (type === "ed" || type === "mixed-ed" ? "ending" : "opening")
+// The AniSkip intervals the player skips: openings, endings and recaps.
+const SKIPPED = ["op", "mixed-op", "ed", "mixed-ed", "recap"]
+// What one is: AniSkip calls the next episode's preview a recap too (one in
+// the second half of the episode is that).
+const skipName = (s: Skip, length: number) =>
+    s.type === "ed" || s.type === "mixed-ed" ? "ending" : s.type === "recap" ? (length > 0 && s.start > length / 2 ? "preview" : "recap") : "opening"
+// Skipped once each: an episode can have two of a kind (a recap and a preview).
+const skipKey = (s: Skip) => `${s.type}@${Math.round(s.start)}`
 
 const langNames: Record<string, string> = {
     jpn: "Japanese", ja: "Japanese", eng: "English", en: "English", spa: "Spanish", es: "Spanish", fre: "French", fra: "French", fr: "French",
@@ -100,6 +106,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     // there, a few times (see retry).
     const netRetries = useRef(0)
     const retriedAt = useRef(0)
+    // Where it was when it couldn't be reached: Try again goes on from there.
+    const unreachableAt = useRef<number | null>(null)
     const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     // The video plays, since it was (re)opened: the spinner shows until then.
     const [started, setStarted] = useState(false)
@@ -120,6 +128,9 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     const [subs, setSubs] = useState<SubOption[]>([])
     const [subKey, setSubKey] = useState<string>("off")
     const [cues, setCues] = useState<Cue[]>([])
+    // How they look on this device; seconds they're moved (this anime's).
+    const subStyle = useStore(subStyleStore)
+    const [delay, setDelay] = useState(() => subDelay(req.mediaId))
     const [skips, setSkips] = useState<Skip[]>([])
 
     const [paused, setPaused] = useState(true)
@@ -133,6 +144,10 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     const [controls, setControls] = useState(true)
     const [hoverTime, setHoverTime] = useState<{ x: number; t: number } | null>(null)
     const [nextEp, setNextEp] = useState<{ path?: string; episode: number } | null>(null)
+    // Where it started from a saved position: "Start over" shows a moment.
+    const [resumedFrom, setResumedFrom] = useState(0)
+    // The "Up next" card put away for this episode (and no playing on).
+    const [upNextOff, setUpNextOff] = useState(false)
 
     const startAt = useRef(0)
     const lastReport = useRef(0)
@@ -221,6 +236,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     // Ignore saved positions past the end of this file.
                     startAt.current = res.resumeAt && res.resumeAt < res.probe.duration - 10 ? res.resumeAt : 0
                     if (m !== "direct") setOffset(startAt.current)
+                    if (startAt.current > 30) setResumedFrom(startAt.current)
 
                     const subOpts: SubOption[] = [
                         ...(res.probe.subtitles ?? []).map(s => ({
@@ -267,6 +283,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     setSources(sorted)
                     setSourceIdx(0)
                     startAt.current = res.resumeAt || 0
+                    if (startAt.current > 30) setResumedFrom(startAt.current)
                     applyStreamSubs(sorted[0])
                 }
                 // Next episode
@@ -564,18 +581,26 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         tr.mode = "showing"
         while (tr.cues && tr.cues.length) tr.removeCue(tr.cues[0])
         for (const c of cues) {
-            const s = c.start - base
-            const e = c.end - base
+            const s = c.start - base + delay
+            const e = c.end - base + delay
             if (e <= 0) continue
             try {
                 const cue = new VTTCue(Math.max(0, s), e, c.text.replace(/<[^>]+>/g, m => (/^<\/?(i|b|u)>$/i.test(m) ? m : "")))
-                cue.line = -2
+                cue.line = subLine(subStyle)
                 tr.addCue(cue)
             } catch {
                 /* ignore bad cue */
             }
         }
-    }, [cues, base, videoKey])
+    }, [cues, base, videoKey, delay, subStyle])
+    // Subtitles earlier or later (z / x, or the subtitles menu): kept for the
+    // anime.
+    const moveSubs = (by: number) => {
+        const d = by === 0 ? 0 : Math.round((delay + by) * 10) / 10
+        setDelay(d)
+        if (mediaId > 0) setSubDelay(mediaId, d)
+        toast.info(`Subtitle timing: ${formatDelay(d)}${d === 0 ? "" : d > 0 ? " (later)" : " (earlier)"}`, { id: "sub-delay" })
+    }
 
     // -------------------------------------------------------------- progress
     const report = useCallback(
@@ -706,6 +731,9 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         const n = ++netRetries.current
         retriedAt.current = at
         setStarted(false)
+        // Another computer's file: it may have gone to sleep. Woken up (if it
+        // can be from here), it answers the next tries.
+        if (n === 1 && req.kind === "local" && req.path.startsWith("kumo://")) api.post("/api/sharing/wake", { path: req.path }).catch(() => {})
         toast.info(n === 1 ? "Connection lost: trying again…" : `Still trying to reach it (${n})…`)
         if (retryTimer.current) clearTimeout(retryTimer.current)
         retryTimer.current = setTimeout(() => reopen(at), 1000 * Math.min(8, 2 ** (n - 1)))
@@ -749,9 +777,15 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
         onClose()
     }
-    const playNext = () => {
+    // The next episode. finished: this one counts as watched to the end (it
+    // ended, or Up next was taken in its ending); else where it's at is saved.
+    const playNext = (finished = false) => {
         if (!nextEp) return
-        report(true)
+        if (!finished) report(true)
+        else if (!ended.current) {
+            ended.current = true
+            report(true, true)
+        }
         if (req.kind === "local" && nextEp.path) playerStore.set({ kind: "local", path: nextEp.path, mediaId, episode: nextEp.episode })
         else if (req.kind === "stream") playerStore.set({ ...req, episode: nextEp.episode })
     }
@@ -798,15 +832,47 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     }, [mediaId, episode, length])
     const skippable = skips.filter(s => SKIPPED.includes(s.type))
     const currentSkip = skippable.find(s => time >= s.start && time < s.end - 1)
-    const skipWhat = currentSkip && skipName(currentSkip.type)
-    const autoSkip = skipWhat === "ending" ? settings?.playback.skipOutroAniSkip : skipWhat ? settings?.playback.skipIntroAniSkip : false
+    const skipWhat = currentSkip && skipName(currentSkip, length)
+    const autoSkip =
+        skipWhat === "ending"
+            ? settings?.playback.skipOutroAniSkip
+            : skipWhat === "opening"
+              ? settings?.playback.skipIntroAniSkip
+              : skipWhat
+                ? settings?.playback.skipRecapAniSkip
+                : false
     useEffect(() => {
-        if (!currentSkip || !autoSkip || skipped.current.has(currentSkip.type)) return
-        skipped.current.add(currentSkip.type)
+        if (!currentSkip || !autoSkip || skipped.current.has(skipKey(currentSkip))) return
+        skipped.current.add(skipKey(currentSkip))
         seekTo(currentSkip.end)
         toast.info(`Skipped ${skipWhat}`)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentSkip?.type, autoSkip])
+    }, [currentSkip && skipKey(currentSkip), autoSkip])
+
+    // Up next: shown from the ending (AniSkip's, when it plays rather than
+    // being skipped), or the last 15 seconds. With playing on by itself, it
+    // counts down to the end of the video: nothing after the ending is cut.
+    const videoLength = Number.isFinite(duration) ? duration : 0
+    const endingSkip = skippable.find(s => skipName(s, length) === "ending")
+    const upNextAt = endingSkip && endingSkip.start > videoLength / 2 && !settings?.playback.skipOutroAniSkip ? endingSkip.start : videoLength - 15
+    const showUpNext = !!nextEp && videoLength > 60 && started && !upNextOff && time >= upNextAt && time < videoLength
+    const autoNext = !!settings?.playback.autoPlayNext
+    const countdown = Math.max(0, Math.ceil(videoLength - time))
+    // Gone back before it (rewound, also once it ended): it's shown, and
+    // plays on, again.
+    useEffect(() => {
+        if (time >= upNextAt - 5) return
+        ended.current = false
+        if (upNextOff) setUpNextOff(false)
+    }, [upNextOff, time, upNextAt])
+    // Where it resumed, a moment: Start over.
+    const showResumed = resumedFrom > 0 && started && time >= resumedFrom - 1 && time < resumedFrom + 10
+    const startOver = () => {
+        setResumedFrom(0)
+        // The opening is skipped again, as on a first play.
+        skipped.current.clear()
+        seekTo(0)
+    }
 
     // -------------------------------------------------------------- keyboard
     // Keys go to the player, not to what had the focus on the page behind it:
@@ -882,11 +948,20 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                 case "s":
                     if (currentSkip) seekTo(currentSkip.end)
                     break
+                case "z":
+                    if (subKey !== "off") moveSubs(-0.1)
+                    break
+                case "x":
+                    if (subKey !== "off") moveSubs(0.1)
+                    break
                 case "n":
                     playNext()
                     break
                 case "Escape":
                     if (document.fullscreenElement) handled = false
+                    // Up next showing: Back puts it away (and the episode
+                    // doesn't play on).
+                    else if (showUpNext) setUpNextOff(true)
                     // TV: Back hides the controls first, then closes.
                     else if (tv && controls && !paused) {
                         setControls(false)
@@ -898,7 +973,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     } else close()
                     break
                 default:
-                    if (/^[0-9]$/.test(e.key) && v) seekTo(((duration || v.duration) * Number(e.key)) / 10)
+                    if (e.key === "0") startOver()
+                    else if (/^[1-9]$/.test(e.key) && v) seekTo(((duration || v.duration) * Number(e.key)) / 10)
                     else handled = false
             }
             if (handled) {
@@ -944,7 +1020,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     // TV: Skip opening/ending takes the remote's focus when it shows (OK
     // skips; Left/Right still seek), unless it's on the controls.
     const skipRef = useRef<HTMLButtonElement>(null)
-    const showingSkip = !!currentSkip
+    // Up next stands for Skip ending (and preview) while it shows: its Play now.
+    const showingSkip = !!currentSkip && !(showUpNext && (skipWhat === "ending" || skipWhat === "preview"))
     useEffect(() => {
         if (!tv || !showingSkip) return
         const box = containerRef.current
@@ -954,6 +1031,18 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             if (document.activeElement === skipRef.current || document.activeElement === document.body) box?.focus({ preventScroll: true })
         }
     }, [showingSkip])
+    // TV: Up next takes the remote's focus too (OK plays the next episode,
+    // Back puts it away).
+    const upNextRef = useRef<HTMLButtonElement>(null)
+    useEffect(() => {
+        if (!tv || !showUpNext) return
+        const box = containerRef.current
+        const a = document.activeElement
+        if (!box || a === box || a === document.body || !box.contains(a)) upNextRef.current?.focus({ preventScroll: true })
+        return () => {
+            if (document.activeElement === upNextRef.current || document.activeElement === document.body) box?.focus({ preventScroll: true })
+        }
+    }, [showUpNext])
     // The Android app keeps the screen on while a video plays.
     useEffect(() => {
         android?.keepAwake?.(!paused)
@@ -994,6 +1083,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                 key={videoKey}
                 ref={videoRef}
                 className="absolute inset-0 size-full"
+                style={subStyleVars(subStyle)}
                 playsInline
                 // Black until the first frame (Android's WebView draws a grey
                 // one with a play button otherwise).
@@ -1056,7 +1146,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     }
                     ended.current = true
                     report(true, true)
-                    if (settings?.playback.autoPlayNext && nextEp) playNext()
+                    if (settings?.playback.autoPlayNext && nextEp && !upNextOff) playNext(true)
                 }}
                 onError={() => {
                     const v = videoRef.current
@@ -1076,7 +1166,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                             if (netRetries.current < MAX_RETRIES) retry(at)
                             else {
                                 note(`the video can't be reached${why}`)
-                                setError("The video can't be reached. Is the computer that has it on, and on the network? Close the player and play it again to retry.")
+                                unreachableAt.current = at
+                                setError("The video can't be reached. Is the computer that has it on, and on the network?")
                             }
                             return
                         }
@@ -1114,6 +1205,20 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                             <button className="h-10 rounded-xl bg-white/10 px-4 text-sm font-medium hover:bg-white/15" onClick={close}>
                                 Close
                             </button>
+                            {unreachableAt.current !== null && (
+                                <button
+                                    className="h-10 rounded-xl bg-brand px-4 text-sm font-medium text-white"
+                                    onClick={() => {
+                                        const at = unreachableAt.current ?? where()
+                                        unreachableAt.current = null
+                                        netRetries.current = 0
+                                        setError("")
+                                        retry(at)
+                                    }}
+                                >
+                                    Try again
+                                </button>
+                            )}
                             {(req.kind === "local" || sources.length > 0) && !androidApp && (
                                 <button className="h-10 rounded-xl bg-brand px-4 text-sm font-medium text-white" onClick={openInMpv}>
                                     Open in mpv
@@ -1179,6 +1284,9 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     <CtrlButton onClick={togglePlay} label={paused ? "Play (k)" : "Pause (k)"}>
                         {paused ? <Play className="size-6 fill-white" /> : <Pause className="size-6 fill-white" />}
                     </CtrlButton>
+                    <CtrlButton onClick={startOver} label="Start over (0)">
+                        <SkipBack className="size-5" />
+                    </CtrlButton>
                     <CtrlButton onClick={() => seekBy(-10)} label="Back 10s (j)">
                         <RotateCcw className="size-5" />
                     </CtrlButton>
@@ -1186,7 +1294,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                         <RotateCw className="size-5" />
                     </CtrlButton>
                     {nextEp && (
-                        <CtrlButton onClick={playNext} label="Next episode (n)">
+                        <CtrlButton onClick={() => playNext()} label="Next episode (n)">
                             <SkipForward className="size-5" />
                         </CtrlButton>
                     )}
@@ -1229,6 +1337,29 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                                         {s.bitmap ? " (mpv only)" : ""}
                                     </DropdownItem>
                                 ))}
+                                {subKey !== "off" && (
+                                    <>
+                                        <DropdownSeparator />
+                                        <DropdownLabel>Timing: {formatDelay(delay)}</DropdownLabel>
+                                        <DropdownItem keepOpen onSelect={() => moveSubs(-0.5)}>
+                                            Earlier by 0.5s
+                                        </DropdownItem>
+                                        <DropdownItem keepOpen onSelect={() => moveSubs(-0.1)}>
+                                            Earlier by 0.1s (z)
+                                        </DropdownItem>
+                                        <DropdownItem keepOpen onSelect={() => moveSubs(0.1)}>
+                                            Later by 0.1s (x)
+                                        </DropdownItem>
+                                        <DropdownItem keepOpen onSelect={() => moveSubs(0.5)}>
+                                            Later by 0.5s
+                                        </DropdownItem>
+                                        {delay !== 0 && (
+                                            <DropdownItem keepOpen onSelect={() => moveSubs(0)}>
+                                                Reset timing
+                                            </DropdownItem>
+                                        )}
+                                    </>
+                                )}
                             </DropdownContent>
                         </Dropdown>
                         {/* audio */}
@@ -1311,12 +1442,43 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                 controls: their gradient reaches up behind the button and
                 would otherwise take its clicks while the controls show. */}
             <div className="absolute right-8 bottom-32 z-10 flex flex-col items-end gap-3">
-                {currentSkip && (
+                {currentSkip && showingSkip && (
                     <button ref={skipRef} data-tv-skip onClick={() => seekTo(currentSkip.end)} className="flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-black shadow-2xl rise-in hover:bg-white/90">
                         <FastForward className="size-4 fill-black" /> Skip {skipWhat}
                     </button>
                 )}
+                {showUpNext && nextEp && (
+                    <div data-tv-skip className="w-72 rounded-2xl bg-black/80 p-4 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in">
+                        <p className="text-xs font-medium tracking-wide text-white/60 uppercase">Up next</p>
+                        <p className="mt-0.5 font-semibold">Episode {nextEp.episode}</p>
+                        <p className="mt-0.5 text-sm text-white/70 tabular-nums">{autoNext ? (countdown <= 10 ? `Playing in ${countdown}s` : "Plays when this one ends") : "Ready when you are"}</p>
+                        <div className="mt-3 flex gap-2">
+                            <button
+                                ref={upNextRef}
+                                onClick={() => playNext(true)}
+                                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-black hover:bg-white/90"
+                            >
+                                <Play className="size-4 fill-black" /> Play now
+                            </button>
+                            <button onClick={() => setUpNextOff(true)} className="h-10 rounded-xl px-3 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
+                                {autoNext ? "Cancel" : "Hide"}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
+            {showResumed && (
+                <div className="absolute bottom-32 left-8 z-10 flex items-center gap-3 rounded-xl bg-black/75 py-2 pr-2 pl-4 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in">
+                    <span className="tabular-nums">Resumed at {formatDuration(resumedFrom)}</span>
+                    {tv ? (
+                        <span className="pr-2 text-white/60">Start over is in the controls (Up)</span>
+                    ) : (
+                        <button onClick={startOver} className="flex h-8 items-center gap-1.5 rounded-lg bg-white/15 px-3 font-medium hover:bg-white/25">
+                            <SkipBack className="size-3.5" /> Start over
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     )
 }

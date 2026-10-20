@@ -2,9 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/simo1337s/animetest/server/internal/awake"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -355,4 +358,56 @@ func TestLogoutOnlyHere(t *testing.T) {
 	if w := do(s, "POST", "/api/auth/logout", "127.0.0.1:5000", "", nil); w.Code != http.StatusOK {
 		t.Fatalf("logout here: %d %s", w.Code, w.Body)
 	}
+}
+
+// A device on the network playing this computer's file keeps it awake
+// (until a while after); this computer's own player doesn't need to.
+func TestStreamingKeepsAwake(t *testing.T) {
+	s := newTestServer(t)
+	cfg := s.app.Settings.Get()
+	cfg.Server.AllowLAN = true
+	if _, err := s.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	starts := 0
+	s.app.Awake = awake.WithFuncs(func() bool { return s.app.Settings.Get().Sharing.KeepAwake }, func() error { mu.Lock(); starts++; mu.Unlock(); return nil }, func() {})
+	path, _ := addEpisode(t, s, 21, 1)
+	get := func(from string) int {
+		w := do(s, "GET", "/api/local/file?"+url.Values{"path": {path}}.Encode(), from, "", nil)
+		return w.Code
+	}
+	if code := get("127.0.0.1:5000"); code != http.StatusOK {
+		t.Fatalf("here: %d", code)
+	}
+	if starts != 0 || s.app.Awake.Active() {
+		t.Fatal("kept awake for this computer's own player")
+	}
+	if code := get("192.168.1.30:5000"); code != http.StatusOK {
+		t.Fatalf("from the network: %d", code)
+	}
+	mu.Lock()
+	n := starts
+	mu.Unlock()
+	if n != 1 || !s.app.Awake.Active() {
+		t.Fatalf("not kept awake for a device on the network: %d", n)
+	}
+	var st struct {
+		KeptAwake bool `json:"keptAwake"`
+	}
+	if w := do(s, "GET", "/api/status", "127.0.0.1:5000", "", nil); json.Unmarshal(w.Body.Bytes(), &st) != nil || !st.KeptAwake {
+		t.Errorf("status: %s", w.Body)
+	}
+	s.app.Awake.Close()
+	// Turned off in Settings: not at all.
+	cfg = s.app.Settings.Get()
+	cfg.Sharing.KeepAwake = false
+	if _, err := s.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	get("192.168.1.30:5000")
+	if mu.Lock(); starts != 1 {
+		t.Error("kept awake while turned off")
+	}
+	mu.Unlock()
 }

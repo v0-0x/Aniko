@@ -368,7 +368,7 @@ func (m *Manager) onProperty(s *Session, mpv *Mpv, w *trackWatch, ev MpvEvent) {
 			// AniSkip's times depend on the episode's length: ask once mpv
 			// knows it.
 			p := m.settings.Get().Playback
-			if f > 0 && !s.skipsAsked && (p.SkipIntroAniSkip || p.SkipOutroAniSkip) && s.MediaID > 0 && s.Episode > 0 {
+			if f > 0 && !s.skipsAsked && (p.SkipIntroAniSkip || p.SkipOutroAniSkip || p.SkipRecapAniSkip) && s.MediaID > 0 && s.Episode > 0 {
 				s.skipsAsked = true
 				go m.loadSkips(s, f)
 			}
@@ -489,17 +489,19 @@ func (m *Manager) applyTrackPrefs(s *Session, mpv *Mpv, w *trackWatch) {
 	}
 }
 
-// maybeSkip skips the opening or the ending, as the settings say. Must be
-// called with m.mu held.
+// maybeSkip skips the opening, the ending, a recap or a preview, as the
+// settings say: each once. Must be called with m.mu held.
 func (m *Manager) maybeSkip(s *Session, mpv *Mpv) {
 	if len(s.Skips) == 0 {
 		return
 	}
 	p := m.settings.Get().Playback
 	for _, sk := range s.Skips {
-		what, on := skipSetting(p, sk.Type)
-		if on && !s.skipped[sk.Type] && s.Position >= sk.Start && s.Position < sk.End-1 {
-			s.skipped[sk.Type] = true
+		what, on := skipSetting(p, sk, s.Duration)
+		// An episode can have two of a kind (a recap and a preview).
+		key := fmt.Sprintf("%s@%.0f", sk.Type, sk.Start)
+		if on && !s.skipped[key] && s.Position >= sk.Start && s.Position < sk.End-1 {
+			s.skipped[key] = true
 			end := sk.End
 			go func() {
 				_ = mpv.Set("time-pos", end)
@@ -509,14 +511,20 @@ func (m *Manager) maybeSkip(s *Session, mpv *Mpv) {
 	}
 }
 
-// skipSetting names an AniSkip interval type and says whether the settings
-// skip it. Recaps play (AniSkip calls the next episode's preview one too).
-func skipSetting(p config.PlaybackSettings, typ string) (what string, on bool) {
-	switch typ {
+// skipSetting names an AniSkip interval and says whether the settings skip
+// it. AniSkip calls the next episode's preview a recap too: one in the second
+// half of the episode (length) is that.
+func skipSetting(p config.PlaybackSettings, sk SkipInterval, length float64) (what string, on bool) {
+	switch sk.Type {
 	case "op", "mixed-op":
 		return "opening", p.SkipIntroAniSkip
 	case "ed", "mixed-ed":
 		return "ending", p.SkipOutroAniSkip
+	case "recap":
+		if length > 0 && sk.Start > length/2 {
+			return "preview", p.SkipRecapAniSkip
+		}
+		return "recap", p.SkipRecapAniSkip
 	}
 	return "", false
 }

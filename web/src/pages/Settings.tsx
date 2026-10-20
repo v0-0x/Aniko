@@ -19,6 +19,8 @@ import {
     LibraryBig,
     Magnet,
     MonitorPlay,
+    MonitorSmartphone,
+    Moon,
     Network,
     Palette,
     Plus,
@@ -40,15 +42,17 @@ import { useCheckUpdate, useOnlineProviders, useSaveSettings, useSharing, useSta
 import { exampleMpvPath, installHint, installSource, platformName } from "@/lib/platform"
 import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
-import { accentPreviewStore } from "@/lib/store"
+import { accentPreviewStore, useStore } from "@/lib/store"
+import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { androidApp, setTvWidth, TV_WIDTHS, tv, tvWidth } from "@/lib/tv"
 import type { Settings, SharingPeer, Status } from "@/lib/types"
-import { cn, copyText, formatBytes, img, relativeTime } from "@/lib/utils"
+import { cn, compareVersions, copyText, formatBytes, img, relativeTime } from "@/lib/utils"
 
 type SectionId =
     | "app"
     | "ui"
     | "library"
+    | "devices"
     | "playback"
     | "mpv"
     | "transcode"
@@ -66,6 +70,7 @@ const NAV: { items: { id: SectionId; label: string; icon: React.ReactNode }[] }[
             { id: "app", label: "App", icon: <AppWindow /> },
             { id: "ui", label: "User Interface", icon: <Palette /> },
             { id: "library", label: "Local Anime Library", icon: <LibraryBig /> },
+            { id: "devices", label: "Devices", icon: <MonitorSmartphone /> },
         ],
     },
     {
@@ -222,6 +227,7 @@ export default function SettingsPage() {
                     {section === "app" && <AppSection draft={draft} set={set} />}
                     {section === "ui" && <UISection draft={draft} set={set} />}
                     {section === "library" && <LibrarySection draft={draft} set={set} />}
+                    {section === "devices" && <DevicesSection draft={draft} set={set} />}
                     {section === "playback" && <PlaybackSection draft={draft} set={set} />}
                     {section === "mpv" && <MpvSection draft={draft} set={set} />}
                     {section === "transcode" && <TranscodeSection draft={draft} set={set} />}
@@ -257,6 +263,7 @@ const SUBTITLES: Record<SectionId, string> = {
     app: "Account, server and network access",
     ui: "Make Kumo look the way you like",
     library: "Manage your local anime library",
+    devices: "Kumo on your other computers and TVs",
     playback: "How episodes are played and tracked",
     mpv: "Configure mpv, the desktop media player",
     transcode: "Play every video format in the in-app player",
@@ -575,8 +582,8 @@ function AppSection({ draft, set }: SectionProps) {
             </Group>
 
             <Group title="Library sharing">
-                <Row label="Share libraries with Kumo on your other computers" help={draft.sharing.enabled ? "On: who gets this computer's library, and the libraries shared with it, are in Local Anime Library." : "In Local Anime Library: turn it on there, on each computer."}>
-                    <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "library" })}>
+                <Row label="Share libraries with Kumo on your other computers" help={draft.sharing.enabled ? "On: who gets this computer's library, and the libraries shared with it, are in Devices." : "In Devices: turn it on there, on each computer."}>
+                    <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "devices" })}>
                         Open
                     </Button>
                 </Row>
@@ -723,6 +730,40 @@ function ProgramsGroup() {
     )
 }
 
+// How the in-app player shows subtitles: this device's own choice (a TV
+// across the room needs them bigger), applied at once.
+function SubtitlesGroup() {
+    const style = useStore(subStyleStore)
+    return (
+        <Group title="How subtitles look" description="In the in-app player, on this device. Their timing: z and x while playing, or the player's subtitles menu (kept for each anime).">
+            <div className="px-4 py-4">
+                <div className="relative flex h-28 items-end justify-center overflow-hidden rounded-lg bg-gradient-to-br from-sky-900 via-slate-700 to-amber-800 pb-3" aria-hidden>
+                    <span
+                        className="rounded px-1.5 font-semibold text-white"
+                        style={{
+                            fontSize: `${17 * (SUB_SIZES.find(o => o.value === style.size)?.scale ?? 1)}px`,
+                            background: (subStyleVars(style) as Record<string, string>)["--sub-bg"],
+                            textShadow: (subStyleVars(style) as Record<string, string>)["--sub-shadow"],
+                            marginBottom: style.position === "raised" ? "1.75rem" : 0,
+                        }}
+                    >
+                        This is how subtitles look.
+                    </span>
+                </div>
+            </div>
+            <Row label="Size">
+                <Select className="w-40" value={style.size} onChange={v => setSubStyle({ size: v as SubStyle["size"] })} options={SUB_SIZES.map(o => ({ value: o.value, label: o.label }))} />
+            </Row>
+            <Row label="Background">
+                <Select className="w-48" value={style.background} onChange={v => setSubStyle({ background: v as SubStyle["background"] })} options={SUB_BACKGROUNDS} />
+            </Row>
+            <Row label="Position" help="Higher up keeps them clear of a TV's edge or a video's own captions.">
+                <Select className="w-40" value={style.position} onChange={v => setSubStyle({ position: v as SubStyle["position"] })} options={SUB_POSITIONS} />
+            </Row>
+        </Group>
+    )
+}
+
 // How big everything is on the TV (this TV's own choice, see lib/tv.ts).
 function TvSizeRow() {
     const [width, setWidth] = useState(tvWidth)
@@ -849,6 +890,11 @@ function SharingGroup({ draft, set }: SectionProps) {
                     <Input value={draft.sharing.name} disabled={!trusted} placeholder={sharing?.name || "This computer's name"} onChange={e => set("sharing", { name: e.target.value })} />
                 </Stack>
             )}
+            {draft.sharing.enabled && (
+                <Row label="Sync watch history by itself" help="When a device this one is paired with comes back on the network, or Kumo's TV app is opened again, Continue watching and the positions are brought up to date. Sync on Home still does it at once.">
+                    <Switch checked={draft.sharing.autoSync ?? true} disabled={!trusted} onChange={v => set("sharing", { autoSync: v })} />
+                </Row>
+            )}
             {draft.sharing.enabled !== !!saved?.enabled && <p className="px-4 py-3 text-xs text-amber-200/80">Save to turn library sharing {draft.sharing.enabled ? "on" : "off"}.</p>}
             {saved?.enabled && sharing && (
                 <>
@@ -875,6 +921,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                                 <p className="mt-0.5 text-xs text-subtle">
                                     {[
                                         p.address,
+                                        p.version && `Kumo ${p.version}${p.platform === "android" ? " for Android" : ""}`,
                                         !p.online && p.lastSeen > 0 && `seen ${relativeTime(p.lastSeen)}`,
                                         p.shares && `shares its library with you${p.files ? ` (${p.files} ${p.files === 1 ? "file" : "files"})` : ""}`,
                                         p.error,
@@ -882,8 +929,14 @@ function SharingGroup({ draft, set }: SectionProps) {
                                         .filter(Boolean)
                                         .join(" · ")}
                                 </p>
+                                <VersionNote peer={p} mine={status?.version} />
                             </div>
                             <div className="flex shrink-0 items-center gap-3">
+                                {!p.online && p.canWake && (
+                                    <Button size="sm" variant="ghost" icon={<Moon className="size-4" />} loading={p.waking} onClick={() => call(() => api.post(`/api/sharing/libraries/${p.id}/wake`))}>
+                                        {p.waking ? "Waking…" : "Wake"}
+                                    </Button>
+                                )}
                                 <span className="text-xs text-muted">Share my library</span>
                                 <Switch checked={p.allowed} disabled={!trusted} onChange={v => call(() => api.post(`/api/sharing/peers/${p.id}`, { allowed: v }))} />
                                 {!p.online && trusted && (
@@ -962,6 +1015,45 @@ function SharingGroup({ draft, set }: SectionProps) {
     )
 }
 
+// The other Kumo runs another version than this one: some things (Sync,
+// waking it up) need both up to date.
+function VersionNote({ peer, mine }: { peer: SharingPeer; mine?: string }) {
+    const c = compareVersions(peer.version, mine)
+    if (!c) return null
+    return (
+        <p className="mt-1 text-xs text-amber-200/80">
+            {c < 0
+                ? `Older than this one (Kumo ${mine}): update Kumo on ${peer.name} so everything works together. Its Home page has the update button.`
+                : `Newer than this one (Kumo ${mine}): update Kumo here so everything works together (Settings › About & updates).`}
+        </p>
+    )
+}
+
+function DevicesSection({ draft, set }: SectionProps) {
+    const { data: status } = useStatus()
+    const trusted = status?.client !== "lan"
+    return (
+        <>
+            <SharingGroup draft={draft} set={set} />
+            {/* A TV doesn't serve the others (and has nothing to keep awake). */}
+            {!androidApp && (
+                <Group title="While other devices watch">
+                    <Row
+                        label="Keep this computer awake"
+                        help={
+                            status?.keptAwake
+                                ? "Staying awake now: another device is playing from it. It can sleep again 15 minutes after the last episode."
+                                : "While a TV, phone or another computer plays an episode from this one, it doesn't go to sleep (the screen can still turn off). It can sleep again 15 minutes after."
+                        }
+                    >
+                        <Switch checked={draft.sharing.keepAwake ?? true} disabled={!trusted} onChange={v => set("sharing", { keepAwake: v })} />
+                    </Row>
+                </Group>
+            )}
+        </>
+    )
+}
+
 function PeerGrant({ label, help, checked, disabled, onChange }: { label: string; help: string; checked: boolean; disabled?: boolean; onChange: (v: boolean) => void }) {
     return (
         <div className="flex items-center justify-between gap-4">
@@ -975,6 +1067,7 @@ function PeerGrant({ label, help, checked, disabled, onChange }: { label: string
 }
 
 function LibrarySection({ draft, set }: SectionProps) {
+    const [, setSearchParams] = useSearchParams()
     const extra = draft.library.extraDirs ?? []
     return (
         <>
@@ -1010,7 +1103,13 @@ function LibrarySection({ draft, set }: SectionProps) {
                     <Switch checked={draft.library.refreshOnStartup} onChange={v => set("library", { refreshOnStartup: v })} />
                 </Row>
             </Group>
-            <SharingGroup draft={draft} set={set} />
+            <Group title="Library sharing">
+                <Row label="Share this library with your other computers and TVs" help="Who gets it, and the libraries shared with this computer, are in Devices.">
+                    <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "devices" })}>
+                        Open
+                    </Button>
+                </Row>
+            </Group>
             <Collapsible title="Advanced">
                 <Stack label={`Matching threshold — ${Math.round(draft.library.matchThreshold * 100)}%`} help="How similar a file name must be to an AniList title to match automatically.">
                     <input type="range" min={0.3} max={0.95} step={0.05} value={draft.library.matchThreshold} onChange={e => set("library", { matchThreshold: Number(e.target.value) })} className="accent-[var(--brand)]" />
@@ -1069,6 +1168,9 @@ function PlaybackSection({ draft, set }: SectionProps) {
                 <Row label="Skip endings automatically" help="Jumps past the ending song, also with AniSkip timestamps">
                     <Switch checked={p.skipOutroAniSkip} onChange={v => set("playback", { skipOutroAniSkip: v })} />
                 </Row>
+                <Row label="Skip recaps and previews automatically" help="The story so far at the start of an episode, and the next one's preview after the ending, where AniSkip has them">
+                    <Switch checked={!!p.skipRecapAniSkip} onChange={v => set("playback", { skipRecapAniSkip: v })} />
+                </Row>
             </Group>
             <Group title="Progress">
                 <Row label="Update progress automatically" help="Mark the episode as watched on AniList after you finish it">
@@ -1089,6 +1191,7 @@ function PlaybackSection({ draft, set }: SectionProps) {
                     <Select className="w-44" value={p.preferredSubLang} onChange={v => set("playback", { preferredSubLang: v })} options={LANGS} />
                 </Row>
             </Group>
+            <SubtitlesGroup />
         </>
     )
 }

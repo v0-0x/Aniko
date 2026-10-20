@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"slices"
 	"sort"
 	"strconv"
@@ -128,6 +129,7 @@ type run struct {
 
 type peer struct {
 	id, name, version string
+	platform          string // what it runs on ("android": a TV), as it says
 	pub               []byte
 	addr              net.IP
 	port              int
@@ -164,6 +166,15 @@ type peer struct {
 	offset   time.Duration
 	// callerUser: the AniList account it said it's on, asking this Kumo.
 	callerUser int
+	// wakeMACs: its network cards (it shares), what wakes it (wake.go);
+	// wakeUntil: it's being woken up until then.
+	wakeMACs  []string
+	wakeUntil time.Time
+	// autoSynced: when the watch history was last synced with it by itself.
+	autoSynced time.Time
+	// declined: asked whether to share this Kumo's library with it, the
+	// answer was "not now" (Home doesn't ask again).
+	declined bool
 }
 
 // paired: this Kumo shares its library with it, or it with this one.
@@ -269,6 +280,10 @@ type savedPeer struct {
 	CallerUser int   `json:"callerUser,omitempty"`
 	HistorySeq int64 `json:"historySeq,omitempty"`
 	PushedSeq  int64 `json:"pushedSeq,omitempty"`
+	// Its network cards, to wake it (wake.go).
+	Wake     []string `json:"wake,omitempty"`
+	Platform string   `json:"platform,omitempty"`
+	Declined bool     `json:"declined,omitempty"`
 }
 
 func (s *Service) load() {
@@ -286,6 +301,7 @@ func (s *Service) load() {
 			manual: sp.Manual, allowed: sp.Allowed, shares: sp.Shares, lastSeen: time.Unix(sp.Seen, 0),
 			account: sp.Account, downloads: sp.Downloads, hostDownloads: sp.TakesDownloads,
 			user: sp.User, callerUser: sp.CallerUser, historySeq: sp.HistorySeq, pushedSeq: sp.PushedSeq,
+			wakeMACs: cleanMACs(sp.Wake), platform: cleanPlatform(sp.Platform), declined: sp.Declined,
 		}
 	}
 }
@@ -296,13 +312,14 @@ func (s *Service) load() {
 func (s *Service) save() {
 	out := map[string]savedPeer{}
 	for id, p := range s.peers {
-		if !p.allowed && !p.shares && p.manual == "" {
+		if !p.allowed && !p.shares && p.manual == "" && !p.declined {
 			continue
 		}
 		sp := savedPeer{
 			Name: p.name, Key: base64.StdEncoding.EncodeToString(p.pub), Port: p.port, Manual: p.manual, Allowed: p.allowed, Shares: p.shares, Seen: p.lastAround().Unix(),
 			Account: p.account, Downloads: p.downloads, TakesDownloads: p.hostDownloads,
 			User: p.user, CallerUser: p.callerUser, HistorySeq: p.historySeq, PushedSeq: p.pushedSeq,
+			Wake: p.wakeMACs, Platform: p.platform, Declined: p.declined,
 		}
 		if p.addr != nil {
 			sp.Addr = p.addr.String()
@@ -411,7 +428,7 @@ func (s *Service) loop(ctx context.Context, r *run) {
 
 func (s *Service) beacon() beacon {
 	cfg := s.settings.Get()
-	return beacon{Kumo: protocol, ID: s.id.ID, Name: s.Name(), Port: cfg.Server.Port, Key: s.id.PublicKey(), Version: config.AppVersion}
+	return beacon{Kumo: protocol, ID: s.id.ID, Name: s.Name(), Port: cfg.Server.Port, Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS}
 }
 
 func (s *Service) announce(r *run) {
@@ -452,6 +469,9 @@ func (s *Service) heard(b beacon, from net.IP) {
 	now := time.Now()
 	wasOnline := p.online(now)
 	p.name, p.version, p.seen = cleanName(b.Name), b.Version, now
+	if pl := cleanPlatform(b.Platform); pl != "" {
+		p.platform = pl
+	}
 	// One added by hand keeps its address, and one that proved who it is
 	// lately too: anyone can repeat its beacons from elsewhere. Unless it
 	// doesn't answer there (its address changed, say): then where it says.
@@ -566,6 +586,10 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 	s.mu.Unlock()
 	if !wasOnline {
 		s.hub.Publish("sharing-updated", nil)
+		// Back (or just started): where each left off, in step.
+		if caller.Paired && !c.ticket {
+			s.autoSync(p)
+		}
 	}
 	me := s.user()
 	caller.SameUser = me > 0 && c.user == me
@@ -633,7 +657,9 @@ type Hello struct {
 	Name    string `json:"name"`
 	Key     string `json:"key"`
 	Version string `json:"version"` // Kumo's
-	Shares  bool   `json:"shares"`
+	// Platform: what it runs on (runtime.GOOS: "android" on a TV).
+	Platform string `json:"platform,omitempty"`
+	Shares   bool   `json:"shares"`
 	// Files changes when the shared files do.
 	Files string `json:"files,omitempty"`
 	// User: the AniList account it's logged into, told to those it shares
@@ -646,11 +672,13 @@ type Hello struct {
 	Downloads bool `json:"downloads,omitempty"`
 	// AniCli: it runs ani-cli for the guest (anicli.go).
 	AniCli bool `json:"aniCli,omitempty"`
+	// Wake: its network cards, to wake it when it's asleep (wake.go).
+	Wake []string `json:"wake,omitempty"`
 }
 
 // Hello answers a guest (verified, see Verify).
 func (s *Service) Hello(c Caller) Hello {
-	h := Hello{ID: s.id.ID, Name: s.Name(), Key: s.id.PublicKey(), Version: config.AppVersion, Shares: c.Allowed}
+	h := Hello{ID: s.id.ID, Name: s.Name(), Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS, Shares: c.Allowed}
 	if c.Allowed {
 		h.Files = s.sharedVersion()
 		h.User = s.user()
@@ -659,6 +687,7 @@ func (s *Service) Hello(c Caller) Hello {
 		}
 		h.Downloads = c.Downloads
 		h.AniCli = s.AniCliReady != nil && s.AniCliReady()
+		h.Wake = macs()
 	}
 	return h
 }
@@ -666,7 +695,7 @@ func (s *Service) Hello(c Caller) Hello {
 // Whoami is what anyone on the network may ask: who this Kumo is (what its
 // beacons say).
 func (s *Service) Whoami() Hello {
-	return Hello{ID: s.id.ID, Name: s.Name(), Key: s.id.PublicKey(), Version: config.AppVersion}
+	return Hello{ID: s.id.ID, Name: s.Name(), Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS}
 }
 
 // SharedFiles are the library's files this Kumo shares: those matched to an
@@ -731,7 +760,10 @@ func (s *Service) askHosts(ctx context.Context) {
 			continue
 		}
 		wait := askEvery
-		if p.fails > 0 {
+		switch {
+		case p.waking(now):
+			wait = 3 * time.Second
+		case p.fails > 0:
 			wait = 10 * time.Second
 		}
 		if now.Sub(p.asked) >= wait {
@@ -791,12 +823,22 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 		}
 		return
 	}
-	visible = p.fails > 0 || p.shares != h.Shares || (p.name != h.Name && h.Name != "") || !p.online(time.Now())
-	p.fails, p.seen = 0, time.Now()
+	// It answered again after it didn't (or for the first time this run).
+	back := p.fails > 0 || !p.online(time.Now())
+	visible = back || p.shares != h.Shares || (p.name != h.Name && h.Name != "") || p.waking(time.Now())
+	p.fails, p.seen, p.wakeUntil = 0, time.Now(), time.Time{}
+	// Its cards, to wake it later (an older Kumo doesn't say).
+	if cards := cleanMACs(h.Wake); h.Shares && len(cards) > 0 && strings.Join(cards, ",") != strings.Join(p.wakeMACs, ",") {
+		p.wakeMACs = cards
+		s.save()
+	}
 	if h.Name != "" {
 		p.name = cleanName(h.Name)
 	}
 	p.version = h.Version
+	if pl := cleanPlatform(h.Platform); pl != "" {
+		p.platform = pl
+	}
 	if p.shares != h.Shares {
 		p.shares = h.Shares
 		s.save()
@@ -838,6 +880,9 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	if h.Shares && h.User > 0 && h.User == s.user() {
 		s.syncHistory(ctx, p)
 		s.pushMissed(ctx, p)
+	}
+	if back {
+		s.autoSync(p)
 	}
 }
 
@@ -1015,21 +1060,14 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 	s.mu.Lock()
 	var with []*peer
 	for _, p := range s.peers {
-		if !p.paired() {
+		if !p.paired() || me == 0 {
 			continue
 		}
-		user := p.user
-		if user == 0 {
-			user = p.callerUser
-		}
-		switch {
-		case me == 0:
-		case user == 0:
-			res.Skipped = append(res.Skipped, p.displayName()+" (it hasn't said its AniList account yet: open Kumo there)")
-		case user != me:
-			res.Skipped = append(res.Skipped, p.displayName()+" (another AniList account)")
-		case p.addr == nil || p.port <= 0:
-			res.Unreachable = append(res.Unreachable, p.displayName()+" (its address isn't known yet)")
+		switch skip, away := syncable(p, me); {
+		case skip != "":
+			res.Skipped = append(res.Skipped, p.displayName()+" ("+skip+")")
+		case away != "":
+			res.Unreachable = append(res.Unreachable, p.displayName()+" ("+away+")")
 		default:
 			with = append(with, p)
 		}
@@ -1054,13 +1092,7 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 			s.mu.Lock()
 			name := p.displayName()
 			s.mu.Unlock()
-			ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-			defer cancel()
-			var theirs []*history.Entry
-			err := s.getJSON(ctx, p, "/api/peer/history?latest=1", &theirs)
-			if err == nil {
-				err = s.sendHistory(ctx, p, body)
-			}
+			merged, err := s.syncWith(ctx, p, body)
 			if err != nil {
 				log.Printf("sharing: sync with %s: %v", name, err)
 				mu.Lock()
@@ -1068,7 +1100,6 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 				mu.Unlock()
 				return
 			}
-			merged := s.merge(theirs)
 			mu.Lock()
 			res.Devices = append(res.Devices, name)
 			res.Updated += merged
@@ -1083,6 +1114,109 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 		s.hub.Publish("history-updated", nil)
 	}
 	return res, nil
+}
+
+// syncable: whether this Kumo's watch history can be synced with a paired
+// one (this one on AniList account me): why not (skip), or why it can't be
+// reached. Must be called with mu held.
+func syncable(p *peer, me int) (skip, away string) {
+	user := p.user
+	if user == 0 {
+		user = p.callerUser
+	}
+	switch {
+	case user == 0:
+		return "it hasn't said its AniList account yet: open Kumo there", ""
+	case user != me:
+		return "another AniList account", ""
+	case p.addr == nil || p.port <= 0:
+		return "", "its address isn't known yet"
+	}
+	return "", ""
+}
+
+// syncWith takes a paired Kumo's latest positions and sends it this one's
+// (body), and returns how many changed here.
+func (s *Service) syncWith(ctx context.Context, p *peer, body []byte) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	var theirs []*history.Entry
+	if err := s.getJSON(ctx, p, "/api/peer/history?latest=1", &theirs); err != nil {
+		return 0, err
+	}
+	if err := s.sendHistory(ctx, p, body); err != nil {
+		return 0, err
+	}
+	return s.merge(theirs), nil
+}
+
+// How often at most a paired Kumo is synced with by itself (autoSync).
+const autoSyncEvery = 2 * time.Minute
+
+// autoSync syncs the watch history with a paired Kumo that came back (it
+// answered again, or asked), as Sync would, unless that's turned off or it
+// was done a moment ago: Continue watching goes on from where it was left on
+// it, without pressing Sync.
+func (s *Service) autoSync(p *peer) {
+	me := s.user()
+	if s.History == nil || me == 0 || !s.settings.Get().Sharing.AutoSync {
+		return
+	}
+	s.mu.Lock()
+	skip, away := syncable(p, me)
+	due := p.paired() && skip == "" && away == "" && time.Since(p.autoSynced) >= autoSyncEvery && s.running != nil
+	if due {
+		p.autoSynced = time.Now()
+	}
+	name := p.displayName()
+	s.mu.Unlock()
+	if !due {
+		return
+	}
+	go func() {
+		body, err := json.Marshal(s.History.Latest(historyBatch))
+		if err != nil {
+			return
+		}
+		merged, err := s.syncWith(context.Background(), p, body)
+		if err != nil {
+			log.Printf("sharing: syncing with %s: %v", name, plainError(err))
+			return
+		}
+		if merged > 0 {
+			log.Printf("sharing: synced %d position(s) with %s", merged, name)
+			s.hub.Publish("history-updated", nil)
+			if s.OnWatchedElsewhere != nil {
+				s.OnWatchedElsewhere()
+			}
+		}
+	}()
+}
+
+// Gone marks another Kumo as not heard from for a while (tests: as if it
+// had been away).
+func (s *Service) Gone(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if p := s.peers[id]; p != nil {
+		p.seen, p.lastSeen = time.Time{}, time.Time{}
+	}
+}
+
+// AutoSyncAll syncs with every paired Kumo by itself (autoSync), as when
+// the app is opened again.
+func (s *Service) AutoSyncAll() {
+	s.mu.Lock()
+	var all []*peer
+	for _, p := range s.peers {
+		if p.paired() {
+			all = append(all, p)
+		}
+	}
+	s.mu.Unlock()
+	for _, p := range all {
+		s.autoSync(p)
+	}
 }
 
 // plainError says what went wrong talking to another Kumo, in a few words.
@@ -1380,6 +1514,8 @@ type PeerView struct {
 	Online   bool   `json:"online"`
 	LastSeen int64  `json:"lastSeen"`
 	Version  string `json:"version"`
+	// Platform: what it runs on ("android": a TV; "" when it didn't say).
+	Platform string `json:"platform,omitempty"`
 	// Allowed: this Kumo shares its library with it.
 	Allowed bool `json:"allowed"`
 	// Shares: it shares its library with this Kumo (Files of them).
@@ -1396,6 +1532,11 @@ type PeerView struct {
 	SharesAccount  bool `json:"sharesAccount"`
 	UsingAccount   bool `json:"usingAccount"`
 	TakesDownloads bool `json:"takesDownloads"`
+	// It shares and can be woken up (wake.go); it's being woken.
+	CanWake bool `json:"canWake"`
+	Waking  bool `json:"waking"`
+	// Declined: asked whether to share with it, the answer was "not now".
+	Declined bool `json:"declined"`
 }
 
 func (s *Service) view(p *peer, now time.Time) PeerView {
@@ -1404,6 +1545,8 @@ func (s *Service) view(p *peer, now time.Time) PeerView {
 		Allowed: p.allowed, Shares: p.shares, Files: len(p.files), Manual: p.manual != "",
 		Account: p.account, Downloads: p.downloads,
 		SharesAccount: p.shares && p.hostAccount != "", TakesDownloads: p.shares && p.hostDownloads,
+		CanWake: p.shares && len(p.wakeMACs) > 0, Waking: p.waking(now),
+		Platform: p.platform, Declined: p.declined,
 	}
 	if p.addr != nil {
 		v.Address = net.JoinHostPort(p.addr.String(), strconv.Itoa(p.port))
@@ -1482,6 +1625,8 @@ type Grants struct {
 	Allowed   *bool `json:"allowed"`
 	Account   *bool `json:"account"`
 	Downloads *bool `json:"downloads"`
+	// Declined: "not now", asked whether to share with it (Home).
+	Declined *bool `json:"declined"`
 }
 
 // SetAllowed shares this Kumo's library with another one, or stops.
@@ -1507,6 +1652,13 @@ func (s *Service) SetGrants(id string, g Grants) error {
 		}
 		if g.Downloads != nil {
 			p.downloads = *g.Downloads
+		}
+		if g.Declined != nil {
+			p.declined = *g.Declined
+		}
+		// Shared with after all: the "not now" is over.
+		if p.allowed {
+			p.declined = false
 		}
 		s.save()
 	}
@@ -1670,6 +1822,9 @@ func (s *Service) Connect(ctx context.Context, address string) (PeerView, error)
 		s.peers[h.ID] = p
 	}
 	p.name, p.version, p.addr, p.port, p.seen = cleanName(h.Name), h.Version, ip, port, time.Now()
+	if pl := cleanPlatform(h.Platform); pl != "" {
+		p.platform = pl
+	}
 	p.manual = net.JoinHostPort(host, strconv.Itoa(port))
 	p.asked, p.fails = time.Time{}, 0
 	s.save()

@@ -3,6 +3,8 @@ import { useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { EpisodeCard } from "@/components/EpisodeCard"
 import { LoginDialog } from "@/components/LoginDialog"
+import { DevicePrompts } from "@/components/DevicePrompts"
+import { SleepingHosts } from "@/components/SleepingHosts"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
@@ -131,6 +133,8 @@ export default function HomePage() {
     return (
         <div className="relative min-h-full pb-24">
             <UpdateBanner />
+            <SleepingHosts />
+            <DevicePrompts />
             <Hero
                 items={continueItems}
                 loading={isLoading}
@@ -468,9 +472,9 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
                   done: paired,
                   icon: <FolderOpen className="size-5" />,
                   title: "Watch your computer's library",
-                  text: "On your computer's Kumo, open Settings › Local Anime Library, turn sharing on and share with this device. It shows up here by itself.",
+                  text: "On your computer's Kumo, open Settings › Devices, turn sharing on and share with this device. It shows up here by itself.",
                   action: (
-                      <Link to="/settings?tab=library">
+                      <Link to="/settings?tab=devices">
                           <Button size="sm">See devices</Button>
                       </Link>
                   ),
@@ -479,7 +483,7 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
                   done: loggedIn,
                   icon: <LogIn className="size-5" />,
                   title: "Use your AniList account",
-                  text: "Easiest from the computer: next to this device in its Settings › Local Anime Library, turn on “Share my AniList account”. Or log in here.",
+                  text: "Easiest from the computer: next to this device in its Settings › Devices, turn on “Share my AniList account”. Or log in here.",
                   action: (
                       <Button size="sm" onClick={onLogin}>
                           Log in here

@@ -429,6 +429,7 @@ export function DropdownItem({
     icon,
     danger,
     disabled,
+    keepOpen,
     className,
 }: {
     children: React.ReactNode
@@ -436,11 +437,16 @@ export function DropdownItem({
     icon?: React.ReactNode
     danger?: boolean
     disabled?: boolean
+    // The menu stays open (a step of several, like moving the subtitles).
+    keepOpen?: boolean
     className?: string
 }) {
     return (
         <DropdownPrimitive.Item
-            onSelect={onSelect}
+            onSelect={e => {
+                if (keepOpen) e.preventDefault()
+                onSelect?.()
+            }}
             disabled={disabled}
             className={cn(
                 "flex h-8 cursor-pointer items-center gap-2.5 rounded-md px-2 text-[13px] outline-none select-none data-[disabled]:opacity-40 data-[highlighted]:bg-white/[0.07]",

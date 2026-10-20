@@ -295,6 +295,8 @@ public class MainActivity extends Activity {
         super.onResume();
         resumed = true;
         web.onResume();
+        // Back from the home screen: the page syncs with the computers (Auto-Sync).
+        js("window.kumoResumed&&window.kumoResumed()");
         // Android may have stopped it while Kumo was in the background.
         if (!starting && !KumoServer.get(this).running()) restartServer("Starting Kumo…");
         main.postDelayed(watcher, 5000);

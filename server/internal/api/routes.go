@@ -133,6 +133,7 @@ func (s *Server) routes() {
 			s.app.Share.ForwardHLS(w, r, id, r.PathValue("name"))
 			return
 		}
+		defer s.awakeFor(r)()
 		s.app.HLS.Serve(w, r, r.PathValue("id"), r.PathValue("name"))
 	})
 	m.HandleFunc("DELETE /api/local/hls/{id}", h(func(r *http.Request) (any, error) {
@@ -382,6 +383,12 @@ func (s *Server) status(r *http.Request) (any, error) {
 	if cfg.Server.AllowLAN {
 		lan = lanURLs(cfg.Server.Port)
 	}
+	// Home's questions about the other Kumos: for this computer, which
+	// decides about sharing.
+	var prompts []share.Prompt
+	if isTrusted(r) {
+		prompts = s.app.Share.Prompts()
+	}
 	return map[string]any{
 		"version":        config.AppVersion,
 		"appName":        config.AppName,
@@ -390,7 +397,13 @@ func (s *Server) status(r *http.Request) (any, error) {
 		"anilistAuthUrl": "https://anilist.co/api/v2/oauth/authorize?client_id=" + cfg.Anilist.ClientID + "&response_type=token",
 		"features":       feat,
 		// The Kumos this one is paired with (Home's Sync).
-		"paired":       s.app.Share.Paired(),
+		"paired": s.app.Share.Paired(),
+		// The computers sharing with this one that don't answer (asleep).
+		"asleep": s.app.Share.Asleep(),
+		// Share with a new one, update one (Home).
+		"devicePrompts": prompts,
+		// Kept awake now: another device is playing this computer's files.
+		"keptAwake":    s.app.Awake.Active(),
 		"client":       kind,
 		"hostname":     host,
 		"platform":     runtime.GOOS,

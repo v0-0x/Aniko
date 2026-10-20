@@ -190,6 +190,7 @@ export type Settings = {
         preferredSubLang: string
         skipIntroAniSkip: boolean
         skipOutroAniSkip: boolean
+        skipRecapAniSkip?: boolean
     }
     mpv: { path: string; socket: string; extraArgs: string; fullscreen: boolean }
     transcode: { ffmpegPath: string; ffprobePath: string; mode: string; hwAccel: string; vaapiNode: string; preset: string }
@@ -218,7 +219,10 @@ export type Settings = {
     anilist: { clientId: string; hideAdult: boolean }
     server: { host: string; port: number; allowLan: boolean; password: string; webUi: boolean }
     // downloadTo: the Kumo this one's downloads go to (its ID; "" here).
-    sharing: { enabled: boolean; name: string; downloadTo?: string }
+    // keepAwake: don't let this computer sleep while another device plays its
+    // files. autoSync: sync watch history when a paired device comes back.
+    sharing: { enabled: boolean; name: string; downloadTo?: string; keepAwake?: boolean; autoSync?: boolean }
+    notify?: { newEpisodes: boolean; downloads: boolean }
     ui: {
         accentColor: string
         showAdult: boolean
@@ -260,10 +264,20 @@ export type Status = {
     listenAddr: string
     lanUrls?: string[] | null // where devices on the home network open Kumo
     paired?: string[] | null // the Kumos this one is paired with (library sharing): Home's Sync
+    // The computers sharing their library with this one that don't answer
+    // (asleep or off), and whether they can be woken up from here.
+    asleep?: { id: string; name: string; canWake: boolean; waking: boolean }[] | null
+    // Home's questions about the other Kumo apps (only for this computer):
+    // share with a new one ("new"), or update one of the two ("older": its
+    // Kumo is older than this one, "newer": this one is).
+    devicePrompts?: DevicePrompt[] | null
+    keptAwake?: boolean // another device is playing this computer's files, so it stays awake
     webUiForced: boolean
     setupRunning?: boolean // Windows: the window installing Kumo's programs is open
     settings: Settings
 }
+
+export type DevicePrompt = { kind: "new" | "older" | "newer"; id: string; name: string; platform?: string; version: string }
 
 export type PlaybackSession = {
     id: string
@@ -598,6 +612,12 @@ export type SharingPeer = {
     sharesAccount: boolean
     usingAccount: boolean
     takesDownloads: boolean
+    // It shares with this Kumo and has said how to wake it up (Wake-on-LAN);
+    // waking: a wake-up was just sent.
+    canWake?: boolean
+    waking?: boolean
+    platform?: string // what it runs on ("android": a TV)
+    declined?: boolean // asked on Home whether to share with it: "not now"
 }
 
 export type SharingStatus = { enabled: boolean; id: string; name: string; listening: boolean; peers: SharingPeer[]; addresses: string[] }

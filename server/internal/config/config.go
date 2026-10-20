@@ -76,6 +76,15 @@ type Settings struct {
 	UI           UISettings           `json:"ui"`
 	Discord      DiscordSettings      `json:"discord"`
 	Extensions   ExtensionSettings    `json:"extensions"`
+	Notify       NotifySettings       `json:"notify"`
+}
+
+// NotifySettings: what Kumo tells about as it happens (package notify).
+type NotifySettings struct {
+	// NewEpisodes: an episode of an anime being watched aired.
+	NewEpisodes bool `json:"newEpisodes"`
+	// Downloads: an episode or a torrent finished downloading.
+	Downloads bool `json:"downloads"`
 }
 
 type LibrarySettings struct {
@@ -103,6 +112,7 @@ type PlaybackSettings struct {
 	PreferredSubLang    string  `json:"preferredSubLang"`   // e.g. "eng,en"
 	SkipIntroAniSkip    bool    `json:"skipIntroAniSkip"`   // openings
 	SkipOutroAniSkip    bool    `json:"skipOutroAniSkip"`   // endings
+	SkipRecapAniSkip    bool    `json:"skipRecapAniSkip"`   // recaps (and previews)
 }
 
 type MpvSettings struct {
@@ -186,6 +196,12 @@ type SharingSettings struct {
 	// DownloadTo: the Kumo this one's downloads and torrents go to (its ID;
 	// empty: saved here). Set when one allows it (package share).
 	DownloadTo string `json:"downloadTo,omitempty"`
+	// KeepAwake: this computer doesn't go to sleep while other devices play
+	// its files (package awake).
+	KeepAwake bool `json:"keepAwake"`
+	// AutoSync: Continue watching is synced with the paired Kumos when they
+	// come back, without pressing Sync.
+	AutoSync bool `json:"autoSync"`
 }
 
 type ServerSettings struct {
@@ -290,6 +306,8 @@ func Defaults() Settings {
 		},
 		Discord:    DiscordSettings{RichPresence: false},
 		Extensions: ExtensionSettings{MarketplaceURL: DefaultMarketplaceURL},
+		Sharing:    SharingSettings{KeepAwake: true, AutoSync: true},
+		Notify:     NotifySettings{NewEpisodes: true, Downloads: true},
 	}
 	if runtime.GOOS == "android" {
 		// The Android app (a TV's): it plays the libraries the computers

@@ -206,6 +206,7 @@ func (s *Server) peerRoutes() {
 		return s.app.HLS.Start(r.Context(), req)
 	})))
 	m.HandleFunc("GET /api/peer/local/hls/{id}/{name}", shared(func(w http.ResponseWriter, r *http.Request) {
+		defer s.awakeFor(r)()
 		s.app.HLS.Serve(w, r, r.PathValue("id"), r.PathValue("name"))
 	}))
 	m.HandleFunc("DELETE /api/peer/local/hls/{id}", shared(h(func(r *http.Request) (any, error) {
@@ -235,6 +236,33 @@ func (s *Server) peerRoutes() {
 			return nil, notFound(err.Error())
 		}
 		return s.app.Share.Status(), nil
+	}))
+	// The app opened again (a TV's, brought back from its home screen):
+	// Continue watching synced with the paired Kumos, if that's on (and not
+	// done a moment ago).
+	m.HandleFunc("POST /api/sharing/autosync", h(func(r *http.Request) (any, error) {
+		s.app.Share.AutoSyncAll()
+		return nil, nil
+	}))
+	// Wake a computer that shares its library with this one (asleep), by
+	// its ID or a file of its.
+	m.HandleFunc("POST /api/sharing/libraries/{id}/wake", h(func(r *http.Request) (any, error) {
+		if err := s.app.Share.Wake(r.PathValue("id")); err != nil {
+			return nil, badRequest(err.Error())
+		}
+		return nil, nil
+	}))
+	m.HandleFunc("POST /api/sharing/wake", h(func(r *http.Request) (any, error) {
+		var body struct {
+			Path string `json:"path"`
+		}
+		if err := decode(r, &body); err != nil {
+			return nil, err
+		}
+		if err := s.app.Share.WakeFor(body.Path); err != nil {
+			return nil, badRequest(err.Error())
+		}
+		return nil, nil
 	}))
 	// The AniList account a host shares with this Kumo: use it, or stop.
 	m.HandleFunc("POST /api/sharing/libraries/{id}/account", h(func(r *http.Request) (any, error) {
@@ -373,11 +401,22 @@ func (s *Server) forwardShared(w http.ResponseWriter, r *http.Request, endpoint 
 
 // The in-app player's endpoints, for this Kumo's files (and its guests').
 
+// awakeFor keeps this computer from sleeping while another device (a TV,
+// a phone) plays its file (see package awake): until release.
+func (s *Server) awakeFor(r *http.Request) (release func()) {
+	if isTrusted(r) {
+		return func() {}
+	}
+	return s.app.Awake.Hold()
+}
+
 func (s *Server) localFile(w http.ResponseWriter, r *http.Request) {
+	defer s.awakeFor(r)()
 	s.app.Local.ServeFile(w, r, r.URL.Query().Get("path"))
 }
 
 func (s *Server) localTranscode(w http.ResponseWriter, r *http.Request) {
+	defer s.awakeFor(r)()
 	q := r.URL.Query()
 	start, _ := strconv.ParseFloat(q.Get("start"), 64)
 	audio, _ := strconv.Atoi(q.Get("audio"))

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/simo1337s/animetest/server/internal/awake"
 	"log"
 	"os"
 	"path/filepath"
@@ -61,6 +62,8 @@ type App struct {
 	Images     *images.Cache
 	Logs       *LogBuffer
 	Update     *update.Checker
+	// Awake keeps the computer from sleeping while others play its files.
+	Awake *awake.Keeper
 	// Exits ends Kumo from inside, e.g. to restart it after an update;
 	// cmd/kumo waits for it, next to the signals.
 	Exits *lifecycle.Exits
@@ -139,6 +142,7 @@ func New(dataDir string) (*App, error) {
 		ctx: ctx, cancel: cancel, DataDir: dataDir, prefetch: newPrefetcher(),
 	}
 	a.HLS = stream.NewHLS(a.Local, hlsDir(dataDir))
+	a.Awake = awake.New(func() bool { return a.Settings.Get().Sharing.KeepAwake })
 	if a.Share, err = share.New(d, settings, files, hub); err != nil {
 		return nil, fmt.Errorf("library sharing: %w", err)
 	}
@@ -425,6 +429,7 @@ func (a *App) Shutdown() {
 	// to the other Kumos before it stops.
 	a.Player.Stop()
 	a.Share.Stop()
+	a.Awake.Close()
 	a.Update.Stop()
 	a.HLS.Close()
 	a.Scanner.StopWatcher()
