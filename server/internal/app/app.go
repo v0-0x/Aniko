@@ -64,6 +64,8 @@ type App struct {
 	Update     *update.Checker
 	// Awake keeps the computer from sleeping while others play its files.
 	Awake *awake.Keeper
+	// Trash holds the files put away from Library tools › Clean up.
+	Trash *library.Trash
 	// Exits ends Kumo from inside, e.g. to restart it after an update;
 	// cmd/kumo waits for it, next to the signals.
 	Exits *lifecycle.Exits
@@ -142,6 +144,10 @@ func New(dataDir string) (*App, error) {
 		ctx: ctx, cancel: cancel, DataDir: dataDir, prefetch: newPrefetcher(),
 	}
 	a.HLS = stream.NewHLS(a.Local, hlsDir(dataDir))
+	a.Trash = library.NewTrash(d, files, func() []string {
+		cfg := a.Settings.Get()
+		return append([]string{cfg.Library.Dir}, cfg.Library.ExtraDirs...)
+	})
 	a.Awake = awake.New(func() bool { return a.Settings.Get().Sharing.KeepAwake })
 	if a.Share, err = share.New(d, settings, files, hub); err != nil {
 		return nil, fmt.Errorf("library sharing: %w", err)
@@ -394,6 +400,21 @@ func (a *App) Start() {
 	a.Update.Start()
 	a.Scanner.StartWatcher()
 	go a.Torrents.RunCounter(a.ctx)
+	// What's been in the trash a month goes, now and daily.
+	go func() {
+		for {
+			if freed, err := a.Trash.Purge(time.Now()); err != nil {
+				log.Printf("trash: %v", err)
+			} else if freed > 0 {
+				log.Printf("trash: emptied what was there for 30 days (%d MB)", freed>>20)
+			}
+			select {
+			case <-a.ctx.Done():
+				return
+			case <-time.After(24 * time.Hour):
+			}
+		}
+	}()
 	go a.AutoDL.Loop(a.ctx, func() (bool, time.Duration) {
 		cfg := a.Settings.Get()
 		return cfg.Torrent.AutoDownloader, time.Duration(cfg.Torrent.AutoDownloadMinutes) * time.Minute

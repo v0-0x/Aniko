@@ -29,6 +29,7 @@ import { PluginActions, PluginSlot, usePluginDropdownActions } from "@/component
 import { sendPluginEvent } from "@/components/plugins/PluginRenderer"
 import { Badge, Button, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger, EmptyState, Skeleton, Tabs, Tooltip } from "@/components/ui"
 import { api } from "@/lib/api"
+import { formatRanges, missingEpisodes } from "@/lib/missing"
 import { usePlay } from "@/lib/play"
 import { fetchLanguageMode, useEntry, useEpisodeMarker, useLanguageMode, useStatus } from "@/lib/queries"
 import type { EntryView, Probe } from "@/lib/types"
@@ -79,9 +80,25 @@ export default function EntryPage() {
                 <Tabs variant="underline" value={tab} onChange={setTab} tabs={tabs} />
                 {/* Keyed by anime too: panels keep per-anime state (dub, search results). */}
                 <div key={`${entry.media.id}-${tab}`} className="fade-in">
-                    {tab === "episodes" && <EpisodesTab entry={entry} onStream={() => setTab("stream")} onTorrents={() => setTab("torrents")} />}
+                    {tab === "episodes" && (
+                        <EpisodesTab
+                            entry={entry}
+                            onStream={() => setTab("stream")}
+                            onTorrents={(ep?: number) =>
+                                setParams(
+                                    p => {
+                                        p.set("tab", "torrents")
+                                        if (ep) p.set("episode", String(ep))
+                                        else p.delete("episode")
+                                        return p
+                                    },
+                                    { replace: true },
+                                )
+                            }
+                        />
+                    )}
                     {tab === "stream" && <StreamPanel entry={entry} />}
-                    {tab === "torrents" && <TorrentPanel entry={entry} />}
+                    {tab === "torrents" && <TorrentPanel entry={entry} episode={Number(params.get("episode")) || undefined} />}
                     {tab === "details" && <DetailsTab entry={entry} />}
                 </div>
                 <PluginSlot slot="after-anime-entry-episode-list" />
@@ -227,7 +244,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
     )
 }
 
-function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStream: () => void; onTorrents: () => void }) {
+function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStream: () => void; onTorrents: (episode?: number) => void }) {
     const { playLocal, localPlayer, remote } = usePlay()
     const { data: status } = useStatus()
     const marker = useEpisodeMarker(entry.media, entry.listEntry)
@@ -236,6 +253,8 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
     const media = entry.media
 
     const withFiles = entry.episodes.filter(e => e.hasFile)
+    // Gaps between the episodes there: found as torrents from here.
+    const missing = missingEpisodes(withFiles.map(e => e.number), media).gaps
     const hosts = [...new Set(withFiles.map(e => e.file?.hostName).filter((h): h is string => !!h))]
     const list = showAll ? entry.episodes : withFiles
     const specials = [...(entry.specials ?? []), ...(entry.others ?? [])]
@@ -253,7 +272,7 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                                 Watch online
                             </Button>
                         )}
-                        <Button icon={<Magnet className="size-4" />} onClick={onTorrents}>
+                        <Button icon={<Magnet className="size-4" />} onClick={() => onTorrents()}>
                             Find torrents
                         </Button>
                         <Button icon={<FolderInput className="size-4" />} onClick={() => setAdding(true)}>
@@ -277,6 +296,11 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                         {hosts.length > 0 && ` · ${entry.localCount ? "some " : ""}shared by ${hosts.join(", ")}`}
                     </p>
                     <LocalLanguageSwitch mediaId={media.id} samplePath={withFiles[0]?.file?.path} />
+                    {missing.length > 0 && (
+                        <button onClick={() => onTorrents(missing[0])} className="text-sm text-amber-200/85 hover:underline" title="Find torrents for it">
+                            Missing {missing.length === 1 ? "episode" : "episodes"} {formatRanges(missing, 5)}
+                        </button>
+                    )}
                 </div>
                 <div className="flex items-center gap-3">
                     {entry.episodes.length > withFiles.length && (

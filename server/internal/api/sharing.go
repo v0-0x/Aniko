@@ -195,6 +195,7 @@ func (s *Server) peerRoutes() {
 	m.HandleFunc("GET /api/peer/local/transcode", s.sharedFile(s.localTranscode))
 	m.HandleFunc("GET /api/peer/local/seekpoint", s.sharedFile(h(s.localSeekPoint)))
 	m.HandleFunc("GET /api/peer/local/subtitle", s.sharedFile(s.localSubtitle))
+	m.HandleFunc("GET /api/peer/local/thumb", s.sharedFile(s.localThumb))
 	m.HandleFunc("POST /api/peer/local/hls", shared(h(func(r *http.Request) (any, error) {
 		var req stream.HLSRequest
 		if err := decode(r, &req); err != nil {
@@ -437,6 +438,12 @@ func (s *Server) localSeekPoint(r *http.Request) (any, error) {
 		return map[string]any{"start": start, "method": use}, nil
 	}
 	return map[string]any{"start": start}, nil
+}
+
+func (s *Server) localThumb(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	t, _ := strconv.ParseFloat(q.Get("t"), 64)
+	s.app.Local.ServeThumb(w, r, q.Get("path"), t)
 }
 
 func (s *Server) localSubtitle(w http.ResponseWriter, r *http.Request) {

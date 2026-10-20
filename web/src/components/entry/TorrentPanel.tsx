@@ -8,14 +8,15 @@ import type { EntryView, TorrentResult } from "@/lib/types"
 import { cn, copyText, relativeTime } from "@/lib/utils"
 import { Badge, Button, EmptyState, ErrorState, Input, Select, Switch } from "../ui"
 
-export function TorrentPanel({ entry }: { entry: EntryView }) {
+// episode: the one to look for first (a missing one), else the next to watch.
+export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; episode?: number }) {
     const { data: status } = useStatus()
     const settings = status?.settings
     const media = entry.media
     const { data: providers } = useQuery({ queryKey: ["torrent-providers"], queryFn: () => api.get<{ id: string; name: string; extension: boolean }[]>("/api/torrents/providers") })
     const [provider, setProvider] = useState(settings?.torrent.defaultProvider || "nyaa")
-    const [episode, setEpisode] = useState<number>(entry.nextEpisode?.number ?? 1)
-    const [batch, setBatch] = useState(media.status === "FINISHED" && (entry.listEntry?.progress ?? 0) === 0 && media.format !== "MOVIE")
+    const [episode, setEpisode] = useState<number>(wanted ?? entry.nextEpisode?.number ?? 1)
+    const [batch, setBatch] = useState(!wanted && media.status === "FINISHED" && (entry.listEntry?.progress ?? 0) === 0 && media.format !== "MOVIE")
     const [resolution, setResolution] = useState(settings?.torrent.preferredResolution || "1080")
     const [query, setQuery] = useState("")
     const [selected, setSelected] = useState<Set<string>>(new Set())

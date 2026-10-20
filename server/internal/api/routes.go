@@ -27,6 +27,7 @@ func (s *Server) routes() {
 	m := s.mux
 	s.peerRoutes()
 	s.noteRoutes()
+	s.cleanupRoutes()
 
 	// --- core
 	m.HandleFunc("GET /api/status", h(s.status))
@@ -147,6 +148,12 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/local/subtitle", func(w http.ResponseWriter, r *http.Request) {
 		if !s.forwardShared(w, r, "subtitle") {
 			s.localSubtitle(w, r)
+		}
+	})
+	// The seek bar's preview at ?t= (stream.ServeThumb).
+	m.HandleFunc("GET /api/local/thumb", func(w http.ResponseWriter, r *http.Request) {
+		if !s.forwardShared(w, r, "thumb") {
+			s.localThumb(w, r)
 		}
 	})
 	m.HandleFunc("GET /api/proxy", stream.ServeProxy)

@@ -143,6 +143,12 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
     const [fullscreen, setFullscreen] = useState(false)
     const [controls, setControls] = useState(true)
     const [hoverTime, setHoverTime] = useState<{ x: number; t: number } | null>(null)
+    // Where Left/Right (a remote's) go, a moment: the seek bar shows it.
+    const [seekShown, setSeekShown] = useState<number | null>(null)
+    const seekShownTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    // Previews on the seek bar (local files): off for this episode after a
+    // few fail (no ffmpeg where the file is, say).
+    const [thumbFails, setThumbFails] = useState(0)
     const [nextEp, setNextEp] = useState<{ path?: string; episode: number } | null>(null)
     // Where it started from a saved position: "Start over" shows a moment.
     const [resumedFrom, setResumedFrom] = useState(0)
@@ -578,7 +584,9 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             trackRef.current = v.addTextTrack("subtitles", "Kumo", "und")
         }
         const tr = trackRef.current
-        tr.mode = "showing"
+        // Hidden while they change: a cue removed while it shows can stay
+        // drawn otherwise (Chromium, the stream started over elsewhere).
+        tr.mode = "hidden"
         while (tr.cues && tr.cues.length) tr.removeCue(tr.cues[0])
         for (const c of cues) {
             const s = c.start - base + delay
@@ -592,6 +600,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                 /* ignore bad cue */
             }
         }
+        tr.mode = "showing"
     }, [cues, base, videoKey, delay, subStyle])
     // Subtitles earlier or later (z / x, or the subtitles menu): kept for the
     // anime.
@@ -693,6 +702,9 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         const v = videoRef.current
         if (!v) return
         const t = clampTime((seekTarget.current ?? where(v)) + d)
+        setSeekShown(t)
+        if (seekShownTimer.current) clearTimeout(seekShownTimer.current)
+        seekShownTimer.current = setTimeout(() => setSeekShown(null), 1500)
         if (seekTarget.current === null && !restarts(t)) return seekTo(t)
         // A restart: a moment later, from where the presses in a row end.
         seekTarget.current = t
@@ -709,6 +721,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         () => () => {
             if (seekTimer.current) clearTimeout(seekTimer.current)
             if (retryTimer.current) clearTimeout(retryTimer.current)
+            if (seekShownTimer.current) clearTimeout(seekShownTimer.current)
         },
         [],
     )
@@ -1068,6 +1081,14 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
 
     const total = duration || 0
     const pct = total > 0 ? (time / total) * 100 : 0
+    // The seek bar's preview: where the mouse is over it, or where Left/Right
+    // go; with a picture of the video there (each 10 seconds), for files.
+    const previewAt = hoverTime ? hoverTime.t : seekShown
+    const previewStep = previewAt === null ? null : Math.max(0, Math.floor(previewAt / 10) * 10)
+    const thumbStep = useDebounced(previewStep, 120)
+    const thumbs = req.kind === "local" && thumbFails < 3 && total > 0
+    const thumbSrc = thumbs && thumbStep !== null ? `/api/local/thumb${qs({ path: req.path, t: thumbStep })}` : ""
+    const aspect = probe?.video?.[0]?.width && probe.video[0].height ? probe.video[0].width / probe.video[0].height : 16 / 9
     const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2
 
     return (
@@ -1268,14 +1289,30 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 overflow-hidden rounded-full bg-white/20 transition-all group-hover/seek:h-1.5">
                         <div className="absolute inset-y-0 left-0 bg-white/30" style={{ width: `${total ? Math.min(100, (buffered / total) * 100) : 0}%` }} />
                         {skippable.map(s => (
-                            <div key={s.type} className="absolute inset-y-0 bg-amber-300/50" style={{ left: `${(s.start / total) * 100}%`, width: `${((s.end - s.start) / total) * 100}%` }} />
+                            <div key={skipKey(s)} className="absolute inset-y-0 bg-amber-300/50" style={{ left: `${(s.start / total) * 100}%`, width: `${((s.end - s.start) / total) * 100}%` }} />
                         ))}
                         <div className="absolute inset-y-0 left-0 bg-brand" style={{ width: `${pct}%` }} />
                     </div>
                     <div className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-white shadow transition-transform group-hover/seek:scale-100" style={{ left: `${pct}%` }} />
-                    {hoverTime && (
-                        <div className="absolute -top-8 -translate-x-1/2 rounded-md bg-black/80 px-2 py-1 text-xs font-medium text-white" style={{ left: hoverTime.x }}>
-                            {formatDuration(hoverTime.t)}
+                    {previewAt !== null && total > 0 && (
+                        <div
+                            className="pointer-events-none absolute bottom-full mb-2 flex -translate-x-1/2 flex-col items-center gap-1.5"
+                            style={{ left: hoverTime ? `clamp(${thumbs ? 5.5 : 2}rem, ${hoverTime.x}px, calc(100% - ${thumbs ? 5.5 : 2}rem))` : `clamp(${thumbs ? 5.5 : 2}rem, ${(previewAt / total) * 100}%, calc(100% - ${thumbs ? 5.5 : 2}rem))` }}
+                        >
+                            {thumbs && (
+                                <div className="w-44 overflow-hidden rounded-lg bg-black/80 ring-1 ring-white/15 shadow-2xl" style={{ aspectRatio: String(aspect) }}>
+                                    {thumbSrc && (
+                                        <img
+                                            src={thumbSrc}
+                                            alt=""
+                                            className="size-full object-cover"
+                                            onLoad={() => thumbFails && setThumbFails(0)}
+                                            onError={() => setThumbFails(n => n + 1)}
+                                        />
+                                    )}
+                                </div>
+                            )}
+                            <div className="rounded-md bg-black/80 px-2 py-1 text-xs font-medium text-white tabular-nums">{formatDuration(previewAt)}</div>
                         </div>
                     )}
                 </div>
@@ -1481,6 +1518,16 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             )}
         </div>
     )
+}
+
+// value, once it stopped changing for ms.
+function useDebounced<T>(value: T, ms: number): T {
+    const [v, setV] = useState(value)
+    useEffect(() => {
+        const t = setTimeout(() => setV(value), ms)
+        return () => clearTimeout(t)
+    }, [value, ms])
+    return v
 }
 
 // How many times a broken connection is tried again (see retry).
