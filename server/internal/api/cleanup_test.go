@@ -56,6 +56,19 @@ func TestCleanup(t *testing.T) {
 	if view.LibraryBytes != 250 {
 		t.Errorf("library size %d", view.LibraryBytes)
 	}
+	// Two copies the same size: the same one is kept (listed first) each
+	// time.
+	a := add("Show - 03 (v2).mkv", 5, 3, 70)
+	add("Show - 03.mkv", 5, 3, 70)
+	for i := 0; i < 20; i++ {
+		var v cleanupView
+		_ = json.Unmarshal(do(s, "GET", "/api/library/cleanup", "127.0.0.1:5000", "", nil).Body.Bytes(), &v)
+		for _, g := range v.Duplicates {
+			if g[0].Episode == 3 && g[0].Path != a {
+				t.Fatalf("run %d: kept %s", i, g[0].Path)
+			}
+		}
+	}
 	if view.Disk == nil || view.Disk.Total == 0 {
 		t.Errorf("disk: %+v", view.Disk)
 	}
