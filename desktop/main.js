@@ -322,8 +322,9 @@ function windowIcon() {
     return iconPath ? nativeImage.createFromPath(iconPath) : undefined
 }
 
-// createWindow opens Kumo's window, at a page of it (path, "" for Home).
-function createWindow(path = "") {
+// createWindow opens Kumo's window, at a page of it (page, "" for Home).
+// (Not named path: that's the path module, used here.)
+function createWindow(page = "") {
     mainWindow = new BrowserWindow({
         width: 1600,
         height: 1000,
@@ -368,7 +369,7 @@ function createWindow(path = "") {
     // Windows is shutting down or signing out, which stops the server too:
     // that isn't worth an error box (the event only exists on Windows).
     mainWindow.on("query-session-end", () => (app.isQuitting = true))
-    mainWindow.loadURL(baseUrl + path)
+    mainWindow.loadURL(baseUrl + page)
 }
 
 // AniList login: open the authorize page in a separate window and capture
@@ -503,18 +504,18 @@ function showWindow() {
     return showWindowAt("")
 }
 
-// showWindowAt does, at a page of it when path is given ("/entry?id=1").
-async function showWindowAt(path) {
+// showWindowAt does, at a page of it when one is given ("/entry?id=1").
+async function showWindowAt(page) {
     if (!baseUrl || restarting) return
     // Updated since it started: the new version opens instead.
     if (await restartIfOutdated(baseUrl)) {
         restarting = true
         return
     }
-    if (!mainWindow) return createWindow(path)
-    if (path) {
+    if (!mainWindow) return createWindow(page)
+    if (page) {
         parkedUrl = null
-        mainWindow.loadURL(baseUrl + path)
+        mainWindow.loadURL(baseUrl + page)
     }
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.show()
