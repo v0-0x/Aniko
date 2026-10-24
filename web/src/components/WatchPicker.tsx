@@ -66,6 +66,12 @@ export function WatchPicker({ open, onOpenChange }: { open: boolean; onOpenChang
         set(v)
         setPickId(null)
     }
+    // Opened again: a new pick (not the last one).
+    const [wasOpen, setWasOpen] = useState(open)
+    if (open !== wasOpen) {
+        setWasOpen(open)
+        if (open) setPickId(null)
+    }
     if (open && !pick && pool.length > 0) roll(pool, null)
 
     const m = pick?.media

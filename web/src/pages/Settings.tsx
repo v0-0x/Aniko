@@ -115,6 +115,9 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 // Puts the fields edited in draft (compared with base, the server copy the
 // draft was made from) on top of a newer server copy.
+// The UI settings the Themes menu changes (saved at once).
+const THEME_KEYS = ["colorTheme", "accentColor", "seasonal", "seasonalEffects"] as const
+
 function rebase(draft: Settings, base: Settings, server: Settings): Settings {
     const out: Record<string, any> = structuredClone(server)
     const old: Record<string, any> = base
@@ -154,7 +157,14 @@ export default function SettingsPage() {
         // downloader switch…): follow it, keeping what was edited here so a
         // save doesn't put the old values back.
         const next = rebase(draft, base, server)
-        if (!same(draft, base) && !same(next, draft)) toast.info("Settings were changed somewhere else. Your unsaved changes here were kept.")
+        // A theme picked in the sidebar's Themes menu is the latest choice:
+        // it's shown here too, over one being tried here.
+        const picked: string[] = THEME_KEYS.filter(k => !same(server.ui[k], base.ui[k]))
+        for (const k of picked) (next.ui as Record<string, unknown>)[k] = (server.ui as Record<string, unknown>)[k]
+        const onlyThemes = (Object.keys(server) as (keyof Settings)[]).every(k =>
+            k === "ui" ? (Object.keys(server.ui) as (keyof Settings["ui"])[]).every(f => picked.includes(f) || same(server.ui[f], base.ui[f])) : same(server[k], base[k]),
+        )
+        if (!onlyThemes && !same(draft, base) && !same(next, draft)) toast.info("Settings were changed somewhere else. Your unsaved changes here were kept.")
         setDraft(next)
         setBase(server)
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -827,7 +837,7 @@ async function waitForRestart() {
 function AlertsGroup({ draft, set }: SectionProps) {
     const notify = draft.notify ?? { newEpisodes: true, downloads: true }
     const [permission, setPermission] = useState(systemNotifications)
-    const desktopApp = !!desktop
+    const desktopApp = !!desktop()
     return (
         <Group title="Alerts" description="Muted with the bell next to Settings, like Kumo's other messages.">
             <Row label="New episodes" help="When an episode of an anime you're watching comes out.">
@@ -901,6 +911,16 @@ function TvSizeRow() {
 }
 
 const ACCENTS = ["#7c6cf2", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#e879f9", "#38bdf8", "#a3e635"]
+const ACCENT_NAMES: Record<string, string> = {
+    "#7c6cf2": "violet",
+    "#5b8cff": "blue",
+    "#22c3a6": "teal",
+    "#f2557a": "pink",
+    "#f59e0b": "amber",
+    "#e879f9": "orchid",
+    "#38bdf8": "sky",
+    "#a3e635": "lime",
+}
 
 function UISection({ draft, set }: SectionProps) {
     const seasonal = draft.ui.seasonal ?? "auto"
@@ -953,7 +973,8 @@ function UISection({ draft, set }: SectionProps) {
                                 onClick={() => set("ui", { accentColor: c })}
                                 className={cn("size-9 rounded-full ring-2 ring-offset-2 ring-offset-[var(--surface-1)] transition", draft.ui.accentColor === c ? "ring-white" : "ring-transparent hover:ring-white/30")}
                                 style={{ background: c }}
-                                aria-label={c}
+                                aria-label={`Accent ${ACCENT_NAMES[c] ?? c}`}
+                                aria-pressed={draft.ui.accentColor === c}
                             />
                         ))}
                         <input

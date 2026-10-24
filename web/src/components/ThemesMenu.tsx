@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useSaveUI, useSettings } from "@/lib/queries"
 import { useStore } from "@/lib/store"
 import { activeHoliday, COLOR_THEMES, HOLIDAYS, holidayStore, type ColorTheme } from "@/lib/themes"
+import { tv } from "@/lib/tv"
 import { cn } from "@/lib/utils"
 import { HolidayIcon } from "./HolidayBadge"
 import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Tooltip } from "./ui"
@@ -48,9 +49,10 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
                     {button}
                 </Tooltip>
             )}
-            <DropdownContent side={wide ? "top" : "right"} align={wide ? "start" : "end"} className="max-h-[min(80vh,640px)] w-72 overflow-y-auto">
+            <DropdownContent side={wide ? "top" : "right"} align={wide ? "start" : "end"} className="max-h-[min(640px,var(--radix-dropdown-menu-content-available-height))] w-72 overflow-y-auto">
                 <DropdownLabel>Colors</DropdownLabel>
-                <div className="grid grid-cols-2 gap-0.5">
+                {/* Two columns; one on a TV, where Up and Down go through them. */}
+                <div className={cn("grid gap-0.5", tv ? "grid-cols-1" : "grid-cols-2")}>
                     {COLOR_THEMES.map(t => (
                         <DropdownItem key={t.id} keepOpen onSelect={() => saveUI({ colorTheme: t.id, accentColor: t.accent })} className="h-9 gap-2 px-2">
                             <Swatch theme={t} />
@@ -78,7 +80,7 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
                 ))}
                 <DropdownSeparator />
                 <DropdownItem keepOpen disabled={!holiday} onSelect={() => saveUI({ seasonalEffects: !effects })} icon={<Sparkles />} className="h-9">
-                    <span className="min-w-0 flex-1">{holiday ? holiday.effectName : "Holiday animations"}</span>
+                    <span className="min-w-0 flex-1">{holiday ? `Animation: ${holiday.effectName}` : "Holiday animations"}</span>
                     {/* A switch, drawn: the item is what's pressed. */}
                     <span aria-hidden className={cn("relative h-[18px] w-8 shrink-0 rounded-full transition-colors", effects && holiday ? "bg-brand" : "bg-white/[0.14]")}>
                         <span className={cn("absolute top-[3px] size-3 rounded-full bg-white transition-transform", effects && holiday ? "translate-x-[17px]" : "translate-x-[3px]")} />

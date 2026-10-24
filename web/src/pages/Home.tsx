@@ -19,7 +19,7 @@ import { fetchLanguageMode, useCollection, useScan, useStatus } from "@/lib/quer
 import { createStore, scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
 import { androidApp } from "@/lib/tv"
-import { banner, cn, cover, img as imgUrl, title } from "@/lib/utils"
+import { banner, cn, cover, img as imgUrl, readLocal, title } from "@/lib/utils"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/lib/toast"
 
@@ -381,7 +381,7 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
         if (it.hasFile && it.filePath) playLocal(it.filePath, it.media.id, it.episode)
         else if (status?.settings.onlineStream.enabled) {
             // Same provider and sub/dub as last time for this anime.
-            const provider = localStorage.getItem(`kumo-provider-${it.media.id}`) || status.settings.onlineStream.defaultProvider || "ani-cli"
+            const provider = readLocal(`kumo-provider-${it.media.id}`) || status.settings.onlineStream.defaultProvider || "ani-cli"
             const dub = await fetchLanguageMode(it.media.id, status.settings.aniCli.defaultMode === "dub")
             playStream(provider, it.media.id, it.episode, dub)
         } else navigate(`/entry?id=${it.media.id}`)

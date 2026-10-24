@@ -8,7 +8,7 @@ import { installHint, installSource } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms } from "@/lib/programs"
 import { useEpisodeMarker, useLanguageMode, useOnlineProviders, useStatus, useStreamEpisodes, useStreamModes } from "@/lib/queries"
 import type { EntryView } from "@/lib/types"
-import { cn } from "@/lib/utils"
+import { cn, readLocal, writeLocal } from "@/lib/utils"
 import { EpisodeCard, WatchedToggle } from "../EpisodeCard"
 import { Badge, Button, Dialog, EmptyState, Field, IconButton, Input, Select, Skeleton, Tooltip } from "../ui"
 
@@ -17,7 +17,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     const settings = status?.settings
     const { data: providers } = useOnlineProviders()
     const media = entry.media
-    const [provider, setProvider] = useState<string>(() => localStorage.getItem(`kumo-provider-${media.id}`) || settings?.onlineStream.defaultProvider || "ani-cli")
+    const [provider, setProvider] = useState<string>(() => readLocal(`kumo-provider-${media.id}`) || settings?.onlineStream.defaultProvider || "ani-cli")
     // Sub/dub is remembered per anime on the server (also used by "continue
     // watching", the next-episode button and local files).
     const language = useLanguageMode(media.id)
@@ -39,13 +39,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     const marker = useEpisodeMarker(media, entry.listEntry)
     const qc = useQueryClient()
 
-    useEffect(() => {
-        try {
-            localStorage.setItem(`kumo-provider-${media.id}`, provider)
-        } catch {
-            /* ignore */
-        }
-    }, [provider, media.id])
+    useEffect(() => writeLocal(`kumo-provider-${media.id}`, provider), [provider, media.id])
 
     // Wait for the remembered choice, or the first request would list (and
     // remember) the default mode instead. The only version there is isn't a

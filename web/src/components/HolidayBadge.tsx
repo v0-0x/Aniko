@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useSaveSettings, useSettings } from "@/lib/queries"
+import { useSaveUI, useSettings } from "@/lib/queries"
 import type { Holiday } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
@@ -85,7 +85,7 @@ const SEEN_KEY = "kumo-holiday-seen"
 // with a button to turn them off.
 export function useHolidayNotice(holiday: Holiday | null, seasonal: string) {
     const settings = useSettings()
-    const save = useSaveSettings()
+    const saveUI = useSaveUI()
     const id = seasonal === "auto" ? holiday?.id : undefined
     useEffect(() => {
         if (!id || !holiday || !settings) return
@@ -99,7 +99,8 @@ export function useHolidayNotice(holiday: Holiday | null, seasonal: string) {
         toast(`Kumo's ${holiday.name} theme is on`, {
             description: `Its colors and ${holiday.effectName.toLowerCase()}, ${holiday.when.replace(/^In /, "in ").replace(/^January/, "on January")}. Change it from Themes in the sidebar.`,
             duration: 12000,
-            action: { label: "Turn off", onClick: () => save.mutate({ ...settings, ui: { ...settings.ui, seasonal: "off" } }) },
+            // Only that: the settings as they are then (not when it showed).
+            action: { label: "Turn off", onClick: () => saveUI({ seasonal: "off" }) },
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, !!settings])

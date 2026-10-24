@@ -5,11 +5,11 @@ import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { Badge, EmptyState, ErrorState, Skeleton, Tabs } from "@/components/ui"
 import { useSchedule } from "@/lib/queries"
 import type { ScheduleItem } from "@/lib/types"
-import { cn, cover, formatLabel, LIST_STATUS, timeUntil, title } from "@/lib/utils"
+import { cn, cover, formatLabel, LIST_STATUS, readLocal, timeUntil, title, writeLocal } from "@/lib/utils"
 
 export default function SchedulePage() {
     const { data, isLoading, error, refetch, isFetching } = useSchedule(8)
-    const [filter, setFilter] = useState<"mine" | "all">(() => (localStorage.getItem("kumo-schedule-filter") as "mine" | "all") || "mine")
+    const [filter, setFilter] = useState<"mine" | "all">(() => (readLocal("kumo-schedule-filter") as "mine" | "all") || "mine")
 
     const days = useMemo(() => {
         const items = (data ?? []).filter(i => filter === "all" || i.listStatus)
@@ -38,7 +38,7 @@ export default function SchedulePage() {
                     value={filter}
                     onChange={v => {
                         setFilter(v)
-                        localStorage.setItem("kumo-schedule-filter", v)
+                        writeLocal("kumo-schedule-filter", v)
                     }}
                     tabs={[
                         { value: "mine", label: "My list" },

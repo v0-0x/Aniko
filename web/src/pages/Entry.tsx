@@ -33,7 +33,7 @@ import { formatRanges, missingEpisodes } from "@/lib/missing"
 import { usePlay } from "@/lib/play"
 import { fetchLanguageMode, useEntry, useEpisodeMarker, useLanguageMode, useStatus } from "@/lib/queries"
 import type { EntryView, Probe } from "@/lib/types"
-import { banner, cleanDescription, cn, cover, formatLabel, img, otherTitle, scoreColor, seasonLabel, statusLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
+import { banner, cleanDescription, cn, cover, formatLabel, img, otherTitle, readLocal, scoreColor, seasonLabel, statusLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
 
 type Tab = "episodes" | "stream" | "torrents" | "details"
 
@@ -126,7 +126,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
         if (!next) return
         if (next.file) playLocal(next.file.path, media.id, next.number)
         else if (status?.settings.onlineStream.enabled !== false) {
-            const provider = localStorage.getItem(`kumo-provider-${media.id}`) || status?.settings.onlineStream.defaultProvider || "ani-cli"
+            const provider = readLocal(`kumo-provider-${media.id}`) || status?.settings.onlineStream.defaultProvider || "ani-cli"
             const dub = await fetchLanguageMode(media.id, status?.settings.aniCli.defaultMode === "dub")
             playStream(provider, media.id, next.number, dub)
         } else onTab("torrents")

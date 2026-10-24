@@ -110,7 +110,8 @@ const CACHE_KEY = "kumo-theme"
 
 // Sets the colors on the page, and remembers them for the next start (drawn
 // before the settings come from the server: no flash of the default ones).
-export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; accent: string }) {
+// cache: remembered for the next start (not colors only being tried).
+export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; accent: string }, cache = true) {
     const p = t.theme.palette
     // A holiday leans the colors toward its own, a little (the window most).
     const lean = (color: string, pct: number) => (t.holiday ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
@@ -126,6 +127,9 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
         "--subtle": p.subtle,
     }
     setVars(vars, t.holiday?.id ?? "")
+    // The browser's own bars (phones) in the window's color.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", p.frame)
+    if (!cache) return
     try {
         localStorage.setItem(CACHE_KEY, JSON.stringify({ vars, holiday: t.holiday?.id ?? "" }))
     } catch {

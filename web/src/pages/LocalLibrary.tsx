@@ -59,7 +59,7 @@ const TYPES: { value: TypeFilter; label: string }[] = [
 ]
 function typeOf(g: Group): TypeFilter {
     const f = g.item.media.format
-    return f === "MOVIE" ? "MOVIE" : f === "OVA" || f === "ONA" || f === "SPECIAL" ? "EXTRA" : "TV"
+    return f === "MOVIE" ? "MOVIE" : f === "OVA" || f === "ONA" || f === "SPECIAL" || f === "MUSIC" ? "EXTRA" : "TV"
 }
 
 const uniq = (xs: (string | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))]
@@ -129,7 +129,6 @@ export default function LocalLibraryPage() {
 
     const [filter, setFilter] = usePersisted<StatusFilter>("kumo-local-filter", "ALL")
     const [sort, setSort] = usePersisted<SortKey>("kumo-local-sort", "added")
-    const [type, setType] = usePersisted<TypeFilter>("kumo-local-type", "ALL")
     const [view, setView] = usePersisted<View>("kumo-local-view", "grid")
     const [q, setQ] = useState("")
 
@@ -140,19 +139,24 @@ export default function LocalLibraryPage() {
         return buildGroups([...items.values()], files ?? [])
     }, [coll, files])
 
+    // Each filter's counts are of what the other one shows (Paused under
+    // Movies: the paused movies).
+    const [type, setType] = usePersisted<TypeFilter>("kumo-local-type", "ALL")
     const counts = useMemo(() => {
-        const c: Record<string, number> = { ALL: groups.length }
-        for (const g of groups) c[statusOf(g)] = (c[statusOf(g)] ?? 0) + 1
+        const of = type !== "ALL" && TYPES.some(t => t.value === type) && groups.some(g => typeOf(g) === type) ? groups.filter(g => typeOf(g) === type) : groups
+        const c: Record<string, number> = { ALL: of.length }
+        for (const g of of) c[statusOf(g)] = (c[statusOf(g)] ?? 0) + 1
         return c
-    }, [groups])
+    }, [groups, type])
     // Tabs without anime are hidden, so a remembered filter may have no tab
     // any more: fall back to All.
     const activeFilter: StatusFilter = filter !== "ALL" && STATUS_TABS.some(t => t.value === filter) && counts[filter] > 0 ? filter : "ALL"
     const typeCounts = useMemo(() => {
-        const c: Record<string, number> = { ALL: groups.length }
-        for (const g of groups) c[typeOf(g)] = (c[typeOf(g)] ?? 0) + 1
+        const of = activeFilter === "ALL" ? groups : groups.filter(g => statusOf(g) === activeFilter)
+        const c: Record<string, number> = { ALL: of.length }
+        for (const g of of) c[typeOf(g)] = (c[typeOf(g)] ?? 0) + 1
         return c
-    }, [groups])
+    }, [groups, activeFilter])
     // The same for a remembered type with no anime any more.
     const activeType: TypeFilter = type !== "ALL" && TYPES.some(t => t.value === type) && typeCounts[type] > 0 ? type : "ALL"
 
@@ -349,7 +353,7 @@ export default function LocalLibraryPage() {
                     <section>
                         <div className="mb-6 flex flex-wrap items-center gap-3">
                             <Tabs value={activeFilter} onChange={setFilter} tabs={STATUS_TABS.filter(t => t.value === "ALL" || counts[t.value]).map(t => ({ ...t, count: counts[t.value] ?? 0 }))} />
-                            <div className="ml-auto flex flex-wrap items-center gap-3 lg:flex-nowrap">
+                            <div className="ml-auto flex flex-wrap items-center gap-3">
                                 <div className="w-60 shrink-0">
                                     <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter by title…" icon={<Search className="size-4" />} />
                                 </div>

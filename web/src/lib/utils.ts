@@ -253,3 +253,20 @@ export function mostCommon(xs: string[]) {
 export function entryUrl(m: { id: number; type?: string }) {
     return m.type === "MANGA" ? `/manga/entry?id=${m.id}` : `/entry?id=${m.id}`
 }
+
+// This browser's storage, read and written without failing when it can't be
+// (site data blocked, a private window): null, and nothing kept, then.
+export function readLocal(key: string): string | null {
+    try {
+        return localStorage.getItem(key)
+    } catch {
+        return null
+    }
+}
+export function writeLocal(key: string, value: string) {
+    try {
+        localStorage.setItem(key, value)
+    } catch {
+        /* not kept */
+    }
+}

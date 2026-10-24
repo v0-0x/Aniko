@@ -33,7 +33,7 @@ import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
 import { formatDelay, setSubDelay, subDelay, subLine, subStyleStore, subStyleVars } from "@/lib/subtitles"
 import type { EntryView, Probe, StreamSource, TrackPrefs } from "@/lib/types"
 import { android, androidApp, move, tv } from "@/lib/tv"
-import { cn, formatDuration, title as animeTitle } from "@/lib/utils"
+import { cn, formatDuration, readLocal, title as animeTitle } from "@/lib/utils"
 import { parseVTT, type Cue } from "@/lib/vtt"
 import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger } from "../ui"
 
@@ -157,7 +157,7 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
     const [time, setTime] = useState(0) // absolute time
     const [duration, setDuration] = useState(0)
     const [buffered, setBuffered] = useState(0)
-    const [volume, setVolume] = useState(() => Number(localStorage.getItem("kumo-volume") ?? 1))
+    const [volume, setVolume] = useState(() => Number(readLocal("kumo-volume") ?? 1))
     const [muted, setMuted] = useState(false)
     const [rate, setRate] = useState(1)
     const [fullscreen, setFullscreen] = useState(false)
@@ -263,7 +263,9 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                     const m = ai === 0 && res.probe.method === "direct" ? "direct" : res.probe.method === "direct" ? "remux" : res.probe.method
                     setMethod(m)
                     // Ignore saved positions past the end of this file.
-                    startAt.current = res.resumeAt && res.resumeAt < res.probe.duration - 10 ? res.resumeAt : 0
+                    // (One handed over from the other player is where it was, also
+                    // in the last seconds.)
+                    startAt.current = req.start !== undefined ? Math.min(req.start, Math.max(0, res.probe.duration - 1)) : res.resumeAt && res.resumeAt < res.probe.duration - 10 ? res.resumeAt : 0
                     if (m !== "direct") setOffset(startAt.current)
                     if (startAt.current > 30 && !handed) setResumedFrom(startAt.current)
 
@@ -1461,7 +1463,7 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                                     <Captions className={mini ? "size-4" : "size-5"} />
                                 </button>
                             </DropdownTrigger>
-                            <DropdownContent className="z-[90] max-h-80 overflow-y-auto">
+                            <DropdownContent className="z-[90] max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto">
                                 <DropdownLabel>Subtitles</DropdownLabel>
                                 <DropdownItem onSelect={() => changeSub("off")}>{subKey === "off" ? "● " : ""}Off</DropdownItem>
                                 {subs.map(s => (
@@ -1523,7 +1525,7 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                                         <Gauge className="size-5" />
                                     </button>
                                 </DropdownTrigger>
-                                <DropdownContent className="z-[90] max-h-96 overflow-y-auto">
+                                <DropdownContent className="z-[90] max-h-[min(24rem,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto">
                                     {req.kind === "stream" && sources.length > 1 && (
                                         <>
                                             <DropdownLabel>Source</DropdownLabel>

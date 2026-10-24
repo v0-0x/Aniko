@@ -23,8 +23,10 @@ export function HolidayBackdrop({ holiday }: { holiday: Holiday | null }) {
 }
 
 // The lights on their wire, as wide as the panel: a dip between each two
-// hooks, a bulb at the bottom of each dip and one on each hook.
-export function HolidayGarland({ holiday }: { holiday: Holiday | null }) {
+// hooks, a bulb at the bottom of each dip and one on each hook. animate:
+// twinkling and swaying (not with the holiday's animation off, nor behind a
+// video).
+export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; animate: boolean }) {
     const ref = useRef<HTMLDivElement>(null)
     const [width, setWidth] = useState(0)
     const kind = holiday?.id === "christmas" ? "lights" : holiday?.id === "summer" ? "lanterns" : null
@@ -39,14 +41,14 @@ export function HolidayGarland({ holiday }: { holiday: Holiday | null }) {
     if (!kind) return null
     return (
         <div ref={ref} aria-hidden className="pointer-events-none absolute top-2 right-2 left-0 z-[5] h-16 overflow-hidden rounded-t-2xl">
-            {width > 0 && (kind === "lights" ? <Lights width={width} /> : <Lanterns width={width} />)}
+            {width > 0 && (kind === "lights" ? <Lights width={width} animate={animate} /> : <Lanterns width={width} animate={animate} />)}
         </div>
     )
 }
 
 const BULBS = ["#ef4444", "#22c55e", "#facc15", "#60a5fa", "#f97316"]
 
-function Lights({ width }: { width: number }) {
+function Lights({ width, animate }: { width: number; animate: boolean }) {
     const span = 116
     const n = Math.max(2, Math.round(width / span))
     const step = width / n
@@ -77,9 +79,9 @@ function Lights({ width }: { width: number }) {
             <path d={wire} fill="none" stroke="#1f2a1f" strokeWidth="1.6" />
             {bulbs.map((b, i) => (
                 <g key={i} transform={`translate(${b.x} ${b.y})`}>
-                    <circle r="11" cy="7" fill={`url(#bulb-${b.c.slice(1)})`} className="kumo-twinkle" style={{ animationDelay: `${b.d}s` }} />
+                    <circle r="11" cy="7" fill={`url(#bulb-${b.c.slice(1)})`} className={animate ? "kumo-twinkle" : undefined} style={{ animationDelay: `${b.d}s` }} />
                     <rect x="-1.8" y="-1" width="3.6" height="3.4" rx="0.8" fill="#3f3f46" />
-                    <ellipse cy="6.8" rx="2.9" ry="4.4" fill={b.c} className="kumo-twinkle-bulb" style={{ animationDelay: `${b.d}s` }} />
+                    <ellipse cy="6.8" rx="2.9" ry="4.4" fill={b.c} className={animate ? "kumo-twinkle-bulb" : undefined} style={{ animationDelay: `${b.d}s` }} />
                     <ellipse cx="-1" cy="5.2" rx="0.7" ry="1.5" fill="#fff" opacity="0.55" />
                 </g>
             ))}
@@ -87,7 +89,7 @@ function Lights({ width }: { width: number }) {
     )
 }
 
-function Lanterns({ width }: { width: number }) {
+function Lanterns({ width, animate }: { width: number; animate: boolean }) {
     const span = 150
     const n = Math.max(2, Math.round(width / span))
     const step = width / n
@@ -121,7 +123,7 @@ function Lanterns({ width }: { width: number }) {
             {lanterns.map((l, i) => (
                 // Swaying from its hook.
                 <g key={i} transform={`translate(${l.x} ${l.y}) scale(0.78)`}>
-                    <g className="kumo-sway" style={{ animationDelay: `${-l.d}s` }}>
+                    <g className={animate ? "kumo-sway" : undefined} style={{ animationDelay: `${-l.d}s` }}>
                         <circle cy="24" r="26" fill="url(#lantern-glow)" />
                         <line y1="0" y2="6" stroke="#52525b" strokeWidth="1.2" />
                         <rect x="-6" y="5" width="12" height="4" rx="1" fill="#27272a" />

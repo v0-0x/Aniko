@@ -48,7 +48,7 @@ export default function LibraryPage() {
                 tabs={[
                     { value: "folders", label: "Folders & matches" },
                     { value: "unmatched", label: "Unmatched", count: coll?.unmatchedCount ?? 0 },
-                    { value: "missing", label: "Missing episodes", count: withMissing(coll).filter(m => m.missing.gaps.length > 0).length },
+                    { value: "missing", label: "Missing episodes", count: withMissing(coll).length },
                     { value: "cleanup", label: "Clean up" },
                     { value: "files", label: "All files" },
                     { value: "ignored", label: "Ignored", count: coll?.ignoredCount ?? 0 },

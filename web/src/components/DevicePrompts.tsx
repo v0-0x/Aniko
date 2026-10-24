@@ -72,7 +72,7 @@ export function DevicePrompts() {
                             </p>
                             <p className="mt-0.5 text-sm text-muted">
                                 {isNew
-                                    ? `Kumo${tvApp ? "'s TV app" : ""} on ${p.name} is on this network. Shared with, it plays this computer's anime.`
+                                    ? `Kumo${tvApp ? "'s TV app" : ""} on ${p.name} is on this network. Once shared, it can play this computer's anime.`
                                     : p.kind === "older"
                                       ? `Kumo ${p.version} there, ${status.version} here: update it on ${p.name} (from its Home page) so everything works together.`
                                       : `Kumo ${p.version} there, ${status.version} here: update this one (Settings › About & updates) so everything works together.`}

@@ -378,7 +378,7 @@ export function Dialog({
                                 {title && <DialogPrimitive.Title className="text-[17px] font-semibold tracking-tight">{title}</DialogPrimitive.Title>}
                                 {description && <DialogPrimitive.Description className="mt-0.5 text-sm text-muted">{description}</DialogPrimitive.Description>}
                             </div>
-                            <DialogPrimitive.Close className="focus-ring -mt-1 -mr-2 grid size-8 place-items-center rounded-full text-muted transition-colors hover:bg-white/[0.08] hover:text-fg">
+                            <DialogPrimitive.Close aria-label="Close" className="focus-ring -mt-1 -mr-2 grid size-8 place-items-center rounded-full text-muted transition-colors hover:bg-white/[0.08] hover:text-fg">
                                 <X className="size-4" />
                             </DialogPrimitive.Close>
                         </div>

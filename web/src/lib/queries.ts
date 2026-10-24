@@ -52,6 +52,10 @@ export function useSaveSettings() {
 // Changes UI settings at once, without a toast: the sidebar's Themes
 // menu, where colors are tried one after another. The page changes before
 // the server answers; an error puts the saved ones back.
+// Saves one after another quickly (themes tried in a row): only the last
+// one's answer is put in (an earlier one's, coming later, would show a theme
+// tried before).
+let uiSaves = 0
 export function useSaveUI() {
     const qc = useQueryClient()
     return (ui: Partial<Settings["ui"]>) => {
@@ -59,8 +63,9 @@ export function useSaveUI() {
         if (!s) return
         const next = { ...s, ui: { ...s.ui, ...ui } }
         qc.setQueryData<Status>(["status"], old => (old ? { ...old, settings: next } : old))
+        const n = ++uiSaves
         api.put<Settings>("/api/settings", next).then(
-            saved => qc.setQueryData<Status>(["status"], old => (old ? { ...old, settings: saved } : old)),
+            saved => n === uiSaves && qc.setQueryData<Status>(["status"], old => (old ? { ...old, settings: saved } : old)),
             (e: Error) => {
                 toast.error(e.message)
                 qc.invalidateQueries({ queryKey: ["status"] })

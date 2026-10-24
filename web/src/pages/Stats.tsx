@@ -66,7 +66,8 @@ export default function StatsPage() {
                     <StatTile label="Anime on your list" value={stats.anime.toLocaleString()} sub="not counting planned ones" />
                     <StatTile label="Completed" value={stats.completed.toLocaleString()} />
                     <StatTile label="Episodes watched" value={compact(stats.episodes)} sub="rewatches included" />
-                    <StatTile label="Time watched" value={duration(stats.minutes)} sub={`${Math.round(stats.minutes / 60).toLocaleString()} hours`} />
+                    {/* In days and hours, and (from a day on) all in hours. */}
+                    <StatTile label="Time watched" value={duration(stats.minutes)} sub={stats.minutes >= 24 * 60 ? `${Math.round(stats.minutes / 60).toLocaleString()} hours` : undefined} />
                 </div>
                 <MonthlyChart months={months ?? []} />
                 <div className="grid gap-8 lg:grid-cols-2">

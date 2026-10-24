@@ -53,7 +53,9 @@ export default function App() {
     // the player.
     const mini = location.pathname === "/mini"
 
-    useEffect(() => connectEvents(qc), [qc])
+    // Not in the small picture-in-picture window: alerts and toasts belong
+    // in Kumo's window, not over the video.
+    useEffect(() => (mini ? undefined : connectEvents(qc)), [qc, mini])
     // Back finds a page as it was left (scrolled, focused); a new one starts
     // at its top. Before the page is drawn: its scroll isn't the last one's.
     const navType = useNavigationType()
@@ -100,12 +102,16 @@ export default function App() {
     const look = useMemo(() => resolveTheme(preview ?? ui), [preview, ui, hour])
     useEffect(() => {
         if (!ui) return
-        applyTheme(look)
+        // Remembered for the next start: the saved colors, not ones tried.
+        applyTheme(look, !preview)
         holidayStore.set(look.holiday)
         document.documentElement.classList.toggle("reduce-motion", !!ui.reducedMotion)
     }, [ui, look])
     // A holiday theme that came on by itself: said once.
-    useHolidayNotice(ui && !mini ? look.holiday : null, ui?.seasonal ?? "auto")
+    // From the saved settings: not a holiday being tried in Settings.
+    const saved = useMemo(() => resolveTheme(ui), [ui, hour])
+    useHolidayNotice(ui && !mini ? saved.holiday : null, ui?.seasonal ?? "auto")
+    const playing = useStore(playerStore, p => !!p)
 
     // Anime titles in the language chosen in Settings, set before the pages
     // render: they're drawn again when it changes (keyed by it).
@@ -161,7 +167,7 @@ export default function App() {
                             </Routes>
                         </Suspense>
                     </main>
-                    <HolidayGarland holiday={ui ? look.holiday : null} />
+                    <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} />
                 </div>
             </div>
             <NowPlaying />

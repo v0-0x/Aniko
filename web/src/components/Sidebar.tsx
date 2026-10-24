@@ -131,6 +131,8 @@ export function Sidebar() {
             <NavLink
                 key={it.to}
                 to={it.to}
+                // Icons only (narrow): named for screen readers too.
+                aria-label={wide ? undefined : it.label}
                 onClick={e => {
                     if (it.to === "/search" && !e.metaKey && !e.ctrlKey) {
                         e.preventDefault()
