@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"path/filepath"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -72,6 +73,7 @@ func TestBackupRoundTrip(t *testing.T) {
 	a.exec(t, `INSERT INTO local_list(media_id, status, progress, media, updated_at) VALUES(7, 'CURRENT', 3, '{}', ?)`, now-10)
 	a.exec(t, `INSERT INTO track_prefs(media_id, audio_lang, updated_at) VALUES(7, 'jpn', ?)`, now)
 	a.exec(t, `INSERT INTO local_files(path, dir, name, media_id, episode, locked) VALUES('/a/x.mkv', '/a', 'x.mkv', 9, 4, 1), ('/a/y.mkv', '/a', 'y.mkv', 9, 5, 0)`)
+	a.exec(t, `INSERT INTO local_files(path, dir, name, media_id, episode, ignored) VALUES('/a/w.mkv', '/a', 'w.mkv', 0, 1, 1)`)
 	a.exec(t, `INSERT INTO autodownload_rules(data) VALUES('{"title":"A"}'), ('{"title":"B"}')`)
 	a.exec(t, `INSERT INTO autodownload_items(key, rule_id, title, created_at) VALUES('k1', 2, 'B 01', ?)`, now)
 	a.exec(t, `INSERT INTO extensions(id, manifest, payload, installed_at, updated_at) VALUES('ext.one', '{}', 'code', ?, ?)`, now, now)
@@ -88,7 +90,7 @@ func TestBackupRoundTrip(t *testing.T) {
 	if s := buf.String(); strings.Contains(s, "secret") || strings.Contains(s, "tok") || strings.Contains(s, "abc") || strings.Contains(s, `"c"`) {
 		t.Fatalf("a backup without logins holds them, or the cache or identity: %s", s)
 	}
-	if got := len(f.Tables["local_files"]); got != 1 {
+	if got := len(f.Tables["local_files"]); got != 2 {
 		t.Errorf("files kept: %d, want only the one matched by hand", got)
 	}
 
@@ -101,6 +103,8 @@ func TestBackupRoundTrip(t *testing.T) {
 	// b watched episode 1 further, later; it has a rule the same as A.
 	b.exec(t, `INSERT INTO watch_history(media_id, episode, position, duration, source, updated_at, seq) VALUES(1, 1, 1300, 1400, 'local', ?, 1)`, now)
 	b.exec(t, `INSERT INTO autodownload_rules(data) VALUES('{"title":"Z"}'), ('{"title":"A"}')`)
+	// Since the backup, w.mkv was un-ignored and matched by hand here.
+	b.exec(t, `INSERT INTO local_files(path, dir, name, media_id, episode, locked, ignored) VALUES('/a/w.mkv', '/a', 'w.mkv', 42, 1, 1, 0)`)
 
 	read, err := Read(&buf)
 	if err != nil {
@@ -132,6 +136,9 @@ func TestBackupRoundTrip(t *testing.T) {
 	}
 	if n := b.count(t, `SELECT COUNT(*) FROM local_files WHERE path = '/a/x.mkv' AND locked = 1 AND media_id = 9`); n != 1 {
 		t.Error("match made by hand not restored")
+	}
+	if n := b.count(t, `SELECT COUNT(*) FROM local_files WHERE path = '/a/w.mkv' AND locked = 1 AND ignored = 0 AND media_id = 42`); n != 1 {
+		t.Error("a decision made here since the backup was undone")
 	}
 	if ok, _ := b.d.GetKV("anilist_token", new(string)); ok {
 		t.Error("login restored from a backup without logins")
@@ -194,5 +201,25 @@ func TestReadRejects(t *testing.T) {
 		if _, err := Read(strings.NewReader(in)); err == nil {
 			t.Errorf("read %q", in)
 		}
+	}
+}
+
+// Only the newest undo copies stay (each is a whole backup).
+func TestPruneUndo(t *testing.T) {
+	dir := t.TempDir()
+	for _, d := range []string{"2026-01-01-100000", "2026-03-01-100000", "2026-02-01-100000", "2026-04-01-100000", "2026-05-01-100000"} {
+		if err := os.WriteFile(filepath.Join(dir, "before-restore-"+d+".json"), []byte("{}"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = os.WriteFile(filepath.Join(dir, "mine.json"), []byte("{}"), 0o600)
+	pruneUndo(dir, 3)
+	left, _ := filepath.Glob(filepath.Join(dir, "*.json"))
+	var names []string
+	for _, p := range left {
+		names = append(names, filepath.Base(p))
+	}
+	if strings.Join(names, ",") != "before-restore-2026-03-01-100000.json,before-restore-2026-04-01-100000.json,before-restore-2026-05-01-100000.json,mine.json" {
+		t.Errorf("left: %v", names)
 	}
 }

@@ -4,6 +4,7 @@ package awake
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"sync"
 )
@@ -14,6 +15,10 @@ type cmdInhibitor struct {
 	mu   sync.Mutex
 	args []string
 	cmd  *exec.Cmd
+	// stdin: its input is a pipe from Kumo, open while it runs (closed when
+	// Kumo ends, however it ends).
+	stdin bool
+	pipe  *os.File
 }
 
 func (c *cmdInhibitor) start() error {
@@ -27,16 +32,34 @@ func (c *cmdInhibitor) start() error {
 		return errors.New(c.args[0] + " isn't installed")
 	}
 	cmd := exec.Command(path, c.args[1:]...)
-	if err := cmd.Start(); err != nil {
+	var r, w *os.File
+	if c.stdin {
+		if r, w, err = os.Pipe(); err != nil {
+			return err
+		}
+		cmd.Stdin = r
+	}
+	err = cmd.Start()
+	if r != nil {
+		_ = r.Close() // the program's now
+	}
+	if err != nil {
+		if w != nil {
+			_ = w.Close()
+		}
 		return err
 	}
-	c.cmd = cmd
+	c.cmd, c.pipe = cmd, w
 	// Reaped when it ends (stopped, or the system ended it).
 	go func() {
 		_ = cmd.Wait()
 		c.mu.Lock()
 		if c.cmd == cmd {
 			c.cmd = nil
+			if c.pipe != nil {
+				_ = c.pipe.Close()
+				c.pipe = nil
+			}
 		}
 		c.mu.Unlock()
 	}()
@@ -45,9 +68,12 @@ func (c *cmdInhibitor) start() error {
 
 func (c *cmdInhibitor) stop() {
 	c.mu.Lock()
-	cmd := c.cmd
-	c.cmd = nil
+	cmd, pipe := c.cmd, c.pipe
+	c.cmd, c.pipe = nil, nil
 	c.mu.Unlock()
+	if pipe != nil {
+		_ = pipe.Close()
+	}
 	if cmd != nil && cmd.Process != nil {
 		_ = cmd.Process.Kill()
 	}

@@ -114,6 +114,17 @@ func (t *Trash) put(path string) (*TrashItem, error) {
 	if !st.Mode().IsRegular() {
 		return nil, fmt.Errorf("not a file")
 	}
+	// The same file reached another way (a library folder linked into
+	// another, a hard link) is no other copy: moving it would take the one
+	// kept, or free nothing.
+	if f.MediaID > 0 {
+		others, _ := t.files.ByMedia(f.MediaID)
+		for _, o := range others {
+			if o.Path != path && o.Episode == f.Episode && SameFile(o.Path, path) {
+				return nil, fmt.Errorf("it's the same file as %s, reached another way: putting it away would take that one too", o.Name)
+			}
+		}
+	}
 	id := randomID()
 	it := &TrashItem{ID: id, Path: path, Name: filepath.Base(path), Size: st.Size(), MediaID: f.MediaID, Episode: f.Episode, DeletedAt: time.Now().Unix(), File: f}
 	// At the top of its library folder; in its own folder when that's on
@@ -137,12 +148,31 @@ func (t *Trash) put(path string) (*TrashItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("couldn't move it: %w", err)
 	}
-	// Its subtitle files ("Show - 01.en.ass" for "Show - 01.mkv").
+	// Its subtitle files ("Show - 01.en.ass" for "Show - 01.mkv"), not
+	// another video's whose name starts the same ("Show - 01.v2.en.ass" is
+	// "Show - 01.v2.mkv"'s).
 	base := strings.TrimSuffix(it.Name, filepath.Ext(it.Name))
 	entries, _ := os.ReadDir(filepath.Dir(path))
+	var longer []string
+	for _, e := range entries {
+		if n := e.Name(); !e.IsDir() && n != it.Name && IsVideo(n) {
+			if b := strings.TrimSuffix(n, filepath.Ext(n)); strings.HasPrefix(b, base+".") {
+				longer = append(longer, b)
+			}
+		}
+	}
 	for _, e := range entries {
 		n := e.Name()
 		if e.IsDir() || !SubtitleExtensions[strings.ToLower(filepath.Ext(n))] || !strings.HasPrefix(n, base+".") {
+			continue
+		}
+		theirs := false
+		for _, b := range longer {
+			if strings.HasPrefix(n, b+".") {
+				theirs = true
+			}
+		}
+		if theirs {
 			continue
 		}
 		from, to := filepath.Join(filepath.Dir(path), n), filepath.Join(dir, id+"-"+n)
@@ -154,6 +184,22 @@ func (t *Trash) put(path string) (*TrashItem, error) {
 		}
 	}
 	return it, nil
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+// SameFile: a and b are one file on disk (a folder linked into another, a
+// hard link). False when either can't be read.
+func SameFile(a, b string) bool {
+	sa, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	sb, err := os.Stat(b)
+	return err == nil && os.SameFile(sa, sb)
 }
 
 // ErrNotLibraryFile: a path that isn't one of the library's files.
@@ -260,7 +306,17 @@ func (t *Trash) empty(match func(TrashItem) bool) (int64, error) {
 			keep = append(keep, it)
 			continue
 		}
-		if err := os.Remove(it.In); err != nil && !errors.Is(err, os.ErrNotExist) {
+		err := os.Remove(it.In)
+		if errors.Is(err, os.ErrNotExist) && !exists(filepath.Dir(filepath.Dir(it.In))) {
+			// Not there because its drive isn't (unplugged): kept for when
+			// it's back, rather than forgotten with the file still on it.
+			if firstErr == nil {
+				firstErr = fmt.Errorf("couldn't delete %s: the drive it's on isn't connected", it.Name)
+			}
+			keep = append(keep, it)
+			continue
+		}
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			if firstErr == nil {
 				firstErr = fmt.Errorf("couldn't delete %s: %w", it.Name, err)
 			}

@@ -242,6 +242,7 @@ func Restore(d *db.DB, hist *history.Store, store *config.Store, f *File, saveDi
 	if err := Write(sum.SavedTo, before); err != nil {
 		return sum, fmt.Errorf("couldn't save the data from before: %w", err)
 	}
+	pruneUndo(saveDir, 3)
 
 	merged, err := hist.MergeAll(f.History)
 	if err != nil {
@@ -478,6 +479,11 @@ func putRow(tx *sql.Tx, table string, key []string, merge string, have map[strin
 			break
 		}
 		q = `INSERT INTO ` + table + `(` + names + `) VALUES(` + marks + `) ON CONFLICT(` + strings.Join(key, ", ") + `) DO UPDATE SET ` + strings.Join(set, ", ")
+		if merge == "decision" {
+			// Only where nothing was decided here: a match set by hand, or a
+			// file un-ignored, since the backup stays.
+			q += ` WHERE ` + table + `.locked = 0 AND ` + table + `.ignored = 0`
+		}
 		if merge == "newer" {
 			if _, ok := pos["updated_at"]; !ok {
 				q = `INSERT OR IGNORE INTO ` + table + `(` + names + `) VALUES(` + marks + `)`
@@ -496,6 +502,17 @@ func putRow(tx *sql.Tx, table string, key []string, merge string, have map[strin
 
 // A file's columns a backup's decision about it sets (not its size or
 // where it was scanned).
+// pruneUndo keeps the newest keep copies saved before restores (their names
+// sort by date): each is a whole backup.
+func pruneUndo(dir string, keep int) {
+	old, _ := filepath.Glob(filepath.Join(dir, "before-restore-*.json"))
+	sort.Strings(old)
+	for len(old) > keep {
+		_ = os.Remove(old[0])
+		old = old[1:]
+	}
+}
+
 var decisionCols = map[string]bool{"media_id": true, "episode": true, "kind": true, "locked": true, "ignored": true, "match_score": true}
 
 type byName struct {

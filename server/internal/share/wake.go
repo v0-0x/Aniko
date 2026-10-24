@@ -58,9 +58,13 @@ func broadcasts(last net.IP) []string {
 	for _, ifi := range interfaces() {
 		addrs, _ := ifi.Addrs()
 		for _, a := range addrs {
+			// Not all are networks (Windows gives some as addresses alone).
 			ipn, ok := a.(*net.IPNet)
+			if !ok {
+				continue
+			}
 			ip := ipn.IP.To4()
-			if !ok || ip == nil || len(ipn.Mask) != 4 {
+			if ip == nil || len(ipn.Mask) != 4 {
 				continue
 			}
 			b := make(net.IP, 4)

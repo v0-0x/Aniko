@@ -47,8 +47,9 @@ func (s *Server) cleanup(r *http.Request) (any, error) {
 		return nil, err
 	}
 	view := &cleanupView{Watched: []cleanupFile{}, Duplicates: [][]cleanupFile{}, Trash: s.app.Trash.Items()}
-	if cfg.Library.Dir != "" {
-		if total, free, err := util.DiskSpace(cfg.Library.Dir); err == nil && total > 0 {
+	// The main library folder's drive (~ in it means the home folder).
+	if dirs := cfg.LibraryDirs(); cfg.Library.Dir != "" && len(dirs) > 0 {
+		if total, free, err := util.DiskSpace(dirs[0]); err == nil && total > 0 {
 			view.Disk = &diskSpace{Total: total, Free: free}
 		}
 	}
@@ -117,9 +118,24 @@ func (s *Server) cleanup(r *http.Request) (any, error) {
 		if len(fs) < 2 {
 			continue
 		}
+		// One file reached two ways (a library folder linked into another,
+		// hard links) isn't two copies: putting "the other" away would take
+		// the only one.
 		var group []cleanupFile
-		for _, f := range fs {
-			group = append(group, item(f))
+		for i, f := range fs {
+			same := false
+			for _, o := range fs[:i] {
+				if library.SameFile(o.Path, f.Path) {
+					same = true
+					break
+				}
+			}
+			if !same {
+				group = append(group, item(f))
+			}
+		}
+		if len(group) < 2 {
+			continue
 		}
 		// The one to keep first: the biggest (then by name, so it's the same
 		// one each time).

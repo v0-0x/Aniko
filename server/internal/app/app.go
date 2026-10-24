@@ -148,10 +148,7 @@ func New(dataDir string) (*App, error) {
 	}
 	a.HLS = stream.NewHLS(a.Local, hlsDir(dataDir))
 	a.Notify = notify.New(settings, hub, d, platform)
-	a.Trash = library.NewTrash(d, files, func() []string {
-		cfg := a.Settings.Get()
-		return append([]string{cfg.Library.Dir}, cfg.Library.ExtraDirs...)
-	})
+	a.Trash = library.NewTrash(d, files, func() []string { return a.Settings.Get().LibraryDirs() })
 	a.Awake = awake.New(func() bool { return a.Settings.Get().Sharing.KeepAwake })
 	if a.Share, err = share.New(d, settings, files, hub); err != nil {
 		return nil, fmt.Errorf("library sharing: %w", err)

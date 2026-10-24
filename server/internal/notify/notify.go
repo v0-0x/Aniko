@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -49,13 +50,18 @@ type Service struct {
 	db       *db.DB
 	list     Lister
 	mu       sync.Mutex
-	// now is the time (tests set it).
-	now func() time.Time
+	// now is the time; poll, how often a file still being written is looked
+	// at again (tests set them).
+	now  func() time.Time
+	poll time.Duration
 }
 
 func New(settings *config.Store, hub *events.Hub, d *db.DB, list Lister) *Service {
-	return &Service{settings: settings, hub: hub, db: d, list: list, now: time.Now}
+	return &Service{settings: settings, hub: hub, db: d, list: list, now: time.Now, poll: 30 * time.Second}
 }
+
+// settled: a file unchanged this long is written (a download done).
+const settled = 90 * time.Second
 
 func (s *Service) send(a Alert) {
 	s.hub.Publish(Event, a)
@@ -148,9 +154,13 @@ func (s *Service) CheckAired(ctx context.Context, refresh bool) error {
 
 // airedNow is how many episodes of an anime are out at now: its next one
 // counts once its airing time has passed (the list may be from before).
+// Once the last one is out there is no next one: then all of them are.
 func airedNow(m *anilist.Media, now int64) int {
 	n := m.NextAiringEpisode
 	if n == nil || n.Episode <= 0 {
+		if m.Status == "FINISHED" && m.Episodes != nil {
+			return *m.Episodes
+		}
 		return 0
 	}
 	if int64(n.AiringAt) <= now {
@@ -182,11 +192,55 @@ func (s *Service) Downloaded(mediaID, episode int, title, path string) bool {
 
 // NewFiles tells about the episodes a scan found (a torrent finished, files
 // copied in): each anime's, or how many when there are lots (a new library
-// folder).
+// folder). A file still being written (a torrent downloading into the
+// library folder has its file there from the start) is told about once it
+// stops changing: when it's done.
 func (s *Service) NewFiles(files []*library.LocalFile) {
 	if !s.settings.Get().Notify.Downloads {
 		return
 	}
+	var done, writing []*library.LocalFile
+	for _, f := range files {
+		if s.now().Sub(time.Unix(f.ModTime, 0)) < settled {
+			writing = append(writing, f)
+		} else {
+			done = append(done, f)
+		}
+	}
+	if len(writing) > 0 {
+		go s.whenWritten(writing)
+	}
+	s.tell(done)
+}
+
+// whenWritten looks at files being written now and then, and tells about
+// each once it stopped changing (for up to a day). One gone meanwhile was
+// renamed when done (to its own name: a scan finds that) or deleted.
+func (s *Service) whenWritten(files []*library.LocalFile) {
+	for start := s.now(); len(files) > 0 && s.now().Sub(start) < 24*time.Hour; {
+		time.Sleep(s.poll)
+		var done, still []*library.LocalFile
+		for _, f := range files {
+			st, err := os.Stat(f.Path)
+			if err != nil {
+				continue
+			}
+			if st.Size() == f.Size && st.ModTime().Unix() == f.ModTime && s.now().Sub(st.ModTime()) >= settled {
+				done = append(done, f)
+				continue
+			}
+			cp := *f
+			cp.Size, cp.ModTime = st.Size(), st.ModTime().Unix()
+			still = append(still, &cp)
+		}
+		if len(done) > 0 && s.settings.Get().Notify.Downloads {
+			s.tell(done)
+		}
+		files = still
+	}
+}
+
+func (s *Service) tell(files []*library.LocalFile) {
 	byMedia := map[int][]*library.LocalFile{}
 	var order []int
 	for _, f := range files {

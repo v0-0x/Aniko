@@ -152,3 +152,80 @@ func TestTrashEmptyAndPurge(t *testing.T) {
 		t.Errorf("left on the disk: %v", entries)
 	}
 }
+
+// One file reached two ways (a library folder linked into another) is no
+// other copy: it isn't put away, the one kept would go with it.
+func TestTrashSameFile(t *testing.T) {
+	tr, files, root := trashFixture(t)
+	real := filepath.Join(root, "Show", "Show - 01.mkv")
+	addFile(t, files, real, LocalFile{MediaID: 7, Episode: 1})
+	if err := os.Symlink(filepath.Join(root, "Show"), filepath.Join(root, "Linked")); err != nil {
+		t.Skip("no symlinks here:", err)
+	}
+	linked := filepath.Join(root, "Linked", "Show - 01.mkv")
+	f := LocalFile{Path: linked, Dir: filepath.Dir(linked), Name: "Show - 01.mkv", Kind: "main", MediaID: 7, Episode: 1}
+	if err := files.Save(&f); err != nil {
+		t.Fatal(err)
+	}
+	moved, failed := tr.Put([]string{linked})
+	if len(moved) != 0 || failed[linked] == "" {
+		t.Fatalf("put away the same file: moved %v failed %v", moved, failed)
+	}
+	if _, err := os.Stat(real); err != nil {
+		t.Fatal("the file kept is gone:", err)
+	}
+}
+
+// Another video's subtitles stay, its name starting the same: "Show -
+// 01.v2.en.ass" is "Show - 01.v2.mkv"'s, not "Show - 01.mkv"'s.
+func TestTrashOtherVideosSubtitles(t *testing.T) {
+	tr, files, root := trashFixture(t)
+	ep := filepath.Join(root, "Show", "Show - 01.mkv")
+	addFile(t, files, ep, LocalFile{MediaID: 7, Episode: 1})
+	addFile(t, files, filepath.Join(root, "Show", "Show - 01.v2.mkv"), LocalFile{MediaID: 7, Episode: 1})
+	mine := filepath.Join(root, "Show", "Show - 01.en.ass")
+	theirs := filepath.Join(root, "Show", "Show - 01.v2.en.ass")
+	for _, p := range []string{mine, theirs} {
+		if err := os.WriteFile(p, []byte("subs"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, failed := tr.Put([]string{ep}); len(failed) != 0 {
+		t.Fatal(failed)
+	}
+	if _, err := os.Stat(mine); !os.IsNotExist(err) {
+		t.Error("its subtitles stayed")
+	}
+	if _, err := os.Stat(theirs); err != nil {
+		t.Error("the other video's subtitles went too")
+	}
+}
+
+// Emptied while the drive it's on isn't connected: kept for when it's back
+// (the file is still on it), not forgotten.
+func TestTrashEmptyDriveGone(t *testing.T) {
+	tr, files, root := trashFixture(t)
+	ep := filepath.Join(root, "Show", "Show - 01.mkv")
+	addFile(t, files, ep, LocalFile{MediaID: 7, Episode: 1})
+	if _, failed := tr.Put([]string{ep}); len(failed) != 0 {
+		t.Fatal(failed)
+	}
+	// The drive away: its trash folder and the folder it's in, gone.
+	hidden := root + "-away"
+	if err := os.Rename(root, hidden); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tr.Empty(nil); err == nil {
+		t.Error("no word of the drive")
+	}
+	if n := len(tr.Items()); n != 1 {
+		t.Fatalf("forgotten: %d items", n)
+	}
+	// Back: emptied.
+	if err := os.Rename(hidden, root); err != nil {
+		t.Fatal(err)
+	}
+	if freed, err := tr.Empty(nil); err != nil || freed == 0 || len(tr.Items()) != 0 {
+		t.Fatalf("freed %d err %v items %d", freed, err, len(tr.Items()))
+	}
+}
