@@ -151,6 +151,7 @@ public class MainActivity extends Activity {
                 if (view != MainActivity.this.web) return true;
                 Log.e("kumo", "the page stopped" + (detail.didCrash() ? " (crashed)" : "") + ": opening it again");
                 exitFullscreen();
+                letScreenSleep();
                 root.removeView(view);
                 view.destroy();
                 MainActivity.this.web = newWebView();
@@ -249,8 +250,16 @@ public class MainActivity extends Activity {
         }, "kumo-start").start();
     }
 
+    /** The screen may turn off again: the player that kept it on is gone with
+     * its page (it says so itself when it closes, but a page that stopped or
+     * is opened again can't). */
+    private void letScreenSleep() {
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
     /** Opens Kumo's page (the server answers). */
     private void openPage(KumoServer server) {
+        letScreenSleep();
         // The cookie that proves the WebView is Kumo's (KumoServer.token).
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
@@ -261,6 +270,7 @@ public class MainActivity extends Activity {
 
     /** The server stopped: the starting screen, and the server again. */
     private void restartServer(String why) {
+        letScreenSleep();
         loaded = false;
         web.setVisibility(View.INVISIBLE);
         messageScroll.setVisibility(View.VISIBLE);

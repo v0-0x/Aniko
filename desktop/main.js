@@ -262,7 +262,8 @@ function startServer() {
             if (code === EXIT_RESTART || code === EXIT_INSTALLING) {
                 serverProc = null
                 app.isQuitting = true
-                if (code === EXIT_RESTART) app.relaunch()
+                // With its window: not as started with the computer.
+                if (code === EXIT_RESTART) app.relaunch({ args: process.argv.slice(1).filter(a => a !== BACKGROUND) })
                 app.exit(0)
                 return
             }
@@ -290,18 +291,39 @@ function startServer() {
     })
 }
 
+// Kumo's address now: its port can be changed in Settings, the server moves
+// to it at once and writes it in server.json.
+let serverRead = 0
+function serverUrl() {
+    // At most once a second (it's asked about each request).
+    if (Date.now() - serverRead < 1000) return baseUrl
+    serverRead = Date.now()
+    const info = readJSON(path.join(runtimeDir, "server.json"))
+    if (info?.port) baseUrl = `http://127.0.0.1:${info.port}`
+    return baseUrl
+}
+
 function installShellHeader() {
     const filter = { urls: ["http://127.0.0.1/*", "http://127.0.0.1:*/*"] }
     session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, cb) => {
-        const token = readToken()
+        // Only to Kumo: not to another program listening on this computer.
+        const token = isInternal(details.url) ? readToken() : ""
         if (token) details.requestHeaders["X-Kumo-Shell"] = token
         cb({ requestHeaders: details.requestHeaders })
     })
 }
 
+// A page of Kumo's: at its address (the one it had when it started, or the
+// one it moved to).
 function isInternal(url) {
-    // Any port on 127.0.0.1 is Kumo (the port can be changed in Settings).
-    return /^http:\/\/127\.0\.0\.1(:\d+)?\//.test(url)
+    try {
+        const u = new URL(url)
+        if (u.protocol !== "http:" || u.hostname !== "127.0.0.1") return false
+        const at = b => !!b && new URL(b).port === u.port
+        return at(baseUrl) || at(serverUrl())
+    } catch {
+        return false
+    }
 }
 
 // macOS keeps the app's menu in the menu bar, and the standard shortcuts
@@ -309,7 +331,7 @@ function isInternal(url) {
 // Linux and Windows show no menu.
 function appMenu() {
     if (!isMac) return null
-    return Menu.buildFromTemplate([{ role: "appMenu" }, { role: "editMenu" }, { role: "viewMenu" }, { role: "windowMenu" }])
+    return Menu.buildFromTemplate([{ role: "appMenu" }, { role: "fileMenu" }, { role: "editMenu" }, { role: "viewMenu" }, { role: "windowMenu" }])
 }
 
 // The window's own icon. On Linux it's invisible: KDE and other desktops draw
@@ -355,11 +377,14 @@ function createWindow(page = "") {
     mainWindow.on("closed", () => {
         mainWindow = null
         parkedUrl = null
+        // Kumo quits with its window (not kept running): the small player
+        // too, or nothing would be left to close it with.
+        if (!prefs.keepRunning && !app.isQuitting) miniWindow?.close()
     })
     // Windows is shutting down or signing out, which stops the server too:
     // that isn't worth an error box (the event only exists on Windows).
     mainWindow.on("query-session-end", () => (app.isQuitting = true))
-    mainWindow.loadURL(baseUrl + page)
+    mainWindow.loadURL(serverUrl() + page).catch(() => {})
 }
 
 // External links open in the system browser; Kumo's windows never navigate
@@ -379,26 +404,31 @@ function keepInside(contents) {
 
 // Picture in picture: Kumo's player in a small window on top of the others
 // (its /mini page, the episode in its address), at the bottom right of the
-// screen Kumo's window is on. Its button to go back hands the episode, where
+// screen Kumo's window is on, or where the last one was. Its button to go back hands the episode, where
 // it's at, to Kumo's window (pendingPlay until that window asks for it).
 let miniWindow = null
 let pendingPlay = null
 
 ipcMain.handle("kumo:mini-open", (_e, page) => {
-    if (!baseUrl || typeof page !== "string" || !/^\/mini#/.test(page)) return false
+    const base = serverUrl()
+    if (!base || typeof page !== "string" || !/^\/mini#/.test(page)) return false
+    // One open already: a new one where it was (only its address's end would
+    // change, which doesn't load the page again).
+    let bounds = null
     if (miniWindow) {
-        miniWindow.loadURL(baseUrl + page)
-        miniWindow.show()
-        return true
+        bounds = miniWindow.getBounds()
+        const old = miniWindow
+        miniWindow = null
+        old.destroy()
     }
     const area = screen.getDisplayMatching(mainWindow?.getBounds() ?? screen.getPrimaryDisplay().bounds).workArea
-    const width = 480
-    const height = 270
-    miniWindow = new BrowserWindow({
+    const width = bounds?.width ?? 480
+    const height = bounds?.height ?? 270
+    const win = new BrowserWindow({
         width,
         height,
-        x: area.x + area.width - width - 24,
-        y: area.y + area.height - height - 24,
+        x: bounds?.x ?? area.x + area.width - width - 24,
+        y: bounds?.y ?? area.y + area.height - height - 24,
         minWidth: 320,
         minHeight: 180,
         title: "Kumo",
@@ -415,12 +445,15 @@ ipcMain.handle("kumo:mini-open", (_e, page) => {
             spellcheck: false,
         },
     })
-    // Above other apps' windows too (and their full-screen ones on macOS).
-    miniWindow.setAlwaysOnTop(true, "floating")
-    miniWindow.setAspectRatio(16 / 9)
-    keepInside(miniWindow.webContents)
-    miniWindow.on("closed", () => (miniWindow = null))
-    miniWindow.loadURL(baseUrl + page)
+    // Above other apps' windows too.
+    win.setAlwaysOnTop(true, "floating")
+    win.setAspectRatio(16 / 9)
+    keepInside(win.webContents)
+    win.on("closed", () => {
+        if (miniWindow === win) miniWindow = null
+    })
+    miniWindow = win
+    win.loadURL(base + page).catch(() => {})
     return true
 })
 ipcMain.on("kumo:mini-close", () => miniWindow?.close())
@@ -561,9 +594,22 @@ async function restartIfOutdated(url) {
     if (!url) return false
     const installed = installedVersion()
     const running = (await serverCall(url, "GET", "/api/status"))?.version
-    if (!installed || !running || installed === running) return false
+    // 1.0.0: built by hand, its version unknown.
+    if (!installed || !running || running === "1.0.0" || !olderVersion(running, installed)) return false
     console.log(`Kumo ${running} is running, ${installed} is installed: restarting into it`)
     return !!(await serverCall(url, "POST", "/api/update/restart"))
+}
+
+// olderVersion: a before b ("1.0.139" before "2.0.0").
+function olderVersion(a, b) {
+    const pa = a.split(".").map(Number)
+    const pb = b.split(".").map(Number)
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const x = pa[i] || 0
+        const y = pb[i] || 0
+        if (x !== y) return x < y
+    }
+    return false
 }
 
 let restarting = false
@@ -572,21 +618,27 @@ let restarting = false
 // closed while Kumo kept running (the tray's and the Dock's handlers: what
 // they pass isn't a page).
 function showWindow() {
-    return showWindowAt("")
+    return showWindowAt("").catch(err => console.error("couldn't show Kumo's window:", err))
 }
 
 // showWindowAt does, at a page of it when one is given ("/entry?id=1").
 async function showWindowAt(page) {
-    if (!baseUrl || restarting) return
-    // Updated since it started: the new version opens instead.
-    if (await restartIfOutdated(baseUrl)) {
-        restarting = true
-        return
+    const base = serverUrl()
+    if (!base || restarting) return
+    // Updated since it started: the new version opens instead (this app
+    // starts again with its own server; one it found running restarts by
+    // itself, and is back in a moment).
+    if (await restartIfOutdated(base)) {
+        if (serverProc) {
+            restarting = true
+            return
+        }
+        for (let i = 0; i < 40 && !(await ping(base)); i++) await new Promise(r => setTimeout(r, 250))
     }
     if (!mainWindow) return createWindow(page)
     if (page) {
         parkedUrl = null
-        mainWindow.loadURL(baseUrl + page)
+        mainWindow.loadURL(base + page).catch(() => {})
     }
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.show()
@@ -607,7 +659,7 @@ function listenForAlerts() {
         alertsListening = false
         if (!app.isQuitting) setTimeout(listenForAlerts, 5000)
     }
-    const req = http.get(baseUrl + "/api/events", { headers: { "X-Kumo-Shell": readToken() || "", Accept: "text/event-stream" } }, res => {
+    const req = http.get(serverUrl() + "/api/events", { headers: { "X-Kumo-Shell": readToken() || "", Accept: "text/event-stream" } }, res => {
         if (res.statusCode !== 200) {
             res.resume()
             return again()
@@ -642,7 +694,7 @@ function backgroundAlert(a) {
     if ((mainWindow && !parkedUrl) || !Notification.isSupported() || typeof a?.title !== "string") return
     const n = new Notification({ title: a.title, body: String(a.body || "") })
     const id = Number(a.mediaId)
-    n.on("click", () => showWindowAt(id > 0 ? `/entry?id=${id}` : "/local"))
+    n.on("click", () => showWindowAt(id > 0 ? `/entry?id=${id}` : "/local").catch(() => {}))
     n.show()
 }
 
@@ -702,7 +754,7 @@ async function parkPage() {
     }
     if (busy || !mainWindow || parkedUrl) return
     parkedUrl = wc.getURL()
-    wc.loadURL(PARKED_PAGE)
+    wc.loadURL(PARKED_PAGE).catch(() => {})
 }
 
 function unparkPage() {
@@ -710,7 +762,7 @@ function unparkPage() {
     if (!parkedUrl) return
     const url = parkedUrl
     parkedUrl = null
-    if (mainWindow && isInternal(url)) mainWindow.loadURL(url)
+    if (mainWindow && isInternal(url)) mainWindow.loadURL(url).catch(() => {})
 }
 
 // Desktop shortcuts are copies of kumo.desktop: those made before the icon
@@ -784,10 +836,15 @@ if (!app.requestSingleInstanceLock()) {
         if (!argv.includes(BACKGROUND)) showWindow()
     })
     app.on("activate", showWindow) // the Dock icon (macOS)
-    app.whenReady().then(() => {
-        loadPrefs()
-        return boot()
-    })
+    app.whenReady()
+        .then(() => {
+            loadPrefs()
+            return boot()
+        })
+        .catch(err => {
+            dialog.showErrorBox("Kumo could not start", String(err?.message || err))
+            app.exit(1)
+        })
     app.on("window-all-closed", () => {
         if (!prefs.keepRunning || app.isQuitting) return app.quit()
         wentToBackground()
