@@ -144,7 +144,7 @@ use Git's bash; `-SkipTests` skips the tests), builds `dist\windows\kumo.exe`,
 then packages the app with electron-builder
 ([`desktop/electron-builder.yml`](../../desktop/electron-builder.yml)). The
 installer and the zip land in `dist\windows\release`. Unlike a release, a
-build of your own keeps the version in `desktop/package.json` (1.0.0), so
+build of your own keeps the version in `desktop/package.json` (2.0.0), so
 Kumo offers it the newest release as an update.
 
 For development, `cd desktop; npm ci; npx electron .` starts the window with
@@ -163,9 +163,10 @@ runs from the repository's **Actions** tab (**Windows release**): with
 commit updates it, replacing files of the same name); untick it to only get
 the files as workflow artifacts.
 
-The version is `1.0.<number of commits>`: the first two numbers come from
-`desktop/package.json`, the last one grows with every commit, so there's
-nothing to bump by hand. The workflow builds it into `kumo.exe` with the
+The version is `2.0.<commits since 2.0.0's>`: the first two numbers come from
+`desktop/package.json`, the last one grows with every commit (counted from
+the commit its `kumoVersionBase` names, 2.0.0's), so there's nothing to bump
+by hand. Releases before 2.0 were `1.0.<number of commits>`. The workflow builds it into `kumo.exe` with the
 commit, and installed copies of Kumo offer the release with the highest
 version as their update. The Arch package gets the same version from its
 PKGBUILD. Only the newest 10 Windows releases are kept: the workflow deletes

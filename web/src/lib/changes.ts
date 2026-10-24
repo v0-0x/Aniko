@@ -15,6 +15,10 @@ export const RELEASES: Release[] = [
                 title: "Holiday themes, redone",
                 text: "Each holiday brings its own colors and decorations (Christmas lights, Halloween's moon and cobweb, a cherry branch, summer lanterns) and nicer snow, bats, hearts, petals, fireflies and fireworks.",
             },
+            {
+                title: "Fixes",
+                text: "Alerts for a season's last episode, and for torrents once they're done downloading; Clean up never takes the only copy of an episode; the desktop app follows Kumo to a new port; and more.",
+            },
         ],
     },
     {

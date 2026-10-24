@@ -294,6 +294,9 @@ func TestCompareVersions(t *testing.T) {
 		{"1.1", "1.0.99", 1},
 		{"2.0.0", "10.0.0", -1},
 		{"1.0.5", "1.0.5", 0},
+		// 2.0.0 is newer than every 1.0 (1.0.139 the last).
+		{"2.0.0", "1.0.139", 1},
+		{"2.0.1", "2.0.0", 1},
 	} {
 		if got := compareVersions(tc.a, tc.b); got != tc.want {
 			t.Errorf("compareVersions(%q, %q) = %d, want %d", tc.a, tc.b, got, tc.want)
@@ -705,5 +708,38 @@ func TestRepositoryByNumber(t *testing.T) {
 	t.Cleanup(c2.Stop)
 	if g := (&github{repo: c2.Repo, repoID: c2.RepoID}); g.root() != "/repos/me/fork" {
 		t.Errorf("override: %q", g.root())
+	}
+}
+
+// The version from the number of commits matches what the release
+// workflows and the PKGBUILD make (desktop/package.json says where 2.0.0
+// is), and is newer than every 1.0.
+func TestVersionOf(t *testing.T) {
+	raw, err := os.ReadFile("../../../desktop/package.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pkg struct {
+		Version string `json:"version"`
+		Base    int    `json:"kumoVersionBase"`
+	}
+	if err := json.Unmarshal(raw, &pkg); err != nil {
+		t.Fatal(err)
+	}
+	if pkg.Base != VersionBase || !strings.HasPrefix(pkg.Version, "2.0.") {
+		t.Fatalf("desktop/package.json says %s from commit %d; the updater %d", pkg.Version, pkg.Base, VersionBase)
+	}
+	for n, want := range map[int]string{VersionBase: "2.0.0", VersionBase + 5: "2.0.5", 139: "1.0.139"} {
+		if got := VersionOf(n); got != want {
+			t.Errorf("VersionOf(%d) = %s, want %s", n, got, want)
+		}
+	}
+	if compareVersions(VersionOf(VersionBase), VersionOf(VersionBase-1)) <= 0 {
+		t.Error("2.0.0 isn't newer than the last 1.0")
+	}
+	// Releases of both: the 2.0 one is picked.
+	got := pickRelease([]release{{TagName: "windows-v1.0.146"}, {TagName: "windows-v2.0.0"}, {TagName: "windows-v1.0.139"}}, "windows-v")
+	if got == nil || got.TagName != "windows-v2.0.0" {
+		t.Fatalf("picked %+v", got)
 	}
 }

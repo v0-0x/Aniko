@@ -5,7 +5,8 @@
 #
 # The app (android/) runs Kumo's server, built here for Android with the NDK
 # (32-bit ARM, which most Fire TV sticks run, and 64-bit), and shows its web
-# UI. The version is 1.0.<number of commits>, like the other releases':
+# UI. The version is 2.0.<commits since 2.0.0's>, like the other releases'
+# (its version code is the number of commits, always higher):
 # installed copies look for the android-v release with the highest version
 # and update from their Home page (server/internal/update).
 #
@@ -71,7 +72,15 @@ jobs:
             exit 1
           fi
           count=$(git rev-list --count HEAD)
-          version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$count"
+          # The commits since the one kumoVersionBase counts (2.0.0's); the
+          # app's code stays the count, always higher than the last one.
+          from=$(node -p 'require("./desktop/package.json").kumoVersionBase || 0')
+          patch=$(( count - from ))
+          if (( patch < 0 )); then
+            echo "::error::This commit is before kumoVersionBase ($from) in desktop/package.json"
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$patch"
           {
             echo "version=$version"
             echo "code=$count"

@@ -59,7 +59,8 @@ func (s *Service) Prompts() []Prompt {
 	return out
 }
 
-// compareVersions compares two Kumo versions (1.0.<number of commits>):
+// compareVersions compares two Kumo versions (2.0.<commits since 2.0.0's>,
+// 1.0.<number of commits> before):
 // ok is false when either isn't one, or is a build's default (1.0.0: built
 // by hand, its version unknown).
 func compareVersions(a, b string) (int, bool) {

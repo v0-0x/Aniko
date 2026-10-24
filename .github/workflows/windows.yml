@@ -3,8 +3,10 @@
 # "Kumo <version> for Windows", tagged windows-v<version> on the commit it
 # built.
 #
-# The version is 1.0.<number of commits> (the first two numbers come from
-# desktop/package.json): each commit has its own, later commits higher ones.
+# The version is 2.0.<commits since 2.0.0's> (the first two numbers come
+# from desktop/package.json, where kumoVersionBase is 2.0.0's number of
+# commits; 1.0.<number of commits> before it): each commit has its own,
+# later commits higher ones.
 # Installed copies of Kumo look for the release with the highest version and
 # offer it on the Home page (server/internal/update), so the version is also
 # built into kumo.exe, with the commit.
@@ -73,11 +75,16 @@ jobs:
       - name: Read the version
         id: version
         run: |
-          $base = (Get-Content desktop/package.json -Raw | ConvertFrom-Json).version
+          $pkg = Get-Content desktop/package.json -Raw | ConvertFrom-Json
+          $base = $pkg.version
           if (-not ($base -match '^(\d+)\.(\d+)\.')) { throw "desktop/package.json has no version like 1.0.0 (it says '$base')" }
           $count = git rev-list --count HEAD
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $version = "$($Matches[1]).$($Matches[2]).$("$count".Trim())"
+          # The commits since the one kumoVersionBase counts (2.0.0's).
+          $from = if ($pkg.kumoVersionBase) { [int]$pkg.kumoVersionBase } else { 0 }
+          $patch = [int]"$count".Trim() - $from
+          if ($patch -lt 0) { throw "This commit is before kumoVersionBase ($from) in desktop/package.json" }
+          $version = "$($Matches[1]).$($Matches[2]).$patch"
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=windows-v$version" >> $env:GITHUB_OUTPUT
           "installer=Kumo-Setup-$version-windows-x64.exe" >> $env:GITHUB_OUTPUT

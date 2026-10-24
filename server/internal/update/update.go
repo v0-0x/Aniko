@@ -93,10 +93,12 @@ const (
 	defaultAPI = "https://api.github.com"
 	// packagedExe is where packaging/arch/PKGBUILD installs the server.
 	packagedExe = "/usr/lib/kumo/kumo"
-	// versionPrefix + the number of commits is a build's version, as the
-	// PKGBUILD and the Windows release workflow make it.
-	versionPrefix = "1.0."
-	maxChanges    = 30
+	// VersionBase is the number of commits of the commit that's 2.0.0
+	// (desktop/package.json's kumoVersionBase): a build's version is
+	// 2.0.<commits since then>, as the PKGBUILD and the release workflows
+	// make it, and was 1.0.<commits> before.
+	VersionBase = 147
+	maxChanges  = 30
 	maxLogLines   = 20
 	// failureFile keeps why an update failed after Kumo had quit for it
 	// (in CacheDir), for the next run to show.
@@ -492,7 +494,7 @@ func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 	latest := &Version{Commit: head.SHA, Date: head.Commit.Committer.Date, URL: head.HTMLURL}
 	// The version is only for showing, so a failure here doesn't matter.
 	if n := g.commitCount(ctx, head.SHA); n > 0 {
-		latest.Version = fmt.Sprintf("%s%d", versionPrefix, n)
+		latest.Version = VersionOf(n)
 	}
 	res := result{latest: latest}
 	if c.Commit == "" {
@@ -610,6 +612,14 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 		}
 	}
 	return res, nil
+}
+
+// VersionOf is the version of the build with n commits.
+func VersionOf(n int) string {
+	if n >= VersionBase {
+		return fmt.Sprintf("2.0.%d", n-VersionBase)
+	}
+	return fmt.Sprintf("1.0.%d", n)
 }
 
 // pickRelease returns the published release with the highest version

@@ -32,7 +32,8 @@ const (
 // -X <module>/internal/config.Commit=…": packaging/arch/PKGBUILD and the
 // Windows release workflow do, from the commit they build.
 var (
-	// AppVersion is 1.0.<number of commits> in those builds.
+	// AppVersion is 2.0.<commits since 2.0.0's> in those builds (1.0.<number
+	// of commits> before it; see update.VersionOf).
 	AppVersion = "1.0.0"
 	// Commit is the git commit Kumo was built from; see BuildCommit.
 	Commit = ""

@@ -7,7 +7,7 @@
 # electron-builder merges them into the app's one program
 # (desktop/electron-builder.yml).
 #
-# The version is 1.0.<number of commits>, like the Windows release's (see
+# The version is 2.0.<commits since 2.0.0's>, like the Windows release's (see
 # windows.yml): installed copies look for the macos-v release with the
 # highest version and offer it on the Home page (server/internal/update),
 # which downloads the zip.
@@ -72,7 +72,14 @@ jobs:
             echo "::error::desktop/package.json has no version like 1.0.0 (it says '$base')"
             exit 1
           fi
-          version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$(git rev-list --count HEAD)"
+          # The commits since the one kumoVersionBase counts (2.0.0's).
+          from=$(node -p 'require("./desktop/package.json").kumoVersionBase || 0')
+          patch=$(( $(git rev-list --count HEAD) - from ))
+          if (( patch < 0 )); then
+            echo "::error::This commit is before kumoVersionBase ($from) in desktop/package.json"
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$patch"
           {
             echo "version=$version"
             echo "tag=macos-v$version"
