@@ -3,6 +3,7 @@ import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import type { ListEntry, Media } from "@/lib/types"
 import { airedEpisodes, cn, cover, entryUrl, formatLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
+import { tv } from "@/lib/tv"
 import { Dropdown, DropdownContent, DropdownTrigger, IconButton } from "./ui"
 
 type Props = {
@@ -38,8 +39,14 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
     const score = media.meanScore ?? media.averageScore
 
     const card = (
-        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 rounded-lg outline-none", !menu && className)}>
-            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface-2">
+        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 rounded-xl outline-none", !menu && className)}>
+            {/* Lifted a little under the pointer (not on a TV: it's slow at it). */}
+            <div
+                className={cn(
+                    "relative aspect-[2/3] overflow-hidden rounded-xl bg-surface-2 shadow-[0_8px_24px_-14px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out",
+                    !tv && "group-hover/card:-translate-y-1 group-hover/card:shadow-[0_18px_36px_-14px_rgb(0_0_0/0.9)]",
+                )}
+            >
                 {cover(media) && (
                     <img
                         src={cover(media)}
@@ -50,12 +57,12 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     />
                 )}
                 {/* A hairline, so dark covers don't melt into the page. */}
-                <div data-tv-ring className="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-white/[0.07] transition-[box-shadow] duration-300 ring-inset group-hover/card:ring-white/20" />
+                <div data-tv-ring className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-white/[0.08] transition-[box-shadow] duration-300 ring-inset group-hover/card:ring-[color-mix(in_oklab,var(--brand)_45%,transparent)]" />
 
                 <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-                    {behind > 0 && <span className="rounded bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white">{behind} new</span>}
+                    {behind > 0 && <span className="rounded-md bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white shadow-[0_2px_8px_-2px_var(--brand)]">{behind} new</span>}
                     {!!localCount && localCount > 0 && (
-                        <span className="flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums">
+                        <span className="flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums backdrop-blur-sm">
                             <HardDrive className="size-3" />
                             {downloaded?.length ?? localCount}
                         </span>
@@ -64,7 +71,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                 {score ? (
                     <span
                         className={cn(
-                            "absolute top-2 right-2 flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 transition-opacity group-hover/card:opacity-100",
+                            "absolute top-2 right-2 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 backdrop-blur-sm transition-opacity group-hover/card:opacity-100",
                             menu && "right-10", // next to the menu button
                         )}
                     >
@@ -73,14 +80,14 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     </span>
                 ) : null}
                 {nextAir && (
-                    <span className="absolute bottom-2.5 left-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">
+                    <span className="absolute bottom-2.5 left-2 rounded-md bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
                         Ep {nextAir.episode} in {timeUntil(nextAir.timeUntilAiring)}
                     </span>
                 )}
 
                 {showProgress && listEntry && total > 0 && progress > 0 && progress < total && (
                     <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                        <div className="h-full bg-brand" style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
+                        <div className="h-full rounded-r-full bg-brand shadow-[0_0_8px_var(--brand)]" style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
                     </div>
                 )}
             </div>
@@ -155,7 +162,7 @@ function CardMenu({ menu, className, children }: { menu: React.ReactNode; classN
                     <IconButton
                         label="More options"
                         size="xs"
-                        className="absolute top-1.5 right-1.5 rounded-md bg-black/70 text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+                        className="absolute top-1.5 right-1.5 rounded-lg bg-black/65 text-white opacity-0 backdrop-blur-sm group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
                     >
                         <Ellipsis className="size-4" />
                     </IconButton>
@@ -179,7 +186,7 @@ export function MediaGrid({ children, className, size = "md" }: { children: Reac
 export function MediaCardSkeleton() {
     return (
         <div className="flex flex-col gap-2.5">
-            <div className="shimmer aspect-[2/3] rounded-lg" />
+            <div className="shimmer aspect-[2/3] rounded-xl" />
             <div className="shimmer h-3.5 w-3/4 rounded" />
         </div>
     )

@@ -200,8 +200,10 @@ export default function SettingsPage() {
                                     key={it.id}
                                     onClick={() => setParams({ tab: it.id }, { replace: true })}
                                     className={cn(
-                                        "focus-ring flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:stroke-[1.75]",
-                                        section === it.id ? "bg-white/[0.08] text-fg" : "text-muted hover:bg-white/[0.04] hover:text-fg",
+                                        "focus-ring flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:stroke-[1.75]",
+                                        section === it.id
+                                            ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
+                                            : "text-muted hover:bg-white/[0.05] hover:text-fg",
                                     )}
                                 >
                                     {it.icon}

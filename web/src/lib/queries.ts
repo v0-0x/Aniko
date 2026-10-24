@@ -49,6 +49,26 @@ export function useSaveSettings() {
     })
 }
 
+// Changes UI settings at once, without a toast: the sidebar's Appearance
+// menu, where colors are tried one after another. The page changes before
+// the server answers; an error puts the saved ones back.
+export function useSaveUI() {
+    const qc = useQueryClient()
+    return (ui: Partial<Settings["ui"]>) => {
+        const s = qc.getQueryData<Status>(["status"])?.settings
+        if (!s) return
+        const next = { ...s, ui: { ...s.ui, ...ui } }
+        qc.setQueryData<Status>(["status"], old => (old ? { ...old, settings: next } : old))
+        api.put<Settings>("/api/settings", next).then(
+            saved => qc.setQueryData<Status>(["status"], old => (old ? { ...old, settings: saved } : old)),
+            (e: Error) => {
+                toast.error(e.message)
+                qc.invalidateQueries({ queryKey: ["status"] })
+            },
+        )
+    }
+}
+
 // The list as AniList has it (at most a minute old), asked again when Kumo's
 // window comes back to the front: what was watched on another device, on
 // the same account, shows up in Continue watching.

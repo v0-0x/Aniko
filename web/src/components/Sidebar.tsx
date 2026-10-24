@@ -28,7 +28,8 @@ import { notificationsMutedStore, searchOpenStore, torrentCountStore, useStore }
 import { holidayStore } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn, img } from "@/lib/utils"
-import { HolidayButton, HolidayOnLogo } from "./HolidayBadge"
+import { AppearanceMenu } from "./AppearanceMenu"
+import { HolidayOnLogo } from "./HolidayBadge"
 import { LoginDialog } from "./LoginDialog"
 import { PluginTrays } from "./plugins/PluginTrays"
 import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Tooltip } from "./ui"
@@ -81,28 +82,40 @@ export function Sidebar() {
 
     const activeDownloads = (downloads ?? []).filter(d => ["queued", "resolving", "downloading"].includes(d.status)).length
 
-    const groups: Item[][] = [
-        [
-            { to: "/", label: "Home", icon: <Home />, match: p => p === "/" },
-            { to: "/local", label: "Local library", icon: <HardDrive /> },
-            { to: "/schedule", label: "Schedule", icon: <CalendarDays /> },
-            ...(settings?.manga.enabled !== false ? [{ to: "/manga", label: "Manga", icon: <BookOpen />, match: (p: string) => p.startsWith("/manga") }] : []),
-            { to: "/lists", label: "My lists", icon: <ListChecks /> },
-            { to: "/stats", label: "Stats", icon: <ChartColumn /> },
-        ],
-        [
-            { to: "/discover", label: "Discover", icon: <Compass /> },
-            { to: "/search", label: "Search", icon: <Search />, hint: "Ctrl K" },
-        ],
-        [
-            { to: "/torrent-list", label: "Torrents", icon: <Magnet />, badge: settings?.torrent.showActiveCount ? torrentCount : 0 },
-            { to: "/downloads", label: "Downloads", icon: <Download />, badge: activeDownloads },
-            { to: "/auto-downloader", label: "Auto downloader", icon: <Rss /> },
-        ],
-        [
-            { to: "/library", label: "Library tools", icon: <FolderSearch />, badge: coll?.unmatchedCount ?? 0 },
-            { to: "/extensions", label: "Extensions", icon: <Puzzle /> },
-        ],
+    const groups: { label: string; items: Item[] }[] = [
+        {
+            label: "Watch",
+            items: [
+                { to: "/", label: "Home", icon: <Home />, match: p => p === "/" },
+                { to: "/local", label: "Local library", icon: <HardDrive /> },
+                { to: "/schedule", label: "Schedule", icon: <CalendarDays /> },
+                ...(settings?.manga.enabled !== false ? [{ to: "/manga", label: "Manga", icon: <BookOpen />, match: (p: string) => p.startsWith("/manga") }] : []),
+                { to: "/lists", label: "My lists", icon: <ListChecks /> },
+                { to: "/stats", label: "Stats", icon: <ChartColumn /> },
+            ],
+        },
+        {
+            label: "Explore",
+            items: [
+                { to: "/discover", label: "Discover", icon: <Compass /> },
+                { to: "/search", label: "Search", icon: <Search />, hint: "Ctrl K" },
+            ],
+        },
+        {
+            label: "Downloads",
+            items: [
+                { to: "/torrent-list", label: "Torrents", icon: <Magnet />, badge: settings?.torrent.showActiveCount ? torrentCount : 0 },
+                { to: "/downloads", label: "Downloads", icon: <Download />, badge: activeDownloads },
+                { to: "/auto-downloader", label: "Auto downloader", icon: <Rss /> },
+            ],
+        },
+        {
+            label: "Library",
+            items: [
+                { to: "/library", label: "Library tools", icon: <FolderSearch />, badge: coll?.unmatchedCount ?? 0 },
+                { to: "/extensions", label: "Extensions", icon: <Puzzle /> },
+            ],
+        },
     ]
 
     const logout = async () => {
@@ -125,9 +138,12 @@ export function Sidebar() {
                     }
                 }}
                 className={cn(
-                    "focus-ring relative flex h-9 shrink-0 items-center rounded-md text-[13.5px] font-medium transition-colors [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75]",
+                    "focus-ring relative flex h-9 shrink-0 items-center rounded-lg text-[13.5px] font-medium transition-colors [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75] [&>svg]:transition-colors",
                     wide ? "gap-3 px-2.5" : "w-10 justify-center",
-                    active ? "bg-white/[0.08] text-fg" : "text-muted hover:bg-white/[0.04] hover:text-fg",
+                    // The page it's on: tinted with the accent.
+                    active
+                        ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
+                        : "text-muted hover:bg-white/[0.05] hover:text-fg",
                 )}
             >
                 {it.icon}
@@ -135,7 +151,7 @@ export function Sidebar() {
                 {wide && it.hint && !badge && !tv && <kbd className="ml-auto font-sans text-[11px] text-subtle">{it.hint}</kbd>}
                 {badge &&
                     (wide ? (
-                        <span className="ml-auto rounded bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums">{badge}</span>
+                        <span className="ml-auto rounded-md bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums">{badge}</span>
                     ) : (
                         <span className="absolute top-0.5 right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white tabular-nums">{badge}</span>
                     ))}
@@ -161,16 +177,17 @@ export function Sidebar() {
                 {wide && <KumoWordmark className="h-[18px] w-auto text-fg" />}
             </button>
 
-            <nav className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? "gap-4" : "items-center gap-3")}>
+            <nav className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? "gap-5" : "items-center gap-3")}>
                 {groups.map((g, i) => (
-                    <div key={i} className={cn("flex flex-col gap-0.5", !wide && "items-center", !wide && i > 0 && "border-t border-line pt-3")}>
-                        {g.map(link)}
+                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", !wide && i > 0 && "border-t border-line pt-3")}>
+                        {wide && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
+                        {g.items.map(link)}
                     </div>
                 ))}
             </nav>
 
-            <div className={cn("flex flex-col gap-0.5 pt-3", !wide && "items-center")}>
-                {holiday && <HolidayButton holiday={holiday} wide={wide} />}
+            <div className={cn("flex flex-col gap-0.5 border-t border-line pt-3", !wide && "items-center")}>
+                <AppearanceMenu wide={wide} />
                 <PluginTrays />
                 <div className={cn("flex gap-0.5", wide ? "items-center" : "flex-col-reverse items-center")}>
                     <div className={wide ? "min-w-0 flex-1" : undefined}>{link({ to: "/settings", label: "Settings", icon: <SettingsIcon /> })}</div>
@@ -180,15 +197,15 @@ export function Sidebar() {
                     <DropdownTrigger asChild>
                         <button
                             className={cn(
-                                "focus-ring mt-1 flex h-10 items-center gap-2.5 rounded-md text-left transition-colors hover:bg-white/[0.04] data-[state=open]:bg-white/[0.06]",
-                                wide ? "px-2" : "w-10 justify-center",
+                                "focus-ring mt-1.5 flex items-center gap-2.5 rounded-xl text-left transition-colors data-[state=open]:bg-white/[0.07]",
+                                wide ? "h-12 bg-white/[0.035] px-2 ring-1 ring-white/[0.05] ring-inset hover:bg-white/[0.06]" : "size-10 justify-center hover:bg-white/[0.05]",
                             )}
                             aria-label="Account"
                         >
                             {status?.user?.avatar?.large ? (
-                                <img src={img(status.user.avatar.large)} alt="" className="size-7 shrink-0 rounded-full object-cover" />
+                                <img src={img(status.user.avatar.large)} alt="" className="size-8 shrink-0 rounded-full object-cover ring-2 ring-white/10" />
                             ) : (
-                                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-3 text-muted">
+                                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-3 text-muted ring-2 ring-white/10">
                                     <UserRound className="size-4" />
                                 </span>
                             )}

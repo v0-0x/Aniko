@@ -126,7 +126,7 @@ export default function App() {
                 <Sidebar />
                 {/* The pages: a panel inset in the window, next to the sidebar. */}
                 <div className="min-w-0 flex-1 py-2 pr-2">
-                    <main id="main-scroll" className="relative h-full overflow-x-hidden overflow-y-auto rounded-xl border border-line bg-bg">
+                    <main id="main-scroll" className="relative h-full overflow-x-hidden overflow-y-auto rounded-2xl border border-line bg-bg shadow-[0_0_0_1px_rgb(0_0_0/0.35),0_18px_50px_-20px_rgb(0_0_0/0.8)]">
                         <Suspense
                             fallback={
                                 <div className="grid h-full place-items-center">

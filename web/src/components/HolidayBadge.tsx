@@ -1,14 +1,11 @@
-import { Palette, Power, Sparkles } from "lucide-react"
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import { useSaveSettings, useSettings } from "@/lib/queries"
 import type { Holiday } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
-import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Tooltip } from "./ui"
 
-// The holiday's little drawing: on Kumo's logo in the sidebar, and on its
-// button there.
+// The holiday's little drawing: on Kumo's logo in the sidebar, and in the
+// Appearance menu (AppearanceMenu).
 export function HolidayIcon({ id, className }: { id: string; className?: string }) {
     const common = { viewBox: "0 0 32 32", className, "aria-hidden": true } as const
     switch (id) {
@@ -82,57 +79,6 @@ export function HolidayOnLogo({ holiday }: { holiday: Holiday | null }) {
     return <HolidayIcon id={holiday.id} className={cn("pointer-events-none absolute drop-shadow", ON_LOGO[holiday.id])} />
 }
 
-// The holiday theme's button in the sidebar: its animation on or off, the
-// themes off, or their settings.
-export function HolidayButton({ holiday, wide }: { holiday: Holiday; wide: boolean }) {
-    const settings = useSettings()
-    const save = useSaveSettings()
-    const navigate = useNavigate()
-    const effects = settings?.ui.seasonalEffects ?? true
-    const setUI = (ui: Partial<NonNullable<typeof settings>["ui"]>) => settings && save.mutate({ ...settings, ui: { ...settings.ui, ...ui } })
-    const auto = (settings?.ui.seasonal ?? "auto") === "auto"
-    const button = (
-        <DropdownTrigger asChild>
-            <button
-                aria-label={`${holiday.name} theme`}
-                className={cn(
-                    "focus-ring flex h-9 shrink-0 items-center rounded-md text-[13.5px] font-medium text-muted transition-colors hover:bg-white/[0.04] hover:text-fg data-[state=open]:bg-white/[0.06]",
-                    wide ? "gap-3 px-2.5" : "w-10 justify-center",
-                )}
-            >
-                <HolidayIcon id={holiday.id} className="size-[18px] shrink-0" />
-                {wide && <span className="truncate">{holiday.name}</span>}
-            </button>
-        </DropdownTrigger>
-    )
-    return (
-        <Dropdown>
-            {wide ? (
-                button
-            ) : (
-                <Tooltip content={`${holiday.name} theme`} side="right">
-                    {button}
-                </Tooltip>
-            )}
-            <DropdownContent align="start" side={wide ? "top" : "right"} className="w-60">
-                <DropdownLabel>
-                    {holiday.name} theme{auto ? ` · ${holiday.when.replace(/^In /, "in ")}` : ""}
-                </DropdownLabel>
-                <DropdownItem icon={<Sparkles />} onSelect={() => setUI({ seasonalEffects: !effects })}>
-                    {effects ? `Stop the ${holiday.effectName.toLowerCase()}` : `Show the ${holiday.effectName.toLowerCase()}`}
-                </DropdownItem>
-                <DropdownItem icon={<Power />} onSelect={() => setUI({ seasonal: "off" })}>
-                    Turn off holiday themes
-                </DropdownItem>
-                <DropdownSeparator />
-                <DropdownItem icon={<Palette />} onSelect={() => navigate("/settings?tab=ui")}>
-                    Theme settings
-                </DropdownItem>
-            </DropdownContent>
-        </Dropdown>
-    )
-}
-
 const SEEN_KEY = "kumo-holiday-seen"
 
 // A holiday theme that came on by itself (by the date) is said once a year,
@@ -151,7 +97,7 @@ export function useHolidayNotice(holiday: Holiday | null, seasonal: string) {
             return // nowhere to remember it: not said each time
         }
         toast(`Kumo's ${holiday.name} theme is on`, {
-            description: `Its colors and ${holiday.effectName.toLowerCase()}, ${holiday.when.replace(/^In /, "in ").replace(/^January/, "on January")}. Settings › User Interface changes it.`,
+            description: `Its colors and ${holiday.effectName.toLowerCase()}, ${holiday.when.replace(/^In /, "in ").replace(/^January/, "on January")}. The Appearance menu in the sidebar changes it.`,
             duration: 12000,
             action: { label: "Turn off", onClick: () => save.mutate({ ...settings, ui: { ...settings.ui, seasonal: "off" } }) },
         })
