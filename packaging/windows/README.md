@@ -169,5 +169,13 @@ the commit its `kumoVersionBase` names, 2.0.0's), so there's nothing to bump
 by hand. Releases before 2.0 were `1.0.<number of commits>`. The workflow builds it into `kumo.exe` with the
 commit, and installed copies of Kumo offer the release with the highest
 version as their update. The Arch package gets the same version from its
-PKGBUILD. Only the newest 10 Windows releases are kept: the workflow deletes
-older ones, and their tags.
+PKGBUILD.
+
+Each build is published as a **beta** first: a pre-release titled
+"Kumo <version> beta for Windows", which installed copies offer only with
+Settings › About & updates › Beta updates on. A build becomes a **stable**
+release (for everyone, and the repository's latest) when the pushed commit's
+message has `[stable]` in it, or when the workflow is run by hand from the
+Actions tab with channel "stable" (on a beta's commit, that turns the beta
+into a stable release). The newest 10 stable releases and the newest 10 betas
+are kept: the workflow deletes older ones, and their tags.

@@ -353,6 +353,8 @@ func (a *App) wire() {
 	a.Extensions.Host = a.pluginServices()
 
 	anilist.SetTitleLanguage(a.Settings.Get().UI.TitleLanguage)
+	// Stable releases, or betas too (Settings › About & updates).
+	a.Update.Channel = func() string { return a.Settings.Get().Updates.Channel }
 	a.Settings.OnChange(func(old, cur config.Settings) {
 		// Listeners run apart: two saves close together may arrive in either
 		// order, so what's set follows the settings now.
@@ -366,6 +368,14 @@ func (a *App) wire() {
 		// A new library folder: index it right away.
 		if fmt.Sprint(old.LibraryDirs()) != fmt.Sprint(cur.LibraryDirs()) && a.Scanner.HasLibrary() {
 			a.Scanner.ScanSoon()
+		}
+		// Another channel: what it offers, at once.
+		if old.Updates.Channel != cur.Updates.Channel {
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+				a.Update.Check(ctx)
+			}()
 		}
 		a.Hub.Publish(events.SettingsUpdated, nil)
 	})

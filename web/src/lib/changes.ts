@@ -7,13 +7,19 @@ export type Release = { id: number; title: string; changes: Change[] }
 export const RELEASES: Release[] = [
     {
         id: 4,
-        title: "The classic look",
+        title: "Classic look and beta updates",
         changes: [
             {
                 title: "Classic look",
                 text: "Liked Kumo better as it was before 2.0? Turn on Classic look in Themes in the sidebar, or in Settings › User Interface. The color and holiday themes work in both.",
                 to: "/settings?tab=ui",
             },
+            {
+                title: "Beta updates",
+                text: "New versions now come out as betas first. Want them early? Turn on Beta updates in Settings › About & updates; otherwise Kumo stays on the stable releases.",
+                to: "/settings?tab=about",
+            },
+            { title: "Smoother sidebar", text: "A cleaner Themes button, and on smaller laptop screens every link fits again." },
         ],
     },
     {

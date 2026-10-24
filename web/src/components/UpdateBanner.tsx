@@ -13,7 +13,8 @@ const BUSY = ["downloading", "building", "installing"]
 
 // A version's name: its number, or else its commit.
 export function versionName(v?: UpdateVersion | null) {
-    return v?.version || v?.commit?.slice(0, 7) || ""
+    const name = v?.version || v?.commit?.slice(0, 7) || ""
+    return name && v?.beta ? `${name} (beta)` : name
 }
 
 // Waiting for Kumo to come back after it restarted into a new version. It

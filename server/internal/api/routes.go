@@ -459,6 +459,8 @@ func (s *Server) saveSettings(r *http.Request) (any, error) {
 		// logins go to (another's would get the AniList login).
 		next.Extensions.MarketplaceURL = cur.Extensions.MarketplaceURL
 		next.Anilist.ClientID, next.Discord.ClientID = cur.Anilist.ClientID, cur.Discord.ClientID
+		// Which builds this computer installs.
+		next.Updates = cur.Updates
 	}
 	// Turning off the web UI from a browser would lock the browser out.
 	if kindOf(r) != clientShell && !next.Server.WebUI && cur.Server.WebUI && !s.ForceWebUI {

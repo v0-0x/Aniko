@@ -14,8 +14,15 @@
 # Runs on every push to the repository's default branch (except pushes that
 # only change docs or the Arch packaging), so Windows copies get every
 # change, and by hand from the Actions tab. Running it again on the same
-# commit updates that commit's release. Only the newest 10 Windows releases
-# are kept: older ones are deleted, tags included.
+# commit updates that commit's release.
+#
+# Channels: each build is a beta, the pre-release "Kumo <version> beta for
+# Windows", which only copies with Settings › About & updates › Beta updates
+# on are offered, unless the pushed commit's message has [stable] in it or
+# the workflow is run by hand with channel "stable": then it's a release for
+# everyone (and the repository's latest). Running a beta's commit again as
+# stable makes that release stable. The newest 10 stable releases and the
+# newest 10 betas are kept: older ones are deleted, tags included.
 #
 # Windows only: the Arch Linux package is built from source with
 # packaging/arch/PKGBUILD and has nothing to do with this workflow, and the
@@ -42,6 +49,11 @@ on:
         description: Publish the build as the GitHub Release windows-v<version> (otherwise it's only kept as workflow artifacts)
         type: boolean
         default: true
+      channel:
+        description: "beta: a pre-release, offered to copies with Beta updates on; stable: a release for everyone"
+        type: choice
+        options: [beta, stable]
+        default: beta
 
 permissions:
   contents: write
@@ -71,6 +83,24 @@ jobs:
           # dependencies (npm scripts…) could read it: only the release
           # steps get it.
           persist-credentials: false
+
+      # Each push is a beta (a GitHub pre-release, which only copies with
+      # Beta updates on are offered) unless its newest commit's message has
+      # [stable] in it, or the workflow is run by hand as stable.
+      - name: Pick the channel
+        id: channel
+        env:
+          INPUT: ${{ inputs.channel }}
+        run: |
+          $message = (git log -1 --format=%B) -join "`n"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($env:INPUT -eq "stable" -or $message.Contains("[stable]")) {
+            "channel=stable" >> $env:GITHUB_OUTPUT
+            "A stable release"
+          } else {
+            "channel=beta" >> $env:GITHUB_OUTPUT
+            "A beta (pre-release)"
+          }
 
       - name: Read the version
         id: version
@@ -215,6 +245,7 @@ jobs:
       - name: Publish the GitHub Release
         if: github.event_name == 'push' || inputs.publish
         env:
+          CHANNEL: ${{ steps.channel.outputs.channel }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -223,7 +254,10 @@ jobs:
           PORTABLE: ${{ steps.version.outputs.portable }}
         run: |
           $repo = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY"
-          $title = "Kumo $env:VERSION for Windows"
+          # A beta is a pre-release, and never the repository's latest.
+          $beta = $env:CHANNEL -eq "beta"
+          $title = if ($beta) { "Kumo $env:VERSION beta for Windows" } else { "Kumo $env:VERSION for Windows" }
+          $flags = @("--prerelease=$($beta.ToString().ToLower())", "--latest=$((-not $beta).ToString().ToLower())")
           $notes = @'
           **Kumo {version} for Windows 10 and 11 (64-bit).** These files are for Windows only: on Arch Linux, build and install Kumo from source with `packaging/arch`, as [the README]({readme}) explains.
 
@@ -244,6 +278,7 @@ jobs:
           $notes = $notes.Replace("{guide}", "$repo/blob/$env:GITHUB_SHA/packaging/windows/README.md")
           $notes = $notes.Replace("{readme}", "$repo/blob/$env:GITHUB_SHA/README.md#install-arch-linux")
           $notes = $notes.Replace("{sha}", $env:GITHUB_SHA).Replace("{run}", $env:GITHUB_RUN_NUMBER).Replace("{runurl}", "$repo/actions/runs/$env:GITHUB_RUN_ID")
+          if ($beta) { $notes = "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › About & updates › Beta updates** on. It may have rough edges; the stable releases are the ones without this note.`n`n" + $notes }
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
           Set-Content -Path $notesFile -Value $notes -Encoding utf8
           $files = @("dist/windows/release/$env:INSTALLER", "dist/windows/release/$env:PORTABLE")
@@ -251,27 +286,31 @@ jobs:
           gh release view $env:TAG --json tagName *> $null
           if ($LASTEXITCODE -eq 0) {
             "Updating the release $env:TAG"
-            gh release edit $env:TAG --title $title --notes-file $notesFile
+            gh release edit $env:TAG --title $title --notes-file $notesFile @flags
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             gh release upload $env:TAG @files --clobber
           } else {
             "Creating the release $env:TAG"
-            gh release create $env:TAG @files --target $env:GITHUB_SHA --title $title --notes-file $notesFile
+            gh release create $env:TAG @files --target $env:GITHUB_SHA --title $title --notes-file $notesFile @flags
           }
 
-      # Every commit can have a release now: keep the newest 10 Windows
-      # releases, by version (numbers compared as numbers: 1.0.10 is newer
-      # than 1.0.9), and delete the older ones with their tags.
+      # Every commit can have a release now: keep the newest 10 stable
+      # Windows releases and the newest 10 betas, by version (numbers
+      # compared as numbers: 1.0.10 is newer than 1.0.9), and delete the
+      # older ones with their tags: betas never push out the stable ones.
       - name: Delete old releases
         if: github.event_name == 'push' || inputs.publish
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          $tags = gh release list --limit 1000 --json tagName --jq '.[].tagName'
+          $json = gh release list --limit 1000 --json tagName,isPrerelease
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $releases = @(($json -join "`n") | ConvertFrom-Json | Where-Object { $_.tagName -match '^windows-v\d+(\.\d+)*$' })
           $byVersion = @{ Descending = $true; Expression = { ($_.Substring("windows-v".Length).Split(".") | ForEach-Object { $_.PadLeft(10, "0") }) -join "." } }
-          $old = @($tags | Where-Object { $_ -match '^windows-v\d+(\.\d+)*$' } | Sort-Object -Property $byVersion | Select-Object -Skip 10)
+          $old = @(foreach ($pre in $true, $false) {
+            $releases | Where-Object { $_.isPrerelease -eq $pre } | ForEach-Object { $_.tagName } | Sort-Object -Property $byVersion | Select-Object -Skip 10
+          })
           if ($old.Count -eq 0) { "No old releases to delete" }
           foreach ($tag in $old) {
             "Deleting the release $tag and its tag"

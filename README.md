@@ -87,6 +87,8 @@ Start **Kumo** from your app menu (or run `kumo`).
 ### Updates
 When GitHub has a newer Kumo, the **Home** page shows it with an **Update** button: Kumo downloads the new source, builds it with makepkg and installs the package with pacman (a password dialog asks for your password); **Restart Kumo** then starts the new version. **Settings › About & updates** shows the version and the last check, and checks again right away.
 
+**Stable or beta.** Each new version comes out as a **beta** first (a pre-release on GitHub), and the ones ready for everyone as a stable release. Kumo offers only stable releases, unless **Settings › About & updates › Beta updates** is on: then betas too, as soon as they're out. Turning it off waits for the next stable release (a beta you have stays until one passes it). On Arch, a stable update builds the newest stable release's commit and a beta update the branch's newest commit.
+
 Update checks need no GitHub account. Without a password dialog (e.g. when Kumo runs as the `kumo-server` service), Kumo builds the update and shows the `sudo pacman -U …` command to run.
 
 You can still update by hand, in the folder you cloned Kumo into:
@@ -97,7 +99,7 @@ git remote set-url origin https://github.com/v0-0x/kumo-anime.git   # once, for 
 git pull && cd packaging/arch && makepkg -sif
 ```
 
-`-f` rebuilds (without it makepkg reinstalls the package it built last time). Build from a `git clone`, not a downloaded ZIP: without git the package's version can't be read and stays 1.0.0, which pacman then calls a downgrade and the updater an old version.
+`git pull` gets the newest commit, which is the newest beta. `-f` rebuilds (without it makepkg reinstalls the package it built last time). Build from a `git clone`, not a downloaded ZIP: without git the package's version can't be read and stays 1.0.0, which pacman then calls a downgrade and the updater an old version.
 
 The **Update** button asks for your password with your desktop's polkit agent. Desktops like GNOME and KDE have one; on a bare window manager (Hyprland, Sway, i3…) start one (e.g. `polkit-gnome`'s `/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1`), or Kumo shows the `sudo pacman -U …` command to run instead.
 

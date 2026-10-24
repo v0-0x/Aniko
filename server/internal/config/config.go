@@ -79,7 +79,18 @@ type Settings struct {
 	Discord      DiscordSettings      `json:"discord"`
 	Extensions   ExtensionSettings    `json:"extensions"`
 	Notify       NotifySettings       `json:"notify"`
+	Updates      UpdateSettings       `json:"updates"`
 }
+
+// UpdateSettings: which releases the updater offers (package update).
+type UpdateSettings struct {
+	// Channel: "stable", the releases for everyone, or "beta", which also
+	// gets the newer pre-releases each change is published as first.
+	Channel string `json:"channel"`
+}
+
+// UpdateChannels are the values UpdateSettings.Channel takes.
+var UpdateChannels = []string{"stable", "beta"}
 
 // NotifySettings: what Kumo tells about as it happens (package notify).
 type NotifySettings struct {
@@ -329,6 +340,7 @@ func Defaults() Settings {
 		Extensions: ExtensionSettings{MarketplaceURL: DefaultMarketplaceURL},
 		Sharing:    SharingSettings{KeepAwake: true, AutoSync: true},
 		Notify:     NotifySettings{NewEpisodes: true, Downloads: true},
+		Updates:    UpdateSettings{Channel: "stable"},
 	}
 	if runtime.GOOS == "android" {
 		// The Android app (a TV's): it plays the libraries the computers
@@ -522,6 +534,9 @@ func sanitize(s Settings) Settings {
 	}
 	if s.UI.TitleLanguage != "romaji" {
 		s.UI.TitleLanguage = "english"
+	}
+	if !slices.Contains(UpdateChannels, s.Updates.Channel) {
+		s.Updates.Channel = d.Updates.Channel
 	}
 	if !slices.Contains(ColorThemes, s.UI.ColorTheme) {
 		s.UI.ColorTheme = d.UI.ColorTheme

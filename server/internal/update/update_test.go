@@ -37,6 +37,9 @@ type fakeGitHub struct {
 
 	mu       sync.Mutex
 	requests []*http.Request
+	// channel is the checker's update channel: "beta" once the default
+	// branch is served (that's where Linux betas come from).
+	channel string
 }
 
 func newFakeGitHub(t *testing.T) *fakeGitHub {
@@ -82,6 +85,7 @@ func (f *fakeGitHub) each(fn func(r *http.Request)) {
 // branch serves a repository whose default branch "main" is at headSHA,
 // the 57th commit.
 func (f *fakeGitHub) branch() {
+	f.channel = "beta"
 	f.json("GET /repos/o/r", map[string]any{"default_branch": "main", "private": true})
 	f.json("GET /repos/o/r/commits/main", map[string]any{
 		"sha":      headSHA,
@@ -122,6 +126,7 @@ func newTestChecker(t *testing.T, gh *fakeGitHub) *Checker {
 	c.Executable = func() (string, error) { return "/home/me/kumo/dist/kumo", nil }
 	c.StartInstaller = func(string, ...string) error { return fmt.Errorf("no installer in tests") }
 	c.Version, c.Commit, c.GOOS = "1.0.50", oldSHA, "linux"
+	c.Channel = func() string { return gh.channel }
 	c.FirstCheck = time.Hour
 	t.Cleanup(c.Stop)
 	return c
@@ -269,7 +274,7 @@ func TestCheckWindowsPicksNewestRelease(t *testing.T) {
 	if c.asset == nil || c.asset.ID != 42 || c.asset.Name != "Kumo-Setup-1.0.10-windows-x64.exe" || !strings.HasPrefix(c.asset.Digest, "sha256:") {
 		t.Fatalf("installer %+v", c.asset)
 	}
-	if !slices.Contains(gh.paths(), "/repos/o/r/releases?per_page=50") {
+	if !slices.Contains(gh.paths(), "/repos/o/r/releases?per_page=100") {
 		t.Fatalf("requests: %q", gh.paths())
 	}
 	// A portable copy (no uninstaller next to it) can't install it.
@@ -738,8 +743,60 @@ func TestVersionOf(t *testing.T) {
 		t.Error("2.0.0 isn't newer than the last 1.0")
 	}
 	// Releases of both: the 2.0 one is picked.
-	got := pickRelease([]release{{TagName: "windows-v1.0.146"}, {TagName: "windows-v2.0.0"}, {TagName: "windows-v1.0.139"}}, "windows-v")
+	got := pickRelease([]release{{TagName: "windows-v1.0.146"}, {TagName: "windows-v2.0.0"}, {TagName: "windows-v1.0.139"}}, "windows-v", false)
 	if got == nil || got.TagName != "windows-v2.0.0" {
 		t.Fatalf("picked %+v", got)
+	}
+}
+
+func TestCheckWindowsBetaChannel(t *testing.T) {
+	gh := newFakeGitHub(t)
+	gh.json("GET /repos/o/r/releases", windowsReleases([]byte("installer")))
+	c := newTestChecker(t, gh)
+	c.GOOS, c.Version, c.Commit = "windows", "1.0.10", ""
+	// Stable: the pre-release 1.0.11 isn't offered.
+	if st := check(t, c); st.Error != "" || st.Available || st.Latest.Version != "1.0.10" || st.Latest.Beta {
+		t.Fatalf("stable: error %q, available %v, latest %+v", st.Error, st.Available, st.Latest)
+	}
+	// Beta: it is.
+	gh.channel = "beta"
+	if st := check(t, c); st.Error != "" || !st.Available || st.Latest.Version != "1.0.11" || !st.Latest.Beta {
+		t.Fatalf("beta: error %q, available %v, latest %+v", st.Error, st.Available, st.Latest)
+	}
+	// Back to stable on the beta: nothing to install, and why.
+	gh.channel = ""
+	c.Version = "1.0.11"
+	if st := check(t, c); st.Available || !strings.Contains(st.Note, "beta") {
+		t.Fatalf("back to stable: available %v, note %q", st.Available, st.Note)
+	}
+}
+
+func TestCheckLinuxStableRelease(t *testing.T) {
+	gh := newFakeGitHub(t)
+	rel := func(tag string, pre bool) map[string]any {
+		return map[string]any{"tag_name": tag, "prerelease": pre, "html_url": "https://github.com/o/r/releases/tag/" + tag, "target_commitish": headSHA}
+	}
+	gh.json("GET /repos/o/r/releases", []map[string]any{
+		rel("android-v2.0.3", true), // a beta
+		rel("windows-v2.0.2", false),
+		rel("android-v2.0.1", false),
+		rel("macos-v2.0.2", false),
+	})
+	gh.json("GET /repos/o/r/commits/windows-v2.0.2", map[string]any{
+		"sha": headSHA, "html_url": "https://github.com/o/r/commit/" + headSHA,
+		"commit": map[string]any{"message": "Release", "committer": map[string]any{"date": "2026-10-01T10:00:00Z"}},
+	})
+	gh.compare("ahead", "Fix")
+	c := newTestChecker(t, gh)
+	st := check(t, c)
+	if st.Error != "" || !st.Available || st.Latest == nil || st.Latest.Version != "2.0.2" || st.Latest.Commit != headSHA || st.Latest.Beta {
+		t.Fatalf("error %q, available %v, latest %+v", st.Error, st.Available, st.Latest)
+	}
+	if !slices.Equal(st.Changes, []string{"Fix"}) {
+		t.Fatalf("changes %q", st.Changes)
+	}
+	// Not the default branch: that's for betas.
+	if slices.Contains(gh.paths(), "/repos/o/r/commits/main") {
+		t.Fatalf("requests: %q", gh.paths())
 	}
 }

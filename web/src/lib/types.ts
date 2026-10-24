@@ -223,6 +223,8 @@ export type Settings = {
     // files. autoSync: sync watch history when a paired device comes back.
     sharing: { enabled: boolean; name: string; downloadTo?: string; keepAwake?: boolean; autoSync?: boolean }
     notify?: { newEpisodes: boolean; downloads: boolean }
+    // Which releases Kumo updates to: stable ones, or betas too.
+    updates?: { channel: "stable" | "beta" }
     ui: {
         accentColor: string
         showAdult: boolean
@@ -572,7 +574,8 @@ export type FolderInfo = {
 }
 
 // Kumo's own updates (GET /api/update, and the "update-status" event).
-export type UpdateVersion = { version: string; commit: string; date?: string; url?: string }
+// beta: a pre-release (or, on Linux, the default branch's head).
+export type UpdateVersion = { version: string; commit: string; date?: string; url?: string; beta?: boolean }
 
 export type UpdateState = "idle" | "downloading" | "building" | "installing" | "ready" | "failed"
 

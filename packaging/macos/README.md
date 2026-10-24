@@ -95,4 +95,6 @@ and packages Kumo on a GitHub-hosted Mac for every push to the default branch,
 checks the app (both architectures, its signature, the zip as an update
 unpacks it, and that it starts), and publishes the release
 `macos-v<version>`. The version is `2.0.<commits since 2.0.0's>`, like the Windows
-release's. The newest 10 macOS releases are kept.
+release's. Each build is a beta (a pre-release) unless its commit's message
+says `[stable]` or it's run by hand as stable (see packaging/windows/README.md).
+The newest 10 stable macOS releases and the newest 10 betas are kept.

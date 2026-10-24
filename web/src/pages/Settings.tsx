@@ -1835,6 +1835,8 @@ function AboutSection() {
     const { data: status } = useStatus()
     const { data: u } = useUpdateStatus()
     const check = useCheckUpdate()
+    const save = useSaveSettings()
+    const beta = status?.settings.updates?.channel === "beta"
     const lan = status?.client === "lan"
     const commit = u?.current.commit
     const latest = versionName(u?.latest)
@@ -1868,6 +1870,22 @@ function AboutSection() {
                 </Row>
             </Group>
             <Group title="Updates" description="Kumo looks for a newer version on GitHub and shows it on the Home page, where you can install it.">
+                <Row
+                    label="Beta updates"
+                    help={
+                        beta
+                            ? "On: each new version comes here first, as a beta, before everyone gets it. Betas can have rough edges."
+                            : "Off: only the stable releases everyone gets. Turn on to get each new version first, as a beta."
+                    }
+                >
+                    <Locked>
+                        <Switch
+                            checked={beta}
+                            disabled={!status || save.isPending}
+                            onChange={v => status && save.mutate({ ...status.settings, updates: { channel: v ? "beta" : "stable" } })}
+                        />
+                    </Locked>
+                </Row>
                 <Row label="Status" help={state.help}>
                     <Badge tone={state.tone}>{state.label}</Badge>
                 </Row>

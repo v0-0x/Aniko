@@ -2,8 +2,9 @@
 //
 // Kumo ships three ways, and updates each its own way:
 //   - Arch Linux builds it from source with packaging/arch/PKGBUILD, so the
-//     newest version is the head of the repository's default branch. The
-//     update downloads that source, builds it with makepkg and installs the
+//     newest version is a commit: the newest stable release's, or on the
+//     beta channel the head of the repository's default branch. The update
+//     downloads that source, builds it with makepkg and installs the
 //     package with pacman (through pkexec, which asks for the password).
 //   - Windows installs the GitHub Release "Kumo <v> for Windows" (tag
 //     windows-v<v>). The update downloads the newest one's installer and
@@ -12,6 +13,10 @@
 //     macos-v<v>). The update downloads the newest one's zip of the app,
 //     unpacks it next to the app and, once Kumo has quit, puts it in the
 //     app's place and opens it (apply_mac.go).
+//
+// Each change is published as a beta first (a GitHub pre-release), and the
+// ones meant for everyone as a stable release. Channel says which a copy
+// gets: stable releases only (the default), or betas too.
 //
 // The requests carry the user's GitHub token when one can be found without
 // asking (see githubToken): a private repository needs one, and it raises
@@ -45,6 +50,8 @@ type Version struct {
 	Commit  string `json:"commit"`
 	Date    string `json:"date,omitempty"` // when it was made (RFC 3339)
 	URL     string `json:"url,omitempty"`  // its page on GitHub
+	// Beta: a pre-release, or the default branch's head.
+	Beta bool `json:"beta,omitempty"`
 }
 
 // States of an update being installed.
@@ -99,7 +106,7 @@ const (
 	// make it, and was 1.0.<commits> before.
 	VersionBase = 147
 	maxChanges  = 30
-	maxLogLines   = 20
+	maxLogLines = 20
 	// failureFile keeps why an update failed after Kumo had quit for it
 	// (in CacheDir), for the next run to show.
 	failureFile = "last-failure.txt"
@@ -122,8 +129,12 @@ type Checker struct {
 	Version string
 	Commit  string
 	// GOOS decides how Kumo updates: "windows" and "darwin" from
-	// releases, otherwise from the default branch.
+	// releases, otherwise from source (a stable release's, or the default
+	// branch's head).
 	GOOS string
+	// Channel returns "beta" for betas too, anything else (or nil) for
+	// stable releases only.
+	Channel func() string
 	// Executable is Kumo's server program, symlinks resolved.
 	Executable func() (string, error)
 	// PackagedExe is where the Arch package installs the server: only that
@@ -472,11 +483,46 @@ func (c *Checker) check(ctx context.Context) (result, error) {
 	if fromReleases(c.GOOS) {
 		return c.checkReleases(ctx, g)
 	}
-	return c.checkBranch(ctx, g)
+	if c.beta() {
+		return c.checkBranch(ctx, g)
+	}
+	return c.checkStable(ctx, g)
 }
 
-// checkBranch: on Linux the newest version is the head of the default
-// branch, which the PKGBUILD builds.
+// beta: this copy gets betas too.
+func (c *Checker) beta() bool {
+	return c.Channel != nil && c.Channel() == "beta"
+}
+
+// checkStable: on Linux, stable copies build the newest stable release's
+// commit (that of any system's: they're made from the same commits).
+func (c *Checker) checkStable(ctx context.Context, g *github) (result, error) {
+	var releases []release
+	if _, err := g.getJSON(ctx, g.root()+"/releases?per_page=100", &releases); err != nil {
+		return result{}, err
+	}
+	var best *release
+	var version string
+	for _, prefix := range []string{"windows-v", "macos-v", "android-v"} {
+		if r := pickRelease(releases, prefix, false); r != nil {
+			if v := strings.TrimPrefix(r.TagName, prefix); best == nil || compareVersions(v, version) > 0 {
+				best, version = r, v
+			}
+		}
+	}
+	if best == nil {
+		return result{note: "There's no stable release of Kumo yet."}, nil
+	}
+	commit, err := g.commit(ctx, best.TagName)
+	if err != nil {
+		return result{}, err
+	}
+	latest := &Version{Version: version, Commit: commit.SHA, Date: commit.Commit.Committer.Date, URL: best.HTMLURL}
+	return c.against(ctx, g, latest, "the newest stable release")
+}
+
+// checkBranch: on Linux, beta copies build the head of the default branch,
+// where each change lands first.
 func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 	var repo struct {
 		DefaultBranch string `json:"default_branch"`
@@ -491,11 +537,18 @@ func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 	if err != nil {
 		return result{}, err
 	}
-	latest := &Version{Commit: head.SHA, Date: head.Commit.Committer.Date, URL: head.HTMLURL}
+	latest := &Version{Commit: head.SHA, Date: head.Commit.Committer.Date, URL: head.HTMLURL, Beta: true}
 	// The version is only for showing, so a failure here doesn't matter.
 	if n := g.commitCount(ctx, head.SHA); n > 0 {
 		latest.Version = VersionOf(n)
 	}
+	return c.against(ctx, g, latest, "GitHub's "+repo.DefaultBranch)
+}
+
+// against compares this build with latest (a commit), named what for the
+// notes: whether it's newer, and what changed.
+func (c *Checker) against(ctx context.Context, g *github, latest *Version, what string) (result, error) {
+	head := latest.Commit
 	res := result{latest: latest}
 	if c.Commit == "" {
 		res.available = true
@@ -505,7 +558,7 @@ func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 	// Against the head's commit, not the branch: the version, the changes
 	// and the source an update builds then all match, even if the branch
 	// moves meanwhile.
-	cmp, err := g.compare(ctx, c.Commit, head.SHA)
+	cmp, err := g.compare(ctx, c.Commit, head)
 	var ae *apiError
 	if errors.As(err, &ae) && (ae.status == http.StatusNotFound || ae.status == http.StatusUnprocessableEntity) {
 		res.available = true
@@ -520,16 +573,19 @@ func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 		res.available = cmp.AheadBy > 0
 	case "diverged":
 		res.available = cmp.AheadBy > 0
-		res.note = "This copy has changes that aren't on GitHub: updating replaces them with GitHub's " + repo.DefaultBranch + "."
+		res.note = "This copy has changes that aren't on GitHub: updating replaces them with " + what + "."
 	case "behind":
-		res.note = "This copy is newer than GitHub's " + repo.DefaultBranch + "."
+		res.note = "This copy is newer than " + what + "."
+		if !c.beta() {
+			res.note += " It stays until a newer stable release comes out."
+		}
 	}
 	if res.available {
 		res.changes, res.changesTotal = cmp.changes(), cmp.AheadBy
 		if len(cmp.Commits) < cmp.AheadBy {
 			// GitHub lists the first 250 commits of a comparison: the newest
 			// ones come from the branch's history instead.
-			if recent, err := g.recentSubjects(ctx, head.SHA); err == nil {
+			if recent, err := g.recentSubjects(ctx, head); err == nil {
 				res.changes = recent
 			}
 		}
@@ -577,14 +633,15 @@ func releaseFile(goos string) string {
 }
 
 // checkReleases: on Windows the newest version is the newest release tagged
-// windows-v<version>, on macOS macos-v<version>.
+// windows-v<version>, on macOS macos-v<version> (betas only on the beta
+// channel). 100 at a time: each system's newest betas and stable releases.
 func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) {
 	var releases []release
-	if _, err := g.getJSON(ctx, g.root()+"/releases?per_page=50", &releases); err != nil {
+	if _, err := g.getJSON(ctx, g.root()+"/releases?per_page=100", &releases); err != nil {
 		return result{}, err
 	}
 	prefix := releasePrefix(c.GOOS)
-	best := pickRelease(releases, prefix)
+	best := pickRelease(releases, prefix, c.beta())
 	if best == nil {
 		system := map[string]string{"darwin": "macOS", "android": "Android"}[c.GOOS]
 		if system == "" {
@@ -593,11 +650,14 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 		return result{note: "There's no Kumo release for " + system + " yet."}, nil
 	}
 	version := strings.TrimPrefix(best.TagName, prefix)
-	latest := &Version{Version: version, Date: best.PublishedAt, URL: best.HTMLURL}
+	latest := &Version{Version: version, Date: best.PublishedAt, URL: best.HTMLURL, Beta: best.Prerelease}
 	if isSHA(best.TargetCommitish) {
 		latest.Commit = best.TargetCommitish
 	}
 	res := result{latest: latest, available: compareVersions(version, c.Version) > 0}
+	if !c.beta() && compareVersions(version, c.Version) < 0 {
+		res.note = "This copy is a beta, newer than the newest stable release (" + version + "). It stays until a newer stable release comes out."
+	}
 	file := releaseAsset(c.GOOS, version)
 	for _, a := range best.Assets {
 		if a.Name == file {
@@ -623,13 +683,14 @@ func VersionOf(n int) string {
 }
 
 // pickRelease returns the published release with the highest version
-// tagged <prefix><version> (windows-v1.0.9), or nil.
-func pickRelease(releases []release, prefix string) *release {
+// tagged <prefix><version> (windows-v1.0.9), or nil; pre-releases (betas)
+// only with beta.
+func pickRelease(releases []release, prefix string, beta bool) *release {
 	var best *release
 	for i := range releases {
 		r := &releases[i]
 		v, ok := strings.CutPrefix(r.TagName, prefix)
-		if r.Draft || r.Prerelease || !ok || !releaseVersion.MatchString(v) {
+		if r.Draft || (r.Prerelease && !beta) || !ok || !releaseVersion.MatchString(v) {
 			continue
 		}
 		if best == nil || compareVersions(v, strings.TrimPrefix(best.TagName, prefix)) > 0 {
