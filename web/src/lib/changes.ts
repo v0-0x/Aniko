@@ -6,6 +6,18 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 3,
+        title: "Kumo 2.0",
+        changes: [
+            { title: "A cleaner look", text: "The same Kumo, tidied up: the sidebar in sections, softer panels and cards, nicer dialogs, menus and buttons." },
+            { title: "Themes in the sidebar", text: "Every color theme and holiday theme a click away: try one after another, the menu stays open." },
+            {
+                title: "Holiday themes, redone",
+                text: "Each holiday brings its own colors and decorations (Christmas lights, Halloween's moon and cobweb, a cherry branch, summer lanterns) and nicer snow, bats, hearts, petals, fireflies and fireworks.",
+            },
+        ],
+    },
+    {
         id: 2,
         title: "Themes, picture in picture and more",
         changes: [
