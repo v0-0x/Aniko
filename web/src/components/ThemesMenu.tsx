@@ -1,4 +1,4 @@
-import { Check, History, Palette, Settings2, Sparkles } from "lucide-react"
+import { Check, ChevronUp, History, Palette, Settings2, Sparkles } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useSaveUI, useSettings } from "@/lib/queries"
 import { useStore } from "@/lib/store"
@@ -28,7 +28,7 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
     const today = activeHoliday("auto")
     // In the theme's own colors: its accent (the holiday's while one is on)
     // tints it, and its drawing (or a palette) leads.
-    const icon = holiday ? <HolidayIcon id={holiday.id} className="size-4" /> : <Palette className="size-4 stroke-[1.9] text-brand-strong" />
+    const icon = holiday ? <HolidayIcon id={holiday.id} className="size-4" /> : <Palette className="size-3.5 stroke-2 text-brand-strong" />
     const button = classic ? (
         // Like the other links, as the sidebar was before 2.0.
         <DropdownTrigger asChild>
@@ -44,18 +44,27 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
             </button>
         </DropdownTrigger>
     ) : (
+        // A link like the others, led by a small round chip in the accent
+        // (the holiday's drawing, or a palette); lit with the accent while
+        // open, the chevron turning.
         <DropdownTrigger asChild>
             <button
                 aria-label="Themes"
                 className={cn(
-                    "focus-ring group flex shrink-0 items-center rounded-xl text-[13.5px] font-medium text-fg transition-[background-color,box-shadow]",
-                    "bg-[linear-gradient(135deg,color-mix(in_oklab,var(--brand)_18%,transparent),color-mix(in_oklab,var(--brand)_4%,transparent))] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_26%,transparent)]",
-                    "hover:shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_45%,transparent)] data-[state=open]:shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_55%,transparent)]",
-                    wide ? "h-10 gap-2.5 pr-3 pl-2" : "size-10 justify-center",
+                    "focus-ring group flex shrink-0 items-center rounded-lg text-[13.5px] font-medium text-muted transition-[background-color,color] duration-200 ease-out",
+                    "hover:bg-white/[0.05] hover:text-fg data-[state=open]:bg-brand-soft data-[state=open]:text-fg",
+                    wide ? "h-9 gap-2.5 pr-2 pl-1.5" : "size-10 justify-center",
                 )}
             >
-                <span className={cn("grid shrink-0 place-items-center rounded-lg", wide && "size-7 bg-[color-mix(in_oklab,var(--brand)_20%,transparent)]")}>{icon}</span>
-                {wide && <span className="min-w-0 flex-1 truncate text-left">Themes</span>}
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[color-mix(in_oklab,var(--brand)_16%,transparent)] transition-[transform,background-color] duration-300 ease-out group-hover:scale-105 group-hover:bg-[color-mix(in_oklab,var(--brand)_24%,transparent)]">
+                    {icon}
+                </span>
+                {wide && (
+                    <>
+                        <span className="min-w-0 flex-1 truncate text-left">Themes</span>
+                        <ChevronUp className="size-3.5 shrink-0 text-subtle transition-transform duration-200 ease-out group-data-[state=open]:rotate-180" />
+                    </>
+                )}
             </button>
         </DropdownTrigger>
     )
