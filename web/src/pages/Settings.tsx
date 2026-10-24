@@ -41,7 +41,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { LoginDialog } from "@/components/LoginDialog"
 import { Badge, Button, Dialog, EmptyState, Input, Select, Switch, Textarea } from "@/components/ui"
-import { versionName } from "@/components/UpdateBanner"
+import { UpdateBanner, versionName } from "@/components/UpdateBanner"
 import { whatsNewStore } from "@/components/WhatsNew"
 import { api, desktop, type DesktopPrefs } from "@/lib/api"
 import { useCheckUpdate, useOnlineProviders, useSaveSettings, useSharing, useStatus, useUpdateStatus } from "@/lib/queries"
@@ -2062,7 +2062,7 @@ function AboutSection() {
     if (!u || u.checking) state = { tone: "gray", label: "Checking…" }
     else if (busy) state = { tone: "brand", label: `Updating to ${latest}`, help: u.message }
     else if (u.state === "ready") state = { tone: "green", label: `${latest} installed`, help: u.message }
-    else if (u.available) state = { tone: "brand", label: `${latest} available`, help: lan ? undefined : u.canApply ? "Update from the Home page." : u.applyNote }
+    else if (u.available) state = { tone: "brand", label: `${latest} available`, help: lan || u.canApply ? undefined : u.applyNote }
     else if (u.latest) state = { tone: "green", label: "Up to date", help: u.note }
     else if (u.error) state = { tone: "amber", label: "Couldn't check" }
     else state = { tone: "gray", label: "Not checked yet", help: "Kumo checks shortly after it starts, then every 6 hours." }
@@ -2086,7 +2086,9 @@ function AboutSection() {
                     </Button>
                 </Row>
             </Group>
-            <Group title="Updates" description="Kumo looks for a newer version on GitHub and shows it on the Home page, where you can install it.">
+            {/* Installing it, from here too (as on Home). */}
+            {!lan && <UpdateBanner inSettings />}
+            <Group title="Updates" description="Kumo looks for a newer version on GitHub and offers it here and on the Home page.">
                 <Row
                     label="Beta updates"
                     help={

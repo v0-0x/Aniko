@@ -74,3 +74,23 @@ notificationsMutedStore.subscribe(() => {
         /* storage unavailable: muted until reload */
     }
 })
+
+// The version whose update banner was put off ("Later") on Home; checking
+// for updates by hand shows it again.
+const LATER_KEY = "kumo-update-later"
+function readLater(): string {
+    try {
+        return JSON.parse(localStorage.getItem(LATER_KEY) ?? '""') || ""
+    } catch {
+        return ""
+    }
+}
+export const updateLaterStore = createStore<string>(readLater())
+export function setUpdateLater(version: string) {
+    updateLaterStore.set(version)
+    try {
+        localStorage.setItem(LATER_KEY, JSON.stringify(version))
+    } catch {
+        /* for this run only */
+    }
+}

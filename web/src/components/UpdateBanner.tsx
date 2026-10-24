@@ -1,11 +1,10 @@
 import { AlertTriangle, ArrowUpCircle, Check, ChevronDown, Copy, Download, ExternalLink, Loader2, RefreshCw, RotateCcw } from "lucide-react"
-import { useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 import { toast } from "@/lib/toast"
 import { Button, Progress } from "@/components/ui"
 import { api, ApiError } from "@/lib/api"
-import { usePersisted } from "@/lib/hooks"
 import { useApplyUpdate, useStatus, useUpdateStatus } from "@/lib/queries"
-import { createStore, useStore } from "@/lib/store"
+import { createStore, setUpdateLater, updateLaterStore, useStore } from "@/lib/store"
 import type { UpdateStatus, UpdateVersion } from "@/lib/types"
 import { cn, copyText, plural } from "@/lib/utils"
 
@@ -48,14 +47,27 @@ function waitForRestart(version: string) {
     setTimeout(poll, 1000)
 }
 
-// Home page: a newer Kumo is available, and installing it. Only this
-// computer installs updates, so devices on the network don't see it.
-export function UpdateBanner() {
+// Home page (and Settings › Updates & about, inSettings: never put off): a
+// newer Kumo is available, and installing it. Only this computer installs
+// updates, so devices on the network don't see it.
+export function UpdateBanner({ inSettings }: { inSettings?: boolean }) {
+    return (
+        <InSettings.Provider value={!!inSettings}>
+            <Banner inSettings={inSettings} />
+        </InSettings.Provider>
+    )
+}
+
+// In Settings, the panel takes the section's width (on Home, the page's
+// margins).
+const InSettings = createContext(false)
+
+function Banner({ inSettings }: { inSettings?: boolean }) {
     const { data: status } = useStatus()
     const { data: u } = useUpdateStatus()
     const apply = useApplyUpdate()
     const restart = useStore(restartStore)
-    const [later, setLater] = usePersisted("kumo-update-later", "")
+    const later = useStore(updateLaterStore)
     const [open, setOpen] = useState(false)
     const windows = status?.platform === "windows"
     const mac = status?.platform === "darwin"
@@ -73,15 +85,15 @@ export function UpdateBanner() {
     const key = latest || "unknown"
     const busy = BUSY.includes(u.state)
     const shown = u.available || u.state === "ready" || u.state === "failed"
-    if (!restart && !busy && (!shown || later === key)) return null
+    if (!restart && !busy && (!shown || (later === key && !inSettings))) return null
 
     const restartNow = () =>
         api.post("/api/update/restart")
             .then(() => waitForRestart(status.version))
             // No answer at all: it's restarting already.
             .catch(e => (e instanceof ApiError ? toast.error(e.message) : waitForRestart(status.version)))
-    const laterButton = (
-        <Button size="sm" variant="ghost" onClick={() => setLater(key)}>
+    const laterButton = !inSettings && (
+        <Button size="sm" variant="ghost" onClick={() => setUpdateLater(key)}>
             Later
         </Button>
     )
@@ -248,8 +260,9 @@ export function UpdateBanner() {
 }
 
 function Panel({ icon, title, text, actions, children }: { icon: React.ReactNode; title: React.ReactNode; text?: React.ReactNode; actions?: React.ReactNode; children?: React.ReactNode }) {
+    const inSettings = useContext(InSettings)
     return (
-        <div className="px-6 pt-6 md:px-8 xl:px-10">
+        <div className={inSettings ? undefined : "px-6 pt-6 md:px-8 xl:px-10"}>
             <div className="card overflow-hidden rise-in">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4">
                     {icon}

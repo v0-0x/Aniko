@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/lib/toast"
 import { api, qs } from "./api"
+import { setUpdateLater } from "./store"
 import { installIfWanted, wantInstall } from "./tv"
 import type {
     AutoRule,
@@ -365,7 +366,11 @@ export function useCheckUpdate() {
     const qc = useQueryClient()
     return useMutation({
         mutationFn: () => api.post<UpdateStatus>("/api/update/check"),
-        onSuccess: s => qc.setQueryData(["update"], s),
+        onSuccess: s => {
+            qc.setQueryData(["update"], s)
+            // Asked for: an update put off with Later shows again.
+            setUpdateLater("")
+        },
         onError: (e: Error) => toast.error(e.message),
     })
 }
