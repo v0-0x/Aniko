@@ -7,6 +7,7 @@ import { NowPlaying, ScanIndicator } from "./components/NowPlaying"
 import { PlayerOverlay } from "./components/player/Player"
 import { TvMenu } from "./components/TvMenu"
 import { QuickSearch } from "./components/QuickSearch"
+import { HolidayBackdrop, HolidayGarland } from "./components/HolidayDecor"
 import { HolidayEffects } from "./components/HolidayEffects"
 import { useHolidayNotice } from "./components/HolidayBadge"
 import { WhatsNew } from "./components/WhatsNew"
@@ -124,9 +125,11 @@ export default function App() {
         <TooltipProvider>
             <div className="app-frame flex h-full bg-frame">
                 <Sidebar />
-                {/* The pages: a panel inset in the window, next to the sidebar. */}
-                <div className="min-w-0 flex-1 py-2 pr-2">
-                    <main id="main-scroll" className="relative h-full overflow-x-hidden overflow-y-auto rounded-2xl border border-line bg-bg shadow-[0_0_0_1px_rgb(0_0_0/0.35),0_18px_50px_-20px_rgb(0_0_0/0.8)]">
+                {/* The pages: a panel inset in the window, next to the sidebar.
+                    Its background is behind them (with a holiday's art). */}
+                <div className="relative min-w-0 flex-1 py-2 pr-2">
+                    <HolidayBackdrop holiday={ui ? look.holiday : null} />
+                    <main id="main-scroll" className="relative h-full overflow-x-hidden overflow-y-auto rounded-2xl border border-line shadow-[0_0_0_1px_rgb(0_0_0/0.35),0_18px_50px_-20px_rgb(0_0_0/0.8)]">
                         <Suspense
                             fallback={
                                 <div className="grid h-full place-items-center">
@@ -158,6 +161,7 @@ export default function App() {
                             </Routes>
                         </Suspense>
                     </main>
+                    <HolidayGarland holiday={ui ? look.holiday : null} />
                 </div>
             </div>
             <NowPlaying />

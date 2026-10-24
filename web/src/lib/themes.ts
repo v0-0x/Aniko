@@ -35,6 +35,9 @@ export type Holiday = {
     // When it's on by itself ("In December").
     when: string
     accent: string
+    // The color the whole app leans to while it's on (a little of it in the
+    // window and the pages' colors): Halloween's purple night...
+    tint: string
     effect: Effect
     effectName: string // "Falling snow"
     // Month 1-12, and the days of it (all of it without).
@@ -45,24 +48,26 @@ export type Holiday = {
 }
 
 export const HOLIDAYS: Holiday[] = [
-    { id: "newyear", name: "New Year", when: "January 1–7", accent: "#f5c542", effect: "fireworks", effectName: "Fireworks", month: 1, days: [1, 7] },
+    { id: "newyear", name: "New Year", when: "January 1–7", accent: "#f5c542", tint: "#1e3a8a", effect: "fireworks", effectName: "Fireworks", month: 1, days: [1, 7] },
     {
         id: "valentine",
         name: "Valentine's Day",
         when: "In February",
         accent: "#f2557a",
+        tint: "#9f1239",
         effect: "hearts",
         effectName: "Floating hearts",
         month: 2,
         picks: { title: "For Valentine's Day", params: { genres: ["Romance"], sort: ["POPULARITY_DESC"] }, more: "/search?genre=Romance&sort=POPULARITY_DESC" },
     },
-    { id: "sakura", name: "Cherry blossoms", when: "In April", accent: "#f9a8d4", effect: "petals", effectName: "Falling petals", month: 4 },
-    { id: "summer", name: "Summer festival", when: "In August", accent: "#2dd4bf", effect: "fireflies", effectName: "Fireflies", month: 8 },
+    { id: "sakura", name: "Cherry blossoms", when: "In April", accent: "#f9a8d4", tint: "#be185d", effect: "petals", effectName: "Falling petals", month: 4 },
+    { id: "summer", name: "Summer festival", when: "In August", accent: "#2dd4bf", tint: "#155e75", effect: "fireflies", effectName: "Fireflies", month: 8 },
     {
         id: "halloween",
         name: "Halloween",
         when: "In October",
         accent: "#f97316",
+        tint: "#6b21a8",
         effect: "bats",
         effectName: "Bats",
         month: 10,
@@ -73,6 +78,7 @@ export const HOLIDAYS: Holiday[] = [
         name: "Christmas",
         when: "In December",
         accent: "#ef4444",
+        tint: "#166534",
         effect: "snow",
         effectName: "Falling snow",
         month: 12,
@@ -106,14 +112,16 @@ const CACHE_KEY = "kumo-theme"
 // before the settings come from the server: no flash of the default ones).
 export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; accent: string }) {
     const p = t.theme.palette
+    // A holiday leans the colors toward its own, a little (the window most).
+    const lean = (color: string, pct: number) => (t.holiday ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
     const vars: Record<string, string> = {
         "--brand": t.accent,
-        "--frame": p.frame,
-        "--bg": p.bg,
-        "--surface-1": p.s1,
-        "--surface-2": p.s2,
-        "--surface-3": p.s3,
-        "--surface-4": p.s4,
+        "--frame": lean(p.frame, 12),
+        "--bg": lean(p.bg, 8),
+        "--surface-1": lean(p.s1, 7),
+        "--surface-2": lean(p.s2, 7),
+        "--surface-3": lean(p.s3, 6),
+        "--surface-4": lean(p.s4, 6),
         "--muted": p.muted,
         "--subtle": p.subtle,
     }
