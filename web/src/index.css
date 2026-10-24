@@ -102,6 +102,12 @@
         border-radius: 0.875rem;
         box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035), 0 10px 30px -18px rgb(0 0 0 / 0.7);
     }
+    /* The classic look (before 2.0): flat. */
+    html[data-look="classic"] .card {
+        background: var(--surface-1);
+        border-radius: 0.625rem;
+        box-shadow: none;
+    }
     /* Controls over artwork (banners, covers): dark and see-through. */
     .glass {
         background: rgb(10 10 12 / 0.55);
@@ -211,6 +217,11 @@ html[data-holiday] .app-frame {
     background-image:
         radial-gradient(900px 520px at 0% 0%, color-mix(in oklab, var(--brand) 16%, transparent), transparent 70%),
         radial-gradient(700px 420px at 100% 100%, color-mix(in oklab, var(--brand) 9%, transparent), transparent 70%);
+}
+/* The classic look's holiday light over the top of the pages (2.0 draws it
+   behind them, HolidayDecor). */
+html[data-look="classic"][data-holiday] #main-scroll {
+    background-image: radial-gradient(1100px 260px at 50% -120px, color-mix(in oklab, var(--brand) 11%, transparent), transparent);
 }
 /* Christmas lights twinkling, summer lanterns swaying (HolidayDecor). */
 .kumo-twinkle {

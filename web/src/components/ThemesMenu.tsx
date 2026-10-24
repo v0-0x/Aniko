@@ -1,16 +1,17 @@
-import { Check, Palette, Settings2, Sparkles } from "lucide-react"
+import { Check, History, Palette, Settings2, Sparkles } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useSaveUI, useSettings } from "@/lib/queries"
 import { useStore } from "@/lib/store"
-import { activeHoliday, COLOR_THEMES, HOLIDAYS, holidayStore, type ColorTheme } from "@/lib/themes"
+import { activeHoliday, COLOR_THEMES, HOLIDAYS, holidayStore, useClassic, type ColorTheme } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn } from "@/lib/utils"
 import { HolidayIcon } from "./HolidayBadge"
 import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Tooltip } from "./ui"
 
 // The sidebar's Themes menu: every color theme, the holiday themes (by the
-// date, off, or one always) and their animation, changed at once and the
-// menu left open to try another. Settings › User Interface has the same.
+// date, off, or one always) and their animation, and the classic look,
+// changed at once and the menu left open to try another. Settings › User
+// Interface has the same.
 export function ThemesMenu({ wide }: { wide: boolean }) {
     const ui = useSettings()?.ui
     const saveUI = useSaveUI()
@@ -19,12 +20,30 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
     const theme = ui?.colorTheme ?? "kumo"
     const seasonal = ui?.seasonal ?? "auto"
     const effects = ui?.seasonalEffects ?? true
+    // Drawn as it is now (one being tried in Settings too); the switch is
+    // the saved one, like the rest.
+    const classic = useClassic()
+    const classicLook = !!ui?.classicLook
     // What "by the date" is now.
     const today = activeHoliday("auto")
     // In the theme's own colors: its accent (the holiday's while one is on)
     // tints it, and its drawing (or a palette) leads.
     const icon = holiday ? <HolidayIcon id={holiday.id} className="size-4" /> : <Palette className="size-4 stroke-[1.9] text-brand-strong" />
-    const button = (
+    const button = classic ? (
+        // Like the other links, as the sidebar was before 2.0.
+        <DropdownTrigger asChild>
+            <button
+                aria-label="Themes"
+                className={cn(
+                    "focus-ring flex h-9 shrink-0 items-center rounded-md text-[13.5px] font-medium text-muted transition-colors hover:bg-white/[0.04] hover:text-fg data-[state=open]:bg-white/[0.06]",
+                    wide ? "gap-3 px-2.5" : "w-10 justify-center",
+                )}
+            >
+                {holiday ? <HolidayIcon id={holiday.id} className="size-[18px] shrink-0" /> : <Palette className="size-[18px] shrink-0 stroke-[1.75]" />}
+                {wide && <span className="truncate">Themes</span>}
+            </button>
+        </DropdownTrigger>
+    ) : (
         <DropdownTrigger asChild>
             <button
                 aria-label="Themes"
@@ -81,16 +100,26 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
                 <DropdownSeparator />
                 <DropdownItem keepOpen disabled={!holiday} onSelect={() => saveUI({ seasonalEffects: !effects })} icon={<Sparkles />} className="h-9">
                     <span className="min-w-0 flex-1">{holiday ? `Animation: ${holiday.effectName}` : "Holiday animations"}</span>
-                    {/* A switch, drawn: the item is what's pressed. */}
-                    <span aria-hidden className={cn("relative h-[18px] w-8 shrink-0 rounded-full transition-colors", effects && holiday ? "bg-brand" : "bg-white/[0.14]")}>
-                        <span className={cn("absolute top-[3px] size-3 rounded-full bg-white transition-transform", effects && holiday ? "translate-x-[17px]" : "translate-x-[3px]")} />
-                    </span>
+                    <MenuSwitch on={effects && !!holiday} />
+                </DropdownItem>
+                <DropdownItem keepOpen onSelect={() => saveUI({ classicLook: !classicLook })} icon={<History />} className="h-9">
+                    <span className="min-w-0 flex-1">Classic look</span>
+                    <MenuSwitch on={classicLook} />
                 </DropdownItem>
                 <DropdownItem icon={<Settings2 />} onSelect={() => navigate("/settings?tab=ui")}>
                     More in Settings
                 </DropdownItem>
             </DropdownContent>
         </Dropdown>
+    )
+}
+
+// A switch, drawn: the item it's in is what's pressed.
+function MenuSwitch({ on }: { on: boolean }) {
+    return (
+        <span aria-hidden className={cn("relative h-[18px] w-8 shrink-0 rounded-full transition-colors", on ? "bg-brand" : "bg-white/[0.14]")}>
+            <span className={cn("absolute top-[3px] size-3 rounded-full bg-white transition-transform", on ? "translate-x-[17px]" : "translate-x-[3px]")} />
+        </span>
     )
 }
 

@@ -5,7 +5,7 @@
 // (config.ColorThemes, config.Holidays).
 
 import type { SearchParams } from "./queries"
-import { createStore } from "./store"
+import { createStore, useStore } from "./store"
 
 // The window (frame, where the sidebar is), the pages (bg), panels on them
 // (surface 1-4) and the grey text, as in index.css.
@@ -96,14 +96,15 @@ export function activeHoliday(setting: string | undefined, now = new Date()): Ho
     return HOLIDAYS.find(h => h.month === m && (!h.days || (d >= h.days[0] && d <= h.days[1]))) ?? null
 }
 
-export type ThemeChoice = { colorTheme?: string; accentColor?: string; seasonal?: string; seasonalEffects?: boolean }
+export type ThemeChoice = { colorTheme?: string; accentColor?: string; seasonal?: string; seasonalEffects?: boolean; classicLook?: boolean }
 
-// What's drawn: the colors, the accent (the holiday's while one is on), and
-// the holiday (its glow, the sidebar's decoration and its animation).
+// What's drawn: the colors, the accent (the holiday's while one is on), the
+// holiday (its glow, the sidebar's decoration and its animation), and
+// whether in the classic look (before 2.0).
 export function resolveTheme(ui: ThemeChoice | undefined, now = new Date()) {
     const theme = colorTheme(ui?.colorTheme)
     const holiday = activeHoliday(ui?.seasonal ?? "auto", now)
-    return { theme, holiday, accent: holiday?.accent ?? (ui?.accentColor || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true) }
+    return { theme, holiday, accent: holiday?.accent ?? (ui?.accentColor || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true), classic: !!ui?.classicLook }
 }
 
 const CACHE_KEY = "kumo-theme"
@@ -111,10 +112,11 @@ const CACHE_KEY = "kumo-theme"
 // Sets the colors on the page, and remembers them for the next start (drawn
 // before the settings come from the server: no flash of the default ones).
 // cache: remembered for the next start (not colors only being tried).
-export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; accent: string }, cache = true) {
+export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; accent: string; classic: boolean }, cache = true) {
     const p = t.theme.palette
-    // A holiday leans the colors toward its own, a little (the window most).
-    const lean = (color: string, pct: number) => (t.holiday ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
+    // A holiday leans the colors toward its own, a little (the window most;
+    // not in the classic look, whose holidays only brought their accent).
+    const lean = (color: string, pct: number) => (t.holiday && !t.classic ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
     const vars: Record<string, string> = {
         "--brand": t.accent,
         "--frame": lean(p.frame, 12),
@@ -126,29 +128,33 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
         "--muted": p.muted,
         "--subtle": p.subtle,
     }
-    setVars(vars, t.holiday?.id ?? "")
+    setVars(vars, t.holiday?.id ?? "", t.classic)
     // The browser's own bars (phones) in the window's color.
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", p.frame)
     if (!cache) return
     try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ vars, holiday: t.holiday?.id ?? "" }))
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ vars, holiday: t.holiday?.id ?? "", classic: t.classic }))
     } catch {
         /* drawn with the default colors at the next start */
     }
 }
 
-function setVars(vars: Record<string, string>, holiday: string) {
+function setVars(vars: Record<string, string>, holiday: string, classic: boolean) {
     const el = document.documentElement
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v)
     if (holiday) el.dataset.holiday = holiday
     else delete el.dataset.holiday
+    // For index.css (data-look="classic"); the components read classicStore.
+    if (classic) el.dataset.look = "classic"
+    else delete el.dataset.look
+    classicStore.set(classic)
 }
 
 // The colors used last time, at once (main.tsx, before the first render).
 export function applyCachedTheme() {
     try {
-        const c = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as { vars?: Record<string, string>; holiday?: string } | null
-        if (c?.vars) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "")
+        const c = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as { vars?: Record<string, string>; holiday?: string; classic?: boolean } | null
+        if (c?.vars) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "", c.classic === true)
     } catch {
         /* the default colors */
     }
@@ -159,3 +165,8 @@ export const themePreviewStore = createStore<ThemeChoice | null>(null)
 
 // The holiday theme drawn now (App sets it): the sidebar decorates for it.
 export const holidayStore = createStore<Holiday | null>(null)
+
+// The classic look (before 2.0) is on: the components draw themselves as
+// they were then (ui.tsx, the sidebar, cards, the holiday themes).
+export const classicStore = createStore(false)
+export const useClassic = () => useStore(classicStore)

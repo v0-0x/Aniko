@@ -25,7 +25,7 @@ import { api } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
 import { useCollection, useDownloads, useStatus } from "@/lib/queries"
 import { notificationsMutedStore, searchOpenStore, torrentCountStore, useStore } from "@/lib/store"
-import { holidayStore } from "@/lib/themes"
+import { holidayStore, useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn, img } from "@/lib/utils"
 import { ThemesMenu } from "./ThemesMenu"
@@ -78,6 +78,8 @@ export function Sidebar() {
     const qc = useQueryClient()
     const wide = useMediaQuery(WIDE)
     const settings = status?.settings
+    // Before 2.0: no group names, the open page in plain white.
+    const classic = useClassic()
     const holiday = useStore(holidayStore)
 
     const activeDownloads = (downloads ?? []).filter(d => ["queued", "resolving", "downloading"].includes(d.status)).length
@@ -140,12 +142,17 @@ export function Sidebar() {
                     }
                 }}
                 className={cn(
-                    "focus-ring relative flex h-9 shrink-0 items-center rounded-lg text-[13.5px] font-medium transition-colors [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75] [&>svg]:transition-colors",
+                    "focus-ring relative flex h-9 shrink-0 items-center text-[13.5px] font-medium transition-colors [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75] [&>svg]:transition-colors",
+                    classic ? "rounded-md" : "rounded-lg",
                     wide ? "gap-3 px-2.5" : "w-10 justify-center",
                     // The page it's on: tinted with the accent.
-                    active
-                        ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
-                        : "text-muted hover:bg-white/[0.05] hover:text-fg",
+                    classic
+                        ? active
+                            ? "bg-white/[0.08] text-fg"
+                            : "text-muted hover:bg-white/[0.04] hover:text-fg"
+                        : active
+                          ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
+                          : "text-muted hover:bg-white/[0.05] hover:text-fg",
                 )}
             >
                 {it.icon}
@@ -153,7 +160,7 @@ export function Sidebar() {
                 {wide && it.hint && !badge && !tv && <kbd className="ml-auto font-sans text-[11px] text-subtle">{it.hint}</kbd>}
                 {badge &&
                     (wide ? (
-                        <span className="ml-auto rounded-md bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums">{badge}</span>
+                        <span className={cn("ml-auto bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums", classic ? "rounded" : "rounded-md")}>{badge}</span>
                     ) : (
                         <span className="absolute top-0.5 right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white tabular-nums">{badge}</span>
                     ))}
@@ -179,17 +186,17 @@ export function Sidebar() {
                 {wide && <KumoWordmark className="h-[18px] w-auto text-fg" />}
             </button>
 
-            <nav className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (tv ? "gap-3" : "gap-5") : "items-center gap-3")}>
+            <nav className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (classic ? "gap-4" : tv ? "gap-3" : "gap-5") : "items-center gap-3")}>
                 {groups.map((g, i) => (
-                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", (!wide || tv) && i > 0 && "border-t border-line pt-3")}>
+                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", (!wide || (tv && !classic)) && i > 0 && "border-t border-line pt-3")}>
                         {/* Their names; not on a TV, whose screen is short. */}
-                        {wide && !tv && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
+                        {wide && !tv && !classic && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
                         {g.items.map(link)}
                     </div>
                 ))}
             </nav>
 
-            <div className={cn("flex flex-col gap-0.5 border-t border-line pt-3", !wide && "items-center")}>
+            <div className={cn("flex flex-col gap-0.5 pt-3", !classic && "border-t border-line", !wide && "items-center")}>
                 <ThemesMenu wide={wide} />
                 <PluginTrays />
                 <div className={cn("flex gap-0.5", wide ? "items-center" : "flex-col-reverse items-center")}>
@@ -200,15 +207,20 @@ export function Sidebar() {
                     <DropdownTrigger asChild>
                         <button
                             className={cn(
-                                "focus-ring mt-1.5 flex items-center gap-2.5 rounded-xl text-left transition-colors data-[state=open]:bg-white/[0.07]",
-                                wide ? "h-12 bg-white/[0.035] px-2 ring-1 ring-white/[0.05] ring-inset hover:bg-white/[0.06]" : "size-10 justify-center hover:bg-white/[0.05]",
+                                "focus-ring flex items-center gap-2.5 text-left transition-colors",
+                                classic
+                                    ? cn("mt-1 h-10 rounded-md hover:bg-white/[0.04] data-[state=open]:bg-white/[0.06]", wide ? "px-2" : "w-10 justify-center")
+                                    : cn(
+                                          "mt-1.5 rounded-xl data-[state=open]:bg-white/[0.07]",
+                                          wide ? "h-12 bg-white/[0.035] px-2 ring-1 ring-white/[0.05] ring-inset hover:bg-white/[0.06]" : "size-10 justify-center hover:bg-white/[0.05]",
+                                      ),
                             )}
                             aria-label="Account"
                         >
                             {status?.user?.avatar?.large ? (
-                                <img src={img(status.user.avatar.large)} alt="" className="size-8 shrink-0 rounded-full object-cover ring-2 ring-white/10" />
+                                <img src={img(status.user.avatar.large)} alt="" className={cn("shrink-0 rounded-full object-cover", classic ? "size-7" : "size-8 ring-2 ring-white/10")} />
                             ) : (
-                                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-3 text-muted ring-2 ring-white/10">
+                                <span className={cn("grid shrink-0 place-items-center rounded-full bg-surface-3 text-muted", classic ? "size-7" : "size-8 ring-2 ring-white/10")}>
                                     <UserRound className="size-4" />
                                 </span>
                             )}

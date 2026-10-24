@@ -44,7 +44,7 @@ import { exampleMpvPath, installHint, installSource, platformName } from "@/lib/
 import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
 import { useStore } from "@/lib/store"
-import { activeHoliday, COLOR_THEMES, HOLIDAYS, themePreviewStore } from "@/lib/themes"
+import { activeHoliday, COLOR_THEMES, HOLIDAYS, themePreviewStore, useClassic } from "@/lib/themes"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { systemNotifications } from "@/lib/alerts"
 import { androidApp, setTvWidth, TV_WIDTHS, tv, tvWidth } from "@/lib/tv"
@@ -116,7 +116,7 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 // Puts the fields edited in draft (compared with base, the server copy the
 // draft was made from) on top of a newer server copy.
 // The UI settings the Themes menu changes (saved at once).
-const THEME_KEYS = ["colorTheme", "accentColor", "seasonal", "seasonalEffects"] as const
+const THEME_KEYS = ["colorTheme", "accentColor", "seasonal", "seasonalEffects", "classicLook"] as const
 
 function rebase(draft: Settings, base: Settings, server: Settings): Settings {
     const out: Record<string, any> = structuredClone(server)
@@ -170,13 +170,14 @@ export default function SettingsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [server])
     const dirty = useMemo(() => !!draft && !!server && !same(draft, server), [draft, server])
+    const classic = useClassic()
 
     // Preview the colors and holiday theme being edited; App shows the saved
     // ones again once the preview ends (Discard, leaving the page).
     const ui = draft?.ui
     useEffect(() => {
-        themePreviewStore.set(ui ? { colorTheme: ui.colorTheme, accentColor: ui.accentColor, seasonal: ui.seasonal, seasonalEffects: ui.seasonalEffects } : null)
-    }, [ui?.colorTheme, ui?.accentColor, ui?.seasonal, ui?.seasonalEffects])
+        themePreviewStore.set(ui ? { colorTheme: ui.colorTheme, accentColor: ui.accentColor, seasonal: ui.seasonal, seasonalEffects: ui.seasonalEffects, classicLook: ui.classicLook } : null)
+    }, [ui?.colorTheme, ui?.accentColor, ui?.seasonal, ui?.seasonalEffects, ui?.classicLook])
     useEffect(() => () => themePreviewStore.set(null), [])
 
     if (!draft || !status) return null
@@ -210,10 +211,15 @@ export default function SettingsPage() {
                                     key={it.id}
                                     onClick={() => setParams({ tab: it.id }, { replace: true })}
                                     className={cn(
-                                        "focus-ring flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:stroke-[1.75]",
-                                        section === it.id
-                                            ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
-                                            : "text-muted hover:bg-white/[0.05] hover:text-fg",
+                                        "focus-ring flex h-8 items-center gap-2.5 px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:stroke-[1.75]",
+                                        classic
+                                            ? cn("rounded-md", section === it.id ? "bg-white/[0.08] text-fg" : "text-muted hover:bg-white/[0.04] hover:text-fg")
+                                            : cn(
+                                                  "rounded-lg",
+                                                  section === it.id
+                                                      ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
+                                                      : "text-muted hover:bg-white/[0.05] hover:text-fg",
+                                              ),
                                     )}
                                 >
                                     {it.icon}
@@ -929,6 +935,9 @@ function UISection({ draft, set }: SectionProps) {
     return (
         <>
             <Group title="Theme">
+                <Row label="Classic look" help="Kumo as it looked before 2.0: its sidebar, cards, menus and holiday themes. The colors below work in both.">
+                    <Switch checked={!!draft.ui.classicLook} onChange={v => set("ui", { classicLook: v })} />
+                </Row>
                 <Stack label="Colors">
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                         {COLOR_THEMES.map(t => {

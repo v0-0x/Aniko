@@ -6,6 +6,17 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 4,
+        title: "The classic look",
+        changes: [
+            {
+                title: "Classic look",
+                text: "Liked Kumo better as it was before 2.0? Turn on Classic look in Themes in the sidebar, or in Settings › User Interface. The color and holiday themes work in both.",
+                to: "/settings?tab=ui",
+            },
+        ],
+    },
+    {
         id: 3,
         title: "Kumo 2.0",
         changes: [

@@ -237,6 +237,9 @@ type UISettings struct {
 	ColorTheme      string `json:"colorTheme"`
 	Seasonal        string `json:"seasonal"`
 	SeasonalEffects bool   `json:"seasonalEffects"`
+	// Kumo's look from before 2.0 (its components, sidebar and holiday
+	// themes), with the same color themes.
+	ClassicLook bool `json:"classicLook"`
 }
 
 // ColorThemes and Holidays are the values UISettings takes (their colors are

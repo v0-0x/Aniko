@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react"
 import { useLocation } from "react-router-dom"
 import { makeScene } from "@/lib/effects"
+import { makeScene as makeClassicScene } from "@/lib/effects-classic"
 import { useMediaQuery } from "@/lib/hooks"
 import { playerStore, useStore } from "@/lib/store"
-import type { Effect } from "@/lib/themes"
+import { useClassic, type Effect } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 
 // The holiday theme's animation over the pages (snow, bats...): never over a
@@ -15,6 +16,8 @@ export function HolidayEffects({ effect, reduceMotion }: { effect: Effect | null
     const { pathname } = useLocation()
     const systemReduce = useMediaQuery("(prefers-reduced-motion: reduce)")
     const on = !!effect && !reduceMotion && !systemReduce && !playing && pathname !== "/manga/read"
+    // The classic look's are the ones from before 2.0.
+    const classic = useClassic()
 
     useEffect(() => {
         const canvas = canvasRef.current
@@ -26,7 +29,7 @@ export function HolidayEffects({ effect, reduceMotion }: { effect: Effect | null
         const dpr = Math.min(window.devicePixelRatio || 1, tv ? 1 : 1.5)
         let w = window.innerWidth
         let h = window.innerHeight
-        const scene = makeScene(effect, w, h, density)
+        const scene = (classic ? makeClassicScene : makeScene)(effect, w, h, density)
         const size = () => {
             w = window.innerWidth
             h = window.innerHeight
@@ -69,7 +72,7 @@ export function HolidayEffects({ effect, reduceMotion }: { effect: Effect | null
             document.removeEventListener("visibilitychange", onVisible)
             ctx.clearRect(0, 0, canvas.width, canvas.height)
         }
-    }, [on, effect])
+    }, [on, effect, classic])
 
     if (!on) return null
     return <canvas ref={canvasRef} aria-hidden className="pointer-events-none fixed inset-0 z-[45] size-full" />

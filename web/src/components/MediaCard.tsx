@@ -3,6 +3,7 @@ import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import type { ListEntry, Media } from "@/lib/types"
 import { airedEpisodes, cn, cover, entryUrl, formatLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
+import { useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { Dropdown, DropdownContent, DropdownTrigger, IconButton } from "./ui"
 
@@ -37,14 +38,18 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
             : 0
     const nextAir = media.nextAiringEpisode
     const score = media.meanScore ?? media.averageScore
+    // Before 2.0: flatter, squarer, a lighter hairline on hover, no lift.
+    const classic = useClassic()
+    const label = classic ? "rounded bg-black/70" : "rounded-md bg-black/65 backdrop-blur-sm"
 
     const card = (
-        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 rounded-xl outline-none", !menu && className)}>
+        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-xl", !menu && className)}>
             {/* Lifted a little under the pointer (not on a TV: it's slow at it). */}
             <div
                 className={cn(
-                    "relative aspect-[2/3] overflow-hidden rounded-xl bg-surface-2 shadow-[0_8px_24px_-14px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out",
-                    !tv && "group-hover/card:-translate-y-1 group-hover/card:shadow-[0_18px_36px_-14px_rgb(0_0_0/0.9)]",
+                    "relative aspect-[2/3] overflow-hidden bg-surface-2",
+                    classic ? "rounded-lg" : "rounded-xl shadow-[0_8px_24px_-14px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out",
+                    !tv && !classic && "group-hover/card:-translate-y-1 group-hover/card:shadow-[0_18px_36px_-14px_rgb(0_0_0/0.9)]",
                 )}
             >
                 {cover(media) && (
@@ -57,12 +62,20 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     />
                 )}
                 {/* A hairline, so dark covers don't melt into the page. */}
-                <div data-tv-ring className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-white/[0.08] transition-[box-shadow] duration-300 ring-inset group-hover/card:ring-[color-mix(in_oklab,var(--brand)_45%,transparent)]" />
+                <div
+                    data-tv-ring
+                    className={cn(
+                        "pointer-events-none absolute inset-0 ring-1 transition-[box-shadow] duration-300 ring-inset",
+                        classic ? "rounded-lg ring-white/[0.07] group-hover/card:ring-white/20" : "rounded-xl ring-white/[0.08] group-hover/card:ring-[color-mix(in_oklab,var(--brand)_45%,transparent)]",
+                    )}
+                />
 
                 <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-                    {behind > 0 && <span className="rounded-md bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white shadow-[0_2px_8px_-2px_var(--brand)]">{behind} new</span>}
+                    {behind > 0 && (
+                        <span className={cn("bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white", classic ? "rounded" : "rounded-md shadow-[0_2px_8px_-2px_var(--brand)]")}>{behind} new</span>
+                    )}
                     {!!localCount && localCount > 0 && (
-                        <span className="flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums backdrop-blur-sm">
+                        <span className={cn("flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums", label)}>
                             <HardDrive className="size-3" />
                             {downloaded?.length ?? localCount}
                         </span>
@@ -71,7 +84,8 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                 {score ? (
                     <span
                         className={cn(
-                            "absolute top-2 right-2 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 backdrop-blur-sm transition-opacity group-hover/card:opacity-100",
+                            "absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 transition-opacity group-hover/card:opacity-100",
+                            label,
                             menu && "right-10", // next to the menu button
                         )}
                     >
@@ -80,14 +94,14 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     </span>
                 ) : null}
                 {nextAir && (
-                    <span className="absolute bottom-2.5 left-2 rounded-md bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+                    <span className={cn("absolute bottom-2.5 left-2 px-1.5 py-0.5 text-[11px] font-medium text-white", label)}>
                         Ep {nextAir.episode} in {timeUntil(nextAir.timeUntilAiring)}
                     </span>
                 )}
 
                 {showProgress && listEntry && total > 0 && progress > 0 && progress < total && (
                     <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                        <div className="h-full rounded-r-full bg-brand shadow-[0_0_8px_var(--brand)]" style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
+                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full shadow-[0_0_8px_var(--brand)]")} style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
                     </div>
                 )}
             </div>
@@ -124,6 +138,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
 function CardMenu({ menu, className, children }: { menu: React.ReactNode; className?: string; children: React.ReactNode }) {
     const [at, setAt] = useState<{ x: number; y: number } | null>(null) // in the card
     const focused = useRef<Element | null>(null)
+    const classic = useClassic()
     return (
         <div
             className={cn("group/card relative", className)}
@@ -162,7 +177,10 @@ function CardMenu({ menu, className, children }: { menu: React.ReactNode; classN
                     <IconButton
                         label="More options"
                         size="xs"
-                        className="absolute top-1.5 right-1.5 rounded-lg bg-black/65 text-white opacity-0 backdrop-blur-sm group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+                        className={cn(
+                            "absolute top-1.5 right-1.5 text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100",
+                            classic ? "rounded-md bg-black/70" : "rounded-lg bg-black/65 backdrop-blur-sm",
+                        )}
                     >
                         <Ellipsis className="size-4" />
                     </IconButton>
@@ -184,9 +202,10 @@ export function MediaGrid({ children, className, size = "md" }: { children: Reac
 }
 
 export function MediaCardSkeleton() {
+    const classic = useClassic()
     return (
         <div className="flex flex-col gap-2.5">
-            <div className="shimmer aspect-[2/3] rounded-xl" />
+            <div className={cn("shimmer aspect-[2/3]", classic ? "rounded-lg" : "rounded-xl")} />
             <div className="shimmer h-3.5 w-3/4 rounded" />
         </div>
     )

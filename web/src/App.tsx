@@ -18,10 +18,10 @@ import { connectEvents, setNavigate } from "./lib/events"
 import { useStatus } from "./lib/queries"
 import { miniRequest, takeHandedPlay } from "./lib/pip"
 import { passwordStore, playerStore, useStore } from "./lib/store"
-import { applyTheme, holidayStore, resolveTheme, themePreviewStore } from "./lib/themes"
+import { applyTheme, holidayStore, resolveTheme, themePreviewStore, useClassic } from "./lib/themes"
 import { keepFocus, openPage } from "./lib/pages"
 import { initTV, tv } from "./lib/tv"
-import { setTitleLanguage } from "./lib/utils"
+import { cn, setTitleLanguage } from "./lib/utils"
 import HomePage from "./pages/Home"
 
 const EntryPage = lazy(() => import("./pages/Entry"))
@@ -112,6 +112,8 @@ export default function App() {
     const saved = useMemo(() => resolveTheme(ui), [ui, hour])
     useHolidayNotice(ui && !mini ? saved.holiday : null, ui?.seasonal ?? "auto")
     const playing = useStore(playerStore, p => !!p)
+    // Before 2.0's look: its plain panel, no holiday decorations.
+    const classic = useClassic()
 
     // Anime titles in the language chosen in Settings, set before the pages
     // render: they're drawn again when it changes (keyed by it).
@@ -134,8 +136,14 @@ export default function App() {
                 {/* The pages: a panel inset in the window, next to the sidebar.
                     Its background is behind them (with a holiday's art). */}
                 <div className="relative min-w-0 flex-1 py-2 pr-2">
-                    <HolidayBackdrop holiday={ui ? look.holiday : null} />
-                    <main id="main-scroll" className="relative h-full overflow-x-hidden overflow-y-auto rounded-2xl border border-line shadow-[0_0_0_1px_rgb(0_0_0/0.35),0_18px_50px_-20px_rgb(0_0_0/0.8)]">
+                    {!classic && <HolidayBackdrop holiday={ui ? look.holiday : null} />}
+                    <main
+                        id="main-scroll"
+                        className={cn(
+                            "relative h-full overflow-x-hidden overflow-y-auto border border-line",
+                            classic ? "rounded-xl bg-bg" : "rounded-2xl shadow-[0_0_0_1px_rgb(0_0_0/0.35),0_18px_50px_-20px_rgb(0_0_0/0.8)]",
+                        )}
+                    >
                         <Suspense
                             fallback={
                                 <div className="grid h-full place-items-center">
@@ -167,7 +175,7 @@ export default function App() {
                             </Routes>
                         </Suspense>
                     </main>
-                    <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} />
+                    {!classic && <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} />}
                 </div>
             </div>
             <NowPlaying />

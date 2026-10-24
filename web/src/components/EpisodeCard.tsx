@@ -1,4 +1,5 @@
 import { Check, CheckCheck, Clock, HardDrive, Info, Minus, Play } from "lucide-react"
+import { useClassic } from "@/lib/themes"
 import { cn, formatDuration, img } from "@/lib/utils"
 import { Tooltip } from "./ui"
 
@@ -23,6 +24,7 @@ type Props = {
 }
 
 export function EpisodeCard({ image, number, title, subtitle, runtime, watched, hasFile, progress, resumeAt, aired = true, blur, large, onClick, actions, onRemove, onInfo, className }: Props) {
+    const classic = useClassic()
     return (
         <div
             role="button"
@@ -41,9 +43,9 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 e.preventDefault()
                 onClick?.()
             }}
-            className={cn("group/ep focus-ring flex cursor-pointer flex-col gap-2.5 rounded-xl outline-none", !aired && "cursor-default opacity-50", className)}
+            className={cn("group/ep focus-ring flex cursor-pointer flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-xl", !aired && "cursor-default opacity-50", className)}
         >
-            <div className="relative aspect-video overflow-hidden rounded-xl bg-surface-2 shadow-[0_8px_24px_-14px_rgb(0_0_0/0.8)]">
+            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-lg" : "rounded-xl shadow-[0_8px_24px_-14px_rgb(0_0_0/0.8)]")}>
                 {image ? (
                     <img
                         src={img(image)}
@@ -58,7 +60,13 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 ) : (
                     <div className="grid size-full place-items-center bg-surface-3 text-3xl font-semibold text-white/15 tabular-nums">{number}</div>
                 )}
-                <div data-tv-ring className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-white/[0.08] transition-[box-shadow] duration-300 ring-inset group-hover/ep:ring-[color-mix(in_oklab,var(--brand)_45%,transparent)]" />
+                <div
+                    data-tv-ring
+                    className={cn(
+                        "pointer-events-none absolute inset-0 ring-1 transition-[box-shadow] duration-300 ring-inset",
+                        classic ? "rounded-lg ring-white/[0.07] group-hover/ep:ring-white/20" : "rounded-xl ring-white/[0.08] group-hover/ep:ring-[color-mix(in_oklab,var(--brand)_45%,transparent)]",
+                    )}
+                />
                 {aired && (
                     <div className="absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-200 group-hover/ep:opacity-100">
                         <span className={cn("grid place-items-center rounded-full bg-white/95 text-neutral-950 shadow-lg shadow-black/40", large ? "size-14" : "size-11")}>
@@ -121,7 +129,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 )}
                 {!!progress && progress > 0 && (
                     <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                        <div className="h-full rounded-r-full bg-brand shadow-[0_0_8px_var(--brand)]" style={{ width: `${Math.min(100, progress * 100)}%` }} />
+                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full shadow-[0_0_8px_var(--brand)]")} style={{ width: `${Math.min(100, progress * 100)}%` }} />
                     </div>
                 )}
             </div>

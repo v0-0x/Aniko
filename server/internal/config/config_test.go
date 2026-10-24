@@ -157,8 +157,14 @@ func TestThemeSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	ui := s.Get().UI
-	if ui.ColorTheme != "kumo" || ui.Seasonal != "auto" || !ui.SeasonalEffects || ui.AccentColor != "#22c3a6" {
+	if ui.ColorTheme != "kumo" || ui.Seasonal != "auto" || !ui.SeasonalEffects || ui.AccentColor != "#22c3a6" || ui.ClassicLook {
 		t.Fatalf("old settings: %+v", ui)
+	}
+	// The classic look is kept.
+	next := s.Get()
+	next.UI.ClassicLook = true
+	if got, err := s.Save(next); err != nil || !got.UI.ClassicLook || !s.Get().UI.ClassicLook {
+		t.Fatalf("classic look: %+v, %v", got.UI, err)
 	}
 	for _, c := range []struct{ theme, seasonal, wantTheme, wantSeasonal string }{
 		{"midnight", "off", "midnight", "off"},

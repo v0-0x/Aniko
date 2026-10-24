@@ -237,6 +237,8 @@ export type Settings = {
         colorTheme?: string
         seasonal?: string
         seasonalEffects?: boolean
+        // Kumo's look from before 2.0.
+        classicLook?: boolean
     }
     discord: { richPresence: boolean; clientId: string }
     extensions: { marketplaceUrl: string; autoUpdate: boolean }
