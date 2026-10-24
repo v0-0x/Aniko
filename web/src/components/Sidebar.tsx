@@ -19,7 +19,7 @@ import {
     Settings as SettingsIcon,
     UserRound,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { api } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
@@ -66,6 +66,9 @@ type Item = { to: string; label: string; icon: React.ReactNode; badge?: number; 
 
 // Labels from 1024px wide; narrower, only the icons, named by tooltips.
 const WIDE = "(min-width: 1024px)"
+// A short window (a laptop's): the groups without their names, closer.
+const SHORT = "(max-height: 880px)"
+const FADE = "linear-gradient(to bottom, #000 calc(100% - 36px), transparent)"
 
 export function Sidebar() {
     const { data: status } = useStatus()
@@ -77,9 +80,28 @@ export function Sidebar() {
     const navigate = useNavigate()
     const qc = useQueryClient()
     const wide = useMediaQuery(WIDE)
+    const short = useMediaQuery(SHORT)
     const settings = status?.settings
     // Before 2.0: no group names, the open page in plain white.
     const classic = useClassic()
+    // Links that don't fit scroll: they fade out at the bottom while there
+    // are more below, so they aren't taken for all of them.
+    const navRef = useRef<HTMLElement>(null)
+    const [more, setMore] = useState(false)
+    useEffect(() => {
+        const nav = navRef.current
+        if (!nav) return
+        const check = () => setMore(nav.scrollTop + nav.clientHeight < nav.scrollHeight - 2)
+        const ro = new ResizeObserver(check)
+        ro.observe(nav)
+        for (const group of nav.children) ro.observe(group)
+        nav.addEventListener("scroll", check, { passive: true })
+        check()
+        return () => {
+            ro.disconnect()
+            nav.removeEventListener("scroll", check)
+        }
+    }, [])
     const holiday = useStore(holidayStore)
 
     const activeDownloads = (downloads ?? []).filter(d => ["queued", "resolving", "downloading"].includes(d.status)).length
@@ -186,11 +208,15 @@ export function Sidebar() {
                 {wide && <KumoWordmark className="h-[18px] w-auto text-fg" />}
             </button>
 
-            <nav className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (classic ? "gap-4" : tv ? "gap-3" : "gap-5") : "items-center gap-3")}>
+            <nav
+                ref={navRef}
+                className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (classic || short ? "gap-4" : tv ? "gap-3" : "gap-5") : "items-center gap-3")}
+                style={more ? { maskImage: FADE, WebkitMaskImage: FADE } : undefined}
+            >
                 {groups.map((g, i) => (
                     <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", (!wide || (tv && !classic)) && i > 0 && "border-t border-line pt-3")}>
                         {/* Their names; not on a TV, whose screen is short. */}
-                        {wide && !tv && !classic && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
+                        {wide && !tv && !classic && !short && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
                         {g.items.map(link)}
                     </div>
                 ))}
