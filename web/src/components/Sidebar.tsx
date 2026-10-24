@@ -28,7 +28,7 @@ import { notificationsMutedStore, searchOpenStore, torrentCountStore, useStore }
 import { holidayStore } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn, img } from "@/lib/utils"
-import { AppearanceMenu } from "./AppearanceMenu"
+import { ThemesMenu } from "./ThemesMenu"
 import { HolidayOnLogo } from "./HolidayBadge"
 import { LoginDialog } from "./LoginDialog"
 import { PluginTrays } from "./plugins/PluginTrays"
@@ -177,17 +177,18 @@ export function Sidebar() {
                 {wide && <KumoWordmark className="h-[18px] w-auto text-fg" />}
             </button>
 
-            <nav className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? "gap-5" : "items-center gap-3")}>
+            <nav className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (tv ? "gap-3" : "gap-5") : "items-center gap-3")}>
                 {groups.map((g, i) => (
-                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", !wide && i > 0 && "border-t border-line pt-3")}>
-                        {wide && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
+                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", (!wide || tv) && i > 0 && "border-t border-line pt-3")}>
+                        {/* Their names; not on a TV, whose screen is short. */}
+                        {wide && !tv && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
                         {g.items.map(link)}
                     </div>
                 ))}
             </nav>
 
             <div className={cn("flex flex-col gap-0.5 border-t border-line pt-3", !wide && "items-center")}>
-                <AppearanceMenu wide={wide} />
+                <ThemesMenu wide={wide} />
                 <PluginTrays />
                 <div className={cn("flex gap-0.5", wide ? "items-center" : "flex-col-reverse items-center")}>
                     <div className={wide ? "min-w-0 flex-1" : undefined}>{link({ to: "/settings", label: "Settings", icon: <SettingsIcon /> })}</div>

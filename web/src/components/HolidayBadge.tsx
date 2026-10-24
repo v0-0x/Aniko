@@ -5,7 +5,7 @@ import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 
 // The holiday's little drawing: on Kumo's logo in the sidebar, and in the
-// Appearance menu (AppearanceMenu).
+// Themes menu (ThemesMenu).
 export function HolidayIcon({ id, className }: { id: string; className?: string }) {
     const common = { viewBox: "0 0 32 32", className, "aria-hidden": true } as const
     switch (id) {
@@ -97,7 +97,7 @@ export function useHolidayNotice(holiday: Holiday | null, seasonal: string) {
             return // nowhere to remember it: not said each time
         }
         toast(`Kumo's ${holiday.name} theme is on`, {
-            description: `Its colors and ${holiday.effectName.toLowerCase()}, ${holiday.when.replace(/^In /, "in ").replace(/^January/, "on January")}. The Appearance menu in the sidebar changes it.`,
+            description: `Its colors and ${holiday.effectName.toLowerCase()}, ${holiday.when.replace(/^In /, "in ").replace(/^January/, "on January")}. Change it from Themes in the sidebar.`,
             duration: 12000,
             action: { label: "Turn off", onClick: () => save.mutate({ ...settings, ui: { ...settings.ui, seasonal: "off" } }) },
         })

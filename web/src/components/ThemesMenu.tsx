@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils"
 import { HolidayIcon } from "./HolidayBadge"
 import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Tooltip } from "./ui"
 
-// The sidebar's Appearance menu: every color theme, the holiday themes (by
-// the date, off, or one always) and their animation, changed at once and
-// the menu left open to try another. Settings › User Interface has the same.
-export function AppearanceMenu({ wide }: { wide: boolean }) {
+// The sidebar's Themes menu: every color theme, the holiday themes (by the
+// date, off, or one always) and their animation, changed at once and the
+// menu left open to try another. Settings › User Interface has the same.
+export function ThemesMenu({ wide }: { wide: boolean }) {
     const ui = useSettings()?.ui
     const saveUI = useSaveUI()
     const navigate = useNavigate()
@@ -20,23 +20,22 @@ export function AppearanceMenu({ wide }: { wide: boolean }) {
     const effects = ui?.seasonalEffects ?? true
     // What "by the date" is now.
     const today = activeHoliday("auto")
-    const current = COLOR_THEMES.find(t => t.id === theme) ?? COLOR_THEMES[0]
+    // In the theme's own colors: its accent (the holiday's while one is on)
+    // tints it, and its drawing (or a palette) leads.
+    const icon = holiday ? <HolidayIcon id={holiday.id} className="size-4" /> : <Palette className="size-4 stroke-[1.9] text-brand-strong" />
     const button = (
         <DropdownTrigger asChild>
             <button
-                aria-label="Appearance"
+                aria-label="Themes"
                 className={cn(
-                    "focus-ring flex shrink-0 items-center rounded-lg text-[13.5px] font-medium text-muted transition-colors hover:bg-white/[0.05] hover:text-fg data-[state=open]:bg-white/[0.07] data-[state=open]:text-fg",
-                    wide ? "h-10 gap-3 px-2.5" : "size-10 justify-center",
+                    "focus-ring group flex shrink-0 items-center rounded-xl text-[13.5px] font-medium text-fg transition-[background-color,box-shadow]",
+                    "bg-[linear-gradient(135deg,color-mix(in_oklab,var(--brand)_18%,transparent),color-mix(in_oklab,var(--brand)_4%,transparent))] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_26%,transparent)]",
+                    "hover:shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_45%,transparent)] data-[state=open]:shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_55%,transparent)]",
+                    wide ? "h-10 gap-2.5 pr-3 pl-2" : "size-10 justify-center",
                 )}
             >
-                {holiday ? <HolidayIcon id={holiday.id} className="size-[18px] shrink-0" /> : <Palette className="size-[18px] shrink-0 stroke-[1.75]" />}
-                {wide && (
-                    <span className="min-w-0 flex-1 text-left">
-                        <span className="block truncate leading-tight">Appearance</span>
-                        <span className="block truncate text-[11px] leading-tight font-normal text-subtle">{holiday ? `${holiday.name} · ${current.name}` : current.name}</span>
-                    </span>
-                )}
+                <span className={cn("grid shrink-0 place-items-center rounded-lg", wide && "size-7 bg-[color-mix(in_oklab,var(--brand)_20%,transparent)]")}>{icon}</span>
+                {wide && <span className="min-w-0 flex-1 truncate text-left">Themes</span>}
             </button>
         </DropdownTrigger>
     )
@@ -45,7 +44,7 @@ export function AppearanceMenu({ wide }: { wide: boolean }) {
             {wide ? (
                 button
             ) : (
-                <Tooltip content="Appearance" side="right">
+                <Tooltip content="Themes" side="right">
                     {button}
                 </Tooltip>
             )}

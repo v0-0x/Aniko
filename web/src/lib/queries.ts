@@ -49,7 +49,7 @@ export function useSaveSettings() {
     })
 }
 
-// Changes UI settings at once, without a toast: the sidebar's Appearance
+// Changes UI settings at once, without a toast: the sidebar's Themes
 // menu, where colors are tried one after another. The page changes before
 // the server answers; an error puts the saved ones back.
 export function useSaveUI() {
