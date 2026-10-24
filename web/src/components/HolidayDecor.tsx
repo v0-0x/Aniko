@@ -3,10 +3,11 @@ import type { Holiday } from "@/lib/themes"
 
 // The holiday themes' decorations (lib/themes.ts), around the pages:
 // - HolidayBackdrop: the page panel's background, with the holiday's art
-//   behind the pages (Halloween's moon and cobweb, a cherry branch...), still
-//   while they scroll.
-// - HolidayGarland: what hangs along the panel's top edge, over the pages
-//   (Christmas lights, summer lanterns). Nothing can be clicked on either.
+//   behind the pages (Halloween's moon, a cherry branch...), still while
+//   they scroll. Pages with artwork (Home's banner) cover it.
+// - HolidayGarland: what hangs at the panel's top edge, over the pages, so
+//   every page shows it the same (Christmas lights, summer lanterns,
+//   Halloween's cobweb in the corner). Nothing can be clicked on either.
 
 export function HolidayBackdrop({ holiday }: { holiday: Holiday | null }) {
     return (
@@ -38,10 +39,29 @@ export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; 
         setWidth(el.clientWidth)
         return () => ro.disconnect()
     }, [kind])
+    if (holiday?.id === "halloween") return <Cobweb />
     if (!kind) return null
     return (
         <div ref={ref} aria-hidden className="pointer-events-none absolute top-2 right-2 left-0 z-[5] h-16 overflow-hidden rounded-t-[14px]">
             {width > 0 && (kind === "lights" ? <Lights width={width} animate={animate} /> : <Lanterns width={width} animate={animate} />)}
+        </div>
+    )
+}
+
+// A cobweb in the panel's top left corner, its spider down a thread in the
+// pages' margin.
+function Cobweb() {
+    return (
+        <div aria-hidden className="pointer-events-none absolute top-2 left-0 z-[5] size-[170px] overflow-hidden rounded-tl-[14px]">
+            <svg width="170" height="170">
+                <path d={cobweb(120)} fill="none" stroke="#e9d5ff" strokeOpacity="0.2" strokeWidth="0.9" />
+                <line x1="12" y1="12" x2="12" y2="136" stroke="#e9d5ff" strokeOpacity="0.24" strokeWidth="0.8" />
+                <g transform="translate(12 144)" fill="#a78bfa" opacity="0.6">
+                    <ellipse rx="3.5" ry="4.5" />
+                    <circle cy="-5.5" r="2.4" />
+                    <path d="M-3-1-8-5M-3 1-9 1M-3 3-8 7M3-1 8-5M3 1 9 1M3 3 8 7" stroke="#a78bfa" strokeWidth="1" />
+                </g>
+            </svg>
         </div>
     )
 }
@@ -205,16 +225,6 @@ const ART: Record<string, React.ReactNode> = {
                 <circle cx="136" cy="84" r="8" fill="#000" opacity="0.06" />
                 <circle cx="163" cy="108" r="11" fill="#000" opacity="0.05" />
                 <circle cx="158" cy="78" r="5" fill="#000" opacity="0.06" />
-            </svg>
-            {/* A cobweb in the top left corner, its spider down a thread. */}
-            <svg className="absolute top-0 left-0" width="200" height="230">
-                <path d={cobweb(150)} fill="none" stroke="#e9d5ff" strokeOpacity="0.16" strokeWidth="0.9" />
-                <line x1="16" y1="16" x2="16" y2="176" stroke="#e9d5ff" strokeOpacity="0.2" strokeWidth="0.8" />
-                <g transform="translate(16 184)" fill="#a78bfa" opacity="0.5">
-                    <ellipse rx="4" ry="5" />
-                    <circle cy="-6" r="2.6" />
-                    <path d="M-3-1-9-5M-3 1-10 1M-3 3-9 7M3-1 9-5M3 1 10 1M3 3 9 7" stroke="#a78bfa" strokeWidth="1" />
-                </g>
             </svg>
         </>
     ),
