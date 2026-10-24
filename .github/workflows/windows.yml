@@ -17,7 +17,7 @@
 # commit updates that commit's release.
 #
 # Channels: each build is a beta, the pre-release "Kumo <version> beta for
-# Windows", which only copies with Settings › About & updates › Beta updates
+# Windows", which only copies with Settings › Updates & about › Beta updates
 # on are offered, unless the pushed commit's message has [stable] in it or
 # the workflow is run by hand with channel "stable": then it's a release for
 # everyone (and the repository's latest). Running a beta's commit again as
@@ -278,7 +278,7 @@ jobs:
           $notes = $notes.Replace("{guide}", "$repo/blob/$env:GITHUB_SHA/packaging/windows/README.md")
           $notes = $notes.Replace("{readme}", "$repo/blob/$env:GITHUB_SHA/README.md#install-arch-linux")
           $notes = $notes.Replace("{sha}", $env:GITHUB_SHA).Replace("{run}", $env:GITHUB_RUN_NUMBER).Replace("{runurl}", "$repo/actions/runs/$env:GITHUB_RUN_ID")
-          if ($beta) { $notes = "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › About & updates › Beta updates** on. It may have rough edges; the stable releases are the ones without this note.`n`n" + $notes }
+          if ($beta) { $notes = "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note.`n`n" + $notes }
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
           Set-Content -Path $notesFile -Value $notes -Encoding utf8
           $files = @("dist/windows/release/$env:INSTALLER", "dist/windows/release/$env:PORTABLE")

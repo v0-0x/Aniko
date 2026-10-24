@@ -23,7 +23,7 @@ func InstallHint(tool string) string {
 	if runtime.GOOS == "darwin" {
 		switch tool {
 		case "ffmpeg", "yt-dlp", "ani-cli":
-			return "Settings › App › Programs › Install downloads it"
+			return "Settings › Desktop app & programs › Install downloads it"
 		case "mpv":
 			return "get it from mpv.io, or brew install mpv on an Apple silicon Mac"
 		}

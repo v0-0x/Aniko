@@ -149,7 +149,7 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 		s.hub.Publish(events.ScanProgress, ScanProgress{Stage: "walking", Done: len(found), Message: "Found " + itoa(len(found)) + " files…"})
 	}
 	if len(walked) == 0 {
-		return nil, errors.New("no library directory found — set one in Settings › Local Anime Library")
+		return nil, errors.New("no library directory found — set one in Settings › Local library")
 	}
 
 	existing, err := s.Store.All()

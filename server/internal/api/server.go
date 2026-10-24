@@ -362,7 +362,7 @@ const webUIDisabledPage = `<!doctype html><html><head><meta charset="utf-8"><tit
 .c{max-width:440px;padding:32px;border:1px solid #23232e;border-radius:16px;background:#12121a;text-align:center}
 h1{font-size:20px;margin:0 0 8px}p{color:#9a9ab0;line-height:1.5}</style></head>
 <body><div class="c"><h1>The Kumo Web UI is turned off</h1>
-<p>Open the Kumo desktop app and enable <b>Settings › App › Web UI</b> to use Kumo from a browser.</p></div></body></html>`
+<p>Open the Kumo desktop app and enable <b>Settings › Network & web UI</b> to use Kumo from a browser.</p></div></body></html>`
 
 // ---------------------------------------------------------------------------
 // JSON helpers

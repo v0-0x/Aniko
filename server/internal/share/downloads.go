@@ -16,7 +16,7 @@ import (
 // episodes and torrents that Kumo downloads go to the host's library (and
 // come back shared). Made for a TV, which has no room for them, nor ani-cli
 // or a torrent client. When a host allows it, it becomes where that Kumo's
-// downloads go (Settings › Library sharing can change it back); when it
+// downloads go (Settings › Other devices can change it back); when it
 // stops, they're saved on that Kumo again.
 
 // What a guest sends a host to download.
@@ -82,7 +82,7 @@ func (s *Service) DownloadHost() (string, error) {
 		if name == "" {
 			name = "The other Kumo"
 		}
-		return "", fmt.Errorf("%s doesn't take downloads from this device any more (Settings › Library sharing)", name)
+		return "", fmt.Errorf("%s doesn't take downloads from this device any more (Settings › Other devices)", name)
 	}
 	return name, nil
 }

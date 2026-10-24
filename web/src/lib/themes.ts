@@ -1,4 +1,4 @@
-// The app's colors (Settings › User Interface › Theme) and the holiday
+// The app's colors (Settings › Appearance › Theme) and the holiday
 // themes that come on by themselves in their month: Christmas in December,
 // Halloween in October... (or always one, or none). The server keeps the
 // choice (ui.colorTheme, ui.seasonal, ui.seasonalEffects) and the names

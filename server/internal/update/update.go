@@ -463,7 +463,7 @@ func (c *Checker) describe(err error) (string, string) {
 	case errors.As(err, &ae) && (ae.status == http.StatusNotFound || ae.status == http.StatusUnauthorized):
 		hint := "If the repository is private, sign in with the GitHub CLI (gh auth login) and check again."
 		if c.GOOS == "windows" {
-			hint = "If the repository is private, sign in to GitHub: Settings › App › Programs › Install missing programs signs you in, or run gh auth login."
+			hint = "If the repository is private, sign in to GitHub: Settings › Desktop app & programs › Install missing programs signs you in, or run gh auth login."
 		}
 		return fmt.Sprintf("Kumo can't read github.com/%s (HTTP %d).", c.Repo, ae.status), hint
 	case errors.As(err, &ae) && ae.rateLimited:

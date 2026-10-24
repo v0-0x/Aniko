@@ -100,7 +100,7 @@ export default function TorrentsPage() {
                         </div>
                     )}
                     {!clientStatus?.connected && clientName && clientName !== "none" && clientStatus?.needsAuth && !host && (
-                        <Button variant="primary" icon={<Settings2 className="size-4" />} onClick={() => navigate("/settings?tab=torrent-client")}>
+                        <Button variant="primary" icon={<Settings2 className="size-4" />} onClick={() => navigate("/settings?tab=torrents")}>
                             Fix login in settings
                         </Button>
                     )}
@@ -121,7 +121,7 @@ export default function TorrentsPage() {
                 </EmptyState>
             )}
             {!host && (!clientName || clientName === "none") && (
-                <EmptyState icon={<Magnet className="size-6" />} title="Connect a torrent client" action={<Link to="/settings?tab=torrent-client"><Button variant="primary">Open settings</Button></Link>}>
+                <EmptyState icon={<Magnet className="size-6" />} title="Connect a torrent client" action={<Link to="/settings?tab=torrents"><Button variant="primary">Open settings</Button></Link>}>
                     Kumo works with qBittorrent (Web UI) and Transmission to download anime straight into your library.
                 </EmptyState>
             )}

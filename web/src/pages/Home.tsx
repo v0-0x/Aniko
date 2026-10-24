@@ -478,7 +478,7 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
                   done: paired,
                   icon: <FolderOpen className="size-5" />,
                   title: "Watch your computer's library",
-                  text: "On your computer's Kumo, open Settings › Devices, turn sharing on and share with this device. It shows up here by itself.",
+                  text: "On your computer's Kumo, open Settings › Other devices, turn sharing on and share with this device. It shows up here by itself.",
                   action: (
                       <Link to="/settings?tab=devices">
                           <Button size="sm">See devices</Button>
@@ -489,7 +489,7 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
                   done: loggedIn,
                   icon: <LogIn className="size-5" />,
                   title: "Use your AniList account",
-                  text: "Easiest from the computer: next to this device in its Settings › Devices, turn on “Share my AniList account”. Or log in here.",
+                  text: "Easiest from the computer: next to this device in its Settings › Other devices, turn on “Share my AniList account”. Or log in here.",
                   action: (
                       <Button size="sm" onClick={onLogin}>
                           Log in here

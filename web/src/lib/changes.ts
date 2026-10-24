@@ -6,18 +6,30 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 5,
+        title: "Settings, reorganized",
+        changes: [
+            {
+                title: "Easier to find",
+                text: "Settings are now in short pages under General, Watching, Finding anime, Devices & network and This computer, and there's a search box: type what you're looking for and change it right there.",
+                to: "/settings",
+            },
+            { title: "A smoother look", text: "Kumo 2.0, calmer: flatter buttons and panels, softer shadows and corners, closer to how the classic look felt." },
+        ],
+    },
+    {
         id: 4,
         title: "Classic look and beta updates",
         changes: [
             {
                 title: "Classic look",
-                text: "Liked Kumo better as it was before 2.0? Turn on Classic look in Themes in the sidebar, or in Settings › User Interface. The color and holiday themes work in both.",
-                to: "/settings?tab=ui",
+                text: "Liked Kumo better as it was before 2.0? Turn on Classic look in Themes in the sidebar, or in Settings › Appearance. The color and holiday themes work in both.",
+                to: "/settings?tab=appearance",
             },
             {
                 title: "Beta updates",
-                text: "New versions now come out as betas first. Want them early? Turn on Beta updates in Settings › About & updates; otherwise Kumo stays on the stable releases.",
-                to: "/settings?tab=about",
+                text: "New versions now come out as betas first. Want them early? Turn on Beta updates in Settings › Updates & about; otherwise Kumo stays on the stable releases.",
+                to: "/settings?tab=updates",
             },
             { title: "Smoother sidebar", text: "A cleaner Themes button, and on smaller laptop screens every link fits again." },
         ],
@@ -42,11 +54,11 @@ export const RELEASES: Release[] = [
         id: 2,
         title: "Themes, picture in picture and more",
         changes: [
-            { title: "Color themes", text: "Eight looks for Kumo, from Midnight blue to true Black for OLED screens.", to: "/settings?tab=ui" },
+            { title: "Color themes", text: "Eight looks for Kumo, from Midnight blue to true Black for OLED screens.", to: "/settings?tab=appearance" },
             {
                 title: "Holiday themes",
                 text: "Kumo dresses up by itself: bats in October, snow in December, hearts in February and more. Turn them off, or keep one all year, in Settings.",
-                to: "/settings?tab=ui",
+                to: "/settings?tab=appearance",
             },
             { title: "Picture in picture", text: "In the desktop app, an episode goes on in a small window on top of the others: p, or the button next to Fullscreen." },
             { title: "Movies, OVAs and specials", text: "Local library shows only TV series, movies, or OVAs, ONAs and specials when you like.", to: "/local" },
@@ -59,17 +71,17 @@ export const RELEASES: Release[] = [
             { title: "Wake your computer from the TV", text: "When the computer with your anime is asleep, Home on the TV has a button to wake it (with Wake-on-LAN on in its settings).", to: "/settings?tab=devices" },
             { title: "Stays awake while the TV plays", text: "The computer doesn't go to sleep while another device plays its anime." },
             { title: "Syncs by itself", text: "Continue watching catches up when the TV app opens or a device comes back on the network.", to: "/settings?tab=devices" },
-            { title: "Settings › Devices", text: "All your Kumo devices with their versions, Wake buttons, and a question when a new TV shows up.", to: "/settings?tab=devices" },
+            { title: "Settings › Other devices", text: "All your Kumo devices with their versions, Wake buttons, and a question when a new TV shows up.", to: "/settings?tab=devices" },
             { title: "Up next and Start over", text: "A card in the ending plays the next episode; Start over (or 0) goes back to the beginning." },
             { title: "Subtitles your way", text: "Size, background and position for each device, and their timing with z and x.", to: "/settings?tab=playback" },
             { title: "Previews on the seek bar", text: "A picture of the episode where you point, or where Left and Right go on the TV." },
             { title: "Skip recaps and previews", text: "Like openings and endings, by themselves or with a button.", to: "/settings?tab=playback" },
             { title: "Missing episodes", text: "The gaps in your library and the episodes aired since, with torrents a click away.", to: "/library?tab=missing" },
             { title: "Clean up", text: "How full the drive is, episodes watched a while ago, episodes there twice, and a trash to change your mind.", to: "/library?tab=cleanup" },
-            { title: "Alerts", text: "When a new episode of what you're watching airs, or an episode is ready to watch.", to: "/settings?tab=app" },
+            { title: "Alerts", text: "When a new episode of what you're watching airs, or an episode is ready to watch.", to: "/settings?tab=notifications" },
             { title: "What should I watch?", text: "The dice on Home picks something from your list.", to: "/" },
             { title: "Stats", text: "Your anime in numbers, and what you watched month by month.", to: "/stats" },
-            { title: "Backup and restore", text: "Your settings, history, list and more as one file.", to: "/settings?tab=app" },
+            { title: "Backup and restore", text: "Your settings, history, list and more as one file.", to: "/settings?tab=backup" },
         ],
     },
 ]

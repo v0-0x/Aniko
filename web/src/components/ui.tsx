@@ -15,21 +15,20 @@ type ButtonVariant = "primary" | "white" | "subtle" | "ghost" | "outline" | "dan
 type ButtonSize = "xs" | "sm" | "md" | "lg"
 
 const variants: Record<ButtonVariant, string> = {
-    // The accent, lit from above, with a glow of its color.
-    primary:
-        "bg-[linear-gradient(180deg,color-mix(in_oklab,var(--brand)_86%,white),var(--brand))] text-white shadow-[0_6px_18px_-8px_var(--brand),inset_0_1px_0_rgb(255_255_255/0.18)] hover:brightness-110",
-    white: "bg-white text-neutral-950 shadow-[0_6px_18px_-10px_rgb(255_255_255/0.6)] hover:bg-white/90",
-    subtle: "bg-white/[0.06] text-fg ring-1 ring-white/[0.05] ring-inset hover:bg-white/[0.1]",
+    // The accent, flat, with a faint light along its top edge.
+    primary: "bg-brand text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14)] hover:bg-[color-mix(in_oklab,var(--brand)_88%,white)]",
+    white: "bg-white text-neutral-950 hover:bg-white/90",
+    subtle: "bg-white/[0.065] text-fg hover:bg-white/[0.1]",
     ghost: "text-muted hover:text-fg hover:bg-white/[0.06]",
     outline: "border border-line-strong text-fg hover:bg-white/[0.05]",
-    danger: "bg-rose-500/12 text-rose-300 ring-1 ring-rose-400/15 ring-inset hover:bg-rose-500/20",
-    success: "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-400/15 ring-inset hover:bg-emerald-500/20",
+    danger: "bg-rose-500/12 text-rose-300 hover:bg-rose-500/20",
+    success: "bg-emerald-500/12 text-emerald-300 hover:bg-emerald-500/20",
 }
 const sizes: Record<ButtonSize, string> = {
-    xs: "h-7 px-2.5 text-xs gap-1.5 rounded-lg",
-    sm: "h-8 px-3 text-[13px] gap-1.5 rounded-[9px]",
-    md: "h-9 px-3.5 text-sm gap-2 rounded-[10px]",
-    lg: "h-11 px-5 text-[15px] gap-2 rounded-xl",
+    xs: "h-7 px-2.5 text-xs gap-1.5 rounded-md",
+    sm: "h-8 px-3 text-[13px] gap-1.5 rounded-lg",
+    md: "h-9 px-3.5 text-sm gap-2 rounded-[9px]",
+    lg: "h-11 px-5 text-[15px] gap-2 rounded-[10px]",
 }
 // The classic look's (before 2.0): flat, a little squarer.
 const classicVariants: Record<ButtonVariant, string> = {
@@ -105,10 +104,10 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
                     className={cn(
                         classic
                             ? "h-9 w-full rounded-lg border border-line bg-white/[0.035] px-3 text-sm text-fg placeholder:text-subtle"
-                            : "h-9 w-full rounded-[10px] border border-line bg-white/[0.03] px-3 text-sm text-fg shadow-[inset_0_1px_2px_rgb(0_0_0/0.25)] placeholder:text-subtle",
+                            : "h-9 w-full rounded-[9px] border border-line bg-white/[0.035] px-3 text-sm text-fg placeholder:text-subtle",
                         classic
                             ? "transition-[border-color,background-color] outline-none hover:border-line-strong focus:border-brand/70 focus:bg-white/[0.05] disabled:opacity-60"
-                            : "transition-[border-color,background-color,box-shadow] outline-none hover:border-line-strong focus:border-brand/60 focus:bg-white/[0.045] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_18%,transparent)] disabled:opacity-60",
+                            : "transition-[border-color,background-color,box-shadow] outline-none hover:border-line-strong focus:border-brand/60 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)] disabled:opacity-60",
                         icon && "pl-9",
                         className,
                     )}
@@ -130,7 +129,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttrib
             className={cn(
                 classic
                     ? "min-h-24 w-full rounded-lg border border-line bg-white/[0.035] px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color] hover:border-line-strong focus:border-brand/70"
-                    : "min-h-24 w-full rounded-[10px] border border-line bg-white/[0.03] px-3 py-2 text-sm text-fg shadow-[inset_0_1px_2px_rgb(0_0_0/0.25)] placeholder:text-subtle outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_18%,transparent)]",
+                    : "min-h-24 w-full rounded-[9px] border border-line bg-white/[0.035] px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)]",
                 className,
             )}
             {...props}
@@ -161,7 +160,7 @@ export function Select({
                 className={
                     classic
                         ? "h-9 w-full cursor-pointer appearance-none rounded-lg border border-line bg-white/[0.035] pr-9 pl-3 text-sm text-fg outline-none transition-[border-color] hover:border-line-strong focus:border-brand/70 disabled:opacity-60"
-                        : "h-9 w-full cursor-pointer appearance-none rounded-[10px] border border-line bg-white/[0.03] pr-9 pl-3 text-sm text-fg outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_18%,transparent)] disabled:opacity-60"
+                        : "h-9 w-full cursor-pointer appearance-none rounded-[9px] border border-line bg-white/[0.035] pr-9 pl-3 text-sm text-fg outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)] disabled:opacity-60"
                 }
             >
                 {options.map(o => (
@@ -240,14 +239,14 @@ export function EmptyState({ icon, title, children, action }: { icon?: React.Rea
         <div
             className={cn(
                 "flex flex-col items-center justify-center gap-2 px-6 py-14 text-center fade-in",
-                classic ? "rounded-xl bg-white/[0.02]" : "rounded-2xl border border-dashed border-line-strong bg-white/[0.015]",
+                classic ? "rounded-xl bg-white/[0.02]" : "rounded-[14px] bg-white/[0.025]",
             )}
         >
             {icon &&
                 (classic ? (
                     <div className="mb-1 text-subtle [&_svg]:size-6 [&_svg]:stroke-[1.5]">{icon}</div>
                 ) : (
-                    <div className="mb-1 grid size-12 place-items-center rounded-full bg-white/[0.05] text-muted ring-1 ring-white/[0.06] [&_svg]:size-5 [&_svg]:stroke-[1.75]">{icon}</div>
+                    <div className="mb-1 grid size-11 place-items-center rounded-full bg-white/[0.05] text-muted [&_svg]:size-5 [&_svg]:stroke-[1.6]">{icon}</div>
                 ))}
             <h3 className="text-[15px] font-semibold">{title}</h3>
             {children && <div className="max-w-md text-sm text-muted">{children}</div>}
@@ -300,7 +299,7 @@ export function SectionHeader({ title, subtitle, action, className }: { title: R
     return (
         <div className={cn("mb-4 flex items-end justify-between gap-4", className)}>
             <div>
-                <h2 className={cn("font-semibold tracking-tight", classic ? "text-xl" : "text-[1.3rem] leading-tight")}>{title}</h2>
+                <h2 className={cn("font-semibold tracking-tight", classic ? "text-xl" : "text-xl leading-tight")}>{title}</h2>
                 {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
             </div>
             {action}
@@ -347,7 +346,7 @@ export function Tabs<T extends string>({
                         <span
                             className={cn(
                                 "absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand transition-opacity",
-                                !classic && "shadow-[0_0_10px_var(--brand)]",
+                                !classic && "shadow-[0_0_6px_color-mix(in_oklab,var(--brand)_45%,transparent)]",
                                 value === t.value ? "opacity-100" : "opacity-0",
                             )}
                         />
@@ -359,7 +358,7 @@ export function Tabs<T extends string>({
         <div
             className={cn(
                 "no-scrollbar inline-flex max-w-full gap-0.5 overflow-x-auto",
-                classic ? "rounded-lg bg-white/[0.04] p-0.5" : "rounded-xl bg-white/[0.035] p-1 ring-1 ring-white/[0.04] ring-inset",
+                classic ? "rounded-lg bg-white/[0.04] p-0.5" : "rounded-[10px] bg-white/[0.04] p-[3px]",
                 className,
             )}
         >
@@ -369,8 +368,8 @@ export function Tabs<T extends string>({
                     onClick={() => onChange(t.value)}
                     className={cn(
                         "focus-ring flex h-7 items-center gap-1.5 px-3 text-[13px] font-medium whitespace-nowrap transition-[background-color,color,box-shadow] [&_svg]:size-3.5",
-                        classic ? "rounded-md" : "rounded-lg",
-                        value === t.value ? (classic ? "bg-white/[0.1] text-fg" : "bg-surface-4 text-fg shadow-[0_1px_3px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.06)]") : "text-muted hover:text-fg",
+                        classic ? "rounded-md" : "rounded-[7px]",
+                        value === t.value ? (classic ? "bg-white/[0.1] text-fg" : "bg-white/[0.1] text-fg shadow-[0_1px_2px_rgb(0_0_0/0.3)]") : "text-muted hover:text-fg",
                     )}
                 >
                     {t.icon}
@@ -396,7 +395,7 @@ export function Tooltip({ content, children, side = "top" }: { content: React.Re
                     sideOffset={8}
                     className={cn(
                         "z-[100] px-2 py-1 text-xs font-medium text-fg shadow-lg shadow-black/40 fade-in",
-                        classic ? "rounded-md bg-surface-4" : "rounded-lg border border-line-strong bg-surface-3",
+                        classic ? "rounded-md bg-surface-4" : "rounded-lg border border-line bg-surface-4",
                     )}
                 >
                     {content}
@@ -429,11 +428,11 @@ export function Dialog({
     return (
         <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
             <DialogPrimitive.Portal>
-                <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 fade-in", classic ? "bg-black/65" : "bg-black/60 backdrop-blur-[3px]")} />
+                <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 fade-in", classic ? "bg-black/65" : "bg-black/60 backdrop-blur-[2px]")} />
                 <DialogPrimitive.Content
                     className={cn(
                         "fixed top-1/2 left-1/2 z-50 flex max-h-[88vh] w-[min(92vw,560px)] -translate-x-1/2 -translate-y-1/2 flex-col border border-line-strong bg-surface-1 outline-none [animation:pop-in_0.16s_var(--ease)_both]",
-                        classic ? "rounded-xl shadow-2xl shadow-black/50" : "rounded-2xl [box-shadow:0_30px_80px_-20px_rgb(0_0_0/0.7),inset_0_1px_0_rgb(255_255_255/0.05)]",
+                        classic ? "rounded-xl shadow-2xl shadow-black/50" : "rounded-[14px] [box-shadow:0_24px_60px_-20px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.04)]",
                         className,
                     )}
                     aria-describedby={undefined}
@@ -441,14 +440,14 @@ export function Dialog({
                     {(title || description) && (
                         <div className={cn("flex items-start justify-between gap-4 px-6 pb-3", classic ? "pt-5" : "pt-6")}>
                             <div>
-                                {title && <DialogPrimitive.Title className={cn("font-semibold", classic ? "text-base" : "text-[17px] tracking-tight")}>{title}</DialogPrimitive.Title>}
+                                {title && <DialogPrimitive.Title className={cn("font-semibold", classic ? "text-base" : "text-base tracking-tight")}>{title}</DialogPrimitive.Title>}
                                 {description && <DialogPrimitive.Description className="mt-0.5 text-sm text-muted">{description}</DialogPrimitive.Description>}
                             </div>
                             <DialogPrimitive.Close
                                 aria-label="Close"
                                 className={cn(
                                     "focus-ring -mt-1 -mr-2 grid size-8 place-items-center text-muted transition-colors hover:text-fg",
-                                    classic ? "rounded-md hover:bg-white/[0.06]" : "rounded-full hover:bg-white/[0.08]",
+                                    classic ? "rounded-md hover:bg-white/[0.06]" : "rounded-lg hover:bg-white/[0.07]",
                                 )}
                             >
                                 <X className="size-4" />
@@ -456,7 +455,7 @@ export function Dialog({
                         </div>
                     )}
                     <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-2 pb-5">{children}</div>
-                    {footer && <div className={cn("flex justify-end gap-2 border-t border-line px-6 py-3.5", !classic && "rounded-b-2xl bg-white/[0.015]")}>{footer}</div>}
+                    {footer && <div className="flex justify-end gap-2 border-t border-line px-6 py-3.5">{footer}</div>}
                 </DialogPrimitive.Content>
             </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
@@ -492,7 +491,7 @@ export function DropdownContent({
                 onCloseAutoFocus={onCloseAutoFocus}
                 className={cn(
                     "z-[60] min-w-52 border border-line-strong bg-surface-2 pop-in origin-[var(--radix-dropdown-menu-content-transform-origin)]",
-                    classic ? "rounded-lg p-1 shadow-xl shadow-black/40" : "rounded-xl p-1.5 shadow-[0_18px_50px_-12px_rgb(0_0_0/0.7),inset_0_1px_0_rgb(255_255_255/0.05)]",
+                    classic ? "rounded-lg p-1 shadow-xl shadow-black/40" : "rounded-[10px] p-1 shadow-[0_14px_40px_-12px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.04)]",
                     className,
                 )}
             >
@@ -530,7 +529,7 @@ export function DropdownItem({
             disabled={disabled}
             className={cn(
                 "flex h-8 cursor-pointer items-center gap-2.5 text-[13px] outline-none select-none data-[disabled]:opacity-40",
-                classic ? "rounded-md px-2 data-[highlighted]:bg-white/[0.07]" : "rounded-lg px-2.5 data-[highlighted]:bg-white/[0.08]",
+                classic ? "rounded-md px-2 data-[highlighted]:bg-white/[0.07]" : "rounded-md px-2.5 data-[highlighted]:bg-white/[0.07]",
                 danger ? "text-rose-300" : "text-fg",
                 className,
             )}
@@ -543,13 +542,13 @@ export function DropdownItem({
 
 export function DropdownSeparator() {
     const classic = useClassic()
-    return <DropdownPrimitive.Separator className={cn("h-px bg-line", classic ? "my-1" : "-mx-1.5 my-1.5")} />
+    return <DropdownPrimitive.Separator className={cn("h-px bg-line", classic ? "my-1" : "-mx-1 my-1")} />
 }
 
 export function DropdownLabel({ children }: { children: React.ReactNode }) {
     const classic = useClassic()
     return (
-        <DropdownPrimitive.Label className={cn("pt-1.5 pb-1 text-subtle", classic ? "px-2 text-xs font-medium" : "px-2.5 text-[11px] font-semibold tracking-wide uppercase")}>
+        <DropdownPrimitive.Label className={cn("pt-1.5 pb-1 text-xs font-medium text-subtle", classic ? "px-2" : "px-2.5")}>
             {children}
         </DropdownPrimitive.Label>
     )
@@ -584,7 +583,7 @@ export function Popover({
                     collisionPadding={12}
                     className={cn(
                         "z-[60] max-h-[85vh] overflow-y-auto border border-line-strong bg-surface-1 p-4 outline-none pop-in origin-[var(--radix-popover-content-transform-origin)]",
-                        classic ? "rounded-xl shadow-xl shadow-black/40" : "rounded-2xl shadow-[0_18px_50px_-12px_rgb(0_0_0/0.7),inset_0_1px_0_rgb(255_255_255/0.05)]",
+                        classic ? "rounded-xl shadow-xl shadow-black/40" : "rounded-[14px] shadow-[0_14px_40px_-12px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.04)]",
                         className,
                     )}
                 >

@@ -43,13 +43,13 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
     const label = classic ? "rounded bg-black/70" : "rounded-md bg-black/65 backdrop-blur-sm"
 
     const card = (
-        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-xl", !menu && className)}>
+        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !menu && className)}>
             {/* Lifted a little under the pointer (not on a TV: it's slow at it). */}
             <div
                 className={cn(
                     "relative aspect-[2/3] overflow-hidden bg-surface-2",
-                    classic ? "rounded-lg" : "rounded-xl shadow-[0_8px_24px_-14px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out",
-                    !tv && !classic && "group-hover/card:-translate-y-1 group-hover/card:shadow-[0_18px_36px_-14px_rgb(0_0_0/0.9)]",
+                    classic ? "rounded-lg" : "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out",
+                    !tv && !classic && "group-hover/card:-translate-y-0.5 group-hover/card:shadow-[0_12px_28px_-14px_rgb(0_0_0/0.9)]",
                 )}
             >
                 {cover(media) && (
@@ -66,13 +66,13 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     data-tv-ring
                     className={cn(
                         "pointer-events-none absolute inset-0 ring-1 transition-[box-shadow] duration-300 ring-inset",
-                        classic ? "rounded-lg ring-white/[0.07] group-hover/card:ring-white/20" : "rounded-xl ring-white/[0.08] group-hover/card:ring-[color-mix(in_oklab,var(--brand)_45%,transparent)]",
+                        classic ? "rounded-lg ring-white/[0.07] group-hover/card:ring-white/20" : "rounded-[10px] ring-white/[0.07] group-hover/card:ring-white/[0.22]",
                     )}
                 />
 
                 <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
                     {behind > 0 && (
-                        <span className={cn("bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white", classic ? "rounded" : "rounded-md shadow-[0_2px_8px_-2px_var(--brand)]")}>{behind} new</span>
+                        <span className={cn("bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white", classic ? "rounded" : "rounded-md")}>{behind} new</span>
                     )}
                     {!!localCount && localCount > 0 && (
                         <span className={cn("flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums", label)}>
@@ -101,7 +101,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
 
                 {showProgress && listEntry && total > 0 && progress > 0 && progress < total && (
                     <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full shadow-[0_0_8px_var(--brand)]")} style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
+                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full")} style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
                     </div>
                 )}
             </div>
@@ -205,7 +205,7 @@ export function MediaCardSkeleton() {
     const classic = useClassic()
     return (
         <div className="flex flex-col gap-2.5">
-            <div className={cn("shimmer aspect-[2/3]", classic ? "rounded-lg" : "rounded-xl")} />
+            <div className={cn("shimmer aspect-[2/3]", classic ? "rounded-lg" : "rounded-[10px]")} />
             <div className="shimmer h-3.5 w-3/4 rounded" />
         </div>
     )

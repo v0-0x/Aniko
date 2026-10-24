@@ -1,13 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
     AppWindow,
+    Bell,
     BookOpen,
     Check,
     ChevronDown,
+    ChevronRight,
     Clapperboard,
     Copy,
     Cpu,
-    Download,
+    DatabaseBackup,
     Eye,
     EyeOff,
     FileClock,
@@ -15,7 +17,6 @@ import {
     FolderOpen,
     Gamepad2,
     HardDrive,
-    Info,
     LibraryBig,
     Magnet,
     MonitorPlay,
@@ -24,18 +25,22 @@ import {
     Network,
     Palette,
     Plus,
+    Puzzle,
     RefreshCw,
     Save,
+    Search as SearchIcon,
     Terminal,
     Trash2,
     Tv,
+    UserRound,
+    Wifi,
     X,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { createContext, isValidElement, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { LoginDialog } from "@/components/LoginDialog"
-import { Badge, Button, Dialog, Input, Select, Switch, Textarea } from "@/components/ui"
+import { Badge, Button, Dialog, EmptyState, Input, Select, Switch, Textarea } from "@/components/ui"
 import { versionName } from "@/components/UpdateBanner"
 import { whatsNewStore } from "@/components/WhatsNew"
 import { api, desktop, type DesktopPrefs } from "@/lib/api"
@@ -52,64 +57,99 @@ import type { Settings, SharingPeer, Status } from "@/lib/types"
 import { cn, compareVersions, copyText, formatBytes, img, relativeTime } from "@/lib/utils"
 
 type SectionId =
-    | "app"
-    | "ui"
-    | "library"
-    | "devices"
+    | "account"
+    | "appearance"
+    | "notifications"
+    | "updates"
     | "playback"
     | "mpv"
     | "transcode"
-    | "torrent-provider"
-    | "torrent-client"
-    | "streaming"
-    | "manga"
     | "discord"
+    | "library"
+    | "streaming"
+    | "torrents"
+    | "manga"
+    | "extensions"
+    | "devices"
+    | "network"
+    | "desktop"
+    | "backup"
     | "logs"
-    | "about"
 
-const NAV: { items: { id: SectionId; label: string; icon: React.ReactNode }[] }[] = [
+type NavItem = {
+    id: SectionId
+    label: string
+    icon: React.ReactNode
+    // What it's for, under its title.
+    description: string
+    // Other words people look for it by (search).
+    keywords?: string
+}
+
+// Settings in five groups, each page about one thing.
+const NAV: { title: string; items: NavItem[] }[] = [
     {
+        title: "General",
         items: [
-            { id: "app", label: "App", icon: <AppWindow /> },
-            { id: "ui", label: "User Interface", icon: <Palette /> },
-            { id: "library", label: "Local Anime Library", icon: <LibraryBig /> },
-            { id: "devices", label: "Devices", icon: <MonitorSmartphone /> },
+            { id: "account", label: "Account", icon: <UserRound />, description: "Your AniList account", keywords: "login log in anilist sign" },
+            { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors, holidays, the classic look and what's shown", keywords: "ui theme color dark classic look titles spoilers card size" },
+            { id: "notifications", label: "Notifications", icon: <Bell />, description: "Alerts for new episodes and finished downloads", keywords: "alerts notify" },
+            { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Kumo's version, updates and beta updates", keywords: "version beta about what's new" },
         ],
     },
     {
+        title: "Watching",
         items: [
-            { id: "playback", label: "Video Playback", icon: <Clapperboard /> },
-            { id: "mpv", label: "Desktop Media Player", icon: <MonitorPlay /> },
-            { id: "transcode", label: "Transcoding / Direct Play", icon: <Cpu /> },
+            { id: "playback", label: "Playback", icon: <Clapperboard />, description: "How episodes play, progress, audio and subtitles", keywords: "player video subtitles audio dub sub skip" },
+            { id: "mpv", label: "mpv player", icon: <MonitorPlay />, description: "The desktop media player Kumo can play in", keywords: "external player" },
+            { id: "transcode", label: "Video conversion", icon: <Cpu />, description: "So the in-app player plays every format", keywords: "transcoding direct play ffmpeg hardware gpu hevc" },
+            { id: "discord", label: "Discord", icon: <Gamepad2 />, description: "Show what you're watching on Discord", keywords: "rich presence status" },
         ],
     },
     {
+        title: "Finding anime",
         items: [
-            { id: "torrent-provider", label: "Torrent Provider", icon: <Magnet /> },
-            { id: "torrent-client", label: "Torrent Client", icon: <Download /> },
+            { id: "library", label: "Local library", icon: <LibraryBig />, description: "Your anime folders and how they're scanned", keywords: "folder files scan matching downloads" },
+            { id: "streaming", label: "Online streaming", icon: <Tv />, description: "ani-cli and streaming extensions", keywords: "ani-cli anicli sub dub stream" },
+            { id: "torrents", label: "Torrents", icon: <Magnet />, description: "Torrent search, your torrent client and the auto downloader", keywords: "qbittorrent transmission nyaa rss provider client" },
+            { id: "manga", label: "Manga", icon: <BookOpen />, description: "Reading manga with provider extensions", keywords: "reader" },
+            { id: "extensions", label: "Extensions", icon: <Puzzle />, description: "Where extensions come from", keywords: "marketplace plugins" },
         ],
     },
     {
+        title: "Devices & network",
         items: [
-            { id: "streaming", label: "Online Streaming", icon: <Tv /> },
-            { id: "manga", label: "Manga", icon: <BookOpen /> },
-            { id: "discord", label: "Discord", icon: <Gamepad2 /> },
+            { id: "devices", label: "Other devices", icon: <MonitorSmartphone />, description: "Kumo on your other computers and TVs: sharing, waking, syncing", keywords: "share sharing tv fire library wake sync" },
+            { id: "network", label: "Network & web UI", icon: <Wifi />, description: "Using Kumo from a browser or other devices at home", keywords: "lan port password browser web" },
         ],
     },
     {
+        title: "This computer",
         items: [
-            { id: "logs", label: "Logs & Cache", icon: <FileClock /> },
-            { id: "about", label: "About & updates", icon: <Info /> },
+            { id: "desktop", label: "Desktop app & programs", icon: <AppWindow />, description: "The window, the tray, starting at login, and the programs Kumo uses", keywords: "tray background startup login ffmpeg yt-dlp mpv install" },
+            { id: "backup", label: "Backup & data", icon: <DatabaseBackup />, description: "Back up and restore, and where Kumo keeps its data", keywords: "restore export import folder" },
+            { id: "logs", label: "Logs & cache", icon: <FileClock />, description: "Server logs and cached data", keywords: "debug clear" },
         ],
     },
 ]
 
-// Not in Kumo's Android app (a TV's): it has no mpv, Discord or ffmpeg.
-const NOT_ON_ANDROID: SectionId[] = ["mpv", "transcode", "discord"]
-const SHOWN_NAV = androidApp ? NAV.map(g => ({ items: g.items.filter(i => !NOT_ON_ANDROID.includes(i.id)) })) : NAV
+// Not in Kumo's Android app (a TV's): it has no mpv, Discord, ffmpeg or
+// desktop window.
+const NOT_ON_ANDROID: SectionId[] = ["mpv", "transcode", "discord", "desktop"]
+const SHOWN_NAV = androidApp ? NAV.map(g => ({ ...g, items: g.items.filter(i => !NOT_ON_ANDROID.includes(i.id)) })) : NAV
+const NAV_ITEMS = SHOWN_NAV.flatMap(g => g.items)
 
-const ALIASES: Record<string, SectionId> = { "anicli": "streaming", "online-streaming": "streaming" }
-const SECTION_IDS: string[] = SHOWN_NAV.flatMap(g => g.items.map(i => i.id))
+// Older links (and the names before the regrouping).
+const ALIASES: Record<string, SectionId> = {
+    app: "account",
+    ui: "appearance",
+    about: "updates",
+    "torrent-provider": "torrents",
+    "torrent-client": "torrents",
+    anicli: "streaming",
+    "online-streaming": "streaming",
+}
+const SECTION_IDS: string[] = NAV_ITEMS.map(i => i.id)
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -136,11 +176,13 @@ export default function SettingsPage() {
     const raw = params.get("tab") ?? "app"
     const tab = ALIASES[raw] ?? raw
     // Unknown tabs (old links, typos) open the first one instead of nothing.
-    const section = (SECTION_IDS.includes(tab) ? tab : "app") as SectionId
+    const section = (SECTION_IDS.includes(tab) ? tab : "account") as SectionId
     const save = useSaveSettings()
     const server = status?.settings
     // draft is what the form edits, base the server copy it was made from.
     const [draft, setDraft] = useState<Settings | null>(null)
+    // Search settings: every section's that match, at once.
+    const [query, setQuery] = useState("")
     const [base, setBase] = useState<Settings | null>(null)
     const reset = (s: Settings) => {
         setDraft(structuredClone(s))
@@ -182,7 +224,7 @@ export default function SettingsPage() {
 
     if (!draft || !status) return null
     const set = <K extends keyof Settings>(k: K, v: Partial<Settings[K]>) => setDraft(d => (d ? { ...d, [k]: { ...d[k], ...v } } : d))
-    const current = SHOWN_NAV.flatMap(g => g.items).find(i => i.id === section) ?? NAV[0].items[0]
+    const current = NAV_ITEMS.find(i => i.id === section) ?? NAV_ITEMS[0]
 
     const onSave = () => {
         const oldPort = status.settings.server.port
@@ -199,80 +241,100 @@ export default function SettingsPage() {
         })
     }
 
+    const sectionProps = { draft, set }
+    const searching = query.trim() !== ""
+    const navButton = (it: NavItem) => (
+        <button
+            key={it.id}
+            onClick={() => {
+                setQuery("")
+                setParams({ tab: it.id }, { replace: true })
+            }}
+            aria-current={!searching && section === it.id ? "page" : undefined}
+            className={cn(
+                "focus-ring flex h-8 items-center gap-2.5 px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:stroke-[1.75]",
+                classic
+                    ? cn("rounded-md", !searching && section === it.id ? "bg-white/[0.08] text-fg" : "text-muted hover:bg-white/[0.04] hover:text-fg")
+                    : cn("rounded-lg", !searching && section === it.id ? "bg-white/[0.07] text-fg [&>svg]:text-brand-strong" : "text-muted hover:bg-white/[0.05] hover:text-fg"),
+            )}
+        >
+            {it.icon}
+            <span className="truncate">{it.label}</span>
+        </button>
+    )
+
     return (
-        <div className="flex min-h-full flex-col gap-8 px-6 pt-8 pb-24 md:px-8 md:flex-row md:gap-8 lg:gap-12 xl:px-10">
-            <aside className="w-full shrink-0 md:sticky md:top-8 md:w-52 md:self-start lg:w-56">
-                <h1 className="mb-5 px-2.5 text-[1.75rem] font-semibold tracking-tight">Settings</h1>
-                <div className="flex flex-col gap-4">
-                    {SHOWN_NAV.map((g, i) => (
-                        <div key={i} className="flex flex-col gap-0.5">
-                            {g.items.map(it => (
-                                <button
-                                    key={it.id}
-                                    onClick={() => setParams({ tab: it.id }, { replace: true })}
-                                    className={cn(
-                                        "focus-ring flex h-8 items-center gap-2.5 px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:stroke-[1.75]",
-                                        classic
-                                            ? cn("rounded-md", section === it.id ? "bg-white/[0.08] text-fg" : "text-muted hover:bg-white/[0.04] hover:text-fg")
-                                            : cn(
-                                                  "rounded-lg",
-                                                  section === it.id
-                                                      ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
-                                                      : "text-muted hover:bg-white/[0.05] hover:text-fg",
-                                              ),
-                                    )}
-                                >
-                                    {it.icon}
-                                    {it.label}
-                                </button>
-                            ))}
+        <div className="flex min-h-full flex-col gap-6 px-6 pt-8 pb-24 md:flex-row md:gap-8 md:px-8 lg:gap-12 xl:px-10">
+            <aside className="no-scrollbar w-full shrink-0 md:sticky md:top-8 md:max-h-[calc(100vh-5rem)] md:w-56 md:self-start md:overflow-y-auto">
+                <h1 className="mb-4 px-2.5 text-[1.75rem] font-semibold tracking-tight">Settings</h1>
+                <div className="mb-4 md:px-0.5">
+                    <Input
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        onKeyDown={e => e.key === "Escape" && setQuery("")}
+                        placeholder="Search settings"
+                        aria-label="Search settings"
+                        icon={<SearchIcon className="size-4" />}
+                    />
+                </div>
+                {/* A short list on a phone: the sections in a menu. */}
+                <div className="md:hidden">
+                    <Select
+                        value={section}
+                        onChange={v => {
+                            setQuery("")
+                            setParams({ tab: v }, { replace: true })
+                        }}
+                        options={SHOWN_NAV.flatMap(g => g.items.map(it => ({ value: it.id, label: `${g.title} › ${it.label}` })))}
+                    />
+                </div>
+                <nav aria-label="Settings sections" className="hidden flex-col gap-5 md:flex">
+                    {SHOWN_NAV.map(g => (
+                        <div key={g.title} className="flex flex-col gap-0.5">
+                            <p className="px-2.5 pb-1 text-[11px] font-medium text-subtle">{g.title}</p>
+                            {g.items.map(navButton)}
                         </div>
                     ))}
-                </div>
-                <p className="mt-6 px-2.5 text-xs text-subtle">
+                </nav>
+                <p className="mt-6 hidden px-2.5 text-xs text-subtle md:block">
                     Kumo {status.version} · {platformName(status.platform)} · {status.client === "desktop" ? "Desktop" : status.client === "lan" ? "LAN" : "Web UI"}
                 </p>
             </aside>
 
             <section className="min-w-0 flex-1 lg:max-w-4xl">
-                <div className="mb-7 border-b border-line pb-5 lg:mt-[3.25rem]">
-                    <h2 className="text-xl font-semibold tracking-tight">{current.label}</h2>
-                    <p className="mt-0.5 text-sm text-muted">{SUBTITLES[current.id]}</p>
-                    {status.client === "lan" && (
-                        <p className="mt-3 rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-muted">
-                            You're using Kumo from another device: dimmed settings (folders, programs, network, logins) can only be changed on the computer it runs on.
-                        </p>
-                    )}
-                </div>
-                <div key={section} className="flex flex-col gap-8 fade-in">
-                    {section === "app" && <AppSection draft={draft} set={set} />}
-                    {section === "ui" && <UISection draft={draft} set={set} />}
-                    {section === "library" && <LibrarySection draft={draft} set={set} />}
-                    {section === "devices" && <DevicesSection draft={draft} set={set} />}
-                    {section === "playback" && <PlaybackSection draft={draft} set={set} />}
-                    {section === "mpv" && <MpvSection draft={draft} set={set} />}
-                    {section === "transcode" && <TranscodeSection draft={draft} set={set} />}
-                    {section === "torrent-provider" && <TorrentProviderSection draft={draft} set={set} />}
-                    {section === "torrent-client" && <TorrentClientSection draft={draft} set={set} />}
-                    {section === "streaming" && <StreamingSection draft={draft} set={set} />}
-                    {section === "manga" && <MangaSection draft={draft} set={set} />}
-                    {section === "discord" && <DiscordSection draft={draft} set={set} />}
-                    {section === "logs" && <LogsSection />}
-                    {section === "about" && <AboutSection />}
-                </div>
-                {section !== "logs" && section !== "about" && (
-                    <div className={cn("mt-8 flex items-center gap-3", dirty && "sticky bottom-6 z-20")}>
-                        <Button variant="white" icon={<Save className="size-4" />} loading={save.isPending} onClick={onSave} disabled={!dirty}>
-                            Save
-                        </Button>
-                        {dirty && (
-                            <>
-                                <span className="rounded-md border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[13px] text-muted shadow-lg shadow-black/30">Unsaved changes</span>
-                                <Button variant="ghost" size="sm" onClick={() => reset(status.settings)}>
-                                    Discard
-                                </Button>
-                            </>
-                        )}
+                {status.client === "lan" && (
+                    <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-muted lg:mt-[3.75rem]">
+                        You're using Kumo from another device: dimmed settings (folders, programs, network, logins) can only be changed on the computer it runs on.
+                    </p>
+                )}
+                {searching ? (
+                    <SearchResults query={query} sectionProps={sectionProps} onOpen={id => {
+                        setQuery("")
+                        setParams({ tab: id }, { replace: true })
+                    }} />
+                ) : (
+                    <>
+                        <div className={cn("mb-7", status.client !== "lan" && "lg:mt-[3.75rem]")}>
+                            <h2 className="text-xl font-semibold tracking-tight">{current.label}</h2>
+                            <p className="mt-1 text-sm text-muted">{current.description}</p>
+                        </div>
+                        <div key={section} className="flex flex-col gap-8 fade-in">
+                            <SectionBody id={section} {...sectionProps} />
+                        </div>
+                    </>
+                )}
+                {/* Only while there's something to save. */}
+                {dirty && (
+                    <div className="sticky bottom-6 z-20 mt-8 flex justify-center">
+                        <div className="flex items-center gap-2 rounded-full border border-line-strong bg-surface-2 py-1.5 pr-1.5 pl-4 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)] pop-in">
+                            <span className="mr-1 text-[13px] text-muted">Unsaved changes</span>
+                            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => reset(status.settings)}>
+                                Discard
+                            </Button>
+                            <Button variant="primary" size="sm" className="rounded-full" icon={<Save className="size-4" />} loading={save.isPending} onClick={onSave}>
+                                Save
+                            </Button>
+                        </div>
                     </div>
                 )}
             </section>
@@ -280,21 +342,123 @@ export default function SettingsPage() {
     )
 }
 
-const SUBTITLES: Record<SectionId, string> = {
-    app: "Account, server and network access",
-    ui: "Make Kumo look the way you like",
-    library: "Manage your local anime library",
-    devices: "Kumo on your other computers and TVs",
-    playback: "How episodes are played and tracked",
-    mpv: "Configure mpv, the desktop media player",
-    transcode: "Play every video format in the in-app player",
-    "torrent-provider": "Where torrents are searched",
-    "torrent-client": "Configure the torrent client",
-    streaming: "ani-cli and streaming extensions",
-    manga: "Read manga with provider extensions",
-    discord: "Show what you're watching on Discord",
-    logs: "Server logs and cached data",
-    about: "Kumo's version and updates",
+// One section's settings.
+function SectionBody({ id, draft, set }: { id: SectionId } & SectionProps) {
+    const props = { draft, set }
+    switch (id) {
+        case "account":
+            return <AccountSection {...props} />
+        case "appearance":
+            return <UISection {...props} />
+        case "notifications":
+            return <AlertsGroup {...props} />
+        case "updates":
+            return <AboutSection />
+        case "playback":
+            return <PlaybackSection {...props} />
+        case "mpv":
+            return <MpvSection {...props} />
+        case "transcode":
+            return <TranscodeSection {...props} />
+        case "discord":
+            return <DiscordSection {...props} />
+        case "library":
+            return <LibrarySection {...props} />
+        case "streaming":
+            return <StreamingSection {...props} />
+        case "torrents":
+            return (
+                <>
+                    <TorrentProviderSection {...props} />
+                    <TorrentClientSection {...props} />
+                </>
+            )
+        case "manga":
+            return <MangaSection {...props} />
+        case "extensions":
+            return <ExtensionsSection {...props} />
+        case "devices":
+            return <DevicesSection {...props} />
+        case "network":
+            return <NetworkSection {...props} />
+        case "desktop":
+            return <DesktopSection />
+        case "backup":
+            return <BackupSection />
+        case "logs":
+            return <LogsSection />
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Search: every section at once, showing only the settings that match (by
+// their names and descriptions, their group's or their section's). What's
+// found can be changed right there.
+
+type SearchState = { words: string[]; all: boolean }
+const SearchContext = createContext<SearchState | null>(null)
+
+// The words of a node's text (labels can be elements).
+function textOf(n: React.ReactNode): string {
+    if (n == null || typeof n === "boolean") return ""
+    if (typeof n === "string" || typeof n === "number") return String(n)
+    if (Array.isArray(n)) return n.map(textOf).join(" ")
+    if (isValidElement(n)) return textOf((n.props as { children?: React.ReactNode }).children)
+    return ""
+}
+
+const fold = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+// Each word starts a word of the texts ("port" finds Port, not import).
+const matches = (words: string[], ...texts: React.ReactNode[]) => {
+    const found = fold(texts.map(textOf).join(" ")).split(/[^\p{L}\p{N}]+/u)
+    return words.every(w => found.some(t => t.startsWith(w)))
+}
+
+// Whether a setting shows: always, unless searching and it doesn't match.
+function useShown(...texts: React.ReactNode[]) {
+    const search = useContext(SearchContext)
+    return !search || search.all || matches(search.words, ...texts)
+}
+
+// A section's matching settings; when none match but the section itself
+// does (its name, what it's for, its other words), all of it.
+function SearchSection({ item, words, sectionProps, onOpen }: { item: NavItem; words: string[]; sectionProps: SectionProps; onOpen: (id: SectionId) => void }) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [all, setAll] = useState(false)
+    useLayoutEffect(() => {
+        if (!all && !ref.current?.querySelector("[data-setting]") && matches(words, item.label, item.description, item.keywords)) setAll(true)
+    }, [all, words, item])
+    return (
+        <SearchContext.Provider value={{ words, all }}>
+            <div ref={ref} data-section className="flex flex-col gap-6">
+                <button onClick={() => onOpen(item.id)} className="focus-ring group -mb-2 flex items-center gap-2 self-start rounded-md text-left">
+                    <span className="text-muted [&>svg]:size-4">{item.icon}</span>
+                    <span className="text-lg font-semibold tracking-tight group-hover:underline">{item.label}</span>
+                    <ChevronRight className="size-4 text-subtle" />
+                </button>
+                <SectionBody id={item.id} {...sectionProps} />
+            </div>
+        </SearchContext.Provider>
+    )
+}
+
+function SearchResults({ query, sectionProps, onOpen }: { query: string; sectionProps: SectionProps; onOpen: (id: SectionId) => void }) {
+    const words = useMemo(() => fold(query).split(/[^\p{L}\p{N}]+/u).filter(Boolean), [query])
+    const ref = useRef<HTMLDivElement>(null)
+    const [found, setFound] = useState(true)
+    // Found anything? Counted once drawn (each setting decides for itself).
+    useLayoutEffect(() => {
+        setFound(!!ref.current?.querySelector("[data-setting]"))
+    })
+    const sections = NAV_ITEMS.filter(it => it.id !== "logs")
+    return (
+        <div ref={ref} className="settings-search flex flex-col gap-10 lg:mt-[3.75rem]">
+            {sections.map(it => (
+                <SearchSection key={it.id + query} item={it} words={words} sectionProps={sectionProps} onOpen={onOpen} />
+            ))}
+            {!found && <EmptyState icon={<SearchIcon />} title="No settings match">Try other words, or pick a section on the left.</EmptyState>}
+        </div>
+    )
 }
 
 type SectionProps = { draft: Settings; set: <K extends keyof Settings>(k: K, v: Partial<Settings[K]>) => void }
@@ -303,38 +467,52 @@ type SectionProps = { draft: Settings; set: <K extends keyof Settings>(k: K, v: 
 // Layout helpers
 
 function Group({ title, children, description }: { title?: string; description?: string; children: React.ReactNode }) {
-    return (
-        <div>
+    const search = useContext(SearchContext)
+    // The group's own name or words found: all of it.
+    const all = !!search && (search.all || (!!title && matches(search.words, title, description)))
+    const body = (
+        <div data-group data-all={all || undefined}>
             {title && <h3 className="mb-1 text-[15px] font-semibold">{title}</h3>}
             {description && <p className="mb-3 text-[13px] text-muted">{description}</p>}
             {!description && title && <div className="mb-3" />}
-            <div className="card divide-y divide-line">{children}</div>
+            <div data-group-body className="card divide-y divide-line">
+                {children}
+            </div>
         </div>
     )
+    return search ? <SearchContext.Provider value={{ ...search, all }}>{body}</SearchContext.Provider> : body
 }
 
 // wide: the value (e.g. a long path) takes the remaining space and wraps
-// instead of pushing out of the card.
-function Row({ label, help, children, wide }: { label: React.ReactNode; help?: React.ReactNode; children: React.ReactNode; wide?: boolean }) {
+// instead of pushing out of the card. keywords: other words it's found by.
+function Row({ label, help, children, wide, keywords }: { label: React.ReactNode; help?: React.ReactNode; children: React.ReactNode; wide?: boolean; keywords?: string }) {
+    if (!useShown(label, help, keywords)) return null
     return (
-        <div className="flex items-center justify-between gap-6 px-4 py-3.5">
+        <div data-setting className="flex items-center justify-between gap-6 px-4 py-3.5">
             <div className="min-w-0">
                 <p className="text-sm font-medium">{label}</p>
-                {help && <p className="mt-0.5 text-xs text-subtle">{help}</p>}
+                {help && <p className="mt-0.5 text-[12.5px] leading-snug text-muted">{help}</p>}
             </div>
             <div className={wide ? "flex min-w-0 flex-1 justify-end" : "shrink-0"}>{children}</div>
         </div>
     )
 }
 
-function Stack({ label, help, children }: { label: React.ReactNode; help?: React.ReactNode; children: React.ReactNode }) {
+function Stack({ label, help, children, keywords }: { label: React.ReactNode; help?: React.ReactNode; children: React.ReactNode; keywords?: string }) {
+    if (!useShown(label, help, keywords)) return null
     return (
-        <div className="flex flex-col gap-2 px-4 py-3.5">
+        <div data-setting className="flex flex-col gap-2 px-4 py-3.5">
             <p className="text-sm font-medium">{label}</p>
             {children}
-            {help && <p className="text-xs text-subtle">{help}</p>}
+            {help && <p className="text-[12.5px] leading-snug text-muted">{help}</p>}
         </div>
     )
+}
+
+// Something other than a Row or a Stack that searching should find by text.
+function Shown({ text, children }: { text: string; children: React.ReactNode }) {
+    if (!useShown(text)) return null
+    return <div data-setting>{children}</div>
 }
 
 function Password({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -351,15 +529,24 @@ function Password({ value, onChange, placeholder }: { value: string; onChange: (
 
 function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
     const [open, setOpen] = useState(false)
-    return (
-        <div className="card">
+    // Searching: open, so what's found in it shows.
+    const search = useContext(SearchContext)
+    const all = !!search && (search.all || matches(search.words, title))
+    const shown = open || !!search
+    const body = (
+        <div data-group data-all={all || undefined} className="card">
             <button onClick={() => setOpen(o => !o)} className="flex w-full items-center justify-between px-4 py-3.5 text-[15px] font-medium">
                 {title}
-                <ChevronDown className={cn("size-4 text-muted transition-transform duration-200", open && "rotate-180")} />
+                <ChevronDown className={cn("size-4 text-muted transition-transform duration-200", shown && "rotate-180")} />
             </button>
-            {open && <div className="divide-y divide-line border-t border-line">{children}</div>}
+            {shown && (
+                <div data-group-body className="divide-y divide-line border-t border-line">
+                    {children}
+                </div>
+            )}
         </div>
     )
+    return search ? <SearchContext.Provider value={{ ...search, all }}>{body}</SearchContext.Provider> : body
 }
 
 function DirPicker({ open, onOpenChange, onPick, start }: { open: boolean; onOpenChange: (v: boolean) => void; onPick: (p: string) => void; start?: string }) {
@@ -516,16 +703,15 @@ function LanAddresses({ status }: { status?: Status }) {
 // ---------------------------------------------------------------------------
 // Sections
 
-function AppSection({ draft, set }: SectionProps) {
+function AccountSection({ draft, set }: SectionProps) {
     const { data: status } = useStatus()
-    const [, setSearchParams] = useSearchParams()
     const [loginOpen, setLoginOpen] = useState(false)
     const qc = useQueryClient()
-    const isDesktop = status?.client === "desktop"
     const lan = status?.client === "lan"
     return (
         <>
             <Group title="AniList">
+                <Shown text="AniList account log in log out connected">
                 <div className="flex items-center justify-between gap-4 px-4 py-4">
                     {status?.user ? (
                         <div className="flex items-center gap-3">
@@ -564,13 +750,24 @@ function AppSection({ draft, set }: SectionProps) {
                         </Button>
                     )}
                 </div>
+                </Shown>
                 <Locked>
                     <Stack label="AniList client ID" help="Kumo opens anilist.co/api/v2/oauth/authorize?client_id=…&response_type=token">
                         <Input value={draft.anilist.clientId} onChange={e => set("anilist", { clientId: e.target.value })} />
                     </Stack>
                 </Locked>
             </Group>
+            <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
+        </>
+    )
+}
 
+function NetworkSection({ draft, set }: SectionProps) {
+    const { data: status } = useStatus()
+    const isDesktop = status?.client === "desktop"
+    const lan = status?.client === "lan"
+    return (
+        <>
             <Group title="Web UI & network" description="Kumo only ever talks to this computer and — if you allow it — your home network. Connections from the internet are always refused.">
                 {/* The Android app is its own window, on its own port. */}
                 {!androidApp && (
@@ -601,23 +798,14 @@ function AppSection({ draft, set }: SectionProps) {
                 )}
                 {!isDesktop && !lan && !androidApp && <p className="px-4 py-3 text-xs text-amber-200/80">Turning the Web UI off is only possible from the desktop app, so you can't lock yourself out.</p>}
             </Group>
+        </>
+    )
+}
 
-            <AlertsGroup draft={draft} set={set} />
-
-            {!androidApp && !lan && <BackupGroup />}
-
-            <Group title="Library sharing">
-                <Row label="Share libraries with Kumo on your other computers" help={draft.sharing.enabled ? "On: who gets this computer's library, and the libraries shared with it, are in Devices." : "In Devices: turn it on there, on each computer."}>
-                    <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "devices" })}>
-                        Open
-                    </Button>
-                </Row>
-            </Group>
-
-            <DesktopGroup />
-
-            {!androidApp && <ProgramsGroup />}
-
+function ExtensionsSection({ draft, set }: SectionProps) {
+    const navigate = useNavigate()
+    return (
+        <>
             <Group title="Extensions">
                 <Locked>
                     <Stack label="Marketplace URL" help="Any compatible extension index works.">
@@ -625,7 +813,32 @@ function AppSection({ draft, set }: SectionProps) {
                     </Stack>
                 </Locked>
             </Group>
+            <Group title="Your extensions">
+                <Row label="Installed extensions and the marketplace" help="Install, update, set up and remove extensions on the Extensions page." keywords="install update marketplace">
+                    <Button size="sm" variant="ghost" onClick={() => navigate("/extensions")}>
+                        Open
+                    </Button>
+                </Row>
+            </Group>
+        </>
+    )
+}
 
+function DesktopSection() {
+    return (
+        <>
+            <DesktopGroup />
+            <ProgramsGroup />
+        </>
+    )
+}
+
+function BackupSection() {
+    const { data: status } = useStatus()
+    const lan = status?.client === "lan"
+    return (
+        <>
+            {!androidApp && !lan && <BackupGroup />}
             <Group title="Data">
                 <Row label="Data folder" help="Database, cache and extension storage" wide>
                     <code title={status?.dataDir} className="min-w-0 rounded-lg bg-black/30 px-2 py-1 text-xs break-all">
@@ -633,7 +846,6 @@ function AppSection({ draft, set }: SectionProps) {
                     </code>
                 </Row>
             </Group>
-            <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
         </>
     )
 }
@@ -1232,7 +1444,7 @@ function VersionNote({ peer, mine }: { peer: SharingPeer; mine?: string }) {
         <p className="mt-1 text-xs text-amber-200/80">
             {c < 0
                 ? `Older than this one (Kumo ${mine}): update Kumo on ${peer.name} so everything works together. Its Home page has the update button.`
-                : `Newer than this one (Kumo ${mine}): update Kumo here so everything works together (Settings › About & updates).`}
+                : `Newer than this one (Kumo ${mine}): update Kumo here so everything works together (Settings › Updates & about).`}
         </p>
     )
 }
@@ -1494,7 +1706,7 @@ function TranscodeSection({ draft, set }: SectionProps) {
 function TorrentProviderSection({ draft, set }: SectionProps) {
     const { data: providers } = useQuery({ queryKey: ["torrent-providers"], queryFn: () => api.get<{ id: string; name: string; extension: boolean }[]>("/api/torrents/providers") })
     return (
-        <Group title="Search">
+        <Group title="Torrent search">
             <Row label="Default torrent provider" help="Install more from Extensions › Marketplace">
                 <Select className="w-56" value={draft.torrent.defaultProvider} onChange={v => set("torrent", { defaultProvider: v })} options={[{ value: "all", label: "All providers" }, ...(providers ?? []).map(p => ({ value: p.id, label: p.name + (p.extension ? " (extension)" : "") }))]} />
             </Row>
@@ -1576,39 +1788,44 @@ function TorrentClientSection({ draft, set }: SectionProps) {
     }
     return (
         <>
-            <div className="card p-4">
-                <p className="mb-2 text-sm font-medium">Default Torrent Client</p>
-                <Select
-                    value={draft.torrent.defaultClient}
-                    onChange={v => set("torrent", { defaultClient: v })}
-                    options={[
-                        { value: "qbittorrent", label: "qBittorrent" },
-                        { value: "transmission", label: "Transmission" },
-                        { value: "none", label: "None" },
-                    ]}
-                />
-            </div>
-            <div className="card divide-y divide-line">
+            <Group title="Torrent client" description="The program that downloads torrents. Kumo talks to its web interface.">
+                <Row label="Use" help="Where Kumo sends torrents." keywords="default client qbittorrent transmission">
+                    <Select
+                        className="w-44"
+                        value={draft.torrent.defaultClient}
+                        onChange={v => set("torrent", { defaultClient: v })}
+                        options={[
+                            { value: "qbittorrent", label: "qBittorrent" },
+                            { value: "transmission", label: "Transmission" },
+                            { value: "none", label: "None" },
+                        ]}
+                    />
+                </Row>
                 {(["qbittorrent", "transmission"] as const).map(c => (
-                    <div key={c}>
-                        <button onClick={() => setOpen(o => (o === c ? "" : c))} className="flex w-full items-center justify-between px-4 py-4">
-                            <span className="flex items-center gap-2.5 text-lg font-semibold">
-                                <HardDrive className="size-5 text-brand-strong" />
-                                {c === "qbittorrent" ? "qBittorrent" : "Transmission"}
+                    <Shown key={c} text={`${c === "qbittorrent" ? "qBittorrent" : "Transmission"} host port username password address connection`}>
+                        <button onClick={() => setOpen(o => (o === c ? "" : c))} aria-expanded={open === c} className="flex w-full items-center justify-between px-4 py-3.5">
+                            <span className="flex items-center gap-2.5 text-sm font-medium">
+                                <HardDrive className="size-4 text-muted" />
+                                {c === "qbittorrent" ? "qBittorrent" : "Transmission"} connection
+                                {draft.torrent.defaultClient === c && <Badge tone="brand">In use</Badge>}
                             </span>
-                            <ChevronDown className={cn("size-5 text-muted transition-transform", open === c && "rotate-180")} />
+                            <ChevronDown className={cn("size-4 text-muted transition-transform duration-200", open === c && "rotate-180")} />
                         </button>
                         <Locked>
-                            {open === c && <ClientFields value={draft[c]} onChange={v => set(c, v)} showTags={c === "qbittorrent"} />}
+                            {open === c && (
+                                <div className="divide-y divide-line border-t border-line">
+                                    <ClientFields value={draft[c]} onChange={v => set(c, v)} showTags={c === "qbittorrent"} />
+                                </div>
+                            )}
                         </Locked>
-                    </div>
+                    </Shown>
                 ))}
-            </div>
-            <div>
-                <Button icon={<Network className="size-4" />} loading={testing} onClick={test} disabled={draft.torrent.defaultClient === "none"}>
-                    Save & test connection
-                </Button>
-            </div>
+                <Row label="Check the connection" help="Saves your changes, then asks the client.">
+                    <Button size="sm" icon={<Network className="size-4" />} loading={testing} onClick={test} disabled={draft.torrent.defaultClient === "none"}>
+                        Save & test
+                    </Button>
+                </Row>
+            </Group>
             <Group title="Integration">
                 <Row label="Show active torrent count" help="Show the number of active torrents in the sidebar.">
                     <Switch checked={draft.torrent.showActiveCount} onChange={v => set("torrent", { showActiveCount: v })} />
@@ -1671,8 +1888,8 @@ function StreamingSection({ draft, set }: SectionProps) {
                         label="Install ani-cli"
                         help={
                             status?.platform === "darwin"
-                                ? "With the other programs Kumo uses, downloaded into Kumo's folder: Settings › App › Programs."
-                                : "With Git, whose bash runs it, and the other programs Kumo uses: Settings › App › Programs."
+                                ? "With the other programs Kumo uses, downloaded into Kumo's folder: Settings › Desktop app & programs."
+                                : "With Git, whose bash runs it, and the other programs Kumo uses: Settings › Desktop app & programs."
                         }
                     >
                         <InstallProgramsButton />

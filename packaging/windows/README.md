@@ -22,7 +22,7 @@ PC": click **More info**, then **Run anyway**.
 
 Some features use other programs. **Kumo installs them for you**: at the end of
 the install, the installer asks whether to install them (also later from
-**Settings › App › Programs › Install**, or the Install button Kumo shows on
+**Settings › Desktop app & programs › Install**, or the Install button Kumo shows on
 the Home page while ffmpeg or ani-cli is missing). A PowerShell window then
 installs, with [Scoop](https://scoop.sh) and for your Windows user only (no
 administrator rights):
@@ -44,12 +44,12 @@ your `PATH`, enter its full path there.
 |---|---|
 | The in-app player, for most files (MKV, HEVC, AC3/DTS, several tracks…), and episode downloads | ffmpeg: `winget install Gyan.FFmpeg` |
 | Faster, more reliable episode downloads | yt-dlp: `winget install yt-dlp.yt-dlp` |
-| mpv as the player (optional) | `scoop install mpv` ([Scoop](#scoop), extras bucket) or [mpv.io](https://mpv.io/installation/); then choose it in **Settings › Video Playback** |
+| mpv as the player (optional) | `scoop install mpv` ([Scoop](#scoop), extras bucket) or [mpv.io](https://mpv.io/installation/); then choose it in **Settings › Playback** |
 | Sub/dub streaming with ani-cli | Git for Windows and ani-cli, [see below](#ani-cli) |
 | Torrents | qBittorrent: `winget install qBittorrent.qBittorrent`, [then turn on its Web UI](#qbittorrent) |
 
-Hardware encoding for the in-app player (**Settings › Transcoding / Direct
-Play**): NVENC (NVIDIA) and Quick Sync (Intel) work on Windows; VA-API is
+Hardware encoding for the in-app player (**Settings › Video conversion**):
+NVENC (NVIDIA) and Quick Sync (Intel) work on Windows; VA-API is
 Linux only.
 
 ### Scoop
@@ -76,7 +76,7 @@ scoop install ani-cli
 
 Without Scoop, save the `ani-cli` script from the
 [ani-cli repository](https://github.com/pystardust/ani-cli) in a folder on your
-`PATH`, or anywhere and put its full path in **Settings › Online Streaming ›
+`PATH`, or anywhere and put its full path in **Settings › Online streaming ›
 Executable**. Kumo finds Git's bash in its usual places (`C:\Program Files\Git`,
 Scoop's `git`).
 
@@ -110,7 +110,7 @@ window uses that server when it's already running.
 ## Updates
 
 Kumo looks for a newer release on GitHub shortly after it starts, then every
-6 hours (**Settings › About & updates** shows the last check and checks right
+6 hours (**Settings › Updates & about** shows the last check and checks right
 away). When there is one, the **Home** page shows it, with what changed:
 
 - **Installed** with the installer: click **Update**. Kumo downloads the new
@@ -173,7 +173,7 @@ PKGBUILD.
 
 Each build is published as a **beta** first: a pre-release titled
 "Kumo <version> beta for Windows", which installed copies offer only with
-Settings › About & updates › Beta updates on. A build becomes a **stable**
+Settings › Updates & about › Beta updates on. A build becomes a **stable**
 release (for everyone, and the repository's latest) when the pushed commit's
 message has `[stable]` in it, or when the workflow is run by hand from the
 Actions tab with channel "stable" (on a beta's commit, that turns the beta

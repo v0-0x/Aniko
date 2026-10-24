@@ -10,7 +10,7 @@ import type { Holiday } from "@/lib/themes"
 
 export function HolidayBackdrop({ holiday }: { holiday: Holiday | null }) {
     return (
-        <div aria-hidden className="pointer-events-none absolute inset-y-2 right-2 left-0 overflow-hidden rounded-2xl bg-bg">
+        <div aria-hidden className="pointer-events-none absolute inset-y-2 right-2 left-0 overflow-hidden rounded-[14px] bg-bg">
             {holiday && (
                 <>
                     {/* The holiday's light, from the top. */}
@@ -40,7 +40,7 @@ export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; 
     }, [kind])
     if (!kind) return null
     return (
-        <div ref={ref} aria-hidden className="pointer-events-none absolute top-2 right-2 left-0 z-[5] h-16 overflow-hidden rounded-t-2xl">
+        <div ref={ref} aria-hidden className="pointer-events-none absolute top-2 right-2 left-0 z-[5] h-16 overflow-hidden rounded-t-[14px]">
             {width > 0 && (kind === "lights" ? <Lights width={width} animate={animate} /> : <Lanterns width={width} animate={animate} />)}
         </div>
     )

@@ -63,7 +63,7 @@ export default function AutoDownloaderPage() {
             </div>
             {settings?.torrent.defaultClient === "none" && (
                 <div className="mb-6 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-200">
-                    No torrent client is configured — <Link to="/settings?tab=torrent-client" className="underline">set one up</Link> first.
+                    No torrent client is configured — <Link to="/settings?tab=torrents" className="underline">set one up</Link> first.
                 </div>
             )}
             {!isLoading && (rules ?? []).length === 0 && (

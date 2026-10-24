@@ -206,7 +206,7 @@ func (r *run) read(name string) string {
 
 func (r *run) cleanup() { _ = os.RemoveAll(r.dir) }
 
-var ErrNotInstalled = errors.New("ani-cli is not installed (" + util.InstallHint("ani-cli") + ") or set its path in Settings › Online Streaming")
+var ErrNotInstalled = errors.New("ani-cli is not installed (" + util.InstallHint("ani-cli") + ") or set its path in Settings › Online streaming")
 
 // Ready reports whether ani-cli can run: its script is found at path (a
 // name or a full path) and, on Windows, so is the bash that runs it.

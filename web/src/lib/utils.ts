@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
 
-// The language of anime titles (Settings › Interface): English where AniList
+// The language of anime titles (Settings › Appearance): English where AniList
 // has an English title, or Japanese in Latin letters (romaji). AniList's own
 // "preferred" title is romaji unless the account says otherwise.
 let romajiTitles = false

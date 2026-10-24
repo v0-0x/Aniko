@@ -115,7 +115,7 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
                     <span className="min-w-0 flex-1">Classic look</span>
                     <MenuSwitch on={classicLook} />
                 </DropdownItem>
-                <DropdownItem icon={<Settings2 />} onSelect={() => navigate("/settings?tab=ui")}>
+                <DropdownItem icon={<Settings2 />} onSelect={() => navigate("/settings?tab=appearance")}>
                     More in Settings
                 </DropdownItem>
             </DropdownContent>

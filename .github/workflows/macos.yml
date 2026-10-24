@@ -339,13 +339,13 @@ jobs:
 
           Kumo finds newer releases by itself and updates from its Home page (**Update**), once it's in your Applications folder.
 
-          Some features use other programs: ffmpeg (needed by the in-app player for most files), yt-dlp, ani-cli and mpv. Kumo downloads them for your Mac from **Settings › App › Programs**, with no Homebrew or password needed; see [packaging/macos/README.md]($repo/blob/$GITHUB_SHA/packaging/macos/README.md).
+          Some features use other programs: ffmpeg (needed by the in-app player for most files), yt-dlp, ani-cli and mpv. Kumo downloads them for your Mac from **Settings › Desktop app & programs**, with no Homebrew or password needed; see [packaging/macos/README.md]($repo/blob/$GITHUB_SHA/packaging/macos/README.md).
 
           Built from $GITHUB_SHA by [workflow run $GITHUB_RUN_NUMBER]($repo/actions/runs/$GITHUB_RUN_ID).
           EOF
           if [ "$CHANNEL" = beta ]; then
             pre=true title="Kumo $VERSION beta for macOS"
-            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › About & updates › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
+            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
           else
             pre=false title="Kumo $VERSION for macOS"
           fi

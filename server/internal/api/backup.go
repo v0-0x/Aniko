@@ -13,7 +13,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/share"
 )
 
-// Settings › App › Backup: the user's data as one file, and back. Only this
+// Settings › Backup & data: the user's data as one file, and back. Only this
 // computer: a backup can hold the logins, a restore changes everything.
 func (s *Server) backupRoutes() {
 	m := s.mux

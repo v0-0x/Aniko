@@ -27,7 +27,7 @@ function markSeen() {
     }
 }
 
-// Opened from Settings › About & updates too: "all" shows every entry.
+// Opened from Settings › Updates & about too: "all" shows every entry.
 export const whatsNewStore = createStore<"new" | "all" | null>(null)
 
 export function WhatsNew() {

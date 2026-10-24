@@ -43,9 +43,9 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 e.preventDefault()
                 onClick?.()
             }}
-            className={cn("group/ep focus-ring flex cursor-pointer flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-xl", !aired && "cursor-default opacity-50", className)}
+            className={cn("group/ep focus-ring flex cursor-pointer flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !aired && "cursor-default opacity-50", className)}
         >
-            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-lg" : "rounded-xl shadow-[0_8px_24px_-14px_rgb(0_0_0/0.8)]")}>
+            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-lg" : "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)]")}>
                 {image ? (
                     <img
                         src={img(image)}
@@ -64,7 +64,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                     data-tv-ring
                     className={cn(
                         "pointer-events-none absolute inset-0 ring-1 transition-[box-shadow] duration-300 ring-inset",
-                        classic ? "rounded-lg ring-white/[0.07] group-hover/ep:ring-white/20" : "rounded-xl ring-white/[0.08] group-hover/ep:ring-[color-mix(in_oklab,var(--brand)_45%,transparent)]",
+                        classic ? "rounded-lg ring-white/[0.07] group-hover/ep:ring-white/20" : "rounded-[10px] ring-white/[0.07] group-hover/ep:ring-white/[0.22]",
                     )}
                 />
                 {aired && (
@@ -129,7 +129,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 )}
                 {!!progress && progress > 0 && (
                     <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full shadow-[0_0_8px_var(--brand)]")} style={{ width: `${Math.min(100, progress * 100)}%` }} />
+                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full")} style={{ width: `${Math.min(100, progress * 100)}%` }} />
                     </div>
                 )}
             </div>

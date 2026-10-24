@@ -32,7 +32,7 @@ Or, in Terminal, once: `xattr -dr com.apple.quarantine /Applications/Kumo.app`
 | mpv | The external player |
 | yt-dlp | Faster, more reliable episode downloads |
 
-**Settings › App › Programs › Install missing programs** downloads ready-made
+**Settings › Desktop app & programs › Install missing programs** downloads ready-made
 ffmpeg, ffprobe, yt-dlp and ani-cli for your Mac (Apple silicon or Intel) into
 Kumo's own folder, `~/Library/Application Support/Kumo/bin`, in a Terminal
 window: no Homebrew, no password. ffmpeg comes from
@@ -52,7 +52,7 @@ doesn't give apps those folders.
 
 For torrents, Kumo talks to qBittorrent's Web UI (or Transmission): install
 [qBittorrent](https://www.qbittorrent.org), turn on its Web UI, and set the
-address and login in **Settings › Torrent Client**.
+address and login in **Settings › Torrents**.
 
 ## Where Kumo keeps its files
 

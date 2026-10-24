@@ -135,7 +135,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                         <p className="font-semibold text-amber-200">{status?.platform === "android" ? "ani-cli doesn’t run on Android" : "ani-cli isn’t installed"}</p>
                         {status?.platform === "android" ? (
                             <p className="mt-1 text-muted">
-                                It runs on a computer with Kumo and ani-cli instead: there, turn on <b>Share my library</b> for this device (Settings › Devices). Or pick an extension
+                                It runs on a computer with Kumo and ani-cli instead: there, turn on <b>Share my library</b> for this device (Settings › Other devices). Or pick an extension
                                 provider from the marketplace.
                             </p>
                         ) : canInstallPrograms(status) ? (

@@ -353,7 +353,7 @@ func (a *App) wire() {
 	a.Extensions.Host = a.pluginServices()
 
 	anilist.SetTitleLanguage(a.Settings.Get().UI.TitleLanguage)
-	// Stable releases, or betas too (Settings › About & updates).
+	// Stable releases, or betas too (Settings › Updates & about).
 	a.Update.Channel = func() string { return a.Settings.Get().Updates.Channel }
 	a.Settings.OnChange(func(old, cur config.Settings) {
 		// Listeners run apart: two saves close together may arrive in either

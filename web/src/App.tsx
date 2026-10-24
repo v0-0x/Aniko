@@ -141,7 +141,7 @@ export default function App() {
                         id="main-scroll"
                         className={cn(
                             "relative h-full overflow-x-hidden overflow-y-auto border border-line",
-                            classic ? "rounded-xl bg-bg" : "rounded-2xl shadow-[0_0_0_1px_rgb(0_0_0/0.35),0_18px_50px_-20px_rgb(0_0_0/0.8)]",
+                            classic ? "rounded-xl bg-bg" : "rounded-[14px] shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]",
                         )}
                     >
                         <Suspense

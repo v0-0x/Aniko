@@ -37,7 +37,7 @@ export function DevicePrompts() {
         setBusy(p.id)
         try {
             await api.post(`/api/sharing/peers/${encodeURIComponent(p.id)}`, share ? { allowed: true } : { declined: true })
-            if (share) toast.success(`Sharing this library with ${p.name}. Your AniList account and downloads can go with it, in Settings › Devices.`)
+            if (share) toast.success(`Sharing this library with ${p.name}. Your AniList account and downloads can go with it, in Settings › Other devices.`)
             await qc.invalidateQueries({ queryKey: ["status"] })
             qc.invalidateQueries({ queryKey: ["sharing"] })
         } catch (e: any) {
@@ -75,7 +75,7 @@ export function DevicePrompts() {
                                     ? `Kumo${tvApp ? "'s TV app" : ""} on ${p.name} is on this network. Once shared, it can play this computer's anime.`
                                     : p.kind === "older"
                                       ? `Kumo ${p.version} there, ${status.version} here: update it on ${p.name} (from its Home page) so everything works together.`
-                                      : `Kumo ${p.version} there, ${status.version} here: update this one (Settings › About & updates) so everything works together.`}
+                                      : `Kumo ${p.version} there, ${status.version} here: update this one (Settings › Updates & about) so everything works together.`}
                             </p>
                         </div>
                         {isNew ? (

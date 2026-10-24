@@ -173,8 +173,8 @@ export function Sidebar() {
                             ? "bg-white/[0.08] text-fg"
                             : "text-muted hover:bg-white/[0.04] hover:text-fg"
                         : active
-                          ? "bg-brand-soft text-fg shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_22%,transparent)] [&>svg]:text-brand-strong"
-                          : "text-muted hover:bg-white/[0.05] hover:text-fg",
+                          ? "bg-white/[0.07] text-fg [&>svg]:text-brand-strong"
+                          : "text-muted hover:bg-white/[0.045] hover:text-fg",
                 )}
             >
                 {it.icon}
@@ -216,7 +216,7 @@ export function Sidebar() {
                 {groups.map((g, i) => (
                     <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", (!wide || (tv && !classic)) && i > 0 && "border-t border-line pt-3")}>
                         {/* Their names; not on a TV, whose screen is short. */}
-                        {wide && !tv && !classic && !short && <p className="px-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">{g.label}</p>}
+                        {wide && !tv && !classic && !short && <p className="px-2.5 pb-1 text-[11px] font-medium text-subtle">{g.label}</p>}
                         {g.items.map(link)}
                     </div>
                 ))}
@@ -237,16 +237,16 @@ export function Sidebar() {
                                 classic
                                     ? cn("mt-1 h-10 rounded-md hover:bg-white/[0.04] data-[state=open]:bg-white/[0.06]", wide ? "px-2" : "w-10 justify-center")
                                     : cn(
-                                          "mt-1.5 rounded-xl data-[state=open]:bg-white/[0.07]",
-                                          wide ? "h-12 bg-white/[0.035] px-2 ring-1 ring-white/[0.05] ring-inset hover:bg-white/[0.06]" : "size-10 justify-center hover:bg-white/[0.05]",
+                                          "mt-1.5 rounded-[10px] data-[state=open]:bg-white/[0.07]",
+                                          wide ? "h-12 bg-white/[0.03] px-2 hover:bg-white/[0.055]" : "size-10 justify-center hover:bg-white/[0.05]",
                                       ),
                             )}
                             aria-label="Account"
                         >
                             {status?.user?.avatar?.large ? (
-                                <img src={img(status.user.avatar.large)} alt="" className={cn("shrink-0 rounded-full object-cover", classic ? "size-7" : "size-8 ring-2 ring-white/10")} />
+                                <img src={img(status.user.avatar.large)} alt="" className={cn("shrink-0 rounded-full object-cover", classic ? "size-7" : "size-8 ring-1 ring-white/10")} />
                             ) : (
-                                <span className={cn("grid shrink-0 place-items-center rounded-full bg-surface-3 text-muted", classic ? "size-7" : "size-8 ring-2 ring-white/10")}>
+                                <span className={cn("grid shrink-0 place-items-center rounded-full bg-surface-3 text-muted", classic ? "size-7" : "size-8 ring-1 ring-white/10")}>
                                     <UserRound className="size-4" />
                                 </span>
                             )}

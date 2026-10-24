@@ -45,7 +45,7 @@ export const tv =
 
 // How wide the page is laid out on the TV, in CSS pixels: a 1080p TV is
 // 960 wide at the WebView's own scale (2x), which makes everything big.
-// Settings › User Interface changes it (stored on the TV).
+// Settings › Appearance changes it (stored on the TV).
 export const TV_WIDTHS = [
     { value: 1600, label: "Smallest" },
     { value: 1440, label: "Smaller" },

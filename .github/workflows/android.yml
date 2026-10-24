@@ -315,7 +315,7 @@ jobs:
 
           \`$url\`
 
-          Then open Kumo, and on a computer with Kumo turn on **Settings › Local Anime Library › Library sharing**: the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses it) and **Let it download here** (its downloads and torrents go to that computer).
+          Then open Kumo, and on a computer with Kumo turn on **Settings › Other devices**: the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses it) and **Let it download here** (its downloads and torrents go to that computer).
 
           Kumo finds newer releases by itself and updates from its Home page (**Update**); Android asks before installing.
 
@@ -323,7 +323,7 @@ jobs:
           EOF
           if [ "$CHANNEL" = beta ]; then
             pre=true title="Kumo $VERSION beta for Android"
-            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › About & updates › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
+            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
           else
             pre=false title="Kumo $VERSION for Android"
           fi
