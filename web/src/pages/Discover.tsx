@@ -5,7 +5,10 @@ import { ListCardMenu } from "@/components/ListCardMenu"
 import { Carousel, MediaCard, MediaCardSkeleton } from "@/components/MediaCard"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { Button, EmptyState, ErrorState, SectionHeader, Skeleton } from "@/components/ui"
-import { useDiscover } from "@/lib/queries"
+import { useDiscover, useSearch } from "@/lib/queries"
+import { useStore } from "@/lib/store"
+import { holidayStore } from "@/lib/themes"
+import { HolidayIcon } from "@/components/HolidayBadge"
 import type { Media } from "@/lib/types"
 import { banner, cleanDescription, cn, formatLabel, GENRES, SEASONS, seasonLabel, title } from "@/lib/utils"
 
@@ -19,6 +22,11 @@ const seasonSearch = (season?: string, year?: number) => (season && year ? `/sea
 
 export default function DiscoverPage() {
     const { data, isLoading, error, refetch, isFetching } = useDiscover()
+    // The holiday theme's row (Halloween's horror...), when it has one.
+    const holiday = useStore(holidayStore)
+    const picks = holiday?.picks
+    const { data: pickData } = useSearch({ ...picks?.params, type: "ANIME", perPage: 20 }, !!picks)
+    const pickMedia = picks ? (pickData?.media ?? []) : []
     const featured = (data?.trending ?? []).filter(m => m.bannerImage).slice(0, 6)
     const [i, setI] = useState(0)
     // Not while the focus is on it (a TV remote's): its buttons would go.
@@ -74,6 +82,26 @@ export default function DiscoverPage() {
                     >
                         AniList didn't return any anime. Check your internet connection and try again.
                     </EmptyState>
+                )}
+                {holiday && picks && pickMedia.length > 0 && (
+                    <section>
+                        <SectionHeader
+                            title={
+                                <span className="flex items-center gap-2.5">
+                                    <HolidayIcon id={holiday.id} className="size-6" />
+                                    {picks.title}
+                                </span>
+                            }
+                            action={
+                                picks.more && (
+                                    <Link to={picks.more} className="text-[13px] font-medium text-muted transition-colors hover:text-fg">
+                                        See more
+                                    </Link>
+                                )
+                            }
+                        />
+                        <Carousel>{pickMedia.map(m => <MediaCard key={m.id} media={m} listEntry={m.mediaListEntry} menu={<ListCardMenu media={m} />} />)}</Carousel>
+                    </section>
                 )}
                 {shown.map(r => (
                     <section key={r.key}>

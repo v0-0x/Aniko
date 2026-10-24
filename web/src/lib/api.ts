@@ -70,6 +70,14 @@ export type DesktopBridge = {
     // true, or what went wrong (older apps: false).
     setPref?: (name: keyof DesktopPrefs, value: boolean) => Promise<true | false | { error: string }>
     quit?: () => void
+    // Picture in picture (lib/pip.ts): the small player window. Missing in
+    // older desktop apps. The requests are PlayerRequests (lib/store).
+    openMiniPlayer?: (page: string) => Promise<boolean>
+    closeMiniPlayer?: () => void
+    expandMiniPlayer?: (req: unknown) => void
+    // An episode handed back by the small window, for the big one to play.
+    takePendingPlay?: () => Promise<unknown>
+    onPlay?: (fn: (req: unknown) => void) => void
 }
 
 export type DesktopPrefs = { keepRunning: boolean; freeWhenLocked: boolean; startAtLogin?: boolean }

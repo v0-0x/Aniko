@@ -8,6 +8,7 @@ import {
     Languages,
     Loader2,
     Maximize,
+    Maximize2,
     Minimize,
     MonitorPlay,
     Pause,
@@ -19,11 +20,14 @@ import {
     Volume1,
     Volume2,
     VolumeX,
+    PictureInPicture2,
+    X,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, ApiError, qs } from "@/lib/api"
 import { prefersHls, randomId, videoCaps } from "@/lib/playback"
+import { canPip, closeMini, expandMini, openMini } from "@/lib/pip"
 import { useSettings } from "@/lib/queries"
 import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
 import { formatDelay, setSubDelay, subDelay, subLine, subStyleStore, subStyleVars } from "@/lib/subtitles"
@@ -57,7 +61,9 @@ const normLang = (l?: string) => {
 }
 const langIn = (lang: string, list: string) => list.split(",").map(s => normLang(s.trim())).filter(Boolean).includes(normLang(lang))
 
-export function PlayerOverlay() {
+// mini: the small picture-in-picture player (the desktop app's /mini page,
+// lib/pip.ts).
+export function PlayerOverlay({ mini = false }: { mini?: boolean }) {
     const [req, setReq] = useState<PlayerRequest | null>(playerStore.get())
     useEffect(
         () =>
@@ -69,11 +75,25 @@ export function PlayerOverlay() {
             }),
         [],
     )
+    // The big player plays an episode: a small one somewhere stops.
+    useEffect(() => {
+        if (req && !mini) closeMini()
+    }, [req, mini])
     if (!req) return null
-    return <Player key={JSON.stringify(req)} req={req} onClose={() => playerStore.set(null)} />
+    return (
+        <Player
+            key={JSON.stringify(req)}
+            req={req}
+            mini={mini}
+            onClose={() => {
+                playerStore.set(null)
+                if (mini) closeMini()
+            }}
+        />
+    )
 }
 
-function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
+function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => void; mini: boolean }) {
     const settings = useSettings()
     const videoRef = useRef<HTMLVideoElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -236,13 +256,16 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                         const m = audio.find(a => langIn(a.lang, settings.playback.preferredAudioLang))
                         if (m) ai = m.index
                     }
+                    // Handed over from the other player: its tracks.
+                    const handed = req.tracks
+                    if (handed?.audio !== undefined && handed.audio < audio.length) ai = handed.audio
                     setAudioIndex(ai)
                     const m = ai === 0 && res.probe.method === "direct" ? "direct" : res.probe.method === "direct" ? "remux" : res.probe.method
                     setMethod(m)
                     // Ignore saved positions past the end of this file.
                     startAt.current = res.resumeAt && res.resumeAt < res.probe.duration - 10 ? res.resumeAt : 0
                     if (m !== "direct") setOffset(startAt.current)
-                    if (startAt.current > 30) setResumedFrom(startAt.current)
+                    if (startAt.current > 30 && !handed) setResumedFrom(startAt.current)
 
                     const subOpts: SubOption[] = [
                         ...(res.probe.subtitles ?? []).map(s => ({
@@ -274,6 +297,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     } else {
                         setSubKey(pickSub(subOpts, handSub ? p : null, settings?.playback.preferredSubLang ?? "", (res.probe.subtitles ?? []).find(s => s.default)?.typeIndex))
                     }
+                    if (handed?.sub && (handed.sub === "off" || subOpts.some(o => o.key === handed.sub))) setSubKey(handed.sub)
                 } else {
                     const res = await api.get<{ sources: StreamSource[]; resumeAt: number; tracks: TrackPrefs | null; title: string; dub?: boolean }>(
                         `/api/onlinestream/sources${qs({ provider: req.provider, mediaId: req.mediaId, episode: req.episode, dub: req.dub, server: req.server })}`,
@@ -287,10 +311,12 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     setTitle(`${animeTitle(media?.media) || res.title || "Episode"} — Episode ${req.episode}${dub ? " (Dub)" : ""}`)
                     const sorted = [...res.sources].sort((a, b) => qualityRank(b.quality) - qualityRank(a.quality))
                     setSources(sorted)
-                    setSourceIdx(0)
-                    startAt.current = res.resumeAt || 0
-                    if (startAt.current > 30) setResumedFrom(startAt.current)
-                    applyStreamSubs(sorted[0])
+                    const handed = req.tracks
+                    const si = handed?.source !== undefined && handed.source < sorted.length ? handed.source : 0
+                    setSourceIdx(si)
+                    startAt.current = req.start ?? (res.resumeAt || 0)
+                    if (startAt.current > 30 && !handed) setResumedFrom(startAt.current)
+                    applyStreamSubs(sorted[si], handed?.sub)
                 }
                 // Next episode
                 api.get<EntryView>(`/api/anime/${mediaId}`)
@@ -314,11 +340,13 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const applyStreamSubs = (src?: StreamSource) => {
+    // handed: the subtitles picked in the other player (picture in picture).
+    const applyStreamSubs = (src?: StreamSource, handed?: string) => {
         const opts: SubOption[] = (src?.subtitles ?? []).map((s, i) => ({ key: `s${i}`, label: s.language || `Subtitle ${i + 1}`, lang: s.language, title: s.language, index: i, url: s.url }))
         setSubs(opts)
         const def = opts.find((_, i) => src?.subtitles[i].isDefault) ?? opts.find(o => /eng/i.test(o.lang))
-        setSubKey(pickSub(opts, prefsRef.current, settings?.playback.preferredSubLang ?? "", undefined, def?.key))
+        if (handed && (handed === "off" || opts.some(o => o.key === handed))) setSubKey(handed)
+        else setSubKey(pickSub(opts, prefsRef.current, settings?.playback.preferredSubLang ?? "", undefined, def?.key))
     }
 
     // ------------------------------------------------------------ video src
@@ -758,8 +786,41 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
         else v.pause()
     }
     const toggleFullscreen = () => {
+        if (mini) return expand()
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
         else containerRef.current?.requestFullscreen().catch(() => {})
+    }
+    // Picture in picture (the desktop app's, lib/pip.ts). The episode as it
+    // is here, for the other player: where it's at, and the tracks.
+    const pip = useMemo(() => !mini && canPip(), [mini])
+    const handOver = (): PlayerRequest => {
+        const tracks = { audio: audioIndex, sub: subKey, source: sourceIdx }
+        const start = Math.max(0, where() - 1)
+        return req.kind === "local" ? { kind: "local", path: req.path, mediaId, episode, start, tracks } : { ...req, start, tracks }
+    }
+    const toPip = async () => {
+        const v = videoRef.current
+        if (!pip || !v) return
+        const handed = handOver()
+        const wasPaused = v.paused
+        v.pause()
+        try {
+            await openMini(handed)
+        } catch (e: any) {
+            toast.error(`Picture in picture didn't open: ${e?.message ?? e}`)
+            if (!wasPaused) v.play().catch(() => {})
+            return
+        }
+        report(true)
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+        onClose()
+    }
+    // The small player's way back: the big one, from where it's at.
+    const expand = () => {
+        const handed = handOver()
+        videoRef.current?.pause()
+        report(true)
+        expandMini(handed)
     }
     const changeAudio = (i: number) => {
         const at = where()
@@ -954,6 +1015,11 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     break
                 case "f":
                     toggleFullscreen()
+                    break
+                case "p":
+                    if (mini) expand()
+                    else if (pip) toPip()
+                    else handled = false
                     break
                 case "m":
                     setMuted(m => !m)
@@ -1214,15 +1280,15 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
 
             {(loading || buffering || !started) && !error && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                    <Loader2 className="size-12 animate-spin text-white/80" />
+                    <Loader2 className={cn("animate-spin text-white/80", mini ? "size-8" : "size-12")} />
                 </div>
             )}
             {error && (
-                <div className="absolute inset-0 grid place-items-center p-6">
-                    <div className="max-w-md rounded-xl border border-line-strong bg-surface-1 p-6 text-center">
-                        <p className="text-lg font-semibold">Playback failed</p>
-                        <p className="mt-2 text-sm text-muted">{error}</p>
-                        <div className="mt-5 flex justify-center gap-2">
+                <div className={cn("absolute inset-0 grid place-items-center", mini ? "p-2" : "p-6")}>
+                    <div className={cn("max-w-md rounded-xl border border-line-strong bg-surface-1 text-center", mini ? "p-3" : "p-6")}>
+                        <p className={cn("font-semibold", mini ? "text-sm" : "text-lg")}>Playback failed</p>
+                        <p className={cn("text-muted", mini ? "mt-1 line-clamp-2 text-xs" : "mt-2 text-sm")}>{error}</p>
+                        <div className={cn("flex justify-center gap-2", mini ? "mt-3" : "mt-5")}>
                             <button className="h-10 rounded-xl bg-white/10 px-4 text-sm font-medium hover:bg-white/15" onClick={close}>
                                 Close
                             </button>
@@ -1240,7 +1306,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                                     Try again
                                 </button>
                             )}
-                            {(req.kind === "local" || sources.length > 0) && !androidApp && (
+                            {(req.kind === "local" || sources.length > 0) && !androidApp && !mini && (
                                 <button className="h-10 rounded-xl bg-brand px-4 text-sm font-medium text-white" onClick={openInMpv}>
                                     Open in mpv
                                 </button>
@@ -1250,8 +1316,25 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                 </div>
             )}
 
-            {/* top bar */}
-            <div data-tv-controls="top" className={cn("absolute inset-x-0 top-0 flex items-center gap-4 bg-gradient-to-b from-black/80 to-transparent px-6 pt-5 pb-14 transition-opacity duration-300", controls || paused ? "opacity-100" : "pointer-events-none opacity-0")}>
+            {/* top bar. The small window's: what plays, back to Kumo and close;
+                dragging it moves the window. */}
+            {mini && (
+                <div
+                    className={cn(
+                        "absolute inset-x-0 top-0 flex items-center gap-1.5 bg-gradient-to-b from-black/80 to-transparent px-3 pt-2 pb-8 transition-opacity duration-300 [-webkit-app-region:drag]",
+                        controls || paused ? "opacity-100" : "opacity-0",
+                    )}
+                >
+                    <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-white">{title}</p>
+                    <button onClick={expand} title="Back to Kumo (p)" aria-label="Back to Kumo" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">
+                        <Maximize2 className="size-4" />
+                    </button>
+                    <button onClick={close} title="Close" aria-label="Close" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">
+                        <X className="size-4" />
+                    </button>
+                </div>
+            )}
+            <div data-tv-controls="top" hidden={mini} className={cn("absolute inset-x-0 top-0 flex items-center gap-4 bg-gradient-to-b from-black/80 to-transparent px-6 pt-5 pb-14 transition-opacity duration-300", controls || paused ? "opacity-100" : "pointer-events-none opacity-0")}>
                 <button onClick={close} className="grid size-10 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20" aria-label="Close player">
                     <ArrowLeft className="size-5" />
                 </button>
@@ -1272,10 +1355,17 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             </div>
 
             {/* bottom controls */}
-            <div data-tv-controls="bottom" className={cn("absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-6 pt-20 pb-5 transition-opacity duration-300", controls || paused ? "opacity-100" : "pointer-events-none opacity-0")}>
+            <div
+                data-tv-controls="bottom"
+                className={cn(
+                    "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300",
+                    mini ? "px-3 pt-10 pb-1.5" : "px-6 pt-20 pb-5",
+                    controls || paused ? "opacity-100" : "pointer-events-none opacity-0",
+                )}
+            >
                 {/* scrubber */}
                 <div
-                    className="group/seek relative mb-3 h-5 cursor-pointer"
+                    className={cn("group/seek relative cursor-pointer", mini ? "mb-1 h-4" : "mb-3 h-5")}
                     onMouseMove={e => {
                         const r = e.currentTarget.getBoundingClientRect()
                         setHoverTime({ x: e.clientX - r.left, t: ((e.clientX - r.left) / r.width) * total })
@@ -1297,9 +1387,13 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     {previewAt !== null && total > 0 && (
                         <div
                             className="pointer-events-none absolute bottom-full mb-2 flex -translate-x-1/2 flex-col items-center gap-1.5"
-                            style={{ left: hoverTime ? `clamp(${thumbs ? 5.5 : 2}rem, ${hoverTime.x}px, calc(100% - ${thumbs ? 5.5 : 2}rem))` : `clamp(${thumbs ? 5.5 : 2}rem, ${(previewAt / total) * 100}%, calc(100% - ${thumbs ? 5.5 : 2}rem))` }}
+                            style={{
+                                left: hoverTime
+                                    ? `clamp(${thumbs && !mini ? 5.5 : 2}rem, ${hoverTime.x}px, calc(100% - ${thumbs && !mini ? 5.5 : 2}rem))`
+                                    : `clamp(${thumbs && !mini ? 5.5 : 2}rem, ${(previewAt / total) * 100}%, calc(100% - ${thumbs && !mini ? 5.5 : 2}rem))`,
+                            }}
                         >
-                            {thumbs && (
+                            {thumbs && !mini && (
                                 <div className="w-44 overflow-hidden rounded-lg bg-black/80 ring-1 ring-white/15 shadow-2xl" style={{ aspectRatio: String(aspect) }}>
                                     {thumbSrc && (
                                         <img
@@ -1317,29 +1411,32 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                     )}
                 </div>
 
-                <div className="flex items-center gap-2 text-white">
-                    <CtrlButton onClick={togglePlay} label={paused ? "Play (k)" : "Pause (k)"}>
-                        {paused ? <Play className="size-6 fill-white" /> : <Pause className="size-6 fill-white" />}
+                <div className={cn("flex items-center text-white", mini ? "gap-0.5" : "gap-2")}>
+                    <CtrlButton small={mini} onClick={togglePlay} label={paused ? "Play (k)" : "Pause (k)"}>
+                        {paused ? <Play className={cn("fill-white", mini ? "size-5" : "size-6")} /> : <Pause className={cn("fill-white", mini ? "size-5" : "size-6")} />}
                     </CtrlButton>
-                    <CtrlButton onClick={startOver} label="Start over (0)">
-                        <SkipBack className="size-5" />
+                    {!mini && (
+                        <CtrlButton onClick={startOver} label="Start over (0)">
+                            <SkipBack className="size-5" />
+                        </CtrlButton>
+                    )}
+                    <CtrlButton small={mini} onClick={() => seekBy(-10)} label="Back 10s (j)">
+                        <RotateCcw className={mini ? "size-4" : "size-5"} />
                     </CtrlButton>
-                    <CtrlButton onClick={() => seekBy(-10)} label="Back 10s (j)">
-                        <RotateCcw className="size-5" />
-                    </CtrlButton>
-                    <CtrlButton onClick={() => seekBy(10)} label="Forward 10s (l)">
-                        <RotateCw className="size-5" />
+                    <CtrlButton small={mini} onClick={() => seekBy(10)} label="Forward 10s (l)">
+                        <RotateCw className={mini ? "size-4" : "size-5"} />
                     </CtrlButton>
                     {nextEp && (
-                        <CtrlButton onClick={() => playNext()} label="Next episode (n)">
-                            <SkipForward className="size-5" />
+                        <CtrlButton small={mini} onClick={() => playNext()} label="Next episode (n)">
+                            <SkipForward className={mini ? "size-4" : "size-5"} />
                         </CtrlButton>
                     )}
                     <div className="group/vol flex items-center">
-                        <CtrlButton onClick={() => setMuted(m => !m)} label="Mute (m)">
-                            <VolumeIcon className="size-5" />
+                        <CtrlButton small={mini} onClick={() => setMuted(m => !m)} label="Mute (m)">
+                            <VolumeIcon className={mini ? "size-4" : "size-5"} />
                         </CtrlButton>
                         <input
+                            hidden={mini}
                             type="range"
                             min={0}
                             max={1}
@@ -1352,7 +1449,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                             className="w-0 accent-white opacity-0 transition-all duration-200 group-hover/vol:w-24 group-hover/vol:opacity-100"
                         />
                     </div>
-                    <span className="ml-2 text-sm font-medium text-white/85 tabular-nums">
+                    <span className={cn("font-medium text-white/85 tabular-nums", mini ? "ml-1 text-xs" : "ml-2 text-sm")}>
                         {formatDuration(time)} <span className="text-white/45">/ {formatDuration(total)}</span>
                     </span>
 
@@ -1360,8 +1457,8 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                         {/* subtitles */}
                         <Dropdown>
                             <DropdownTrigger asChild>
-                                <button className={cn("grid size-10 place-items-center rounded-full hover:bg-white/15", subKey !== "off" && "text-brand-strong")} aria-label="Subtitles">
-                                    <Captions className="size-5" />
+                                <button className={cn("grid place-items-center rounded-full hover:bg-white/15", mini ? "size-8" : "size-10", subKey !== "off" && "text-brand-strong")} aria-label="Subtitles">
+                                    <Captions className={mini ? "size-4" : "size-5"} />
                                 </button>
                             </DropdownTrigger>
                             <DropdownContent className="z-[90] max-h-80 overflow-y-auto">
@@ -1400,7 +1497,7 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                             </DropdownContent>
                         </Dropdown>
                         {/* audio */}
-                        {req.kind === "local" && (probe?.audio?.length ?? 0) > 1 && (
+                        {req.kind === "local" && (probe?.audio?.length ?? 0) > 1 && !mini && (
                             <Dropdown>
                                 <DropdownTrigger asChild>
                                     <button className="grid size-10 place-items-center rounded-full hover:bg-white/15" aria-label="Audio track">
@@ -1419,54 +1516,61 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
                             </Dropdown>
                         )}
                         {/* quality / speed */}
-                        <Dropdown>
-                            <DropdownTrigger asChild>
-                                <button className="grid size-10 place-items-center rounded-full hover:bg-white/15" aria-label="Settings">
-                                    <Gauge className="size-5" />
-                                </button>
-                            </DropdownTrigger>
-                            <DropdownContent className="z-[90] max-h-96 overflow-y-auto">
-                                {req.kind === "stream" && sources.length > 1 && (
-                                    <>
-                                        <DropdownLabel>Source</DropdownLabel>
-                                        {sources.map((s, i) => (
-                                            <DropdownItem key={i} onSelect={() => changeSource(i)}>
-                                                {sourceIdx === i ? "● " : ""}
-                                                {[s.server, s.quality, s.label].filter(Boolean).join(" · ")}
+                        {!mini && (
+                            <Dropdown>
+                                <DropdownTrigger asChild>
+                                    <button className="grid size-10 place-items-center rounded-full hover:bg-white/15" aria-label="Settings">
+                                        <Gauge className="size-5" />
+                                    </button>
+                                </DropdownTrigger>
+                                <DropdownContent className="z-[90] max-h-96 overflow-y-auto">
+                                    {req.kind === "stream" && sources.length > 1 && (
+                                        <>
+                                            <DropdownLabel>Source</DropdownLabel>
+                                            {sources.map((s, i) => (
+                                                <DropdownItem key={i} onSelect={() => changeSource(i)}>
+                                                    {sourceIdx === i ? "● " : ""}
+                                                    {[s.server, s.quality, s.label].filter(Boolean).join(" · ")}
+                                                </DropdownItem>
+                                            ))}
+                                            <DropdownSeparator />
+                                        </>
+                                    )}
+                                    {req.kind === "local" && method !== "transcode" && (
+                                        <>
+                                            <DropdownItem
+                                                onSelect={() => {
+                                                    const v = videoRef.current
+                                                    setOffset(v ? absTime(v) : 0)
+                                                    setMethod("transcode")
+                                                }}
+                                            >
+                                                Force transcoding
                                             </DropdownItem>
-                                        ))}
-                                        <DropdownSeparator />
-                                    </>
-                                )}
-                                {req.kind === "local" && method !== "transcode" && (
-                                    <>
-                                        <DropdownItem
-                                            onSelect={() => {
-                                                const v = videoRef.current
-                                                setOffset(v ? absTime(v) : 0)
-                                                setMethod("transcode")
-                                            }}
-                                        >
-                                            Force transcoding
+                                            <DropdownSeparator />
+                                        </>
+                                    )}
+                                    <DropdownLabel>Speed</DropdownLabel>
+                                    {[0.75, 1, 1.25, 1.5, 2].map(r => (
+                                        <DropdownItem key={r} onSelect={() => setRate(r)}>
+                                            {rate === r ? "● " : ""}
+                                            {r}×
                                         </DropdownItem>
-                                        <DropdownSeparator />
-                                    </>
-                                )}
-                                <DropdownLabel>Speed</DropdownLabel>
-                                {[0.75, 1, 1.25, 1.5, 2].map(r => (
-                                    <DropdownItem key={r} onSelect={() => setRate(r)}>
-                                        {rate === r ? "● " : ""}
-                                        {r}×
-                                    </DropdownItem>
-                                ))}
-                            </DropdownContent>
-                        </Dropdown>
-                        {!androidApp && (
+                                    ))}
+                                </DropdownContent>
+                            </Dropdown>
+                        )}
+                        {!androidApp && !mini && (
                             <CtrlButton onClick={openInMpv} label="Continue in mpv">
                                 <MonitorPlay className="size-5" />
                             </CtrlButton>
                         )}
-                        {!tv && (
+                        {pip && (
+                            <CtrlButton onClick={toPip} label="Picture in picture (p)">
+                                <PictureInPicture2 className="size-5" />
+                            </CtrlButton>
+                        )}
+                        {!tv && !mini && (
                             <CtrlButton onClick={toggleFullscreen} label="Fullscreen (f)">
                                 {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
                             </CtrlButton>
@@ -1478,33 +1582,38 @@ function Player({ req, onClose }: { req: PlayerRequest; onClose: () => void }) {
             {/* skip (the next episode is in the controls, and n). Above the
                 controls: their gradient reaches up behind the button and
                 would otherwise take its clicks while the controls show. */}
-            <div className="absolute right-8 bottom-32 z-10 flex flex-col items-end gap-3">
+            <div className={cn("absolute z-10 flex flex-col items-end", mini ? "right-3 bottom-14 gap-2" : "right-8 bottom-32 gap-3")}>
                 {currentSkip && showingSkip && (
-                    <button ref={skipRef} data-tv-skip onClick={() => seekTo(currentSkip.end)} className="flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-black shadow-2xl rise-in hover:bg-white/90">
-                        <FastForward className="size-4 fill-black" /> Skip {skipWhat}
+                    <button
+                        ref={skipRef}
+                        data-tv-skip
+                        onClick={() => seekTo(currentSkip.end)}
+                        className={cn("flex items-center gap-2 bg-white font-semibold text-black shadow-2xl rise-in hover:bg-white/90", mini ? "h-8 rounded-lg px-3 text-xs" : "h-11 rounded-xl px-5 text-sm")}
+                    >
+                        <FastForward className={cn("fill-black", mini ? "size-3.5" : "size-4")} /> Skip {skipWhat}
                     </button>
                 )}
                 {showUpNext && nextEp && (
-                    <div data-tv-skip className="w-72 rounded-2xl bg-black/80 p-4 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in">
+                    <div data-tv-skip className={cn("bg-black/80 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in", mini ? "w-52 rounded-xl p-2.5" : "w-72 rounded-2xl p-4")}>
                         <p className="text-xs font-medium tracking-wide text-white/60 uppercase">Up next</p>
-                        <p className="mt-0.5 font-semibold">Episode {nextEp.episode}</p>
-                        <p className="mt-0.5 text-sm text-white/70 tabular-nums">{autoNext ? (countdown <= 10 ? `Playing in ${countdown}s` : "Plays when this one ends") : "Ready when you are"}</p>
-                        <div className="mt-3 flex gap-2">
+                        <p className={cn("mt-0.5 font-semibold", mini && "text-sm")}>Episode {nextEp.episode}</p>
+                        <p className={cn("mt-0.5 text-white/70 tabular-nums", mini ? "text-xs" : "text-sm")}>{autoNext ? (countdown <= 10 ? `Playing in ${countdown}s` : "Plays when this one ends") : "Ready when you are"}</p>
+                        <div className={cn("flex gap-2", mini ? "mt-2" : "mt-3")}>
                             <button
                                 ref={upNextRef}
                                 onClick={() => playNext(true)}
-                                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-black hover:bg-white/90"
+                                className={cn("flex flex-1 items-center justify-center gap-2 bg-white font-semibold text-black hover:bg-white/90", mini ? "h-8 rounded-lg text-xs" : "h-10 rounded-xl text-sm")}
                             >
-                                <Play className="size-4 fill-black" /> Play now
+                                <Play className={cn("fill-black", mini ? "size-3.5" : "size-4")} /> Play now
                             </button>
-                            <button onClick={() => setUpNextOff(true)} className="h-10 rounded-xl px-3 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
+                            <button onClick={() => setUpNextOff(true)} className={cn("font-medium text-white/80 hover:bg-white/10 hover:text-white", mini ? "h-8 rounded-lg px-2 text-xs" : "h-10 rounded-xl px-3 text-sm")}>
                                 {autoNext ? "Cancel" : "Hide"}
                             </button>
                         </div>
                     </div>
                 )}
             </div>
-            {showResumed && (
+            {showResumed && !mini && (
                 <div className="absolute bottom-32 left-8 z-10 flex items-center gap-3 rounded-xl bg-black/75 py-2 pr-2 pl-4 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in">
                     <span className="tabular-nums">Resumed at {formatDuration(resumedFrom)}</span>
                     {tv ? (
@@ -1555,9 +1664,9 @@ async function fetchable(src: string): Promise<Fetchable> {
 // An empty picture (a transparent pixel): the video's poster.
 const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 
-function CtrlButton({ children, onClick, label }: { children: React.ReactNode; onClick: () => void; label: string }) {
+function CtrlButton({ children, onClick, label, small }: { children: React.ReactNode; onClick: () => void; label: string; small?: boolean }) {
     return (
-        <button onClick={onClick} title={label} aria-label={label} className="grid size-10 place-items-center rounded-full transition hover:bg-white/15 active:scale-95">
+        <button onClick={onClick} title={label} aria-label={label} className={cn("grid place-items-center rounded-full transition hover:bg-white/15 active:scale-95", small ? "size-8" : "size-10")}>
             {children}
         </button>
     )

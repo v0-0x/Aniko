@@ -164,6 +164,7 @@ export type SearchParams = {
     search?: string
     type?: string
     genres?: string[]
+    tags?: string[]
     season?: string
     year?: number
     formats?: string[]

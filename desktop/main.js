@@ -5,7 +5,7 @@
 // window makes carries the per-run shell token, which is how the server
 // recognises its own desktop window when the browser Web UI is turned off.
 
-const { app, BrowserWindow, ipcMain, shell, session, Menu, dialog, nativeImage, Tray, Notification, powerMonitor } = require("electron")
+const { app, BrowserWindow, ipcMain, shell, session, Menu, dialog, nativeImage, Tray, Notification, powerMonitor, screen } = require("electron")
 const { spawn, execFileSync } = require("node:child_process")
 const fs = require("node:fs")
 const os = require("node:os")
@@ -346,17 +346,7 @@ function createWindow(page = "") {
     Menu.setApplicationMenu(appMenu())
     mainWindow.once("ready-to-show", () => mainWindow.show())
 
-    // External links open in the system browser; the app never navigates away.
-    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (/^https?:\/\//.test(url) && !isInternal(url)) shell.openExternal(url)
-        return { action: "deny" }
-    })
-    mainWindow.webContents.on("will-navigate", (e, url) => {
-        if (!isInternal(url)) {
-            e.preventDefault()
-            if (/^https?:\/\//.test(url)) shell.openExternal(url)
-        }
-    })
+    keepInside(mainWindow.webContents)
     mainWindow.webContents.on("before-input-event", (_e, input) => {
         if (input.type === "keyDown" && input.key === "F11") mainWindow.setFullScreen(!mainWindow.isFullScreen())
         if (input.type === "keyDown" && input.control && input.shift && input.key.toLowerCase() === "i") mainWindow.webContents.toggleDevTools()
@@ -371,6 +361,87 @@ function createWindow(page = "") {
     mainWindow.on("query-session-end", () => (app.isQuitting = true))
     mainWindow.loadURL(baseUrl + page)
 }
+
+// External links open in the system browser; Kumo's windows never navigate
+// away from Kumo.
+function keepInside(contents) {
+    contents.setWindowOpenHandler(({ url }) => {
+        if (/^https?:\/\//.test(url) && !isInternal(url)) shell.openExternal(url)
+        return { action: "deny" }
+    })
+    contents.on("will-navigate", (e, url) => {
+        if (!isInternal(url)) {
+            e.preventDefault()
+            if (/^https?:\/\//.test(url)) shell.openExternal(url)
+        }
+    })
+}
+
+// Picture in picture: Kumo's player in a small window on top of the others
+// (its /mini page, the episode in its address), at the bottom right of the
+// screen Kumo's window is on. Its button to go back hands the episode, where
+// it's at, to Kumo's window (pendingPlay until that window asks for it).
+let miniWindow = null
+let pendingPlay = null
+
+ipcMain.handle("kumo:mini-open", (_e, page) => {
+    if (!baseUrl || typeof page !== "string" || !/^\/mini#/.test(page)) return false
+    if (miniWindow) {
+        miniWindow.loadURL(baseUrl + page)
+        miniWindow.show()
+        return true
+    }
+    const area = screen.getDisplayMatching(mainWindow?.getBounds() ?? screen.getPrimaryDisplay().bounds).workArea
+    const width = 480
+    const height = 270
+    miniWindow = new BrowserWindow({
+        width,
+        height,
+        x: area.x + area.width - width - 24,
+        y: area.y + area.height - height - 24,
+        minWidth: 320,
+        minHeight: 180,
+        title: "Kumo",
+        frame: false,
+        alwaysOnTop: true,
+        fullscreenable: false,
+        backgroundColor: "#000000",
+        icon: windowIcon(),
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            sandbox: true,
+            nodeIntegration: false,
+            spellcheck: false,
+        },
+    })
+    // Above other apps' windows too (and their full-screen ones on macOS).
+    miniWindow.setAlwaysOnTop(true, "floating")
+    miniWindow.setAspectRatio(16 / 9)
+    keepInside(miniWindow.webContents)
+    miniWindow.on("closed", () => (miniWindow = null))
+    miniWindow.loadURL(baseUrl + page)
+    return true
+})
+ipcMain.on("kumo:mini-close", () => miniWindow?.close())
+ipcMain.on("kumo:mini-expand", (_e, req) => {
+    // An episode (see web/src/lib/pip.ts asRequest), small.
+    if (!req || typeof req !== "object" || JSON.stringify(req).length > 4096) return
+    miniWindow?.close()
+    if (mainWindow && !mainWindow.webContents.isLoading()) {
+        mainWindow.webContents.send("kumo:play", req)
+        showWindow()
+    } else {
+        // Opened (or loading): it asks when it's ready.
+        pendingPlay = req
+        showWindow()
+    }
+})
+ipcMain.handle("kumo:take-play", () => {
+    const req = pendingPlay
+    pendingPlay = null
+    return req
+})
 
 // AniList login: open the authorize page in a separate window and capture
 // the access token from the redirect (#access_token=…) or the PIN page.

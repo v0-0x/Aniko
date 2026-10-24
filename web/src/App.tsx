@@ -1,19 +1,23 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { Lock } from "lucide-react"
-import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react"
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useState } from "react"
 import { Route, Routes, useLocation, useNavigate, useNavigationType } from "react-router-dom"
 import { Toaster } from "sonner"
 import { NowPlaying, ScanIndicator } from "./components/NowPlaying"
 import { PlayerOverlay } from "./components/player/Player"
 import { TvMenu } from "./components/TvMenu"
 import { QuickSearch } from "./components/QuickSearch"
+import { HolidayEffects } from "./components/HolidayEffects"
+import { useHolidayNotice } from "./components/HolidayBadge"
 import { WhatsNew } from "./components/WhatsNew"
 import { KumoLogo, Sidebar } from "./components/Sidebar"
 import { Button, Input, Spinner, TooltipProvider } from "./components/ui"
 import { api, onPasswordRequired } from "./lib/api"
 import { connectEvents, setNavigate } from "./lib/events"
 import { useStatus } from "./lib/queries"
-import { accentPreviewStore, passwordStore, useStore } from "./lib/store"
+import { miniRequest, takeHandedPlay } from "./lib/pip"
+import { passwordStore, playerStore, useStore } from "./lib/store"
+import { applyTheme, holidayStore, resolveTheme, themePreviewStore } from "./lib/themes"
 import { keepFocus, openPage } from "./lib/pages"
 import { initTV, tv } from "./lib/tv"
 import { setTitleLanguage } from "./lib/utils"
@@ -44,6 +48,9 @@ export default function App() {
     const location = useLocation()
     const { data: status } = useStatus()
     const needsPassword = useStore(passwordStore)
+    // The desktop app's small picture-in-picture window (lib/pip.ts): only
+    // the player.
+    const mini = location.pathname === "/mini"
 
     useEffect(() => connectEvents(qc), [qc])
     // Back finds a page as it was left (scrolled, focused); a new one starts
@@ -52,6 +59,12 @@ export default function App() {
     useLayoutEffect(() => openPage(location.key, navType), [location.key, navType])
     useEffect(() => keepFocus(), [])
     useEffect(() => setNavigate(navigate), [navigate])
+    // An episode handed back by the small picture-in-picture window (the
+    // desktop app's): played here.
+    useEffect(() => {
+        if (!mini) takeHandedPlay()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
     // The remote's Back (TV mode): the page before, then Home, then out.
     useEffect(
         () =>
@@ -71,16 +84,27 @@ export default function App() {
         }
     }, [])
 
-    // Apply UI preferences. Settings previews an accent color before it is
-    // saved; when that preview ends (Discard, leaving the page) the saved one
-    // comes back.
+    // Apply UI preferences. Settings previews the colors and holiday theme
+    // before they're saved; when that preview ends (Discard, leaving the
+    // page) the saved ones come back. The date is looked at again each hour:
+    // a holiday theme comes on (and goes) while Kumo runs.
     const ui = status?.settings.ui
-    const accentPreview = useStore(accentPreviewStore)
+    const preview = useStore(themePreviewStore)
+    const [hour, setHour] = useState(() => Math.floor(Date.now() / 3_600_000))
+    useEffect(() => {
+        const t = setInterval(() => setHour(Math.floor(Date.now() / 3_600_000)), 60_000)
+        return () => clearInterval(t)
+    }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const look = useMemo(() => resolveTheme(preview ?? ui), [preview, ui, hour])
     useEffect(() => {
         if (!ui) return
-        document.documentElement.style.setProperty("--brand", accentPreview || ui.accentColor || "#7c6cf2")
+        applyTheme(look)
+        holidayStore.set(look.holiday)
         document.documentElement.classList.toggle("reduce-motion", !!ui.reducedMotion)
-    }, [ui, accentPreview])
+    }, [ui, look])
+    // A holiday theme that came on by itself: said once.
+    useHolidayNotice(ui && !mini ? look.holiday : null, ui?.seasonal ?? "auto")
 
     // Anime titles in the language chosen in Settings, set before the pages
     // render: they're drawn again when it changes (keyed by it).
@@ -94,10 +118,11 @@ export default function App() {
     }, [location.pathname, location.search])
 
     if (needsPassword) return <PasswordGate />
+    if (mini) return <MiniPlayer />
 
     return (
         <TooltipProvider>
-            <div className="flex h-full bg-frame">
+            <div className="app-frame flex h-full bg-frame">
                 <Sidebar />
                 {/* The pages: a panel inset in the window, next to the sidebar. */}
                 <div className="min-w-0 flex-1 py-2 pr-2">
@@ -140,6 +165,7 @@ export default function App() {
             <QuickSearch />
             <PlayerOverlay />
             <WhatsNew />
+            <HolidayEffects effect={ui && look.effects ? look.holiday!.effect : null} reduceMotion={!!ui?.reducedMotion} />
             {tv && <TvMenu />}
             <Toaster
                 theme="dark"
@@ -147,6 +173,29 @@ export default function App() {
                 richColors
                 closeButton
                 toastOptions={{ style: { background: "var(--surface-2)", border: "1px solid var(--line-strong)", borderRadius: 10 } }}
+            />
+        </TooltipProvider>
+    )
+}
+
+// The /mini page: the episode in its address, in the small window.
+function MiniPlayer() {
+    const [ok] = useState(() => {
+        const r = miniRequest()
+        playerStore.set(r)
+        return !!r
+    })
+    useEffect(() => {
+        document.title = "Kumo"
+    }, [])
+    return (
+        <TooltipProvider>
+            {ok ? <PlayerOverlay mini /> : <p className="grid h-full place-items-center bg-black p-4 text-center text-sm text-muted">Nothing to play here.</p>}
+            <Toaster
+                theme="dark"
+                position="top-center"
+                visibleToasts={1}
+                toastOptions={{ style: { background: "var(--surface-2)", border: "1px solid var(--line-strong)", borderRadius: 10, fontSize: 12, padding: "8px 12px" } }}
             />
         </TooltipProvider>
     )

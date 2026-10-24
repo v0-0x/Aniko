@@ -49,6 +49,19 @@ function statusOf(g: Group): StatusFilter {
     return s === "REPEATING" ? "CURRENT" : (s as StatusFilter)
 }
 
+// What kind of anime: series, movies, or the OVAs, ONAs and specials.
+type TypeFilter = "ALL" | "TV" | "MOVIE" | "EXTRA"
+const TYPES: { value: TypeFilter; label: string }[] = [
+    { value: "ALL", label: "All types" },
+    { value: "TV", label: "TV series" },
+    { value: "MOVIE", label: "Movies" },
+    { value: "EXTRA", label: "OVAs, ONAs & specials" },
+]
+function typeOf(g: Group): TypeFilter {
+    const f = g.item.media.format
+    return f === "MOVIE" ? "MOVIE" : f === "OVA" || f === "ONA" || f === "SPECIAL" ? "EXTRA" : "TV"
+}
+
 const uniq = (xs: (string | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))]
 
 // [1, 2, 3, 5, 7, 8] -> "1–3, 5, 7–8"
@@ -116,6 +129,7 @@ export default function LocalLibraryPage() {
 
     const [filter, setFilter] = usePersisted<StatusFilter>("kumo-local-filter", "ALL")
     const [sort, setSort] = usePersisted<SortKey>("kumo-local-sort", "added")
+    const [type, setType] = usePersisted<TypeFilter>("kumo-local-type", "ALL")
     const [view, setView] = usePersisted<View>("kumo-local-view", "grid")
     const [q, setQ] = useState("")
 
@@ -134,11 +148,19 @@ export default function LocalLibraryPage() {
     // Tabs without anime are hidden, so a remembered filter may have no tab
     // any more: fall back to All.
     const activeFilter: StatusFilter = filter !== "ALL" && STATUS_TABS.some(t => t.value === filter) && counts[filter] > 0 ? filter : "ALL"
+    const typeCounts = useMemo(() => {
+        const c: Record<string, number> = { ALL: groups.length }
+        for (const g of groups) c[typeOf(g)] = (c[typeOf(g)] ?? 0) + 1
+        return c
+    }, [groups])
+    // The same for a remembered type with no anime any more.
+    const activeType: TypeFilter = type !== "ALL" && TYPES.some(t => t.value === type) && typeCounts[type] > 0 ? type : "ALL"
 
     const shown = useMemo(() => {
         const needle = q.trim().toLowerCase()
         const out = groups.filter(g => {
             if (activeFilter !== "ALL" && statusOf(g) !== activeFilter) return false
+            if (activeType !== "ALL" && typeOf(g) !== activeType) return false
             if (!needle) return true
             const m = g.item.media
             return [m.title.userPreferred, m.title.romaji, m.title.english, m.title.native, ...(m.synonyms ?? [])].some(t => t?.toLowerCase().includes(needle))
@@ -158,7 +180,7 @@ export default function LocalLibraryPage() {
             }
         })
         return out
-    }, [groups, activeFilter, sort, q])
+    }, [groups, activeFilter, activeType, sort, q])
 
     // Newest files on disk, one card per anime and day (a batch of 12
     // episodes shows up as "Episodes 1–12", not twelve cards).
@@ -331,6 +353,15 @@ export default function LocalLibraryPage() {
                                 <div className="w-60 shrink-0">
                                     <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter by title…" icon={<Search className="size-4" />} />
                                 </div>
+                                {/* Only with more than one kind there. */}
+                                {TYPES.filter(t => t.value !== "ALL" && typeCounts[t.value]).length > 1 && (
+                                    <Select
+                                        className="w-56 shrink-0"
+                                        value={activeType}
+                                        onChange={v => setType(v as TypeFilter)}
+                                        options={TYPES.filter(t => t.value === "ALL" || typeCounts[t.value]).map(t => ({ value: t.value, label: `${t.label} (${typeCounts[t.value] ?? 0})` }))}
+                                    />
+                                )}
                                 <Select
                                     className="w-48 shrink-0"
                                     value={sort}

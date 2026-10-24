@@ -6,6 +6,20 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 2,
+        title: "Themes, picture in picture and more",
+        changes: [
+            { title: "Color themes", text: "Eight looks for Kumo, from Midnight blue to true Black for OLED screens.", to: "/settings?tab=ui" },
+            {
+                title: "Holiday themes",
+                text: "Kumo dresses up by itself: bats in October, snow in December, hearts in February and more. Turn them off, or keep one all year, in Settings.",
+                to: "/settings?tab=ui",
+            },
+            { title: "Picture in picture", text: "In the desktop app, an episode goes on in a small window on top of the others: p, or the button next to Fullscreen." },
+            { title: "Movies, OVAs and specials", text: "Local library shows only TV series, movies, or OVAs, ONAs and specials when you like.", to: "/local" },
+        ],
+    },
+    {
         id: 1,
         title: "Devices, the player and your library",
         changes: [

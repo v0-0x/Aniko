@@ -42,19 +42,18 @@ export const pluginStore = createStore<Record<string, PluginState>>({})
 // Requests from plugins to open a tray (tray.open()).
 export const trayOpenStore = createStore<{ pluginId: string; trayId: string } | null>(null)
 
-// In-app player
+// In-app player. Handed from one player to another (picture in picture and
+// back, lib/pip.ts): where it was (start), and the tracks picked there.
+export type HandedTracks = { audio?: number; sub?: string; source?: number }
 export type PlayerRequest =
-    | { kind: "local"; path: string; mediaId: number; episode: number; start?: number }
-    | { kind: "stream"; provider: string; mediaId: number; episode: number; dub: boolean; server?: string }
+    | { kind: "local"; path: string; mediaId: number; episode: number; start?: number; tracks?: HandedTracks }
+    | { kind: "stream"; provider: string; mediaId: number; episode: number; dub: boolean; server?: string; start?: number; tracks?: HandedTracks }
 
 export const playerStore = createStore<PlayerRequest | null>(null)
 
 export const passwordStore = createStore<boolean>(false)
 
 export const searchOpenStore = createStore<boolean>(false)
-
-// Accent color picked in Settings but not saved yet (null: use the saved one).
-export const accentPreviewStore = createStore<string | null>(null)
 
 // Notifications muted with the bell in the sidebar (lib/toast.ts): only
 // errors show. Remembered by this browser.

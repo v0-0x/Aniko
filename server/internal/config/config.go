@@ -230,7 +230,20 @@ type UISettings struct {
 	HomeSections     []string `json:"homeSections"`
 	// The anime titles: "english" (where AniList has one) or "romaji".
 	TitleLanguage string `json:"titleLanguage"`
+	// The colors of the app (ColorThemes), and the holiday themes: "auto"
+	// (each in its month, see web/src/lib/themes.ts), "off", or one of
+	// Holidays always. SeasonalEffects: their snow, bats, hearts...
+	ColorTheme      string `json:"colorTheme"`
+	Seasonal        string `json:"seasonal"`
+	SeasonalEffects bool   `json:"seasonalEffects"`
 }
+
+// ColorThemes and Holidays are the values UISettings takes (their colors are
+// in web/src/lib/themes.ts).
+var (
+	ColorThemes = []string{"kumo", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black"}
+	Holidays    = []string{"newyear", "valentine", "sakura", "summer", "halloween", "christmas"}
+)
 
 type DiscordSettings struct {
 	RichPresence bool   `json:"richPresence"`
@@ -304,6 +317,9 @@ func Defaults() Settings {
 			ShowEpisodeTitle: true,
 			HomeSections:     []string{"continue", "genres", "watching", "airing", "planning", "completed"},
 			TitleLanguage:    "english",
+			ColorTheme:       "kumo",
+			Seasonal:         "auto",
+			SeasonalEffects:  true,
 		},
 		Discord:    DiscordSettings{RichPresence: false},
 		Extensions: ExtensionSettings{MarketplaceURL: DefaultMarketplaceURL},
@@ -315,6 +331,8 @@ func Defaults() Settings {
 		// share with it, and has none of its own.
 		s.Library.Dir, s.Library.RefreshOnStartup, s.Library.AutoRefresh = "", false, false
 		s.Sharing.Enabled = true
+		// A TV is slow at drawing them over the pages: on when asked for.
+		s.UI.SeasonalEffects = false
 	}
 	return s
 }
@@ -500,6 +518,12 @@ func sanitize(s Settings) Settings {
 	}
 	if s.UI.TitleLanguage != "romaji" {
 		s.UI.TitleLanguage = "english"
+	}
+	if !slices.Contains(ColorThemes, s.UI.ColorTheme) {
+		s.UI.ColorTheme = d.UI.ColorTheme
+	}
+	if s.UI.Seasonal != "off" && !slices.Contains(Holidays, s.UI.Seasonal) {
+		s.UI.Seasonal = "auto"
 	}
 	if len(s.UI.HomeSections) == 0 {
 		s.UI.HomeSections = d.UI.HomeSections

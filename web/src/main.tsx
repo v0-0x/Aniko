@@ -4,6 +4,10 @@ import ReactDOM from "react-dom/client"
 import { BrowserRouter } from "react-router-dom"
 import App from "./App"
 import "./index.css"
+import { applyCachedTheme } from "./lib/themes"
+
+// The colors used last time, before the settings come from the server.
+applyCachedTheme()
 
 const queryClient = new QueryClient({
     defaultOptions: {

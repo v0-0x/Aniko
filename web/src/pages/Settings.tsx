@@ -43,7 +43,8 @@ import { useCheckUpdate, useOnlineProviders, useSaveSettings, useSharing, useSta
 import { exampleMpvPath, installHint, installSource, platformName } from "@/lib/platform"
 import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
-import { accentPreviewStore, useStore } from "@/lib/store"
+import { useStore } from "@/lib/store"
+import { activeHoliday, COLOR_THEMES, HOLIDAYS, themePreviewStore } from "@/lib/themes"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { systemNotifications } from "@/lib/alerts"
 import { androidApp, setTvWidth, TV_WIDTHS, tv, tvWidth } from "@/lib/tv"
@@ -160,13 +161,13 @@ export default function SettingsPage() {
     }, [server])
     const dirty = useMemo(() => !!draft && !!server && !same(draft, server), [draft, server])
 
-    // Preview the accent color being edited; App shows the saved one again
-    // once the preview ends (Discard, leaving the page).
-    const accent = draft?.ui.accentColor
+    // Preview the colors and holiday theme being edited; App shows the saved
+    // ones again once the preview ends (Discard, leaving the page).
+    const ui = draft?.ui
     useEffect(() => {
-        accentPreviewStore.set(accent || null)
-    }, [accent])
-    useEffect(() => () => accentPreviewStore.set(null), [])
+        themePreviewStore.set(ui ? { colorTheme: ui.colorTheme, accentColor: ui.accentColor, seasonal: ui.seasonal, seasonalEffects: ui.seasonalEffects } : null)
+    }, [ui?.colorTheme, ui?.accentColor, ui?.seasonal, ui?.seasonalEffects])
+    useEffect(() => () => themePreviewStore.set(null), [])
 
     if (!draft || !status) return null
     const set = <K extends keyof Settings>(k: K, v: Partial<Settings[K]>) => setDraft(d => (d ? { ...d, [k]: { ...d[k], ...v } } : d))
@@ -900,10 +901,49 @@ function TvSizeRow() {
 const ACCENTS = ["#7c6cf2", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#e879f9", "#38bdf8", "#a3e635"]
 
 function UISection({ draft, set }: SectionProps) {
+    const seasonal = draft.ui.seasonal ?? "auto"
+    // The one on now with these settings (or that would be, for the hint).
+    const holiday = activeHoliday(seasonal)
     return (
         <>
             <Group title="Theme">
-                <Stack label="Accent color">
+                <Stack label="Colors">
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                        {COLOR_THEMES.map(t => {
+                            const on = (draft.ui.colorTheme ?? "kumo") === t.id
+                            return (
+                                <button
+                                    key={t.id}
+                                    onClick={() => set("ui", { colorTheme: t.id, accentColor: t.accent })}
+                                    aria-pressed={on}
+                                    className={cn("focus-ring flex flex-col gap-2 rounded-lg border p-2 text-left transition", on ? "border-white/70" : "border-line hover:border-white/25")}
+                                    style={{ background: t.palette.frame }}
+                                >
+                                    {/* The window in small: the sidebar, a page with panels, the accent. */}
+                                    <span className="flex h-12 gap-1.5 overflow-hidden rounded-md" aria-hidden>
+                                        <span className="flex w-4 flex-col gap-1 pt-1.5">
+                                            <span className="h-1 rounded-full" style={{ background: t.accent }} />
+                                            <span className="h-1 rounded-full" style={{ background: t.palette.s3 }} />
+                                            <span className="h-1 rounded-full" style={{ background: t.palette.s3 }} />
+                                        </span>
+                                        <span className="flex flex-1 flex-col gap-1 rounded p-1.5" style={{ background: t.palette.bg }}>
+                                            <span className="h-2 w-2/3 rounded-sm" style={{ background: t.palette.s3 }} />
+                                            <span className="flex flex-1 gap-1">
+                                                <span className="flex-1 rounded-sm" style={{ background: t.palette.s1 }} />
+                                                <span className="flex-1 rounded-sm" style={{ background: t.palette.s2 }} />
+                                                <span className="w-2 rounded-sm" style={{ background: t.accent }} />
+                                            </span>
+                                        </span>
+                                    </span>
+                                    <span className="px-0.5 text-[13px] font-medium" style={{ color: "#ececee" }}>
+                                        {t.name}
+                                    </span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </Stack>
+                <Stack label="Accent color" help={holiday ? `While the ${holiday.name} theme is on, its color is used instead.` : undefined}>
                     <div className="flex flex-wrap items-center gap-2.5">
                         {ACCENTS.map(c => (
                             <button
@@ -919,9 +959,30 @@ function UISection({ draft, set }: SectionProps) {
                             value={draft.ui.accentColor}
                             onChange={e => set("ui", { accentColor: e.target.value })}
                             className="size-9 cursor-pointer rounded-full border border-line bg-transparent"
+                            aria-label="Another color"
                         />
                     </div>
                 </Stack>
+                <Row
+                    label="Holiday themes"
+                    help={
+                        seasonal === "auto"
+                            ? `Each in its time: ${HOLIDAYS.map(h => `${h.name} ${h.when.replace(/^In /, "in ")}`).join(", ")}.${holiday ? ` ${holiday.name} is on now.` : ""}`
+                            : seasonal === "off"
+                              ? "No holiday colors, decorations or animations."
+                              : `${holiday?.name ?? "It"}, whatever the date.`
+                    }
+                >
+                    <Select
+                        className="w-44"
+                        value={seasonal}
+                        onChange={v => set("ui", { seasonal: v })}
+                        options={[{ value: "auto", label: "By the date" }, { value: "off", label: "Off" }, ...HOLIDAYS.map(h => ({ value: h.id, label: `Always ${h.name}` }))]}
+                    />
+                </Row>
+                <Row label="Holiday animations" help={`${holiday ? holiday.effectName : "Snow, bats, hearts"} over the pages (not over videos). Off with Reduce motion.`}>
+                    <Switch checked={draft.ui.seasonalEffects ?? true} disabled={seasonal === "off"} onChange={v => set("ui", { seasonalEffects: v })} />
+                </Row>
                 <Row label="Card size">
                     <Select
                         className="w-36"

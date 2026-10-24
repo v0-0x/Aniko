@@ -233,6 +233,10 @@ export type Settings = {
         blurUnwatched: boolean
         titleLanguage?: "english" | "romaji"
         homeSections: string[]
+        // lib/themes.ts: a COLOR_THEMES id; "auto", "off" or a HOLIDAYS id.
+        colorTheme?: string
+        seasonal?: string
+        seasonalEffects?: boolean
     }
     discord: { richPresence: boolean; clientId: string }
     extensions: { marketplaceUrl: string; autoUpdate: boolean }
