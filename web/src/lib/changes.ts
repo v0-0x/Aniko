@@ -6,6 +6,16 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 6,
+        title: "A new Themes menu",
+        changes: [
+            {
+                title: "Themes, redone",
+                text: "Themes in the sidebar is now a panel: each color theme shows as a small window in its colors, the holiday themes sit in a grid, and the colors fade over when you pick a new one. The arrow keys (and a TV remote) move across the grids.",
+            },
+        ],
+    },
+    {
         id: 5,
         title: "Settings, reorganized",
         changes: [

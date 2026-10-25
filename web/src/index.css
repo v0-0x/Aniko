@@ -140,6 +140,15 @@
     .pop-in {
         animation: pop-in 0.16s var(--ease) both;
     }
+    /* A new theme: the colors fade over for a moment (ThemesMenu). */
+    .theme-fade,
+    .theme-fade *,
+    .theme-fade *::before,
+    .theme-fade *::after {
+        transition-property: background-color, border-color, color, fill, stroke, box-shadow, outline-color !important;
+        transition-duration: 0.4s !important;
+        transition-timing-function: var(--ease) !important;
+    }
     .prose-desc p + p {
         margin-top: 0.6rem;
     }
