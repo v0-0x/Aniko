@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useEffect } from "react"
 import { toast } from "@/lib/toast"
 import { api, qs } from "./api"
 import { setUpdateLater } from "./store"
@@ -360,6 +361,35 @@ export function useMangaChapters(mediaId: number, provider: string) {
 // (lib/events.ts), also while one is being installed.
 export function useUpdateStatus() {
     return useQuery({ queryKey: ["update"], queryFn: () => api.get<UpdateStatus>("/api/update"), staleTime: 5 * 60_000 })
+}
+
+// Kumo opened (started, its window opened again, back in front, the TV app
+// reopened): a check for updates, unless one ran in the last 10 minutes.
+// Unlike Check for updates, an update put off with Later stays put off.
+export function useCheckOnOpen(enabled: boolean) {
+    const qc = useQueryClient()
+    useEffect(() => {
+        if (!enabled) return
+        let running = false
+        const check = async () => {
+            if (running || document.hidden) return
+            running = true
+            try {
+                const u = await api.get<UpdateStatus>("/api/update")
+                // Never checked yet: Kumo has just started and checks by
+                // itself in a moment.
+                if (u.checking || !u.checkedAt || Date.now() / 1000 - u.checkedAt < 600) return
+                qc.setQueryData(["update"], await api.post<UpdateStatus>("/api/update/check"))
+            } catch {
+                /* the next opening tries again */
+            } finally {
+                running = false
+            }
+        }
+        check()
+        document.addEventListener("visibilitychange", check)
+        return () => document.removeEventListener("visibilitychange", check)
+    }, [enabled, qc])
 }
 
 export function useCheckUpdate() {

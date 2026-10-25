@@ -15,7 +15,7 @@ import { KumoLogo, Sidebar } from "./components/Sidebar"
 import { Button, Input, Spinner, TooltipProvider } from "./components/ui"
 import { api, onPasswordRequired } from "./lib/api"
 import { connectEvents, setNavigate } from "./lib/events"
-import { useStatus } from "./lib/queries"
+import { useCheckOnOpen, useStatus } from "./lib/queries"
 import { miniRequest, takeHandedPlay } from "./lib/pip"
 import { passwordStore, playerStore, useStore } from "./lib/store"
 import { applyTheme, holidayStore, resolveTheme, themePreviewStore, useClassic } from "./lib/themes"
@@ -111,6 +111,8 @@ export default function App() {
     // From the saved settings: not a holiday being tried in Settings.
     const saved = useMemo(() => resolveTheme(ui), [ui, hour])
     useHolidayNotice(ui && !mini ? saved.holiday : null, ui?.seasonal ?? "auto")
+    // Updates are looked for each time Kumo opens (on this computer only).
+    useCheckOnOpen(!!status && status.client !== "lan" && !mini)
     const playing = useStore(playerStore, p => !!p)
     // Before 2.0's look: its plain panel, no holiday decorations.
     const classic = useClassic()

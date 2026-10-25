@@ -112,8 +112,8 @@ const (
 	failureFile = "last-failure.txt"
 )
 
-// Checker looks for updates (30 seconds after Start, then every 6 hours, and
-// when asked) and installs them.
+// Checker looks for updates (just after Start, then every 6 hours, and when
+// asked: the app asks each time it's opened) and installs them.
 type Checker struct {
 	// API is GitHub's REST API (tests use a fake one) and Repo the
 	// repository, "owner/name"; RepoID its number, which the API is asked
@@ -199,7 +199,7 @@ func New(hub *events.Hub, exits *lifecycle.Exits) *Checker {
 		StartHelper:    util.Detach,
 		ParentPID:      os.Getppid,
 		Writable:       writable,
-		FirstCheck:     30 * time.Second,
+		FirstCheck:     5 * time.Second,
 		Interval:       6 * time.Hour,
 	}
 	c.st.State = StateIdle
