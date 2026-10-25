@@ -242,19 +242,20 @@ var releaseVersion = regexp.MustCompile(`^\d+(\.\d+)*$`)
 // Token
 
 // githubToken finds the user's GitHub token without ever asking for one:
-// from the environment, then the GitHub CLI, then git's credential store.
-// "" when there's none; requests are then anonymous, which works once the
-// repository is public. The token is never logged, stored or shown.
+// from the environment, then the GitHub CLI. "" when there's none; requests
+// are then anonymous, which is all a public repository needs. The token is
+// never logged, stored or shown.
+//
+// git's credential helpers aren't asked: on Windows that can open Git
+// Credential Manager's "CredentialHelperSelector" window, and with updates
+// looked for each time Kumo opens it kept coming back.
 func githubToken(ctx context.Context) string {
 	for _, name := range []string{"KUMO_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"} {
 		if tok := strings.TrimSpace(os.Getenv(name)); tok != "" {
 			return tok
 		}
 	}
-	if tok := ghToken(ctx); tok != "" {
-		return tok
-	}
-	return gitCredential(ctx)
+	return ghToken(ctx)
 }
 
 // ghToken asks the GitHub CLI (gh auth login) for its token.
@@ -273,29 +274,4 @@ func ghToken(ctx context.Context) string {
 	}
 	tok, _, _ := strings.Cut(strings.TrimSpace(string(out)), "\n")
 	return strings.TrimSpace(tok)
-}
-
-// gitCredential asks git's credential helpers (Git Credential Manager, the
-// keyring, a credentials file) for github.com. Nothing may prompt: no
-// terminal prompt, no askpass program, no Credential Manager window.
-func gitCredential(ctx context.Context) string {
-	git, ok := util.LookPath("git")
-	if !ok {
-		return ""
-	}
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, git, "credential", "fill")
-	cmd.Stdin = strings.NewReader("protocol=https\nhost=github.com\n\n")
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GCM_INTERACTIVE=never", "GIT_ASKPASS=")
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-	for _, line := range strings.Split(string(out), "\n") {
-		if tok, ok := strings.CutPrefix(strings.TrimRight(line, "\r"), "password="); ok && tok != "" {
-			return tok
-		}
-	}
-	return ""
 }

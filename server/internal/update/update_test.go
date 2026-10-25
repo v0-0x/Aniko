@@ -338,7 +338,8 @@ func TestTokenFromEnvironment(t *testing.T) {
 	}
 }
 
-// Then the GitHub CLI's, then git's credential helpers', without prompts.
+// Then the GitHub CLI's. git's credential helpers are never asked (on
+// Windows they can open a Credential Manager window).
 func TestTokenFromPrograms(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the stand-in programs are shell scripts")
@@ -358,33 +359,20 @@ func TestTokenFromPrograms(t *testing.T) {
 	script("gh", `[ "$*" = "auth token --hostname github.com" ] || exit 2
 echo gh-token
 `)
-	script("git", `[ "$*" = "credential fill" ] || exit 2
-input=""
-while IFS= read -r line; do input="$input$line;"; done
-printf 'stdin=%s\nprompt=%s\ngcm=%s\naskpass=%s/%s\n' "$input" "$GIT_TERMINAL_PROMPT" "$GCM_INTERACTIVE" "${GIT_ASKPASS-unset}" "${GIT_ASKPASS:+set}" >"$FAKE_GIT_RECORD"
+	script("git", `echo "$*" >"$FAKE_GIT_RECORD"
 printf 'protocol=https\nhost=github.com\nusername=me\npassword=git-token\n'
 `)
 	ctx := context.Background()
 	if tok := githubToken(ctx); tok != "gh-token" {
 		t.Fatalf("token %q, want gh's", tok)
 	}
-	// gh isn't signed in: git's credentials.
+	// gh isn't signed in: anonymous, and git wasn't run.
 	script("gh", "echo 'not logged in' >&2; exit 1\n")
-	if tok := githubToken(ctx); tok != "git-token" {
-		t.Fatalf("token %q, want git's", tok)
-	}
-	got, err := os.ReadFile(record)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := "stdin=protocol=https;host=github.com;;\nprompt=0\ngcm=never\naskpass=/\n"; string(got) != want {
-		t.Fatalf("git credential fill got:\n%s\nwant:\n%s", got, want)
-	}
-	// Nothing anywhere: anonymous.
-	_ = os.Remove(filepath.Join(bin, "gh"))
-	script("git", "exit 128\n")
 	if tok := githubToken(ctx); tok != "" {
 		t.Fatalf("token %q, want none", tok)
+	}
+	if _, err := os.Stat(record); err == nil {
+		t.Fatal("git was asked for credentials")
 	}
 }
 

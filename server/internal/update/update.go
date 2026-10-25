@@ -19,8 +19,7 @@
 // gets: stable releases only (the default), or betas too.
 //
 // The requests carry the user's GitHub token when one can be found without
-// asking (see githubToken): a private repository needs one, and it raises
-// GitHub's limit on requests.
+// asking (see githubToken); it raises GitHub's limit on requests.
 package update
 
 import (
