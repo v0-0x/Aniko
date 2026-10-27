@@ -119,7 +119,8 @@ function MonthlyChart({ months }: { months: Month[] }) {
     const max = Math.max(0, ...months.map(m => m.episodes))
     const ticks = niceTicks(max)
     const top = ticks[ticks.length - 1] || 1
-    const empty = months.every(m => m.episodes === 0 && m.minutes === 0)
+    // No bar to draw (minutes of episodes not finished don't make one).
+    const empty = months.every(m => m.episodes === 0)
     const table = (
         <table className="w-full text-sm">
             <thead className="text-left text-xs text-subtle">
@@ -143,7 +144,7 @@ function MonthlyChart({ months }: { months: Month[] }) {
     return (
         <ChartCard title="Episodes watched in Kumo" note="By the month you last watched each one, the last 12 months" table={table}>
             {empty ? (
-                <p className="py-10 text-center text-sm text-muted">Nothing watched in Kumo these 12 months yet.</p>
+                <p className="py-10 text-center text-sm text-muted">No episodes finished in Kumo these 12 months yet. Each one you watch to the end here shows up by month.</p>
             ) : (
                 // Headroom above the plot: the hover readout over the tallest
                 // month stays clear of the title.

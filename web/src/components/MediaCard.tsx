@@ -84,7 +84,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                 {score ? (
                     <span
                         className={cn(
-                            "absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 transition-opacity group-hover/card:opacity-100",
+                            "absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100 [@media(pointer:coarse)]:opacity-100",
                             label,
                             menu && "right-10", // next to the menu button
                         )}
@@ -191,14 +191,19 @@ function CardMenu({ menu, className, children }: { menu: React.ReactNode; classN
     )
 }
 
-export function MediaGrid({ children, className, size = "md" }: { children: React.ReactNode; className?: string; size?: string }) {
+// start: a TV's remote starts on its first card when the page opens.
+export function MediaGrid({ children, className, size = "md", start }: { children: React.ReactNode; className?: string; size?: string; start?: boolean }) {
     const cols =
         size === "sm"
             ? "grid-cols-[repeat(auto-fill,minmax(130px,1fr))]"
             : size === "lg"
               ? "grid-cols-[repeat(auto-fill,minmax(200px,1fr))]"
               : "grid-cols-[repeat(auto-fill,minmax(160px,1fr))]"
-    return <div className={cn("grid gap-x-4 gap-y-6", cols, className)}>{children}</div>
+    return (
+        <div className={cn("grid gap-x-4 gap-y-6", cols, className)} data-tv-autofocus={start || undefined}>
+            {children}
+        </div>
+    )
 }
 
 export function MediaCardSkeleton() {

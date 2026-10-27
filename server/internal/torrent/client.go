@@ -138,8 +138,20 @@ func (q *Qbittorrent) login(ctx context.Context) error {
 }
 
 func (q *Qbittorrent) unreachable(err error) error {
-	return fmt.Errorf("qBittorrent isn't reachable at %s — is it running with its Web UI enabled (Tools › Options › Web UI)? (%w)", baseURL(q.cfg), err)
+	return &unreachableError{fmt.Sprintf("qBittorrent isn't answering at %s. Is it running, with its Web UI on (Tools › Options › Web UI)?", baseURL(q.cfg)), err}
 }
+
+// unreachableError: the client didn't answer at all (it isn't running, or
+// its Web UI or remote access is off). Its message says that plainly, without
+// the network error's text ("dial tcp …: connection refused"), which is kept
+// for errors.Is and As.
+type unreachableError struct {
+	msg string
+	err error
+}
+
+func (e *unreachableError) Error() string { return e.msg }
+func (e *unreachableError) Unwrap() error { return e.err }
 
 // badAddress reports a host setting that doesn't make a valid URL.
 func badAddress(client string, c config.TorrentClientConfig, err error) error {
@@ -358,7 +370,7 @@ func (t *Transmission) rpc(ctx context.Context, method string, args any, out any
 		}
 		resp, err := t.http.Do(req)
 		if err != nil {
-			return fmt.Errorf("Transmission unreachable at %s: %w", baseURL(t.cfg), err)
+			return &unreachableError{fmt.Sprintf("Transmission isn't answering at %s. Is it running, with remote access on (Edit › Preferences › Remote)?", baseURL(t.cfg)), err}
 		}
 		raw, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()

@@ -56,7 +56,7 @@ win:
       to: kumo.exe
     # The setup that installs the programs Kumo uses (Scoop, Git, ani-cli,
     # ffmpeg, mpv...): the installer offers to run it (installer.nsh), and
-    # kumo.exe has the same script built in for Settings > App > Programs.
+    # kumo.exe has the same script built in for Settings > Desktop app & programs.
     - from: ../server/internal/winsetup/install-tools.ps1
       to: install-tools.ps1
 

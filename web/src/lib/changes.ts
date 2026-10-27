@@ -6,6 +6,28 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 7,
+        title: "Polished all over",
+        changes: [
+            {
+                title: "On your TV",
+                text: "Opening an anime starts on its Play button, and Home on your first Continue watching card. The manga reader turns pages with the remote, Back takes you up Home before it leaves Kumo, and holding OK no longer pauses and plays over and over. A remote's Stop, Previous and Captions keys work too.",
+            },
+            {
+                title: "On a phone",
+                text: "Tabs along the bottom instead of the sidebar, and pages that use the whole screen: Settings, buttons and menus fit. In the Android app, Back goes back a page instead of closing Kumo.",
+            },
+            {
+                title: "On your computer",
+                text: "Kumo's window opens where you left it, at its size, and shows that it's starting. Right-click copies and pastes, Ctrl + and − zoom (and stay that way), and the mouse's back button goes back. If Kumo can't start, it says why and offers to try again.",
+            },
+            {
+                title: "Everywhere",
+                text: "Plainer messages when something can't be reached (qBittorrent, updates, episode info), a button on empty pages for what to do next, genre rows with arrows when they don't fit, and room for four-digit episode counts.",
+            },
+        ],
+    },
+    {
         id: 6,
         title: "A new Themes menu",
         changes: [

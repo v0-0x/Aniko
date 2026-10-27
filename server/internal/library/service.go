@@ -2,6 +2,7 @@ package library
 
 import (
 	"context"
+	"log"
 	"sort"
 	"sync"
 	"time"
@@ -81,7 +82,9 @@ func (s *Service) Entry(ctx context.Context, mediaID int, refresh bool) (*EntryV
 		v.Images, v.Mappings = meta.Images, meta.Mappings
 	}
 	if metaErr != nil {
-		v.MetadataNote = "Episode metadata unavailable: " + metaErr.Error()
+		// Said plainly on the page; what went wrong goes to the log.
+		log.Printf("episode metadata for %d: %v", mediaID, metaErr)
+		v.MetadataNote = "Episode titles and pictures couldn't be loaded from ani.zip just now. The episodes still play; Kumo tries again next time."
 	}
 	progress := 0
 	if entry != nil {

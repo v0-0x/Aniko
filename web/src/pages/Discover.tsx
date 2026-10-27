@@ -4,7 +4,7 @@ import { Link } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
 import { Carousel, MediaCard, MediaCardSkeleton } from "@/components/MediaCard"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
-import { Button, EmptyState, ErrorState, SectionHeader, Skeleton } from "@/components/ui"
+import { Button, ChipRow, EmptyState, ErrorState, SectionHeader, Skeleton } from "@/components/ui"
 import { useDiscover, useSearch } from "@/lib/queries"
 import { useStore } from "@/lib/store"
 import { holidayStore } from "@/lib/themes"
@@ -63,13 +63,13 @@ export default function DiscoverPage() {
             {/* Without a hero banner there is nothing to overlap. */}
             <div className={cn("relative z-10 flex flex-col gap-10 px-6 md:px-8 xl:px-10", hero ? "-mt-14" : "pt-8")}>
                 <PluginSlot slot="after-discover-screen-header" />
-                <div className="no-scrollbar flex gap-2 overflow-x-auto">
+                <ChipRow label="More genres">
                     {GENRES.map(g => (
                         <Link key={g} to={`/search?genre=${encodeURIComponent(g)}`} className="flex h-8 shrink-0 items-center rounded-full bg-white/[0.06] px-3.5 text-[13px] font-medium text-fg/80 transition-colors hover:bg-white/[0.1] hover:text-fg">
                             {g}
                         </Link>
                     ))}
-                </div>
+                </ChipRow>
                 {shown.length === 0 && (
                     <EmptyState
                         icon={<Compass className="size-6" />}
@@ -140,7 +140,7 @@ function Featured({ media, index, count, onIndex, onHold }: { media: Media; inde
             onFocus={() => onHold(true)}
             onBlur={e => !e.currentTarget.contains(e.relatedTarget as Node | null) && onHold(false)}
         >
-            <img key={media.id} src={banner(media)} alt="" className="absolute inset-0 size-full object-cover fade-in" />
+            <img key={media.id} src={banner(media)} alt="" className="absolute inset-0 size-full object-cover fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
             <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-bg/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-bg/90 via-bg/40 to-transparent" />
             <div key={media.id + "t"} className="absolute bottom-24 left-6 max-w-2xl rise-in md:left-8 xl:left-10">
@@ -176,8 +176,9 @@ function Featured({ media, index, count, onIndex, onHold }: { media: Media; inde
                 </div>
             </div>
             {count > 1 && (
-                <div className="absolute right-6 bottom-24 flex items-center gap-3 md:right-8 xl:right-10">
-                    <div className="flex gap-1.5">
+                // On a phone, up in the corner: clear of the buttons below.
+                <div className="absolute right-6 bottom-24 flex items-center gap-3 max-sm:top-4 max-sm:right-4 max-sm:bottom-auto md:right-8 xl:right-10">
+                    <div className="flex gap-1.5 max-sm:hidden">
                         {Array.from({ length: count }).map((_, k) => (
                             <button
                                 key={k}

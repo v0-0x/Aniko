@@ -68,12 +68,17 @@ export function ProgressEditor({ media, entry }: { media: Media; entry: Entry })
                 <Minus className="size-4" />
             </button>
             <div className="min-w-16 text-center text-sm tabular-nums">
+                {/* As wide as its number (One Piece's 1100 episodes too). */}
                 <input
                     value={value}
+                    inputMode="numeric"
+                    aria-label={media.type === "MANGA" ? "Chapters read" : "Episodes watched"}
                     onChange={e => setValue(Number(e.target.value.replace(/\D/g, "")) || 0)}
+                    onFocus={e => e.currentTarget.select()}
                     onBlur={() => value !== (entry?.progress ?? 0) && commit(value)}
                     onKeyDown={e => e.key === "Enter" && commit(value)}
-                    className="w-8 bg-transparent text-right font-semibold outline-none"
+                    style={{ width: `${Math.max(2, String(value).length) + 0.25}ch` }}
+                    className="bg-transparent text-right font-semibold outline-none"
                 />
                 <span className="text-subtle"> / {total || "?"}</span>
             </div>

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { ArrowDown, ArrowUp, FolderOpen, Magnet, Pause, Play, Plus, Power, Settings2, Trash2 } from "lucide-react"
+import { AlertTriangle, ArrowDown, ArrowUp, FolderOpen, Magnet, Pause, Play, Plus, Power, Settings2, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "@/lib/toast"
@@ -88,7 +88,7 @@ export default function TorrentsPage() {
                                     : `${clientLabel}${on} is not reachable`}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     {clientStatus?.connected && (
                         <div className="flex items-center gap-4 rounded-xl border border-line bg-surface-1 px-4 py-2 text-sm tabular-nums">
                             <span className="flex items-center gap-1.5 text-brand-strong">
@@ -125,8 +125,21 @@ export default function TorrentsPage() {
                     Kumo works with qBittorrent (Web UI) and Transmission to download anime straight into your library.
                 </EmptyState>
             )}
+            {/* Why it can't be reached, and where it's set up. */}
             {(hostDown || (clientName && clientName !== "none")) && !clientStatus?.connected && clientStatus?.error && (
-                <div className="mb-6 rounded-xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm text-rose-200">{clientStatus.error}</div>
+                <EmptyState
+                    icon={<AlertTriangle className="size-6" />}
+                    title={hostDown ? `${host} doesn't answer` : clientStatus.needsAuth ? `${clientLabel} needs a login` : `Can't reach ${clientLabel}${on}`}
+                    action={
+                        !host && (
+                            <Link to="/settings?tab=torrents">
+                                <Button icon={<Settings2 className="size-4" />}>Torrent settings</Button>
+                            </Link>
+                        )
+                    }
+                >
+                    <span className="break-words">{clientStatus.error}</span>
+                </EmptyState>
             )}
 
             {clientStatus?.connected && (

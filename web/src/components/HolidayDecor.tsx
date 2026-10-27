@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { Holiday } from "@/lib/themes"
+import { cn } from "@/lib/utils"
 
 // The holiday themes' decorations (lib/themes.ts), around the pages:
 // - HolidayBackdrop: the page panel's background, with the holiday's art
@@ -9,9 +10,9 @@ import type { Holiday } from "@/lib/themes"
 //   every page shows it the same (Christmas lights, summer lanterns,
 //   Halloween's cobweb in the corner). Nothing can be clicked on either.
 
-export function HolidayBackdrop({ holiday }: { holiday: Holiday | null }) {
+export function HolidayBackdrop({ holiday, phone }: { holiday: Holiday | null; phone?: boolean }) {
     return (
-        <div aria-hidden className="pointer-events-none absolute inset-y-2 right-2 left-0 overflow-hidden rounded-[14px] bg-bg">
+        <div aria-hidden className={cn("pointer-events-none absolute overflow-hidden bg-bg", phone ? "inset-0" : "inset-y-2 right-2 left-0 rounded-[14px]")}>
             {holiday && (
                 <>
                     {/* The holiday's light, from the top. */}

@@ -12,10 +12,12 @@ import { HolidayEffects } from "./components/HolidayEffects"
 import { useHolidayNotice } from "./components/HolidayBadge"
 import { WhatsNew } from "./components/WhatsNew"
 import { KumoLogo, Sidebar } from "./components/Sidebar"
+import { PhoneNav } from "./components/PhoneNav"
 import { Button, Input, Spinner, TooltipProvider } from "./components/ui"
 import { api, onPasswordRequired } from "./lib/api"
 import { connectEvents, setNavigate } from "./lib/events"
 import { useCheckOnOpen, useStatus } from "./lib/queries"
+import { useMediaQuery } from "./lib/hooks"
 import { miniRequest, takeHandedPlay } from "./lib/pip"
 import { passwordStore, playerStore, useStore } from "./lib/store"
 import { applyTheme, holidayStore, resolveTheme, themePreviewStore, useClassic } from "./lib/themes"
@@ -23,6 +25,9 @@ import { keepFocus, openPage } from "./lib/pages"
 import { initTV, tv } from "./lib/tv"
 import { cn, setTitleLanguage } from "./lib/utils"
 import HomePage from "./pages/Home"
+
+// Narrower than this: a phone's layout.
+const PHONE = "(max-width: 639px)"
 
 const EntryPage = lazy(() => import("./pages/Entry"))
 const DiscoverPage = lazy(() => import("./pages/Discover"))
@@ -68,13 +73,18 @@ export default function App() {
         if (!mini) takeHandedPlay()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    // The remote's Back (TV mode): the page before, then Home, then out.
+    // The remote's Back (TV mode): the page before, then Home, then Home's
+    // top (from further down it), then out.
     useEffect(
         () =>
             initTV(() => {
+                const m = document.getElementById("main-scroll")
                 if (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0) navigate(-1)
                 else if (window.location.pathname !== "/") navigate("/", { replace: true })
-                else return false
+                else if (tv && m && m.scrollTop > 120) {
+                    m.scrollTo({ top: 0, behavior: "smooth" })
+                    m.querySelector<HTMLElement>("[data-tv-autofocus] [tabindex], [data-tv-autofocus] a, [data-tv-autofocus] button")?.focus({ preventScroll: true })
+                } else return false
                 return true
             }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,6 +126,13 @@ export default function App() {
     const playing = useStore(playerStore, p => !!p)
     // Before 2.0's look: its plain panel, no holiday decorations.
     const classic = useClassic()
+    // A phone (a narrow window, not a TV): the pages take the whole width,
+    // with tabs along the bottom instead of the sidebar. What floats at the
+    // bottom (the now playing bar) stays above them.
+    const phone = useMediaQuery(PHONE) && !tv
+    useEffect(() => {
+        document.documentElement.style.setProperty("--phone-bar", phone ? "calc(3.75rem + env(safe-area-inset-bottom))" : "0px")
+    }, [phone])
 
     // Anime titles in the language chosen in Settings, set before the pages
     // render: they're drawn again when it changes (keyed by it).
@@ -133,17 +150,18 @@ export default function App() {
 
     return (
         <TooltipProvider>
-            <div className="app-frame flex h-full bg-frame">
-                <Sidebar />
-                {/* The pages: a panel inset in the window, next to the sidebar.
-                    Its background is behind them (with a holiday's art). */}
-                <div className="relative min-w-0 flex-1 py-2 pr-2">
-                    {!classic && <HolidayBackdrop holiday={ui ? look.holiday : null} />}
+            <div className={cn("app-frame flex h-full bg-frame", phone && "flex-col")}>
+                {!phone && <Sidebar />}
+                {/* The pages: a panel inset in the window, next to the sidebar
+                    (on a phone, the whole width). Its background is behind
+                    them (with a holiday's art). */}
+                <div className={cn("relative min-h-0 min-w-0 flex-1", !phone && "py-2 pr-2")}>
+                    {!classic && <HolidayBackdrop holiday={ui ? look.holiday : null} phone={phone} />}
                     <main
                         id="main-scroll"
                         className={cn(
-                            "relative h-full overflow-x-hidden overflow-y-auto border border-line",
-                            classic ? "rounded-xl bg-bg" : "rounded-[14px] shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]",
+                            "relative h-full overflow-x-hidden overflow-y-auto",
+                            phone ? classic && "bg-bg" : cn("border border-line", classic ? "rounded-xl bg-bg" : "rounded-[14px] shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]"),
                         )}
                     >
                         <Suspense
@@ -179,6 +197,7 @@ export default function App() {
                     </main>
                     {!classic && <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} />}
                 </div>
+                {phone && <PhoneNav />}
             </div>
             <NowPlaying />
             <ScanIndicator />

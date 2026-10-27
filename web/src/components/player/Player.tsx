@@ -147,6 +147,15 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
 
     const [subs, setSubs] = useState<SubOption[]>([])
     const [subKey, setSubKey] = useState<string>("off")
+    // Why it didn't play, with its buttons: a TV's remote goes to them.
+    const errorBox = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+        if (!tv || !error) return
+        const box = errorBox.current
+        ;(box?.querySelector<HTMLElement>("[data-primary]") ?? box?.querySelector<HTMLElement>("button"))?.focus({ preventScroll: true })
+    }, [error])
+    // The subtitles turned off with C, for C to turn them back on.
+    const lastSub = useRef<string | null>(null)
     const [cues, setCues] = useState<Cue[]>([])
     // How they look on this device; seconds they're moved (this anime's).
     const subStyle = useStore(subStyleStore)
@@ -992,7 +1001,8 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                     if (!e.repeat) togglePlay()
                     break
                 case "Enter":
-                    if (tv && onPicture && !t.closest("[data-tv-skip]")) togglePlay()
+                    // Held down (a remote's OK): once, not again and again.
+                    if (tv && onPicture && !t.closest("[data-tv-skip]")) !e.repeat && togglePlay()
                     else handled = false
                     break
                 case "ArrowLeft":
@@ -1037,6 +1047,19 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                     break
                 case "n":
                     playNext()
+                    break
+                // Subtitles off, and back on (the ones there were).
+                case "c": {
+                    const on = subs.find(s => s.key === lastSub.current && !s.bitmap) ?? subs.find(s => !s.bitmap)
+                    if (subKey !== "off") {
+                        lastSub.current = subKey
+                        changeSub("off")
+                    } else if (on) changeSub(on.key)
+                    break
+                }
+                // Closes (like mpv's q; a remote's Stop).
+                case "q":
+                    close()
                     break
                 case "Escape":
                     if (document.fullscreenElement) handled = false
@@ -1287,7 +1310,7 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
             )}
             {error && (
                 <div className={cn("absolute inset-0 grid place-items-center", mini ? "p-2" : "p-6")}>
-                    <div className={cn("max-w-md rounded-xl border border-line-strong bg-surface-1 text-center", mini ? "p-3" : "p-6")}>
+                    <div ref={errorBox} className={cn("max-w-md rounded-xl border border-line-strong bg-surface-1 text-center", mini ? "p-3" : "p-6")}>
                         <p className={cn("font-semibold", mini ? "text-sm" : "text-lg")}>Playback failed</p>
                         <p className={cn("text-muted", mini ? "mt-1 line-clamp-2 text-xs" : "mt-2 text-sm")}>{error}</p>
                         <div className={cn("flex justify-center gap-2", mini ? "mt-3" : "mt-5")}>
@@ -1296,6 +1319,7 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                             </button>
                             {unreachableAt.current !== null && (
                                 <button
+                                    data-primary
                                     className="h-10 rounded-xl bg-brand px-4 text-sm font-medium text-white"
                                     onClick={() => {
                                         const at = unreachableAt.current ?? where()
@@ -1418,7 +1442,9 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                         {paused ? <Play className={cn("fill-white", mini ? "size-5" : "size-6")} /> : <Pause className={cn("fill-white", mini ? "size-5" : "size-6")} />}
                     </CtrlButton>
                     {!mini && (
-                        <CtrlButton onClick={startOver} label="Start over (0)">
+                        // Not on a phone, where the buttons wouldn't fit across (its
+                        // own buttons set the volume).
+                        <CtrlButton onClick={startOver} label="Start over (0)" className="max-sm:hidden">
                             <SkipBack className="size-5" />
                         </CtrlButton>
                     )}
@@ -1433,7 +1459,7 @@ function Player({ req, onClose, mini }: { req: PlayerRequest; onClose: () => voi
                             <SkipForward className={mini ? "size-4" : "size-5"} />
                         </CtrlButton>
                     )}
-                    <div className="group/vol flex items-center">
+                    <div className="group/vol flex items-center max-sm:hidden">
                         <CtrlButton small={mini} onClick={() => setMuted(m => !m)} label="Mute (m)">
                             <VolumeIcon className={mini ? "size-4" : "size-5"} />
                         </CtrlButton>
@@ -1666,9 +1692,14 @@ async function fetchable(src: string): Promise<Fetchable> {
 // An empty picture (a transparent pixel): the video's poster.
 const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 
-function CtrlButton({ children, onClick, label, small }: { children: React.ReactNode; onClick: () => void; label: string; small?: boolean }) {
+function CtrlButton({ children, onClick, label, small, className }: { children: React.ReactNode; onClick: () => void; label: string; small?: boolean; className?: string }) {
     return (
-        <button onClick={onClick} title={label} aria-label={label} className={cn("grid place-items-center rounded-full transition hover:bg-white/15 active:scale-95", small ? "size-8" : "size-10")}>
+        <button
+            onClick={onClick}
+            title={label}
+            aria-label={label}
+            className={cn("grid shrink-0 place-items-center rounded-full transition hover:bg-white/15 active:scale-95", small ? "size-8" : "size-10", className)}
+        >
             {children}
         </button>
     )

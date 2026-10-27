@@ -58,6 +58,19 @@
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
         overflow: hidden;
+        /* A tap doesn't flash a box over what was tapped (phones, TVs). */
+        -webkit-tap-highlight-color: transparent;
+    }
+    /* Touch screens: a long press on a link or button doesn't select its
+       text or pop up the browser's menu for it. */
+    @media (hover: none) {
+        a,
+        button,
+        [role="button"] {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
     }
     h1, h2, h3, h4 {
         letter-spacing: -0.012em;

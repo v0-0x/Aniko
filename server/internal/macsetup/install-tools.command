@@ -1,7 +1,7 @@
 #!/bin/bash
 # Kumo setup for macOS: puts the programs Kumo uses in Kumo's own folder,
 # ready-made for this Mac (Apple silicon or Intel), with no Homebrew and no
-# password. Kumo opens it in Terminal from Settings > App > Programs
+# password. Kumo opens it in Terminal from Settings > Desktop app & programs
 # (server/internal/macsetup), with KUMO_BIN set to that folder.
 #
 #   ffmpeg, ffprobe  the in-app player (most files) and episode downloads

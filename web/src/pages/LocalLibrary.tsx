@@ -321,7 +321,7 @@ export default function LocalLibraryPage() {
                 )}
 
                 {recent.length > 0 && !q && (
-                    <section className="rise-in">
+                    <section className="rise-in" data-tv-autofocus>
                         <h2 className="mb-4 text-xl font-semibold tracking-tight">Recently added</h2>
                         <Carousel itemClassName="w-[300px]">
                             {recent.map(({ group, files: batch, latest, play, allWatched }) => {
@@ -400,7 +400,7 @@ export default function LocalLibraryPage() {
                                 Try another filter or search.
                             </EmptyState>
                         ) : view === "grid" ? (
-                            <MediaGrid size={status?.settings.ui.cardSize}>
+                            <MediaGrid size={status?.settings.ui.cardSize} start>
                                 {shown.map(g => (
                                     <MediaCard
                                         key={g.item.media.id}

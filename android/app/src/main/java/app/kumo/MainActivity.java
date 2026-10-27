@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.content.pm.ActivityInfo;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -34,6 +36,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,6 +54,11 @@ public class MainActivity extends Activity {
     private WebView web;
     private TextView message;
     private ScrollView messageScroll;
+    // The starting screen's logo and spinner (gone for an error).
+    private ImageView logo;
+    private ProgressBar spinner;
+    // The page didn't load (it isn't shown, see onPageFinished).
+    private boolean pageFailed;
     private View fullscreen;
     private WebChromeClient.CustomViewCallback fullscreenDone;
     private WifiManager.MulticastLock multicast;
@@ -58,23 +68,46 @@ public class MainActivity extends Activity {
     // Checks the server runs, while Kumo shows (see watch).
     private final Runnable watcher = this::watch;
 
+    // The window's color: the page's (its --frame), so nothing flashes a
+    // different black between the start and Kumo showing.
+    static final int FRAME = Color.rgb(10, 10, 11);
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.rgb(11, 11, 15));
+        root.setBackgroundColor(FRAME);
         web = newWebView();
         root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        // The starting screen: the logo, a spinner and what's happening;
+        // or why Kumo didn't start (scrolling, with the server's last lines).
+        float dp = getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        logo = new ImageView(this);
+        logo.setImageDrawable(getApplicationInfo().loadIcon(getPackageManager()));
+        box.addView(logo, new LinearLayout.LayoutParams((int) (72 * dp), (int) (72 * dp)));
+        spinner = new ProgressBar(this);
+        spinner.setIndeterminate(true);
+        spinner.setIndeterminateTintList(ColorStateList.valueOf(Color.rgb(124, 108, 242)));
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams((int) (28 * dp), (int) (28 * dp));
+        sp.topMargin = (int) (28 * dp);
+        box.addView(spinner, sp);
         message = new TextView(this);
         message.setTextColor(Color.rgb(230, 230, 235));
-        message.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        message.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
         message.setGravity(Gravity.CENTER);
-        int pad = (int) (32 * getResources().getDisplayMetrics().density);
-        message.setPadding(pad, pad, pad, pad);
+        int pad = (int) (32 * dp);
+        message.setPadding(pad, (int) (16 * dp), pad, pad);
         message.setText("Starting Kumo…");
+        // A tap tries again (phones have no OK key).
+        message.setOnClickListener(v -> retry());
+        box.addView(message, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         messageScroll = new ScrollView(this);
         messageScroll.setFillViewport(true);
-        messageScroll.addView(message, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        messageScroll.setBackgroundColor(FRAME);
+        messageScroll.addView(box, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         root.addView(messageScroll, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
 
@@ -92,7 +125,7 @@ public class MainActivity extends Activity {
 
     private WebView newWebView() {
         WebView w = new WebView(this);
-        w.setBackgroundColor(Color.rgb(11, 11, 15));
+        w.setBackgroundColor(FRAME);
         w.setVisibility(View.INVISIBLE);
         setUpWebView(w);
         return w;
@@ -112,6 +145,9 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setDisplayZoomControls(false);
+        // A TV has its own text size (tv.ts): Android's font size setting
+        // would only make the labels overflow their buttons.
+        if (isTV()) s.setTextZoom(100);
         s.setUserAgentString(s.getUserAgentString() + " KumoAndroid/" + versionName() + (isTV() ? " KumoTV" : ""));
         web.addJavascriptInterface(new Bridge(), "KumoAndroid");
         web.setWebViewClient(new WebViewClient() {
@@ -128,7 +164,8 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                if (!loaded && url.startsWith(KumoServer.URL)) {
+                // Not the WebView's own error page, if Kumo's didn't load.
+                if (!loaded && !pageFailed && url.startsWith(KumoServer.URL)) {
                     loaded = true;
                     web.setVisibility(View.VISIBLE);
                     messageScroll.setVisibility(View.GONE);
@@ -138,9 +175,10 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError err) {
-                if (req.isForMainFrame() && !KumoServer.get(MainActivity.this).running()) {
-                    restartServer("Starting Kumo…");
-                }
+                if (!req.isForMainFrame() || loaded) return;
+                pageFailed = true;
+                if (!KumoServer.get(MainActivity.this).running()) restartServer("Starting Kumo…");
+                else failed("Kumo's page didn't open: " + err.getDescription());
             }
 
             // The page's process crashed (or Android ended it for memory):
@@ -182,6 +220,11 @@ public class MainActivity extends Activity {
                 fullscreenDone = done;
                 root.addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 web.setVisibility(View.INVISIBLE);
+                // The whole screen, sideways: the bars hide until swiped in.
+                if (!isTV()) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                    hideSystemBars(true);
+                }
             }
 
             @Override
@@ -209,6 +252,19 @@ public class MainActivity extends Activity {
         if (fullscreenDone != null) fullscreenDone.onCustomViewHidden();
         fullscreenDone = null;
         web.setVisibility(View.VISIBLE);
+        if (!isTV()) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            hideSystemBars(false);
+        }
+    }
+
+    /** The system's bars hidden (a video's fullscreen on a phone), or back. */
+    @SuppressWarnings("deprecation")
+    private void hideSystemBars(boolean on) {
+        getWindow().getDecorView().setSystemUiVisibility(on
+                ? View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                : 0);
     }
 
     /** Starts the server if needed, and shows Kumo once it answers. */
@@ -240,8 +296,7 @@ public class MainActivity extends Activity {
             main.post(() -> {
                 starting = false;
                 if (error != null) {
-                    Log.e("kumo", error);
-                    showMessage(error + "\n\nPress OK to try again.", true);
+                    failed(error);
                     return;
                 }
                 showMessage("Starting Kumo…", false);
@@ -257,8 +312,23 @@ public class MainActivity extends Activity {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
+    /** Why Kumo didn't open, and how to try again: first, then the details. */
+    private void failed(String why) {
+        Log.e("kumo", why);
+        String how = isTV() ? "Press OK to try again, or Back to close." : "Tap here to try again, or go back to close.";
+        showMessage("Kumo couldn't start.\n" + how + "\n\n" + why, true);
+    }
+
+    /** OK, or a tap, on why Kumo didn't start: again. */
+    private void retry() {
+        if (loaded || starting) return;
+        showMessage("Starting Kumo…", false);
+        startServer();
+    }
+
     /** Opens Kumo's page (the server answers). */
     private void openPage(KumoServer server) {
+        pageFailed = false;
         letScreenSleep();
         // The cookie that proves the WebView is Kumo's (KumoServer.token).
         CookieManager cookies = CookieManager.getInstance();
@@ -293,8 +363,11 @@ public class MainActivity extends Activity {
     private void showMessage(String text, boolean error) {
         message.setText(text);
         // An error has the details (the server's last lines): smaller, from the top, scrolling.
-        message.setTextSize(TypedValue.COMPLEX_UNIT_SP, error ? 14 : 20);
+        message.setTextSize(TypedValue.COMPLEX_UNIT_SP, error ? 15 : 18);
         message.setGravity(error ? Gravity.START | Gravity.TOP : Gravity.CENTER);
+        logo.setVisibility(error ? View.GONE : View.VISIBLE);
+        spinner.setVisibility(error ? View.GONE : View.VISIBLE);
+        ((LinearLayout) message.getParent()).setGravity(error ? Gravity.START | Gravity.TOP : Gravity.CENTER);
         messageScroll.scrollTo(0, 0);
         // The remote's Up and Down scroll it.
         if (error) messageScroll.requestFocus();
@@ -356,6 +429,18 @@ public class MainActivity extends Activity {
                 // The next episode.
                 if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('next')");
                 return true;
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                // The episode from its start.
+                if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('previous')");
+                return true;
+            case KeyEvent.KEYCODE_MEDIA_STOP:
+                // The player closes.
+                if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('stop')");
+                return true;
+            case KeyEvent.KEYCODE_CAPTIONS:
+                // Subtitles on or off.
+                if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('captions')");
+                return true;
             case KeyEvent.KEYCODE_MENU:
                 // ☰: what a right-click opens.
                 if (down && e.getRepeatCount() == 0) js("window.kumoKey&&window.kumoKey('menu')");
@@ -370,10 +455,11 @@ public class MainActivity extends Activity {
             case KeyEvent.KEYCODE_ENTER:
                 // Kumo didn't start: OK tries again.
                 if (!loaded && !starting && down) {
-                    showMessage("Starting Kumo…", false);
-                    startServer();
+                    retry();
                     return true;
                 }
+                // Held down: pressed once, not again and again.
+                if (loaded && down && e.getRepeatCount() > 0) return true;
                 break;
             default:
                 break;
@@ -436,9 +522,9 @@ public class MainActivity extends Activity {
         if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
             Intent confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT);
             if (confirm != null) startActivity(confirm);
-        } else if (status != PackageInstaller.STATUS_SUCCESS) {
-            String msg = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
-            Toast.makeText(this, "The update wasn't installed" + (msg == null ? "" : ": " + msg), Toast.LENGTH_LONG).show();
+        } else {
+            String msg = Installer.explain(status, intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+            if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
         }
     }
 

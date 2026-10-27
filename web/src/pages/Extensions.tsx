@@ -21,7 +21,7 @@ import {
     Tv,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { Badge, Button, Dialog, EmptyState, Field, IconButton, Input, Select, Switch, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
@@ -111,8 +111,16 @@ function Installed() {
     if (isLoading) return <div className="card h-40 shimmer" />
     if (!data?.length)
         return (
-            <EmptyState icon={<Puzzle className="size-6" />} title="No extensions installed">
-                Browse the marketplace to add providers and plugins.
+            <EmptyState
+                icon={<Puzzle className="size-6" />}
+                title="No extensions installed"
+                action={
+                    <Link to="/extensions?tab=marketplace" replace>
+                        <Button variant="primary">Browse the marketplace</Button>
+                    </Link>
+                }
+            >
+                Streaming, torrent and manga providers and plugins come from the marketplace.
             </EmptyState>
         )
     const groups = Object.keys(TYPES)

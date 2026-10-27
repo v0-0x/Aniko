@@ -49,6 +49,7 @@ import { exampleMpvPath, installHint, installSource, platformName } from "@/lib/
 import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
 import { useStore } from "@/lib/store"
+import { useFadeBelow } from "@/lib/hooks"
 import { activeHoliday, COLOR_THEMES, HOLIDAYS, themePreviewStore, useClassic } from "@/lib/themes"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { systemNotifications } from "@/lib/alerts"
@@ -183,6 +184,8 @@ export default function SettingsPage() {
     const [draft, setDraft] = useState<Settings | null>(null)
     // Search settings: every section's that match, at once.
     const [query, setQuery] = useState("")
+    // The sections' list, when it's taller than the window.
+    const asideFade = useFadeBelow()
     const [base, setBase] = useState<Settings | null>(null)
     const reset = (s: Settings) => {
         setDraft(structuredClone(s))
@@ -251,6 +254,8 @@ export default function SettingsPage() {
                 setParams({ tab: it.id }, { replace: true })
             }}
             aria-current={!searching && section === it.id ? "page" : undefined}
+            // A TV's remote starts on the open section.
+            data-tv-autofocus={(!searching && section === it.id) || undefined}
             className={cn(
                 "focus-ring flex h-8 items-center gap-2.5 px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:stroke-[1.75]",
                 classic
@@ -265,7 +270,7 @@ export default function SettingsPage() {
 
     return (
         <div className="flex min-h-full flex-col gap-6 px-6 pt-8 pb-24 md:flex-row md:gap-8 md:px-8 lg:gap-12 xl:px-10">
-            <aside className="no-scrollbar w-full shrink-0 md:sticky md:top-8 md:max-h-[calc(100vh-5rem)] md:w-56 md:self-start md:overflow-y-auto">
+            <aside ref={asideFade.ref} style={asideFade.style} className="no-scrollbar w-full shrink-0 md:sticky md:top-8 md:max-h-[calc(100vh-5rem)] md:w-56 md:self-start md:overflow-y-auto">
                 <h1 className="mb-4 px-2.5 text-[1.75rem] font-semibold tracking-tight">Settings</h1>
                 <div className="mb-4 md:px-0.5">
                     <Input
@@ -488,8 +493,9 @@ function Group({ title, children, description }: { title?: string; description?:
 function Row({ label, help, children, wide, keywords }: { label: React.ReactNode; help?: React.ReactNode; children: React.ReactNode; wide?: boolean; keywords?: string }) {
     if (!useShown(label, help, keywords)) return null
     return (
-        <div data-setting className="flex items-center justify-between gap-6 px-4 py-3.5">
-            <div className="min-w-0">
+        // On a phone, a control that doesn't fit beside its label goes under it.
+        <div data-setting className="flex items-center justify-between gap-x-6 gap-y-2.5 px-4 py-3.5 max-sm:flex-wrap">
+            <div className="min-w-0 max-sm:flex-1 max-sm:basis-48">
                 <p className="text-sm font-medium">{label}</p>
                 {help && <p className="mt-0.5 text-[12.5px] leading-snug text-muted">{help}</p>}
             </div>
@@ -860,6 +866,7 @@ function DesktopGroup() {
     }, [bridge])
     if (!bridge?.setPref || !prefs) return null
     const mac = bridge.platform === "darwin"
+    const win = bridge.platform === "win32"
     const change = async (name: keyof DesktopPrefs, value: boolean) => {
         setPrefs({ ...prefs, [name]: value })
         const res = await bridge.setPref!(name, value).catch(() => false as const)
@@ -875,7 +882,7 @@ function DesktopGroup() {
                 help={
                     mac
                         ? "Off: closing the window quits Kumo. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; click Kumo in the Dock to open it again, quit with Cmd+Q or the button below."
-                        : "Off: closing the window quits Kumo. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; open or quit Kumo from its tray icon, or open it again from the app menu and quit with the button below."
+                        : `Off: closing the window quits Kumo. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; open or quit Kumo from its tray icon${win ? " (at the right of the taskbar, under ^ when hidden)" : ""}, or open it again from ${win ? "the Start menu" : "your app menu"} and quit with the button below.`
                 }
             >
                 <Switch checked={prefs.keepRunning} onChange={v => change("keepRunning", v)} />
@@ -892,12 +899,15 @@ function DesktopGroup() {
                     <Switch checked={prefs.startAtLogin} onChange={v => change("startAtLogin", v)} />
                 </Row>
             )}
-            <Row
-                label="Free memory while the computer is locked"
-                help="After 5 minutes locked, the window lets go of the page and loads it again when you unlock. Never while a video, the manga reader or Settings is open."
-            >
-                <Switch checked={prefs.freeWhenLocked} onChange={v => change("freeWhenLocked", v)} />
-            </Row>
+            {/* Linux doesn't tell apps the computer was locked. */}
+            {(mac || win) && (
+                <Row
+                    label="Free memory while the computer is locked"
+                    help="After 5 minutes locked, the window lets go of the page and loads it again when you unlock. Never while a video, the manga reader or Settings is open."
+                >
+                    <Switch checked={prefs.freeWhenLocked} onChange={v => change("freeWhenLocked", v)} />
+                </Row>
+            )}
             {bridge.quit && (
                 <Row label="Quit Kumo" help="Closes the window and stops the server: streaming to other devices, downloads and library sharing stop until Kumo is opened again.">
                     <Button size="sm" variant="ghost" onClick={() => bridge.quit!()}>
@@ -2116,7 +2126,7 @@ function AboutSection() {
                         </a>
                     </Row>
                 )}
-                <Row label="Last check" help={u?.checking ? "Checking now…" : u?.checkedAt ? `${relativeTime(u.checkedAt)}. Kumo checks every 6 hours.` : "Never"}>
+                <Row label="Last check" help={u?.checking ? "Checking now…" : u?.checkedAt ? `${relativeTime(u.checkedAt)}. Kumo checks each time it opens, and every 6 hours.` : "Never"}>
                     {!lan && (
                         <Button size="sm" icon={<RefreshCw className="size-4" />} loading={check.isPending || u?.checking} onClick={() => check.mutate()}>
                             Check for updates
@@ -2126,7 +2136,7 @@ function AboutSection() {
                 {u?.error && (
                     <div className="px-4 py-3.5 text-sm">
                         <p className="text-rose-300">{u.error}</p>
-                        {u.hint && <p className="mt-1 text-muted">{u.hint}</p>}
+                        {u.hint && <p className={cn("mt-1 break-words", u.hint.startsWith("Details: ") ? "text-xs text-subtle" : "text-muted")}>{u.hint}</p>}
                     </div>
                 )}
             </Group>

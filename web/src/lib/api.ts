@@ -62,9 +62,6 @@ export type DesktopBridge = {
     anilistLogin: (url: string) => Promise<string | null>
     openExternal: (url: string) => void
     platform: string
-    minimize?: () => void
-    toggleMaximize?: () => void
-    close?: () => void
     // Missing in desktop apps older than these settings.
     getPrefs?: () => Promise<DesktopPrefs>
     // true, or what went wrong (older apps: false).

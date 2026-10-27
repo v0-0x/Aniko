@@ -8,6 +8,7 @@ import { usePersisted } from "@/lib/hooks"
 import { useMangaChapters, useStatus } from "@/lib/queries"
 import { toast } from "@/lib/toast"
 import type { MangaPosition, Settings, Status } from "@/lib/types"
+import { move, tv } from "@/lib/tv"
 import { cn } from "@/lib/utils"
 
 type Page = { url: string; index: number; headers: Record<string, string> }
@@ -217,6 +218,7 @@ export default function MangaReaderPage() {
 
     // The buttons show while the mouse moves and fade out while reading.
     const [controls, setControls] = useState(true)
+    const rootRef = useRef<HTMLDivElement>(null)
     const [menuOpen, setMenuOpen] = useState(false)
     const overBar = useRef(false)
     const hideTimer = useRef(0)
@@ -268,6 +270,32 @@ export default function MangaReaderPage() {
                 else zoomBy(e.key === "-" ? -0.05 : 0.05)
                 return
             }
+            // A TV's remote (lib/tv leaves the reader's keys to it): Up goes
+            // to the buttons and the arrows move along them, Down back to
+            // the pages; Back closes the reader.
+            if (tv) {
+                const root = rootRef.current
+                const a = document.activeElement as HTMLElement | null
+                const onBar = !!root && !!a && root.contains(a) && a !== root && !!a.closest("button, [role=button], a")
+                if (e.key === "Escape") {
+                    navigate(`/manga/entry?id=${id}`)
+                    e.preventDefault()
+                    return
+                }
+                if (root && e.key.startsWith("Arrow") && (onBar || e.key === "ArrowUp")) {
+                    poke()
+                    if (!onBar) root.querySelector<HTMLElement>("button")?.focus()
+                    else if (!move(e.key === "ArrowUp" ? "up" : e.key === "ArrowDown" ? "down" : e.key === "ArrowLeft" ? "left" : "right", root) && e.key === "ArrowDown") root.focus()
+                    e.preventDefault()
+                    return
+                }
+                if (view === "long-strip" && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+                    const el = document.getElementById("reader")
+                    el?.scrollBy({ top: (e.key === "ArrowDown" ? 1 : -1) * el.clientHeight * 0.8, behavior: "smooth" })
+                    e.preventDefault()
+                    return
+                }
+            }
             if (view === "long-strip") return
             const forward = rtl ? "ArrowLeft" : "ArrowRight"
             const back = rtl ? "ArrowRight" : "ArrowLeft"
@@ -290,7 +318,8 @@ export default function MangaReaderPage() {
     const bar = "grid size-9 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/15 hover:text-white disabled:opacity-30 [&_svg]:size-[18px]"
 
     return (
-        <div className={cn("fixed inset-0 z-[70] bg-black text-white", !shown && view !== "long-strip" && "cursor-none")} onMouseMove={poke}>
+        // data-tv-scope: the reader has its own keys on a TV (above).
+        <div ref={rootRef} tabIndex={-1} data-tv-scope={tv || undefined} data-tv-autofocus className={cn("fixed inset-0 z-[70] bg-black text-white outline-none", !shown && view !== "long-strip" && "cursor-none")} onMouseMove={poke}>
             <div
                 id="reader"
                 className={cn("absolute inset-0", view === "long-strip" ? "overflow-y-auto" : "overflow-hidden")}

@@ -141,7 +141,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
     return (
         <div className="relative">
             <div className="absolute inset-x-0 top-0 h-[500px] overflow-hidden">
-                {bannerImg && <img src={bannerImg} alt="" className="size-full object-cover opacity-60 fade-in" />}
+                {bannerImg && <img src={bannerImg} alt="" className="size-full object-cover opacity-60 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />}
                 <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/75 to-bg/10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-bg/90 via-bg/30 to-transparent" />
             </div>
@@ -198,7 +198,8 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                     )}
                     <div className="mt-1 flex flex-wrap items-center gap-2.5">
                         {next && (
-                            <Button variant="white" size="lg" icon={<Play className="size-4 fill-current" />} onClick={watch}>
+                            // A TV's remote starts here when the page opens (lib/pages).
+                            <Button variant="white" size="lg" icon={<Play className="size-4 fill-current" />} onClick={watch} data-tv-autofocus>
                                 {next.resumeAt > 0 ? "Resume" : entry.listEntry?.progress ? "Continue" : "Watch"} · Ep {next.number}
                             </Button>
                         )}

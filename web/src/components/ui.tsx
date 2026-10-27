@@ -3,9 +3,10 @@ import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 import * as SwitchPrimitive from "@radix-ui/react-switch"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import { AlertTriangle, ChevronDown, Loader2, RefreshCw, X } from "lucide-react"
-import React, { forwardRef } from "react"
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Loader2, RefreshCw, X } from "lucide-react"
+import React, { forwardRef, useEffect, useRef, useState } from "react"
 import { useClassic } from "@/lib/themes"
+import { tv } from "@/lib/tv"
 import { cn } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
@@ -591,5 +592,53 @@ export function Popover({
                 </PopoverPrimitive.Content>
             </PopoverPrimitive.Portal>
         </PopoverPrimitive.Root>
+    )
+}
+
+// A row of chips (genres) that scrolls sideways when they don't fit: it
+// fades out on the side with more, and an arrow there scrolls it. Not on a
+// TV, whose remote moves along the chips themselves.
+export function ChipRow({ children, className, label = "More" }: { children: React.ReactNode; className?: string; label?: string }) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [edges, setEdges] = useState({ left: false, right: false })
+    const check = () => {
+        const el = ref.current
+        if (!el) return
+        const left = el.scrollLeft > 2
+        const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 2
+        setEdges(e => (e.left === left && e.right === right ? e : { left, right }))
+    }
+    // Each render too: the chips can come in after it's drawn.
+    useEffect(check)
+    useEffect(() => {
+        const el = ref.current
+        if (!el) return
+        const ro = new ResizeObserver(check)
+        ro.observe(el)
+        el.addEventListener("scroll", check, { passive: true })
+        return () => {
+            ro.disconnect()
+            el.removeEventListener("scroll", check)
+        }
+    }, [])
+    const fade = `linear-gradient(to right, ${edges.left ? "transparent, #000 48px" : "#000"}, ${edges.right ? "#000 calc(100% - 48px), transparent" : "#000"})`
+    const arrow = (dir: -1 | 1) => (
+        <button
+            onClick={() => ref.current?.scrollBy({ left: dir * Math.max(200, (ref.current?.clientWidth ?? 400) * 0.7), behavior: "smooth" })}
+            data-tv-skip-nav
+            aria-label={dir < 0 ? "Back" : label}
+            className={cn("grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/[0.06] hover:text-fg fade-in", dir < 0 ? "mr-1" : "ml-1")}
+        >
+            {dir < 0 ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+        </button>
+    )
+    return (
+        <div className={cn("relative flex items-center", className)}>
+            {!tv && edges.left && arrow(-1)}
+            <div ref={ref} className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto scroll-smooth py-1" style={edges.left || edges.right ? { maskImage: fade, WebkitMaskImage: fade } : undefined}>
+                {children}
+            </div>
+            {!tv && edges.right && arrow(1)}
+        </div>
     )
 }

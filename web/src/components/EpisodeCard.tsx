@@ -91,7 +91,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                     )}
                 </div>
                 {actions && (
-                    <div className="absolute top-2 right-2 opacity-0 transition-opacity group-hover/ep:opacity-100 focus-within:opacity-100" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                    <div className="absolute top-2 right-2 opacity-0 transition-opacity group-hover/ep:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                         {actions}
                     </div>
                 )}

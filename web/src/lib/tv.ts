@@ -137,7 +137,8 @@ function look(): Look {
 // The focusable things in root that are on the page at all (cheap checks).
 function focusables(root: HTMLElement, l: Look): HTMLElement[] {
     return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => {
-        if (el.closest('[aria-hidden="true"], [inert], [data-tv-skip-nav]')) return false
+        // Nor the notifications that come and go (a toast's close button).
+        if (el.closest('[aria-hidden="true"], [inert], [data-tv-skip-nav], [data-sonner-toaster]')) return false
         const r = l.rect(el)
         return r.width >= 2 && r.height >= 2
     })
@@ -368,13 +369,17 @@ export function installIfWanted(st: { state?: string; installFile?: string }) {
 
 let started = false
 
-// initTV turns TV mode on (once).
+// initTV turns TV mode on (once). In the Android app on a phone, only its
+// Back and media keys: Back goes back through the pages there too, instead
+// of sending Kumo to the background.
 export function initTV(goBack: () => boolean) {
-    if (!tv || started) return
+    if ((!tv && !androidApp) || started) return
     started = true
-    document.documentElement.classList.add("tv")
-    applyTvWidth()
-    window.addEventListener("keydown", onKey, true)
+    if (tv) {
+        document.documentElement.classList.add("tv")
+        applyTvWidth()
+        window.addEventListener("keydown", onKey, true)
+    }
     // Back: a menu or dialog closes, then the player, then the page goes
     // back. false: nothing left, the app goes to the TV's home.
     window.kumoBack = () => {
@@ -395,7 +400,7 @@ export function initTV(goBack: () => boolean) {
         // Play and Pause (separate keys on some remotes) only ever do that.
         const video = player.querySelector("video")
         if ((key === "play" && video && !video.paused) || (key === "pause" && (!video || video.paused))) return
-        const k = ({ playpause: " ", play: " ", pause: " ", rewind: "j", forward: "l", next: "n" } as Record<string, string>)[key]
+        const k = ({ playpause: " ", play: " ", pause: " ", rewind: "j", forward: "l", next: "n", previous: "0", stop: "q", captions: "c" } as Record<string, string>)[key]
         if (k) press(k)
     }
 }

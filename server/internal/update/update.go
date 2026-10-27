@@ -474,7 +474,8 @@ func (c *Checker) describe(err error) (string, string) {
 	if errors.As(err, &dnsErr) {
 		return "Kumo can't reach GitHub: is this computer online?", ""
 	}
-	return "The update check failed: " + err.Error(), ""
+	// Anything else: said plainly, what happened under it as a detail.
+	return "Kumo couldn't check for updates just now. It tries again later.", "Details: " + err.Error()
 }
 
 func (c *Checker) check(ctx context.Context) (result, error) {

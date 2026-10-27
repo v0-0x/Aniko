@@ -5,6 +5,7 @@
   "kumoVersionBase": 147,
   "description": "Kumo desktop window (starts the local Kumo server)",
   "main": "main.js",
+  "desktopName": "kumo.desktop",
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {

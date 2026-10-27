@@ -85,7 +85,7 @@ Scoop's `git`).
 Kumo talks to qBittorrent through its Web UI, which is off by default. In
 qBittorrent: **Tools › Options › Web UI**, tick **Web User Interface (Remote
 control)**, and set a username and password. Then in Kumo, **Settings ›
-Torrent Client**: host `127.0.0.1`, the same port as qBittorrent's (8080
+Torrents**: host `127.0.0.1`, the same port as qBittorrent's (8080
 unless you changed it), the same username and password. Kumo can start
 qBittorrent when it's needed: the path (`C:\Program Files\qBittorrent\qbittorrent.exe`)
 is found by itself.
@@ -109,7 +109,7 @@ window uses that server when it's already running.
 
 ## Updates
 
-Kumo looks for a newer release on GitHub shortly after it starts, then every
+Kumo looks for a newer release on GitHub each time it opens, and every
 6 hours (**Settings › Updates & about** shows the last check and checks right
 away). When there is one, the **Home** page shows it, with what changed:
 

@@ -19,11 +19,20 @@
   System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
   ${ifNot} ${Silent}
   ${andIfNot} ${isUpdated}
-    ${if} ${Cmd} `MessageBox MB_YESNO|MB_ICONQUESTION "Install the programs Kumo uses?$\r$\n$\r$\nKumo can install Git, ani-cli, ffmpeg, mpv, yt-dlp and the rest of what it uses with Scoop, for your Windows user (no administrator rights). A PowerShell window shows the progress: it takes a few minutes and needs an internet connection. Programs you already have are skipped.$\r$\n$\r$\nYou can also do this later in Kumo: Settings > App > Programs." /SD IDNO IDYES`
+    ${if} ${Cmd} `MessageBox MB_YESNO|MB_ICONQUESTION "Install the programs Kumo uses?$\r$\n$\r$\nKumo can install Git, ani-cli, ffmpeg, mpv, yt-dlp and the rest of what it uses with Scoop, for your Windows user (no administrator rights). A PowerShell window shows the progress: it takes a few minutes and needs an internet connection. Programs you already have are skipped.$\r$\n$\r$\nYou can also do this later in Kumo: Settings > Desktop app & programs." /SD IDNO IDYES`
       ; The 64-bit PowerShell, also from this 32-bit installer.
       ${DisableX64FSRedirection}
       Exec '"$WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\resources\install-tools.ps1"'
       ${EnableX64FSRedirection}
     ${endIf}
+  ${endIf}
+!macroend
+
+; Uninstalled (not updated): Kumo's "start with Windows" entry goes too
+; (desktop/main.js setStartAtLogin), or Startup apps keeps a dead "Kumo".
+!macro customUnInstall
+  ${ifNot} ${isUpdated}
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "app.kumo.desktop"
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "app.kumo.desktop"
   ${endIf}
 !macroend

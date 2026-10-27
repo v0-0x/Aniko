@@ -62,51 +62,21 @@ export function KumoWordmark({ className }: { className?: string }) {
     )
 }
 
-type Item = { to: string; label: string; icon: React.ReactNode; badge?: number; hint?: string; match?: (p: string) => boolean }
+type Item = NavItem
 
-// Labels from 1024px wide; narrower, only the icons, named by tooltips.
-const WIDE = "(min-width: 1024px)"
-// A short window (a laptop's): the groups without their names, closer.
-const SHORT = "(max-height: 880px)"
-const FADE = "linear-gradient(to bottom, #000 calc(100% - 36px), transparent)"
+export type NavItem = { to: string; label: string; icon: React.ReactNode; badge?: number; hint?: string; match?: (p: string) => boolean }
 
-export function Sidebar() {
+// The app's pages, in their groups, with the counts shown on them (active
+// downloads, unmatched files): the sidebar's, and the phone's tab bar's.
+export function useNavGroups(): { label: string; items: NavItem[] }[] {
     const { data: status } = useStatus()
     const { data: coll } = useCollection()
     const { data: downloads } = useDownloads()
     const torrentCount = useStore(torrentCountStore)
-    const [loginOpen, setLoginOpen] = useState(false)
-    const location = useLocation()
-    const navigate = useNavigate()
-    const qc = useQueryClient()
-    const wide = useMediaQuery(WIDE)
-    const short = useMediaQuery(SHORT)
     const settings = status?.settings
-    // Before 2.0: no group names, the open page in plain white.
-    const classic = useClassic()
-    // Links that don't fit scroll: they fade out at the bottom while there
-    // are more below, so they aren't taken for all of them.
-    const navRef = useRef<HTMLElement>(null)
-    const [more, setMore] = useState(false)
-    useEffect(() => {
-        const nav = navRef.current
-        if (!nav) return
-        const check = () => setMore(nav.scrollTop + nav.clientHeight < nav.scrollHeight - 2)
-        const ro = new ResizeObserver(check)
-        ro.observe(nav)
-        for (const group of nav.children) ro.observe(group)
-        nav.addEventListener("scroll", check, { passive: true })
-        check()
-        return () => {
-            ro.disconnect()
-            nav.removeEventListener("scroll", check)
-        }
-    }, [])
-    const holiday = useStore(holidayStore)
-
     const activeDownloads = (downloads ?? []).filter(d => ["queued", "resolving", "downloading"].includes(d.status)).length
 
-    const groups: { label: string; items: Item[] }[] = [
+    return [
         {
             label: "Watch",
             items: [
@@ -141,6 +111,45 @@ export function Sidebar() {
             ],
         },
     ]
+}
+
+// Labels from 1024px wide; narrower, only the icons, named by tooltips.
+const WIDE = "(min-width: 1024px)"
+// A short window (a laptop's): the groups without their names, closer.
+const SHORT = "(max-height: 880px)"
+const FADE = "linear-gradient(to bottom, #000 calc(100% - 36px), transparent)"
+
+export function Sidebar() {
+    const { data: status } = useStatus()
+    const [loginOpen, setLoginOpen] = useState(false)
+    const location = useLocation()
+    const navigate = useNavigate()
+    const qc = useQueryClient()
+    const wide = useMediaQuery(WIDE)
+    const short = useMediaQuery(SHORT)
+    // Before 2.0: no group names, the open page in plain white.
+    const classic = useClassic()
+    // Links that don't fit scroll: they fade out at the bottom while there
+    // are more below, so they aren't taken for all of them.
+    const navRef = useRef<HTMLElement>(null)
+    const [more, setMore] = useState(false)
+    useEffect(() => {
+        const nav = navRef.current
+        if (!nav) return
+        const check = () => setMore(nav.scrollTop + nav.clientHeight < nav.scrollHeight - 2)
+        const ro = new ResizeObserver(check)
+        ro.observe(nav)
+        for (const group of nav.children) ro.observe(group)
+        nav.addEventListener("scroll", check, { passive: true })
+        check()
+        return () => {
+            ro.disconnect()
+            nav.removeEventListener("scroll", check)
+        }
+    }, [])
+    const holiday = useStore(holidayStore)
+
+    const groups = useNavGroups()
 
     const logout = async () => {
         await api.post("/api/auth/logout")

@@ -32,7 +32,7 @@ export default function LibraryPage() {
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Library tools</h1>
                     <p className="mt-1 text-muted">Fix matches and episode numbers, find missing episodes, and make room.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <Button icon={<FolderSync className="size-4" />} loading={scanning} onClick={() => scan.mutate(false)}>
                         Scan for new files
                     </Button>

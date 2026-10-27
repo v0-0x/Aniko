@@ -19,6 +19,8 @@ export default function AutoDownloaderPage() {
     const [running, setRunning] = useState(false)
     const qc = useQueryClient()
     const settings = status?.settings
+    const newRule = () =>
+        setEditing({ enabled: true, mediaId: 0, title: "", releaseGroups: [], resolutions: [settings?.torrent.preferredResolution || "1080"], additionalTerms: [], episodeType: "recent", minSeeders: 1, provider: "nyaa" })
 
     const run = async () => {
         setRunning(true)
@@ -40,7 +42,7 @@ export default function AutoDownloaderPage() {
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Auto downloader</h1>
                     <p className="mt-1 max-w-2xl text-muted">Automatically grab new episodes of airing shows from torrent RSS feeds and send them to your torrent client.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     {settings && (
                         <label className="flex items-center gap-3 rounded-xl border border-line bg-surface-1 px-4 py-2">
                             <span className="text-sm font-medium">Enabled</span>
@@ -53,9 +55,7 @@ export default function AutoDownloaderPage() {
                     <Button
                         variant="primary"
                         icon={<Plus className="size-4" />}
-                        onClick={() =>
-                            setEditing({ enabled: true, mediaId: 0, title: "", releaseGroups: [], resolutions: [settings?.torrent.preferredResolution || "1080"], additionalTerms: [], episodeType: "recent", minSeeders: 1, provider: "nyaa" })
-                        }
+                        onClick={newRule}
                     >
                         New rule
                     </Button>
@@ -67,7 +67,15 @@ export default function AutoDownloaderPage() {
                 </div>
             )}
             {!isLoading && (rules ?? []).length === 0 && (
-                <EmptyState icon={<Rss className="size-6" />} title="No rules yet">
+                <EmptyState
+                    icon={<Rss className="size-6" />}
+                    title="No rules yet"
+                    action={
+                        <Button variant="primary" icon={<Plus className="size-4" />} onClick={newRule}>
+                            New rule
+                        </Button>
+                    }
+                >
                     Create a rule for each airing anime you follow, e.g. “SubsPlease · 1080p”.
                 </EmptyState>
             )}

@@ -1,6 +1,7 @@
 package app.kumo;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -76,22 +77,62 @@ final class Installer {
         if (Build.VERSION.SDK_INT >= 26 && !a.getPackageManager().canRequestPackageInstalls()) {
             try {
                 a.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + a.getPackageName())));
-                Toast.makeText(a, "Allow Kumo to install apps, then press Update again.", Toast.LENGTH_LONG).show();
+                Toast.makeText(a, "Allow Kumo to install apps, then press Install again.", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
-                Toast.makeText(a, "Allow Kumo to install unknown apps (on a Fire TV: Settings › My Fire TV › Developer options › Install unknown apps), then press Update again.", Toast.LENGTH_LONG).show();
+                // No such screen (a Fire TV): where it is, said until OK is
+                // pressed (a toast goes before it's read on a TV).
+                new AlertDialog.Builder(a)
+                        .setTitle("Allow Kumo to install its updates")
+                        .setMessage("Turn on installing unknown apps for Kumo. On a Fire TV: Settings › My Fire TV › Developer options › Install unknown apps › Kumo.\n\nThen press Install again.")
+                        .setPositiveButton("OK", null)
+                        .show();
             }
             return;
         }
+        // Once at a time: pressed twice, Android would ask twice.
+        if (copying) {
+            Toast.makeText(a, "Handing the update to Android…", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        copying = true;
         // Copied to Android's installer away from the screen's thread (an
         // APK of tens of MB takes a while on a TV), which then asks.
         final File file = apk;
         final Context app = a.getApplicationContext();
+        Toast.makeText(a, "Handing the update to Android…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
-            String failed = copy(app, file);
+            String failed;
+            try {
+                failed = copy(app, file);
+            } finally {
+                copying = false;
+            }
             if (failed != null) {
-                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(app, failed, Toast.LENGTH_LONG).show());
+                final String why = failed;
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(app, why, Toast.LENGTH_LONG).show());
             }
         }, "kumo-install").start();
+    }
+
+    // An APK being handed to Android's installer.
+    private static volatile boolean copying;
+
+    /** Android's answer to an install, said plainly; null: nothing to say (it was cancelled, or worked). */
+    static String explain(int status, String detail) {
+        switch (status) {
+            case PackageInstaller.STATUS_SUCCESS:
+            case PackageInstaller.STATUS_FAILURE_ABORTED:
+                return null;
+            case PackageInstaller.STATUS_FAILURE_CONFLICT:
+            case PackageInstaller.STATUS_FAILURE_INCOMPATIBLE:
+                return "This update can't replace the Kumo installed here (it was signed differently). Uninstall Kumo, then install the new one.";
+            case PackageInstaller.STATUS_FAILURE_STORAGE:
+                return "There isn't enough space for the update. Free some, then press Install again.";
+            case PackageInstaller.STATUS_FAILURE_BLOCKED:
+                return "Android blocked the update.";
+            default:
+                return "The update wasn't installed" + (detail == null || detail.isEmpty() ? "." : ": " + detail);
+        }
     }
 
     /** Hands the APK to Android's installer; what went wrong, or null. */

@@ -82,7 +82,7 @@ export default function ListsPage() {
                     Add {type === "ANIME" ? "anime" : "manga"} to your list from their page.
                 </EmptyState>
             ) : (
-                <MediaGrid>
+                <MediaGrid start>
                     {entries.map(e => (
                         <MediaCard key={e.mediaId} media={e.media} listEntry={e} />
                     ))}

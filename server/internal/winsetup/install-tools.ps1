@@ -13,7 +13,7 @@
 #
 # Programs that are already installed, with Scoop or otherwise, are left
 # alone, so it's safe to run again. The Kumo installer offers to run it, and
-# Kumo runs it from Settings > App > Programs.
+# Kumo runs it from Settings > Desktop app & programs.
 #
 # Keep this file ASCII: Windows PowerShell reads a script without a byte
 # order mark in the computer's code page.
@@ -148,7 +148,7 @@ if ($script:failed.Count -eq 0) {
     Write-Host "All done. Kumo finds the new programs by itself." -ForegroundColor Green
 } else {
     Write-Host ("Not installed: " + ($script:failed -join ", ") + ".") -ForegroundColor Yellow
-    Write-Host "Run the setup again from Kumo (Settings > App > Programs), or see"
+    Write-Host "Run the setup again from Kumo (Settings > Desktop app & programs), or see"
     Write-Host "https://github.com/$Repo/blob/HEAD/packaging/windows/README.md"
 }
 if (-not $NoPause) {

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { BookOpen, Puzzle } from "lucide-react"
+import { BookOpen, Puzzle, Search } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
@@ -31,7 +31,7 @@ export default function MangaPage() {
                     <p className="mt-1 text-muted">Read with manga provider extensions. Progress syncs to your list.</p>
                 </div>
                 <Link to="/search?type=MANGA">
-                    <Button>Find manga</Button>
+                    <Button icon={<Search className="size-4" />}>Find manga</Button>
                 </Link>
             </div>
             {providers && providers.length === 0 && (
@@ -57,11 +57,19 @@ export default function MangaPage() {
             ) : error && !data ? (
                 <ErrorState title="Couldn't load your manga list" error={error} retrying={isFetching} onRetry={() => refetch()} />
             ) : entries.length === 0 ? (
-                <EmptyState icon={<BookOpen className="size-6" />} title="Nothing here">
-                    Add manga to your list from search.
+                <EmptyState
+                    icon={<BookOpen className="size-6" />}
+                    title="Nothing here"
+                    action={
+                        <Link to="/search?type=MANGA">
+                            <Button icon={<Search className="size-4" />}>Find manga</Button>
+                        </Link>
+                    }
+                >
+                    Manga you add to your AniList list show up here, by status.
                 </EmptyState>
             ) : (
-                <MediaGrid>
+                <MediaGrid start>
                     {entries.map(e => (
                         <MediaCard
                             key={e.mediaId}

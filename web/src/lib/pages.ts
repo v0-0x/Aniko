@@ -64,6 +64,7 @@ export function openPage(key: string, how: "POP" | "PUSH" | "REPLACE") {
     const saved = pages.get(key)
     if (how === "PUSH" || !saved) {
         m.scrollTop = 0
+        if (tv) focusStart(m, key)
         return
     }
     // Back: the page may still be loading; tried until it's there (2s).
@@ -86,6 +87,48 @@ export function openPage(key: string, how: "POP" | "PUSH" | "REPLACE") {
     step()
 }
 
+// When a page opened (on a TV): the remote's focus goes to where it starts,
+// its main button ([data-tv-autofocus], an anime's Play) or else its first
+// thing, once the page is there; not to whatever was near the card pressed
+// on the page before (keepFocus waits meanwhile).
+let opening = 0
+
+function focusStart(m: HTMLElement, key: string) {
+    const started = (opening = Date.now())
+    // Focused for now, while the page's main thing may still be coming
+    // (Home's cards come with the list): replaced by it if it comes.
+    let interim: HTMLElement | null = null
+    const visible = (el: HTMLElement) => {
+        const b = el.getBoundingClientRect()
+        return b.width > 1 && b.height > 1 && !el.closest('[aria-hidden="true"], [inert], [data-tv-skip-nav]')
+    }
+    const done = () => {
+        if (opening === started) opening = 0
+    }
+    const step = () => {
+        if (current !== key || opening !== started) return
+        const a = document.activeElement
+        // Moved by the remote meanwhile, or a dialog took it: it stays there.
+        const moved = interim ? a !== interim : a && a !== document.body && a.isConnected && (m.contains(a) ? Date.now() - started > 150 : !!a.closest('[role="dialog"], [role="alertdialog"]'))
+        if (moved) return done()
+        // The marked thing, or the first focusable thing in it (a row's first card).
+        const mark = [...m.querySelectorAll<HTMLElement>("[data-tv-autofocus]")].find(visible)
+        const auto = mark && (mark.matches(FOCUSABLE) || mark.hasAttribute("tabindex") ? mark : [...mark.querySelectorAll<HTMLElement>(FOCUSABLE)].find(visible))
+        if (auto) {
+            auto.focus({ preventScroll: true })
+            return done()
+        }
+        // Not a text field: focused, it could bring up the TV's keyboard.
+        if (!interim && Date.now() - started > 700) {
+            interim = [...m.querySelectorAll<HTMLElement>(FOCUSABLE)].find(el => visible(el) && !el.matches("input, textarea, select")) ?? null
+            interim?.focus({ preventScroll: true })
+        }
+        if (Date.now() - started > 4000) done()
+        else setTimeout(step, 50)
+    }
+    step()
+}
+
 // TV: the remote's focus doesn't drop out of the page when what had it goes
 // (a card removed, a list redrawn): it goes to what's nearest instead.
 export function keepFocus() {
@@ -104,7 +147,8 @@ export function keepFocus() {
         timer = window.setTimeout(() => {
             timer = 0
             const a = document.activeElement
-            if (!last || last.isConnected || !rect || (a && a !== document.body)) return
+            // A page opening focuses its own start (focusStart).
+            if (opening || !last || last.isConnected || !rect || (a && a !== document.body)) return
             const r = rect
             const root = document.querySelector<HTMLElement>('[role="dialog"], [role="alertdialog"], [data-tv-scope]') ?? main() ?? document.body
             let best: HTMLElement | null = null

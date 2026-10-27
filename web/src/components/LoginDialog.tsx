@@ -5,7 +5,7 @@ import { toast } from "@/lib/toast"
 import { api, desktop } from "@/lib/api"
 import { loginStarted } from "@/lib/login"
 import { useStatus } from "@/lib/queries"
-import { androidApp } from "@/lib/tv"
+import { androidApp, tv } from "@/lib/tv"
 import { Button, Dialog, Field, Input } from "./ui"
 
 // AniList login. The client id (13985) uses AniList's PIN page as redirect,
@@ -15,6 +15,9 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     const { data: status } = useStatus()
     const [token, setToken] = useState("")
     const [busy, setBusy] = useState(false)
+    // On a TV, logging in here (a browser, a token to type) is hidden behind
+    // a button: the computer sharing its login is the way.
+    const [manual, setManual] = useState(!tv)
     const qc = useQueryClient()
     // Don't keep a typed token around once the dialog is closed.
     useEffect(() => {
@@ -50,12 +53,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     }
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={onOpenChange}
-            title="Log in with AniList"
-            description="Sync your lists, progress and scores with your AniList account."
-        >
+        <Dialog open={open} onOpenChange={onOpenChange} title="Log in with AniList" description="Sync your lists, progress and scores with your AniList account.">
             <div className="flex flex-col gap-5">
                 {/* A TV has no easy way to copy a token: the computer can share its login. */}
                 {androidApp && (
@@ -64,28 +62,37 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                         itself.
                     </p>
                 )}
-                <div className="rounded-lg bg-white/[0.03] p-5">
-                    <p className="text-sm text-muted">
-                        {desktop()
-                            ? "A login window will open. After you authorize Kumo, the token is captured automatically."
-                            : "Authorize Kumo on AniList, then copy the token shown on the page and paste it below."}
-                    </p>
-                    <Button variant="primary" className="mt-4 w-full" icon={<ExternalLink className="size-4" />} onClick={openAnilist}>
-                        Open AniList
+                {!manual && (
+                    <Button variant="subtle" onClick={() => setManual(true)}>
+                        Log in on this TV instead
                     </Button>
-                </div>
-                <Field label="Access token" help="You can also paste the whole URL you were redirected to.">
-                    <Input
-                        icon={<KeyRound className="size-4" />}
-                        placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9…"
-                        value={token}
-                        onChange={e => setToken(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && submit(token)}
-                    />
-                </Field>
-                <Button variant="white" loading={busy} disabled={!token.trim()} onClick={() => submit(token)}>
-                    Log in
-                </Button>
+                )}
+                {manual && (
+                    <>
+                        <div className="rounded-lg bg-white/[0.03] p-5">
+                            <p className="text-sm text-muted">
+                                {desktop()
+                                    ? "A login window will open. After you authorize Kumo, the token is captured automatically."
+                                    : "Authorize Kumo on AniList, then copy the token shown on the page and paste it below."}
+                            </p>
+                            <Button variant="primary" className="mt-4 w-full" icon={<ExternalLink className="size-4" />} onClick={openAnilist}>
+                                Open AniList
+                            </Button>
+                        </div>
+                        <Field label="Access token" help="You can also paste the whole URL you were redirected to.">
+                            <Input
+                                icon={<KeyRound className="size-4" />}
+                                placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9…"
+                                value={token}
+                                onChange={e => setToken(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && submit(token)}
+                            />
+                        </Field>
+                        <Button variant="white" loading={busy} disabled={!token.trim()} onClick={() => submit(token)}>
+                            Log in
+                        </Button>
+                    </>
+                )}
             </div>
         </Dialog>
     )

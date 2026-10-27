@@ -47,7 +47,8 @@ export function WhatsNew() {
         const newest = RELEASES[0]?.id ?? 0
         if (seen === -1 || (seen !== null && seen >= newest)) return
         if (seen === null) {
-            const used = status.loggedIn || !!status.settings.library.dir || (status.paired?.length ?? 0) > 0
+            // (Not by the library's folder: a new install has one already.)
+            const used = status.loggedIn || (status.paired?.length ?? 0) > 0
             if (!used) {
                 markSeen()
                 return

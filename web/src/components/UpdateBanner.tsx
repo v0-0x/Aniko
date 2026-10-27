@@ -115,7 +115,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
             <Panel
                 icon={<Icon tone="amber"><AlertTriangle /></Icon>}
                 title="Kumo hasn't come back yet"
-                text="Start Kumo again from your app menu, then reload this page."
+                text={`Start Kumo again (${windows ? "from the Start menu" : mac ? "from Applications" : "from your app menu"}), then reload this page.`}
                 actions={
                     <Button size="sm" icon={<RotateCcw className="size-4" />} onClick={() => location.reload()}>
                         Reload
@@ -131,7 +131,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
             <Panel
                 icon={<Icon><Download /></Icon>}
                 title={`Kumo ${latest} is ready to install`}
-                text="Android asks before installing it. Cancelled? Press Install again."
+                text="Android asks before installing it; then Kumo closes, and you open it again. Cancelled? Press Install again."
                 actions={
                     <Button size="sm" variant="primary" icon={<Download className="size-4" />} loading={apply.isPending} onClick={() => apply.mutate()}>
                         Install

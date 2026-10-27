@@ -2,7 +2,7 @@ import { CalendarDays, Clock } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
-import { Badge, EmptyState, ErrorState, Skeleton, Tabs } from "@/components/ui"
+import { Badge, Button, EmptyState, ErrorState, Skeleton, Tabs } from "@/components/ui"
 import { useSchedule } from "@/lib/queries"
 import type { ScheduleItem } from "@/lib/types"
 import { cn, cover, formatLabel, LIST_STATUS, readLocal, timeUntil, title, writeLocal } from "@/lib/utils"
@@ -55,7 +55,22 @@ export default function SchedulePage() {
             )}
             {error && !data && <ErrorState title="Couldn't load the schedule" error={error} retrying={isFetching} onRetry={() => refetch()} />}
             {data && days.length === 0 && (
-                <EmptyState icon={<CalendarDays className="size-6" />} title="Nothing scheduled">
+                <EmptyState
+                    icon={<CalendarDays className="size-6" />}
+                    title="Nothing scheduled"
+                    action={
+                        filter === "mine" && (
+                            <Button
+                                onClick={() => {
+                                    setFilter("all")
+                                    writeLocal("kumo-schedule-filter", "all")
+                                }}
+                            >
+                                See everything airing
+                            </Button>
+                        )
+                    }
+                >
                     {filter === "mine" ? "None of the anime in your list air this week." : "No episodes found."}
                 </EmptyState>
             )}

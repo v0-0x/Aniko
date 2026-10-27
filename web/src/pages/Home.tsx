@@ -9,7 +9,7 @@ import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { ProgramsNotice } from "@/components/ProgramsNotice"
-import { Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Skeleton } from "@/components/ui"
+import { Button, ChipRow, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Skeleton } from "@/components/ui"
 import { UpdateBanner } from "@/components/UpdateBanner"
 import { WatchPicker } from "@/components/WatchPicker"
 import { api } from "@/lib/api"
@@ -143,8 +143,9 @@ export default function HomePage() {
                 loading={isLoading}
                 toolbar={
                     <div className="glass flex items-center gap-0.5 rounded-lg p-1 [&_button]:text-white/80 [&_button:hover]:bg-white/10 [&_button:hover]:text-white [&_button[data-state=open]]:bg-white/10">
-                        <Button size="sm" variant="ghost" icon={<HardDrive className="size-4" />} onClick={() => navigate("/local")}>
-                            Local library
+                        {/* On a phone, the buttons' icons only: they fit across. */}
+                        <Button size="sm" variant="ghost" icon={<HardDrive className="size-4" />} onClick={() => navigate("/local")} aria-label="Local library">
+                            <span className="max-sm:hidden">Local library</span>
                         </Button>
                         <IconButton label="Library tools" size="sm" onClick={() => navigate("/library")}>
                             <LibraryBig className="size-4" />
@@ -159,12 +160,12 @@ export default function HomePage() {
                         <IconButton label="What should I watch?" size="sm" onClick={() => setPicking(true)}>
                             <Dices className="size-4" />
                         </IconButton>
-                        <Button size="sm" variant="ghost" loading={scanning || scan.isPending} icon={<FolderSync className="size-4" />} onClick={() => scan.mutate(false)}>
-                            Refresh
+                        <Button size="sm" variant="ghost" loading={scanning || scan.isPending} icon={<FolderSync className="size-4" />} onClick={() => scan.mutate(false)} aria-label="Refresh">
+                            <span className="max-sm:hidden">Refresh</span>
                         </Button>
                         {paired.length > 0 && (
-                            <Button size="sm" variant="ghost" loading={syncing} icon={<ArrowLeftRight className="size-4" />} onClick={syncDevices} title={`Continue watching from ${paired.join(", ")}, and your AniList list`}>
-                                Sync
+                            <Button size="sm" variant="ghost" loading={syncing} icon={<ArrowLeftRight className="size-4" />} onClick={syncDevices} title={`Continue watching from ${paired.join(", ")}, and your AniList list`} aria-label="Sync">
+                                <span className="max-sm:hidden">Sync</span>
                             </Button>
                         )}
                         <Dropdown>
@@ -320,7 +321,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
     return (
         <div className="relative h-[clamp(300px,44vh,480px)] w-full overflow-hidden">
             {img ? (
-                <img key={img} src={img} alt="" className="absolute inset-0 size-full object-cover fade-in" />
+                <img key={img} src={img} alt="" className="absolute inset-0 size-full object-cover fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
             ) : (
                 <div className="absolute inset-0 bg-surface-1" />
             )}
@@ -331,7 +332,8 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                 {loading ? (
                     <Skeleton className="h-11 w-96" />
                 ) : item ? (
-                    <div key={item.media.id} className="max-w-3xl rise-in">
+                    // Clear of the arrows at its right on a phone.
+                    <div key={item.media.id} className="max-w-3xl rise-in max-sm:pr-20">
                         <p className="text-sm font-medium text-white/65">Continue watching</p>
                         {/* On a TV the cards below are what's picked (the banner follows them). */}
                         <Link to={`/entry?id=${item.media.id}`} data-tv-skip-nav className="mt-1.5 block text-4xl leading-[1.1] font-semibold tracking-tight text-white transition-colors hover:text-white/85 md:text-[2.75rem]">
@@ -347,7 +349,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
             </div>
             {count > 1 && (
                 <div data-tv-skip-nav className="absolute right-4 bottom-28 z-20 flex items-center gap-3 md:right-8 xl:right-10">
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5 max-sm:hidden">
                         {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
                             <button
                                 key={i}
@@ -414,7 +416,7 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
     return (
         <div ref={ref} className="no-scrollbar -mx-2 flex snap-x scroll-px-2 gap-5 overflow-x-auto px-2 pb-2">
             {items.map((it, i) => (
-                <div key={it.media.id} className="w-[min(82vw,400px)] shrink-0 snap-start" onMouseEnter={() => onFocus(i)} onFocus={() => onFocus(i)}>
+                <div key={it.media.id} className="w-[min(82vw,400px)] shrink-0 snap-start" onMouseEnter={() => onFocus(i)} onFocus={() => onFocus(i)} data-tv-autofocus={i === 0 || undefined}>
                     <EpisodeCard
                         large
                         image={it.image}
@@ -442,30 +444,24 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
 }
 
 function GenreBar({ genres, value, onChange }: { genres: string[]; value: string | null; onChange: (g: string | null) => void }) {
-    const ref = useRef<HTMLDivElement>(null)
     return (
-        <div className="relative flex items-center">
-            <div ref={ref} className="no-scrollbar flex flex-1 gap-2 overflow-x-auto scroll-smooth py-1">
-                <button
-                    onClick={() => onChange(null)}
-                    className={cn("h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium transition-colors", !value ? "bg-white text-neutral-950" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")}
-                >
-                    All
-                </button>
-                {genres.map(g => (
-                    <button
-                        key={g}
-                        onClick={() => onChange(value === g ? null : g)}
-                        className={cn("h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium transition-colors", value === g ? "bg-white text-neutral-950" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")}
-                    >
-                        {g}
-                    </button>
-                ))}
-            </div>
-            <button onClick={() => ref.current?.scrollBy({ left: 400, behavior: "smooth" })} data-tv-skip-nav aria-label="More genres" className="ml-2 grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/[0.06] hover:text-fg">
-                <ChevronRight className="size-4" />
+        <ChipRow label="More genres">
+            <button
+                onClick={() => onChange(null)}
+                className={cn("h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium transition-colors", !value ? "bg-white text-neutral-950" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")}
+            >
+                All
             </button>
-        </div>
+            {genres.map(g => (
+                <button
+                    key={g}
+                    onClick={() => onChange(value === g ? null : g)}
+                    className={cn("h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium transition-colors", value === g ? "bg-white text-neutral-950" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")}
+                >
+                    {g}
+                </button>
+            ))}
+        </ChipRow>
     )
 }
 

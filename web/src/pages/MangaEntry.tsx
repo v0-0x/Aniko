@@ -69,7 +69,7 @@ export default function MangaEntryPage() {
         <div className="min-h-full pb-24">
             <div className="relative">
                 <div className="absolute inset-x-0 top-0 h-[440px] overflow-hidden">
-                    {banner(media) && <img src={banner(media)} alt="" className="size-full object-cover opacity-60 fade-in" />}
+                    {banner(media) && <img src={banner(media)} alt="" className="size-full object-cover opacity-60 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />}
                     <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-bg/10" />
                 </div>
                 <div className="relative z-10 flex flex-col gap-8 px-6 pt-[180px] pb-10 md:flex-row md:px-8 xl:px-10">
