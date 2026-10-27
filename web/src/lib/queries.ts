@@ -1,10 +1,11 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { toast } from "@/lib/toast"
 import { api, qs } from "./api"
 import { setUpdateLater } from "./store"
 import { installIfWanted, wantInstall } from "./tv"
 import type {
+    ActivityPage,
     AutoRule,
     CollectionView,
     DownloadItem,
@@ -27,6 +28,7 @@ import type {
     Torrent,
     TorrentResult,
     UpdateStatus,
+    Profile,
 } from "./types"
 
 export function useStatus() {
@@ -417,5 +419,27 @@ export function useApplyUpdate() {
             installIfWanted(s)
         },
         onError: (e: Error) => toast.error(e.message),
+    })
+}
+
+// The profile page: a user's profile ("" the logged-in one's), and a feed
+// (the people followed, or one user's), a page at a time.
+export function useProfile(user: string, enabled = true) {
+    return useQuery({
+        queryKey: ["profile", user.toLowerCase()],
+        queryFn: () => api.get<Profile>(`/api/anilist/profile${user ? `?user=${encodeURIComponent(user)}` : ""}`),
+        staleTime: 60_000,
+        enabled,
+    })
+}
+
+export function useActivity(feed: "following" | "user", userId: number, enabled = true) {
+    return useInfiniteQuery({
+        queryKey: ["activity", feed, feed === "user" ? userId : 0],
+        queryFn: ({ pageParam }) => api.get<ActivityPage>(`/api/anilist/activity?feed=${feed}&user=${userId}&page=${pageParam}`),
+        initialPageParam: 1,
+        getNextPageParam: (last, pages) => (last.hasMore ? pages.length + 1 : undefined),
+        staleTime: 60_000,
+        enabled,
     })
 }

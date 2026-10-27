@@ -52,6 +52,9 @@ type Platform struct {
 	// fetchSem allows one collection fetch at a time. Unlike a mutex, the
 	// wait for it ends when the caller's context does.
 	fetchSem chan struct{}
+
+	// social keeps the profile page's answers a moment (social.go).
+	social socialCache
 }
 
 const (

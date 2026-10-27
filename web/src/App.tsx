@@ -47,6 +47,7 @@ const MangaPage = lazy(() => import("./pages/Manga"))
 const MangaEntryPage = lazy(() => import("./pages/MangaEntry"))
 const MangaReaderPage = lazy(() => import("./pages/MangaReader"))
 const WebviewPage = lazy(() => import("./pages/Webview"))
+const ProfilePage = lazy(() => import("./pages/Profile"))
 
 export default function App() {
     const qc = useQueryClient()
@@ -191,6 +192,7 @@ export default function App() {
                                 <Route path="/manga/entry" element={<MangaEntryPage />} />
                                 <Route path="/manga/read" element={<MangaReaderPage />} />
                                 <Route path="/webview" element={<WebviewPage />} />
+                                <Route path="/profile" element={<ProfilePage />} />
                                 <Route path="*" element={<HomePage />} />
                             </Routes>
                         </Suspense>

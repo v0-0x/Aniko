@@ -62,7 +62,7 @@ export function PhoneNav() {
                     <DropdownItem icon={<SettingsIcon />} onSelect={() => navigate("/settings")} className="h-9">
                         Settings
                     </DropdownItem>
-                    <DropdownItem icon={<UserRound />} onSelect={() => navigate("/settings?tab=account")} className="h-9">
+                    <DropdownItem icon={<UserRound />} onSelect={() => navigate(status?.user ? "/profile" : "/settings?tab=account")} className={cn("h-9", location.pathname === "/profile" && "bg-white/[0.06]")}>
                         <span className="min-w-0 flex-1 truncate">{status?.user ? status.user.name : "Log in"}</span>
                     </DropdownItem>
                 </DropdownContent>

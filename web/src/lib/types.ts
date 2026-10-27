@@ -632,3 +632,52 @@ export type SharingPeer = {
 export type SharingStatus = { enabled: boolean; id: string; name: string; listening: boolean; peers: SharingPeer[]; addresses: string[] }
 
 export type SharedLibrary = { host: SharingPeer; files: LocalFile[] }
+
+// The profile page (server: anilist/social.go).
+export type UserLite = { id: number; name: string; avatar: { large: string; medium: string } }
+
+export type Profile = {
+    id: number
+    name: string
+    about: string
+    siteUrl: string
+    createdAt: number
+    bannerImage: string
+    avatar: { large: string }
+    options: { profileColor: string }
+    isFollowing: boolean
+    isFollower: boolean
+    statistics: {
+        anime: {
+            count: number
+            episodesWatched: number
+            minutesWatched: number
+            meanScore: number
+            genres: { genre: string; count: number }[] | null
+            statuses: { status: string; count: number }[] | null
+        }
+        manga: { count: number; chaptersRead: number; volumesRead: number; meanScore: number }
+    }
+    favourites: { anime: Media[]; manga: Media[]; characters: { id: number; name: { full: string }; image: { large: string }; siteUrl: string }[] }
+    following: UserLite[]
+    followingCount: number
+    followersCount: number
+    own: boolean
+}
+
+export type Activity = {
+    id: number
+    kind: "list" | "text"
+    status?: string
+    progress?: string
+    text?: string
+    createdAt: number
+    likeCount: number
+    replyCount: number
+    isLiked: boolean
+    siteUrl: string
+    user: UserLite
+    media?: Media
+}
+
+export type ActivityPage = { items: Activity[]; hasMore: boolean }

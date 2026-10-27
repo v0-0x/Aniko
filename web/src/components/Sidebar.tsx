@@ -6,6 +6,7 @@ import {
     ChartColumn,
     Compass,
     Download,
+    ExternalLink,
     FolderSearch,
     HardDrive,
     Home,
@@ -271,9 +272,15 @@ export function Sidebar() {
                         <DropdownLabel>{status?.user ? status.user.name : "Not logged in"}</DropdownLabel>
                         {status?.user ? (
                             <>
-                                <DropdownItem icon={<UserRound />} onSelect={() => window.open(`https://anilist.co/user/${status.user!.name}`, "_blank", "noopener")}>
-                                    AniList profile
+                                <DropdownItem icon={<UserRound />} onSelect={() => navigate("/profile")}>
+                                    Your profile
                                 </DropdownItem>
+                                {/* A TV has no browser to open it in. */}
+                                {!tv && (
+                                    <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(`https://anilist.co/user/${status.user!.name}`, "_blank", "noopener")}>
+                                        Open on AniList
+                                    </DropdownItem>
+                                )}
                                 <DropdownSeparator />
                                 <DropdownItem icon={<LogOut />} danger onSelect={logout}>
                                     Log out

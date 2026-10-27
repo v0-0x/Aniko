@@ -6,6 +6,17 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 8,
+        title: "Your AniList profile",
+        changes: [
+            {
+                title: "Profile",
+                text: "Your AniList profile in Kumo: your numbers, favourites and who you follow, and what the people you follow have been watching. Like their updates, open theirs, and follow people from their profiles. It's in the menu under your name in the sidebar.",
+                to: "/profile",
+            },
+        ],
+    },
+    {
         id: 7,
         title: "Polished all over",
         changes: [

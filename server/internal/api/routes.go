@@ -80,6 +80,36 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/anilist/discover", h(s.discover))
 	m.HandleFunc("GET /api/anilist/schedule", h(s.schedule))
 	m.HandleFunc("GET /api/anilist/list", h(s.rawList))
+	// The profile page: a user's profile, feeds, likes and follows.
+	m.HandleFunc("GET /api/anilist/profile", h(func(r *http.Request) (any, error) {
+		return s.app.Platform.Profile(r.Context(), r.URL.Query().Get("user"), r.URL.Query().Get("refresh") == "1")
+	}))
+	m.HandleFunc("GET /api/anilist/activity", h(func(r *http.Request) (any, error) {
+		following := r.URL.Query().Get("feed") == "following"
+		return s.app.Platform.Activity(r.Context(), following, queryInt(r, "user"), queryInt(r, "page"), s.app.Settings.Get().UI.ShowAdult)
+	}))
+	m.HandleFunc("POST /api/anilist/activity/{id}/like", h(func(r *http.Request) (any, error) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil || id <= 0 {
+			return nil, badRequest("bad activity id")
+		}
+		count, liked, err := s.app.Platform.ToggleLike(r.Context(), id)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"likeCount": count, "isLiked": liked}, nil
+	}))
+	m.HandleFunc("POST /api/anilist/follow/{id}", h(func(r *http.Request) (any, error) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil || id <= 0 {
+			return nil, badRequest("bad user id")
+		}
+		following, err := s.app.Platform.ToggleFollow(r.Context(), id)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"isFollowing": following}, nil
+	}))
 
 	// --- library
 	m.HandleFunc("POST /api/library/scan", h(s.scan))
