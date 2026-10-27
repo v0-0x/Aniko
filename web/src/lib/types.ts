@@ -54,6 +54,7 @@ export type ListEntry = {
     score: number
     repeat: number
     updatedAt: number
+    completedAt?: { year: number | null; month: number | null; day: number | null }
     media: Media
 }
 

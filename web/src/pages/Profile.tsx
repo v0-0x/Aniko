@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { ExternalLink, Heart, LogIn, MessageCircle, MessageSquareText, RefreshCw, UserCheck, UserPlus, UsersRound } from "lucide-react"
+import { Check, ExternalLink, Heart, LogIn, MessageCircle, MessageSquareText, RefreshCw, Star, UserCheck, UserPlus, UsersRound } from "lucide-react"
 import { useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { LoginDialog } from "@/components/LoginDialog"
@@ -10,8 +10,8 @@ import { useMediaQuery } from "@/lib/hooks"
 import { useActivity, useCollection, useProfile, useStatus } from "@/lib/queries"
 import { toast } from "@/lib/toast"
 import { focusEl, tv } from "@/lib/tv"
-import type { Activity, Profile, UserLite } from "@/lib/types"
-import { cn, cover, entryUrl, img, relativeTime, title } from "@/lib/utils"
+import type { Activity, CollectionItem, Profile, UserLite } from "@/lib/types"
+import { cn, cover, entryUrl, img, relativeTime, scoreColor, title } from "@/lib/utils"
 
 // An AniList profile: the logged-in user's (/profile), or another's
 // (/profile?user=Name). Its numbers, what the people followed have been
@@ -248,6 +248,7 @@ function ActivityTab({ profile }: { profile: Profile }) {
             </div>
             <aside className="flex min-w-0 flex-col gap-8">
                 {profile.own && <WatchingNow />}
+                {profile.own && <Completed />}
                 <TopGenres profile={profile} />
             </aside>
         </div>
@@ -463,6 +464,66 @@ function WatchingNow() {
             </div>
         </section>
     )
+}
+
+// The anime finished most recently (the date on AniList, else when the
+// entry last changed), with the score given; See all opens the list.
+function Completed() {
+    const { data } = useCollection()
+    const seen = new Set<number>()
+    const all = (data?.lists ?? [])
+        .filter(l => l.status === "COMPLETED")
+        .flatMap(l => l.items)
+        .filter(it => !seen.has(it.media.id) && !!seen.add(it.media.id))
+    if (!all.length) return null
+    const items = all.sort((x, y) => finished(y) - finished(x)).slice(0, 6)
+    return (
+        <section>
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2 className="text-[15px] font-semibold">
+                    Completed <span className="ml-1 text-[13px] font-normal text-subtle tabular-nums">{all.length.toLocaleString()}</span>
+                </h2>
+                <Link to="/lists?status=COMPLETED" className="focus-ring rounded px-1 text-[13px] text-muted transition-colors hover:text-fg">
+                    See all
+                </Link>
+            </div>
+            <div className="flex flex-col gap-1">
+                {items.map(it => {
+                    const score = it.listEntry?.score ?? 0
+                    const d = it.listEntry?.completedAt
+                    const when = d?.year ? new Date(d.year, (d.month ?? 1) - 1, d.day ?? 1).toLocaleDateString(undefined, d.month ? { month: "short", year: "numeric" } : { year: "numeric" }) : ""
+                    const eps = it.media.episodes ? `${it.media.episodes} episode${it.media.episodes === 1 ? "" : "s"}` : ""
+                    return (
+                        <Link key={it.media.id} to={entryUrl(it.media)} className="focus-ring flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]">
+                            <span className="relative shrink-0">
+                                <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-14 w-10 rounded-md object-cover" />
+                                <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-bg">
+                                    <Check className="size-2.5 stroke-[3]" />
+                                </span>
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-[13.5px] font-medium">{title(it.media)}</p>
+                                <p className="truncate text-xs text-subtle tabular-nums">{[when && `Finished ${when}`, eps].filter(Boolean).join(" · ") || "Completed"}</p>
+                            </div>
+                            {score > 0 && (
+                                <span className={cn("flex shrink-0 items-center gap-1 text-[13px] font-medium tabular-nums", scoreColor(score))}>
+                                    <Star className="size-3.5 fill-current" />
+                                    {(score / 10).toFixed(score % 10 ? 1 : 0)}
+                                </span>
+                            )}
+                        </Link>
+                    )
+                })}
+            </div>
+        </section>
+    )
+}
+
+// When an entry was finished, in seconds: AniList's date, else when it last
+// changed.
+function finished(it: CollectionItem) {
+    const d = it.listEntry?.completedAt
+    return d?.year ? Date.UTC(d.year, (d.month ?? 1) - 1, d.day ?? 1) / 1000 : (it.listEntry?.updatedAt ?? 0)
 }
 
 function TopGenres({ profile }: { profile: Profile }) {

@@ -1,5 +1,6 @@
 import { ListChecks, Search } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { EmptyState, ErrorState, Input, Select, Tabs } from "@/components/ui"
 import { useRawList } from "@/lib/queries"
@@ -8,7 +9,12 @@ import { LIST_STATUS, LIST_STATUS_MANGA, title } from "@/lib/utils"
 export default function ListsPage() {
     const [type, setType] = useState<"ANIME" | "MANGA">("ANIME")
     const { data, isLoading, error, refetch, isFetching } = useRawList(type)
-    const [status, setStatus] = useState("CURRENT")
+    // A link can open a list (?status=COMPLETED, the profile's See all).
+    const [params] = useSearchParams()
+    const [status, setStatus] = useState(() => {
+        const s = params.get("status") ?? ""
+        return s in LIST_STATUS ? s : "CURRENT"
+    })
     const [q, setQ] = useState("")
     const [sort, setSort] = useState("updated")
     const labels = type === "MANGA" ? LIST_STATUS_MANGA : LIST_STATUS
