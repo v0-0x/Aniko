@@ -45,9 +45,13 @@ func TestProfile(t *testing.T) {
 				},
 			}}))
 		case strings.Contains(req.Query, "following(userId"):
+			if !followsDeclared(req.Query) {
+				reply(w, 400, followsRejected)
+				return
+			}
 			reply(w, 200, data(map[string]any{
 				"following": map[string]any{"pageInfo": map[string]any{"total": 3}, "following": []any{map[string]any{"id": 9, "name": "Friend"}}},
-				"followers": map[string]any{"pageInfo": map[string]any{"total": 5}},
+				"followers": map[string]any{"pageInfo": map[string]any{"total": 5}, "followers": []any{map[string]any{"id": 11, "name": "Fan"}}},
 			}))
 		default:
 			t.Errorf("unexpected query %s", op(req.Query))
@@ -66,8 +70,11 @@ func TestProfile(t *testing.T) {
 	if len(own.Favourites.Manga) != 0 || own.Favourites.Manga == nil || len(own.Favourites.Characters) != 1 {
 		t.Fatalf("favourites: %+v", own.Favourites)
 	}
-	if own.FollowingCount != 3 || own.FollowersCount != 5 || len(own.Following) != 1 || own.Following[0].Name != "Friend" {
-		t.Fatalf("follows: %+v %d %d", own.Following, own.FollowingCount, own.FollowersCount)
+	if own.FollowsError != "" || own.FollowingCount == nil || own.FollowersCount == nil {
+		t.Fatalf("follows not loaded: %q", own.FollowsError)
+	}
+	if *own.FollowingCount != 3 || *own.FollowersCount != 5 || own.FollowingMore || own.FollowersMore || len(own.Following) != 1 || own.Following[0].Name != "Friend" || len(own.Followers) != 1 || own.Followers[0].Name != "Fan" {
+		t.Fatalf("follows: %+v %d %d", own.Following, *own.FollowingCount, *own.FollowersCount)
 	}
 	// Kept: no new question.
 	before := asked.Load()
@@ -81,6 +88,61 @@ func TestProfile(t *testing.T) {
 	}
 	if friend.Own || friend.ID != 9 || !friend.IsFollowing {
 		t.Fatalf("friend: %+v", friend)
+	}
+}
+
+// AniList checks a query's variables against its schema: following and
+// followers take userId: Int!, and a nullable $id fails the whole query.
+func followsDeclared(q string) bool { return strings.Contains(q, "$id: Int!") }
+
+var followsRejected = map[string]any{"data": nil, "errors": []any{map[string]any{"message": `Variable "$id" of type "Int" used in position expecting type "Int!".`, "status": 400}}}
+
+// Who they follow couldn't be asked: the profile still shows, its counts
+// unknown (not 0), and it isn't kept. Without a total from AniList, the
+// counts are what's on the page, "or more" when there's a next one.
+func TestProfileFollows(t *testing.T) {
+	var fail atomic.Bool
+	fail.Store(true)
+	var asked atomic.Int32
+	p := newTestPlatform(t, func(w http.ResponseWriter, req gqlRequest) {
+		switch {
+		case strings.Contains(req.Query, "User("):
+			reply(w, 200, data(map[string]any{"User": map[string]any{"id": 7, "name": "tester"}}))
+		case strings.Contains(req.Query, "following(userId"):
+			asked.Add(1)
+			if fail.Load() {
+				reply(w, 500, map[string]any{"data": nil, "errors": []any{map[string]any{"message": "boom", "status": 500}}})
+				return
+			}
+			following := make([]any, 50)
+			for i := range following {
+				following[i] = map[string]any{"id": 100 + i, "name": "U"}
+			}
+			reply(w, 200, data(map[string]any{
+				"following": map[string]any{"pageInfo": map[string]any{"hasNextPage": true}, "following": following},
+				"followers": map[string]any{"pageInfo": map[string]any{"hasNextPage": false}, "followers": []any{map[string]any{"id": 1, "name": "A"}, map[string]any{"id": 2, "name": "B"}}},
+			}))
+		default:
+			t.Errorf("unexpected query %s", op(req.Query))
+		}
+	})
+	setLoggedIn(p, 7)
+	ctx := context.Background()
+
+	prof, err := p.Profile(ctx, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if prof.FollowsError == "" || prof.FollowingCount != nil || prof.FollowersCount != nil || prof.Following == nil || prof.Followers == nil {
+		t.Fatalf("failed follows: %q %v %v %v", prof.FollowsError, prof.FollowingCount, prof.FollowersCount, prof.Following)
+	}
+	fail.Store(false)
+	prof, err = p.Profile(ctx, "", false)
+	if err != nil || asked.Load() != 2 {
+		t.Fatalf("not asked again after a failure: %d (%v)", asked.Load(), err)
+	}
+	if prof.FollowsError != "" || *prof.FollowingCount != 50 || !prof.FollowingMore || *prof.FollowersCount != 2 || prof.FollowersMore {
+		t.Fatalf("counts without totals: %d more=%v, %d more=%v", *prof.FollowingCount, prof.FollowingMore, *prof.FollowersCount, prof.FollowersMore)
 	}
 }
 

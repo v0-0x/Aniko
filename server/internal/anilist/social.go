@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -66,10 +67,16 @@ type Profile struct {
 		Manga      []*Media     `json:"manga"`
 		Characters []*Character `json:"characters"`
 	} `json:"favourites"`
-	// Following: the first ones (by name), and how many in all.
+	// Following and Followers: the first ones (by name), and how many in
+	// all; the counts are null when AniList didn't say (FollowsError), and
+	// the More ones mean "at least that many" (AniList gave no total).
 	Following      []UserLite `json:"following"`
-	FollowingCount int        `json:"followingCount"`
-	FollowersCount int        `json:"followersCount"`
+	Followers      []UserLite `json:"followers"`
+	FollowingCount *int       `json:"followingCount"`
+	FollowersCount *int       `json:"followersCount"`
+	FollowingMore  bool       `json:"followingMore,omitempty"`
+	FollowersMore  bool       `json:"followersMore,omitempty"`
+	FollowsError   string     `json:"followsError,omitempty"`
 	// Own: the logged-in user's own profile.
 	Own bool `json:"own"`
 }
@@ -139,9 +146,11 @@ const qProfile = `query ($id: Int, $name: String) {
 	}
 }`
 
-const qFollows = `query ($id: Int) {
-	following: Page(perPage: 50) { pageInfo { total } following(userId: $id, sort: USERNAME) { ` + userLiteFields + ` } }
-	followers: Page(perPage: 1) { pageInfo { total } followers(userId: $id) { id } }
+// following and followers take userId: Int!, so $id must be declared
+// non-null: AniList turns the whole query down otherwise.
+const qFollows = `query ($id: Int!) {
+	following: Page(perPage: 50) { pageInfo { total hasNextPage } following(userId: $id, sort: USERNAME) { ` + userLiteFields + ` } }
+	followers: Page(perPage: 50) { pageInfo { total hasNextPage } followers(userId: $id, sort: USERNAME) { ` + userLiteFields + ` } }
 }`
 
 const qActivity = `query ($page: Int, $userId: Int, $following: Boolean) {
@@ -278,23 +287,47 @@ func (p *Platform) Profile(ctx context.Context, name string, refresh bool) (*Pro
 	}
 
 	// Who they follow, and how many follow them: a second question (by id).
+	// Without it the profile still shows, without the counts, and isn't
+	// kept: the next look asks again.
+	type pageInfo struct {
+		Total       int  `json:"total"`
+		HasNextPage bool `json:"hasNextPage"`
+	}
 	var follows struct {
 		Following struct {
-			PageInfo  struct{ Total int } `json:"pageInfo"`
-			Following []UserLite          `json:"following"`
+			PageInfo  pageInfo   `json:"pageInfo"`
+			Following []UserLite `json:"following"`
 		} `json:"following"`
 		Followers struct {
-			PageInfo struct{ Total int } `json:"pageInfo"`
+			PageInfo  pageInfo   `json:"pageInfo"`
+			Followers []UserLite `json:"followers"`
 		} `json:"followers"`
 	}
-	if err := p.client.Query(ctx, qFollows, map[string]any{"id": prof.ID}, &follows); err == nil {
-		prof.Following = follows.Following.Following
-		prof.FollowingCount = max(follows.Following.PageInfo.Total, len(prof.Following))
-		prof.FollowersCount = follows.Followers.PageInfo.Total
+	err := p.client.Query(ctx, qFollows, map[string]any{"id": prof.ID}, &follows)
+	if err != nil {
+		if errors.Is(err, ErrUnauthorized) {
+			p.expire(session)
+		}
+		log.Printf("anilist: who %s follows: %v", prof.Name, err)
+		prof.FollowsError = "AniList didn't answer just now. Try again in a moment."
+		prof.Following, prof.Followers = []UserLite{}, []UserLite{}
+		return &prof, nil
 	}
+	prof.Following, prof.Followers = follows.Following.Following, follows.Followers.Followers
 	if prof.Following == nil {
 		prof.Following = []UserLite{}
 	}
+	if prof.Followers == nil {
+		prof.Followers = []UserLite{}
+	}
+	// The total, or at least the ones on the page when AniList leaves the
+	// total out.
+	count := func(pi pageInfo, n int) (*int, bool) {
+		c := max(pi.Total, n)
+		return &c, pi.HasNextPage && c <= n
+	}
+	prof.FollowingCount, prof.FollowingMore = count(follows.Following.PageInfo, len(prof.Following))
+	prof.FollowersCount, prof.FollowersMore = count(follows.Followers.PageInfo, len(prof.Followers))
 	p.social.put(key, &prof)
 	return &prof, nil
 }

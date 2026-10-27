@@ -60,17 +60,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     ref,
 ) {
     const classic = useClassic()
+    // While loading it ignores presses but isn't disabled: a disabled button
+    // loses the focus, and a TV's remote its place on the page.
+    const busy = loading && !disabled
     return (
         <button
             ref={ref}
-            disabled={disabled || loading}
+            disabled={disabled}
+            aria-disabled={busy || undefined}
+            aria-busy={busy || undefined}
             className={cn(
-                "focus-ring inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-[background-color,color,opacity,transform,filter] select-none active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 [&_svg]:shrink-0",
+                "focus-ring inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-[background-color,color,opacity,transform,filter] select-none active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 aria-busy:opacity-50 aria-busy:active:scale-100 [&_svg]:shrink-0",
                 (classic ? classicVariants : variants)[variant],
                 (classic ? classicSizes : sizes)[size],
                 className,
             )}
             {...props}
+            onClick={busy ? e => e.preventDefault() : props.onClick}
         >
             {loading ? <Loader2 className="size-4 animate-spin" /> : icon}
             {children}
@@ -320,7 +326,7 @@ export function Tabs<T extends string>({
 }: {
     value: T
     onChange: (v: T) => void
-    tabs: { value: T; label: React.ReactNode; icon?: React.ReactNode; count?: number }[]
+    tabs: { value: T; label: React.ReactNode; icon?: React.ReactNode; count?: number | string }[]
     className?: string
     // segmented: a compact switch, for filters and toolbars; underline: a
     // page's sections.

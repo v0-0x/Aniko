@@ -659,9 +659,15 @@ export type Profile = {
         manga: { count: number; chaptersRead: number; volumesRead: number; meanScore: number }
     }
     favourites: { anime: Media[]; manga: Media[]; characters: { id: number; name: { full: string }; image: { large: string }; siteUrl: string }[] }
+    // The first 50 of each (by name); the counts are null when AniList
+    // didn't say (followsError), and More means "at least that many".
     following: UserLite[]
-    followingCount: number
-    followersCount: number
+    followers: UserLite[]
+    followingCount: number | null
+    followersCount: number | null
+    followingMore?: boolean
+    followersMore?: boolean
+    followsError?: string
     own: boolean
 }
 

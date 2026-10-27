@@ -1,14 +1,15 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { ExternalLink, Heart, LogIn, MessageCircle, RefreshCw, UserCheck, UserPlus, UsersRound } from "lucide-react"
-import { useState } from "react"
+import { ExternalLink, Heart, LogIn, MessageCircle, MessageSquareText, RefreshCw, UserCheck, UserPlus, UsersRound } from "lucide-react"
+import { useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { LoginDialog } from "@/components/LoginDialog"
 import { MediaCard, MediaGrid } from "@/components/MediaCard"
 import { Button, EmptyState, ErrorState, Skeleton, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useMediaQuery } from "@/lib/hooks"
 import { useActivity, useCollection, useProfile, useStatus } from "@/lib/queries"
 import { toast } from "@/lib/toast"
-import { tv } from "@/lib/tv"
+import { focusEl, tv } from "@/lib/tv"
 import type { Activity, Profile, UserLite } from "@/lib/types"
 import { cn, cover, entryUrl, img, relativeTime, title } from "@/lib/utils"
 
@@ -21,9 +22,14 @@ export default function ProfilePage() {
     const { data: status } = useStatus()
     const loggedIn = !!status?.loggedIn
     const { data: profile, error, isLoading, refetch, isFetching } = useProfile(user, loggedIn)
+    const qc = useQueryClient()
     const [loginOpen, setLoginOpen] = useState(false)
-    const tab = (params.get("tab") as "activity" | "favourites" | "following") || "activity"
-    const setTab = (t: string) =>
+    const [refreshing, setRefreshing] = useState(false)
+    // A phone's width fits the four tabs without their counts (the header
+    // has them).
+    const narrow = useMediaQuery("(max-width: 639px)")
+    const tab = (params.get("tab") as Tab) || "activity"
+    const setTab = (t: Tab) =>
         setParams(
             p => {
                 p.set("tab", t)
@@ -31,6 +37,19 @@ export default function ProfilePage() {
             },
             { replace: true },
         )
+    // Asked again from AniList (the server forgets what it kept), the
+    // feeds too.
+    const refresh = async () => {
+        setRefreshing(true)
+        try {
+            await api.get(`/api/anilist/profile?refresh=1${user ? `&user=${encodeURIComponent(user)}` : ""}`)
+            await Promise.all([refetch(), qc.invalidateQueries({ queryKey: ["activity"] })])
+        } catch (e) {
+            toast.error((e as Error).message)
+        } finally {
+            setRefreshing(false)
+        }
+    }
 
     if (status && !loggedIn)
         return (
@@ -70,8 +89,8 @@ export default function ProfilePage() {
     return (
         // Keyed by who: another profile starts at its top, on its own tabs.
         <div key={profile.id} className="min-h-full pb-24">
-            <Header profile={profile} onRefresh={() => api.get(`/api/anilist/profile?refresh=1${user ? `&user=${encodeURIComponent(user)}` : ""}`).then(() => refetch())} />
-            <div className="flex flex-col gap-8 px-6 pt-7 md:px-8 xl:px-10">
+            <Header profile={profile} onTab={setTab} onRefresh={refresh} refreshing={refreshing} />
+            <div className="flex flex-col gap-8 px-6 pt-8 md:px-8 xl:px-10">
                 <Numbers profile={profile} />
                 <Tabs
                     variant="underline"
@@ -80,20 +99,29 @@ export default function ProfilePage() {
                     tabs={[
                         { value: "activity", label: "Activity" },
                         { value: "favourites", label: "Favourites" },
-                        { value: "following", label: "Following", count: profile.followingCount },
+                        { value: "following", label: "Following", count: narrow ? undefined : countText(profile.followingCount, profile.followingMore) },
+                        { value: "followers", label: "Followers", count: narrow ? undefined : countText(profile.followersCount, profile.followersMore) },
                     ]}
                 />
                 {tab === "activity" && <ActivityTab profile={profile} />}
                 {tab === "favourites" && <Favourites profile={profile} />}
-                {tab === "following" && <Following profile={profile} />}
+                {(tab === "following" || tab === "followers") && <People profile={profile} kind={tab} onRetry={refresh} retrying={refreshing} />}
             </div>
         </div>
     )
 }
 
+type Tab = "activity" | "favourites" | "following" | "followers"
+
+// "50+" when AniList gave no total past the first page; nothing when it
+// didn't say at all.
+function countText(n: number | null, more?: boolean) {
+    return n === null ? undefined : `${n.toLocaleString()}${more ? "+" : ""}`
+}
+
 // The banner (theirs, else a wash in their profile color), the avatar and
-// name, since when, and who follows whom.
-function Header({ profile, onRefresh }: { profile: Profile; onRefresh: () => void }) {
+// name, since when, and who follows whom (opening those tabs).
+function Header({ profile, onTab, onRefresh, refreshing }: { profile: Profile; onTab: (t: Tab) => void; onRefresh: () => void; refreshing: boolean }) {
     const qc = useQueryClient()
     const [following, setFollowing] = useState(profile.isFollowing)
     const [busy, setBusy] = useState(false)
@@ -128,12 +156,16 @@ function Header({ profile, onRefresh }: { profile: Profile; onRefresh: () => voi
                 <div className="min-w-0 flex-1 pb-1">
                     <h1 className="truncate text-[2rem] leading-tight font-semibold tracking-tight">{profile.name}</h1>
                     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-                        <span>
-                            <b className="font-semibold text-fg">{profile.followingCount}</b> following
-                        </span>
-                        <span>
-                            <b className="font-semibold text-fg">{profile.followersCount}</b> followers
-                        </span>
+                        {profile.followingCount !== null && (
+                            <button onClick={() => onTab("following")} className="focus-ring -mx-1 rounded px-1 transition-colors hover:text-fg">
+                                <b className="font-semibold text-fg tabular-nums">{countText(profile.followingCount, profile.followingMore)}</b> following
+                            </button>
+                        )}
+                        {profile.followersCount !== null && (
+                            <button onClick={() => onTab("followers")} className="focus-ring -mx-1 rounded px-1 transition-colors hover:text-fg">
+                                <b className="font-semibold text-fg tabular-nums">{countText(profile.followersCount, profile.followersMore)}</b> {profile.followersCount === 1 && !profile.followersMore ? "follower" : "followers"}
+                            </button>
+                        )}
                         {since && <span className="text-subtle">On AniList since {since}</span>}
                         {!profile.own && profile.isFollower && <span className="rounded-md bg-white/[0.07] px-1.5 text-xs text-fg/80">Follows you</span>}
                     </p>
@@ -144,7 +176,7 @@ function Header({ profile, onRefresh }: { profile: Profile; onRefresh: () => voi
                             {following ? "Following" : "Follow"}
                         </Button>
                     )}
-                    <Button icon={<RefreshCw className="size-4" />} onClick={onRefresh} aria-label="Refresh">
+                    <Button icon={<RefreshCw className="size-4" />} loading={refreshing} onClick={onRefresh} aria-label="Refresh">
                         <span className="max-sm:hidden">Refresh</span>
                     </Button>
                     {/* A TV has no browser to open it in. */}
@@ -175,8 +207,8 @@ function Numbers({ profile }: { profile: Profile }) {
     ]
     return (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {tiles.map(t => (
-                <div key={t.label} className="card px-4 py-3.5">
+            {tiles.map((t, i) => (
+                <div key={t.label} className={cn("card px-4 py-3.5", i === tiles.length - 1 && tiles.length % 2 === 1 && "max-sm:col-span-2")}>
                     <p className="text-xs text-muted">{t.label}</p>
                     <p className="mt-1 text-2xl font-semibold tabular-nums">{t.value}</p>
                 </div>
@@ -225,6 +257,18 @@ function ActivityTab({ profile }: { profile: Profile }) {
 function Feed({ feed, profile }: { feed: "following" | "user"; profile: Profile }) {
     const { data, error, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, isFetching } = useActivity(feed, profile.id)
     const items = data?.pages.flatMap(p => p.items) ?? []
+    const list = useRef<HTMLDivElement>(null)
+    // On a TV the remote goes on at the first new entry (the button may be
+    // gone: the last page), not back at the top.
+    const more = async () => {
+        const before = items.length
+        await fetchNextPage()
+        if (!tv) return
+        requestAnimationFrame(() => {
+            const next = list.current?.children[before]?.querySelector<HTMLElement>("a[href], button")
+            if (next) focusEl(next)
+        })
+    }
     if (isLoading)
         return (
             <div className="flex flex-col gap-3">
@@ -246,12 +290,12 @@ function Feed({ feed, profile }: { feed: "following" | "user"; profile: Profile 
         )
     return (
         // A TV's remote starts on the first one (lib/pages).
-        <div className="flex flex-col gap-3" data-tv-autofocus>
+        <div ref={list} className="flex flex-col gap-3" data-tv-autofocus>
             {items.map(a => (
-                <ActivityRow key={a.id} activity={a} />
+                <ActivityRow key={a.id} activity={a} showUser={feed === "following"} />
             ))}
             {hasNextPage && (
-                <Button className="self-center" loading={isFetchingNextPage} onClick={() => fetchNextPage()}>
+                <Button className="self-center" loading={isFetchingNextPage} onClick={more}>
                     Show more
                 </Button>
             )}
@@ -261,7 +305,7 @@ function Feed({ feed, profile }: { feed: "following" | "user"; profile: Profile 
 
 // One entry: who, what (watched episode 5 of…, a post), when; a like, and
 // the replies (on AniList).
-function ActivityRow({ activity: a }: { activity: Activity }) {
+function ActivityRow({ activity: a, showUser }: { activity: Activity; showUser: boolean }) {
     const [liked, setLiked] = useState(a.isLiked)
     const [likes, setLikes] = useState(a.likeCount)
     const [expanded, setExpanded] = useState(false)
@@ -286,17 +330,25 @@ function ActivityRow({ activity: a }: { activity: Activity }) {
                 <Link to={entryUrl(a.media)} className="focus-ring shrink-0 rounded-md" aria-label={title(a.media)}>
                     <img src={cover(a.media, "thumb")} alt="" loading="lazy" className="h-[4.5rem] w-12 rounded-md object-cover ring-1 ring-white/10" />
                 </Link>
-            ) : (
+            ) : showUser ? (
                 <Link to={`/profile?user=${encodeURIComponent(a.user.name)}`} className="focus-ring shrink-0 rounded-full" aria-label={a.user.name}>
                     <img src={img(a.user.avatar?.medium)} alt="" loading="lazy" className="size-10 rounded-full object-cover ring-1 ring-white/10" />
                 </Link>
+            ) : (
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-muted">
+                    <MessageSquareText className="size-[18px]" />
+                </span>
             )}
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 text-[13px]">
-                    {a.media && <img src={img(a.user.avatar?.medium)} alt="" loading="lazy" className="size-5 rounded-full object-cover" />}
-                    <Link to={`/profile?user=${encodeURIComponent(a.user.name)}`} className="truncate font-medium hover:underline" tabIndex={a.media ? -1 : undefined}>
-                        {a.user.name}
-                    </Link>
+                    {showUser && (
+                        <>
+                            {a.media && <img src={img(a.user.avatar?.medium)} alt="" loading="lazy" className="size-5 rounded-full object-cover" />}
+                            <Link to={`/profile?user=${encodeURIComponent(a.user.name)}`} className="truncate font-medium hover:underline" tabIndex={a.media ? -1 : undefined}>
+                                {a.user.name}
+                            </Link>
+                        </>
+                    )}
                     <span className="shrink-0 text-subtle">{relativeTime(a.createdAt)}</span>
                 </div>
                 {a.kind === "list" && a.media ? (
@@ -494,27 +546,43 @@ function Favourites({ profile }: { profile: Profile }) {
     )
 }
 
-function Following({ profile }: { profile: Profile }) {
-    if (!profile.following.length)
+// Who they follow, or who follows them: the first 50 by name, and the
+// rest on AniList.
+function People({ profile, kind, onRetry, retrying }: { profile: Profile; kind: "following" | "followers"; onRetry: () => void; retrying: boolean }) {
+    if (profile.followsError) {
+        const title = kind === "following" ? (profile.own ? "Couldn't load who you follow" : `Couldn't load who ${profile.name} follows`) : profile.own ? "Couldn't load your followers" : `Couldn't load ${profile.name}'s followers`
+        return <ErrorState title={title} error={new Error(profile.followsError)} retrying={retrying} onRetry={onRetry} />
+    }
+    const users = kind === "following" ? profile.following : profile.followers
+    const count = (kind === "following" ? profile.followingCount : profile.followersCount) ?? users.length
+    const more = kind === "following" ? profile.followingMore : profile.followersMore
+    if (!users.length)
         return (
-            <EmptyState icon={<UsersRound className="size-6" />} title="Not following anyone yet">
-                {profile.own ? "People you follow on AniList show up here, and what they watch shows up in your activity." : `${profile.name} doesn't follow anyone yet.`}
+            <EmptyState icon={<UsersRound className="size-6" />} title={kind === "following" ? "Not following anyone yet" : "No followers yet"}>
+                {kind === "following"
+                    ? profile.own
+                        ? "People you follow on AniList show up here, and what they watch shows up in your activity."
+                        : `${profile.name} doesn't follow anyone yet.`
+                    : profile.own
+                      ? "People who follow you on AniList show up here."
+                      : `Nobody follows ${profile.name} yet.`}
             </EmptyState>
         )
+    const rest = more ? 0 : count - users.length
     return (
         <div>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-x-4 gap-y-6" data-tv-autofocus>
-                {profile.following.map(u => (
+                {users.map(u => (
                     <UserTile key={u.id} user={u} />
                 ))}
             </div>
-            {profile.followingCount > profile.following.length && (
+            {(rest > 0 || more) && (
                 <p className="mt-6 text-sm text-muted">
-                    And {profile.followingCount - profile.following.length} more
+                    {rest > 0 ? `And ${rest.toLocaleString()} more` : "And more"}
                     {!tv && (
                         <>
                             {" "}
-                            <a href={`${profile.siteUrl}/following`} target="_blank" rel="noopener noreferrer" className="text-fg/85 underline-offset-2 hover:underline">
+                            <a href={`${profile.siteUrl}/${kind}`} target="_blank" rel="noopener noreferrer" className="text-fg/85 underline-offset-2 hover:underline">
                                 on AniList
                             </a>
                         </>

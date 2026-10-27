@@ -11,7 +11,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Profile",
-                text: "Your AniList profile in Kumo: your numbers, favourites and who you follow, and what the people you follow have been watching. Like their updates, open theirs, and follow people from their profiles. It's in the menu under your name in the sidebar.",
+                text: "Your AniList profile in Kumo: your numbers, favourites, who you follow and who follows you, and what the people you follow have been watching. Like their updates, open theirs, and follow people from their profiles. It's in the menu under your name in the sidebar.",
                 to: "/profile",
             },
         ],
