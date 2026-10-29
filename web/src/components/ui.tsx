@@ -391,12 +391,19 @@ export function Tabs<T extends string>({
 // ---------------------------------------------------------------------------
 // Overlays
 
+// Where menus, tooltips, popovers and dialogs go: into the element that's
+// fullscreen (the player's) when there is one, else the page. Outside it
+// nothing shows in fullscreen, and an open menu would take every click.
+function layer() {
+    return (document.fullscreenElement as HTMLElement | null) ?? undefined
+}
+
 export function Tooltip({ content, children, side = "top" }: { content: React.ReactNode; children: React.ReactNode; side?: "top" | "right" | "bottom" | "left" }) {
     const classic = useClassic()
     return (
         <TooltipPrimitive.Root delayDuration={350}>
             <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-            <TooltipPrimitive.Portal>
+            <TooltipPrimitive.Portal container={layer()}>
                 <TooltipPrimitive.Content
                     side={side}
                     sideOffset={8}
@@ -434,7 +441,7 @@ export function Dialog({
     const classic = useClassic()
     return (
         <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-            <DialogPrimitive.Portal>
+            <DialogPrimitive.Portal container={layer()}>
                 <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 fade-in", classic ? "bg-black/65" : "bg-black/60 backdrop-blur-[2px]")} />
                 <DialogPrimitive.Content
                     className={cn(
@@ -489,7 +496,7 @@ export function DropdownContent({
 }) {
     const classic = useClassic()
     return (
-        <DropdownPrimitive.Portal>
+        <DropdownPrimitive.Portal container={layer()}>
             <DropdownPrimitive.Content
                 align={align}
                 side={side}
@@ -582,7 +589,7 @@ export function Popover({
     return (
         <PopoverPrimitive.Root open={open} onOpenChange={onOpenChange}>
             <PopoverPrimitive.Trigger asChild>{trigger}</PopoverPrimitive.Trigger>
-            <PopoverPrimitive.Portal>
+            <PopoverPrimitive.Portal container={layer()}>
                 <PopoverPrimitive.Content
                     side={side}
                     align={align}

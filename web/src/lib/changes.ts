@@ -6,6 +6,20 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 9,
+        title: "Episodes in the player",
+        changes: [
+            {
+                title: "Episodes",
+                text: "The player has an Episodes button (or press E): every episode of the show beside the picture, the one playing marked and the ones you've watched ticked. Pick one and it plays; on a TV, OK plays it and Back puts the list away.",
+            },
+            {
+                title: "Fullscreen",
+                text: "In fullscreen the subtitles, audio and settings menus open where you can see them, and the player's buttons keep working. The next episode stays fullscreen.",
+            },
+        ],
+    },
+    {
         id: 8,
         title: "Your AniList profile",
         changes: [
