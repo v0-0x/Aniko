@@ -11,7 +11,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Episodes",
-                text: "The player has an Episodes button (or press E): every episode of the show beside the picture, the one playing marked and the ones you've watched ticked. Pick one and it plays; on a TV, OK plays it and Back puts the list away.",
+                text: "The player has an Episodes button (or press E): the show's episodes in a small grid in the corner, each with its picture, number, name and how far you got, the one playing ringed in your theme's color. Pick one and it plays; on a TV, OK plays it and Back puts it away.",
             },
             {
                 title: "Fullscreen",

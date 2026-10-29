@@ -153,8 +153,12 @@
     .pop-in {
         animation: pop-in 0.16s var(--ease) both;
     }
-    .slide-in {
-        animation: slide-in 0.24s var(--ease) both;
+    /* The player's Episodes, opening from its corner, and closing. */
+    .corner-in {
+        animation: corner-in 0.22s var(--ease) both;
+    }
+    .corner-out {
+        animation: corner-out 0.16s var(--ease) both;
     }
     /* A new theme: the colors fade over for a moment (ThemesMenu). */
     .theme-fade,
@@ -196,14 +200,20 @@
         transform: none;
     }
 }
-@keyframes slide-in {
+@keyframes corner-in {
     from {
         opacity: 0;
-        transform: translateX(16px);
+        transform: translateY(10px) scale(0.96);
     }
     to {
         opacity: 1;
         transform: none;
+    }
+}
+@keyframes corner-out {
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
     }
 }
 @keyframes pop-in {

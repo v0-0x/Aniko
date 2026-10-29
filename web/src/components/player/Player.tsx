@@ -25,7 +25,7 @@ import {
     PictureInPicture2,
     X,
 } from "lucide-react"
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, ApiError, qs } from "@/lib/api"
 import { prefersHls, randomId, videoCaps } from "@/lib/playback"
@@ -189,7 +189,11 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const [nextEp, setNextEp] = useState<{ path?: string; episode: number } | null>(null)
     // The show's episodes (the Episodes panel, where another one is picked).
     const [episodes, setEpisodes] = useState<EpisodeView[] | null>(null)
+    // An episode without its own picture shows the show's.
+    const [showArt, setShowArt] = useState("")
     const [showEpisodes, setShowEpisodes] = useState(false)
+    // Closing: it fades out, then goes.
+    const [episodesLeaving, setEpisodesLeaving] = useState(false)
     const episodesButton = useRef<HTMLButtonElement>(null)
     // Where it started from a saved position: "Start over" shows a moment.
     const [resumedFrom, setResumedFrom] = useState(0)
@@ -346,6 +350,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     .then(e => {
                         if (cancelled) return
                         setEpisodes(e.episodes)
+                        setShowArt(e.media.bannerImage || e.media.coverImage?.large || "")
                         const n = e.episodes.find(x => x.number === episode + 1)
                         if (!n) return
                         if (req.kind === "local") n.file && setNextEp({ path: n.file.path, episode: n.number })
@@ -899,7 +904,12 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     }
     const toggleEpisodes = () => {
         if (showEpisodes) {
-            setShowEpisodes(false)
+            if (episodesLeaving) return
+            setEpisodesLeaving(true)
+            setTimeout(() => {
+                setShowEpisodes(false)
+                setEpisodesLeaving(false)
+            }, 160)
             if (tv) episodesButton.current?.focus({ preventScroll: true })
             return
         }
@@ -1212,8 +1222,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         if (hideTimer.current) clearTimeout(hideTimer.current)
         hideTimer.current = setTimeout(() => {
             if (videoRef.current?.paused) return
-            // Not while one of its menus is open (subtitles, audio…).
-            if (document.querySelector('[role="menu"]')) return poke()
+            // Not while one of its menus is open (subtitles, audio…), nor
+            // Episodes (it sits on them).
+            if (document.querySelector('[role="menu"], [data-episodes]')) return poke()
             setControls(false)
             // TV: the remote's focus doesn't stay on hidden buttons.
             if (tv && containerRef.current?.querySelector("[data-tv-controls]:focus-within")) containerRef.current.focus()
@@ -1511,6 +1522,11 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             <SkipForward className={mini ? "size-4" : "size-5"} />
                         </CtrlButton>
                     )}
+                    {!mini && episodes && episodes.length > 1 && (
+                        <CtrlButton ref={episodesButton} onClick={toggleEpisodes} label="Episodes (e)" className={cn("data-episodes-toggle", showEpisodes && !episodesLeaving && "bg-white/15 text-brand-strong")}>
+                            <ListVideo className="size-5" />
+                        </CtrlButton>
+                    )}
                     <div className="group/vol flex items-center max-sm:hidden">
                         <CtrlButton small={mini} onClick={() => setMuted(m => !m)} label="Mute (m)">
                             <VolumeIcon className={mini ? "size-4" : "size-5"} />
@@ -1534,11 +1550,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     </span>
 
                     <div className="ml-auto flex items-center gap-1">
-                        {!mini && episodes && episodes.length > 1 && (
-                            <CtrlButton ref={episodesButton} onClick={toggleEpisodes} label="Episodes (e)" className={cn(showEpisodes && "bg-white/15")}>
-                                <ListVideo className="size-5" />
-                            </CtrlButton>
-                        )}
                         {/* subtitles */}
                         <Dropdown>
                             <DropdownTrigger asChild>
@@ -1698,8 +1709,19 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     </div>
                 )}
             </div>
-            {showEpisodes && episodes && !mini && <EpisodesPanel episodes={episodes} current={episode} playable={playable} onPlay={playEpisode} onClose={toggleEpisodes} />}
-            {showResumed && !mini && (
+            {showEpisodes && episodes && !mini && (
+                <EpisodesPanel
+                    episodes={episodes}
+                    current={episode}
+                    progress={total > 0 ? Math.round((time / total) * 100) / 100 : 0}
+                    art={showArt}
+                    leaving={episodesLeaving}
+                    playable={playable}
+                    onPlay={playEpisode}
+                    onClose={toggleEpisodes}
+                />
+            )}
+            {showResumed && !mini && !showEpisodes && (
                 <div className="absolute bottom-32 left-8 z-10 flex items-center gap-3 rounded-xl bg-black/75 py-2 pr-2 pl-4 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in">
                     <span className="tabular-nums">Resumed at {formatDuration(resumedFrom)}</span>
                     {tv ? (
@@ -1767,23 +1789,37 @@ const CtrlButton = forwardRef<HTMLButtonElement, { children: React.ReactNode; on
     )
 })
 
-// The show's episodes beside the picture: the one playing marked, watched
-// ones ticked, a bar for one left halfway; picked, another one plays. Inside
-// the player (not a menu of the page's), so it works in fullscreen too.
+// The show's episodes, a small grid in the corner above the controls (the
+// Episodes button's): each one's picture, number, name and how far it was
+// watched, the one playing ringed in the theme's color. Picked, it plays.
+// Inside the player (not a menu of the page's), so it works in fullscreen.
 function EpisodesPanel({
     episodes,
     current,
+    progress,
+    art,
+    leaving,
     playable,
     onPlay,
     onClose,
 }: {
     episodes: EpisodeView[]
     current: number
+    progress: number // the one playing, 0-1
+    art: string
+    leaving: boolean
     playable: (n: EpisodeView) => boolean
     onPlay: (n: EpisodeView) => void
     onClose: () => void
 }) {
+    const panel = useRef<HTMLDivElement>(null)
     const list = useRef<HTMLDivElement>(null)
+    const chips = useRef<HTMLDivElement>(null)
+    // The player's handlers are new each time it draws (several times a
+    // second): through refs, the tiles aren't drawn again for that.
+    const handlers = useRef({ onPlay, onClose })
+    handlers.current = { onPlay, onClose }
+    const play = useCallback((n: EpisodeView) => handlers.current.onPlay(n), [])
     // A long show a hundred at a time (a TV draws a long list slowly),
     // opening on the hundred with the one playing.
     const ranges = useMemo(() => {
@@ -1795,96 +1831,120 @@ function EpisodesPanel({
     const shown = ranges[range] ?? episodes
     // Opens at the one playing (on a TV, with the remote on it), its
     // hundred's button in sight.
-    const chips = useRef<HTMLDivElement>(null)
     useEffect(() => {
         const chip = chips.current?.querySelector<HTMLElement>("[aria-pressed=true]")
         if (chip && chips.current) chips.current.scrollLeft = chip.offsetLeft - chips.current.clientWidth / 2 + chip.offsetWidth / 2
         const el = list.current?.querySelector<HTMLElement>("[data-current]")
-        el?.scrollIntoView({ block: "center" })
+        if (el && list.current) list.current.scrollTop = el.offsetTop - list.current.clientHeight / 2 + el.offsetHeight / 2
         if (tv) el?.focus({ preventScroll: true })
     }, [])
+    // A click anywhere else puts it away (and does what it does there).
+    useEffect(() => {
+        const down = (e: PointerEvent) => {
+            const t = e.target as HTMLElement | null
+            if (!t || panel.current?.contains(t) || t.closest(".data-episodes-toggle")) return
+            handlers.current.onClose()
+        }
+        document.addEventListener("pointerdown", down, true)
+        return () => document.removeEventListener("pointerdown", down, true)
+    }, [])
     return (
-        // Beside it the picture: a click there puts the panel away. No blur
-        // over the video (slow on a TV, and drawn wrong by some).
-        <div className="absolute inset-0 z-30 bg-black/25 fade-in" onClick={onClose}>
-            <div
-                data-episodes
-                role="dialog"
-                aria-label="Episodes"
-                onClick={e => e.stopPropagation()}
-                className="absolute inset-y-0 right-0 flex w-[min(25rem,100%)] flex-col border-l border-white/10 bg-neutral-950/[0.96] text-white shadow-2xl slide-in"
-            >
-                <div className="flex items-center gap-3 px-5 pt-5 pb-3">
-                    <h2 className="flex-1 text-lg font-semibold">
-                        Episodes <span className="ml-1 text-sm font-normal text-white/50 tabular-nums">{episodes.length}</span>
-                    </h2>
-                    <button onClick={onClose} aria-label="Close episodes" title="Close (e)" className="grid size-9 place-items-center rounded-full outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70">
-                        <X className="size-5" />
-                    </button>
+        <div
+            ref={panel}
+            data-episodes
+            role="dialog"
+            aria-label="Episodes"
+            className={cn(
+                "absolute bottom-[6.75rem] left-4 z-30 flex max-h-[min(30rem,calc(100%-9.5rem))] w-[clamp(19rem,24vw,30rem)] max-w-[calc(100%-2rem)] origin-bottom-left flex-col overflow-hidden rounded-2xl border border-line bg-surface-1/[0.98] text-fg shadow-2xl shadow-black/60 sm:left-6",
+                leaving ? "corner-out" : "corner-in",
+            )}
+        >
+            <div className="flex items-center gap-2 px-3.5 pt-3 pb-2">
+                <h2 className="flex-1 text-sm font-semibold">
+                    Episodes <span className="ml-0.5 text-xs font-normal text-subtle tabular-nums">{episodes.length}</span>
+                </h2>
+                <button onClick={onClose} aria-label="Close episodes" title="Close (e)" className="focus-ring grid size-7 place-items-center rounded-full text-muted transition-colors hover:bg-surface-3 hover:text-fg">
+                    <X className="size-4" />
+                </button>
+            </div>
+            {ranges.length > 1 && (
+                <div ref={chips} className="no-scrollbar flex shrink-0 gap-1 overflow-x-auto scroll-smooth px-3.5 pb-2">
+                    {ranges.map((r, i) => (
+                        <button
+                            key={i}
+                            aria-pressed={i === range}
+                            onClick={() => {
+                                setRange(i)
+                                list.current?.scrollTo({ top: 0 })
+                            }}
+                            className={cn(
+                                "focus-ring h-6 shrink-0 rounded-full px-2.5 text-[11px] font-medium tabular-nums transition-colors",
+                                i === range ? "bg-brand text-white" : "bg-surface-3 text-muted hover:text-fg",
+                            )}
+                        >
+                            {r[0].number}–{r[r.length - 1].number}
+                        </button>
+                    ))}
                 </div>
-                {ranges.length > 1 && (
-                    <div ref={chips} className="no-scrollbar flex shrink-0 gap-1.5 overflow-x-auto px-5 pb-3">
-                        {ranges.map((r, i) => (
-                            <button
-                                key={i}
-                                aria-pressed={i === range}
-                                onClick={() => {
-                                    setRange(i)
-                                    list.current?.scrollTo({ top: 0 })
-                                }}
-                                className={cn(
-                                    "h-8 shrink-0 rounded-full px-3 text-xs font-medium tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-white/70",
-                                    i === range ? "bg-white text-black" : "bg-white/10 text-white/80 hover:bg-white/15",
-                                )}
-                            >
-                                {r[0].number}–{r[r.length - 1].number}
-                            </button>
-                        ))}
-                    </div>
-                )}
-                <div ref={list} className="flex-1 overflow-y-auto overscroll-contain px-3 pb-5">
-                    {shown.map(n => {
-                        const playing = n.number === current
-                        const ok = playing || playable(n)
-                        const left = n.history?.duration ? n.resumeAt / n.history.duration : 0
-                        return (
-                            <button
-                                key={n.number}
-                                data-current={playing || undefined}
-                                disabled={!ok}
-                                onClick={() => onPlay(n)}
-                                className={cn(
-                                    "flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/70",
-                                    playing ? "bg-white/[0.12]" : "hover:bg-white/[0.07]",
-                                    !ok && "opacity-40",
-                                )}
-                            >
-                                <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-white/[0.06]">
-                                    {n.image && <img src={img(n.image)} alt="" loading="lazy" className="size-full object-cover" />}
-                                    {playing && <span className="absolute inset-0 grid place-items-center bg-black/55 text-[11px] font-semibold tracking-wide uppercase">Playing</span>}
-                                    {!playing && left > 0.02 && left < 0.95 && (
-                                        <span className="absolute inset-x-0 bottom-0 h-1 bg-white/25">
-                                            <span className="block h-full bg-brand" style={{ width: `${left * 100}%` }} />
-                                        </span>
-                                    )}
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                    <span className="block text-xs font-medium text-white/55 tabular-nums">
-                                        Episode {n.number}
-                                        {n.runtime ? ` · ${n.runtime}m` : ""}
-                                    </span>
-                                    <span className="mt-0.5 line-clamp-2 block text-sm leading-snug">{n.title || `Episode ${n.number}`}</span>
-                                    {!ok && <span className="mt-0.5 block text-xs text-white/55">{n.aired ? "Not downloaded" : "Not out yet"}</span>}
-                                </span>
-                                {n.watched && !playing && <Check className="size-4 shrink-0 text-emerald-400" aria-label="Watched" />}
-                            </button>
-                        )
-                    })}
-                </div>
+            )}
+            <div ref={list} className="grid grid-cols-3 content-start gap-x-2 gap-y-3 overflow-y-auto overscroll-contain scroll-smooth px-3 pb-3.5">
+                {shown.map(n => (
+                    <EpisodeTile
+                        key={n.number}
+                        ep={n}
+                        art={art}
+                        playing={n.number === current}
+                        ok={n.number === current || playable(n)}
+                        progress={n.number === current ? progress : n.watched ? 1 : n.history?.duration ? n.resumeAt / n.history.duration : 0}
+                        onPlay={play}
+                    />
+                ))}
             </div>
         </div>
     )
 }
+
+// One episode in the grid. Drawn again only when what it shows changes
+// (the one playing as it goes on), not as the player ticks.
+const EpisodeTile = memo(function EpisodeTile({ ep: n, art, playing, ok, progress, onPlay }: { ep: EpisodeView; art: string; playing: boolean; ok: boolean; progress: number; onPlay: (n: EpisodeView) => void }) {
+    const name = n.title || `Episode ${n.number}`
+    return (
+        <button
+            data-current={playing || undefined}
+            disabled={!ok}
+            onClick={() => onPlay(n)}
+            title={ok ? name : `${name}: ${n.aired ? "not downloaded" : "not out yet"}`}
+            className={cn("group/ep flex min-w-0 flex-col gap-1 rounded-lg p-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand", !ok && "opacity-40")}
+        >
+            <span
+                className={cn(
+                    "relative block aspect-video w-full overflow-hidden rounded-md bg-surface-3 ring-1 transition-[box-shadow,transform] duration-200",
+                    playing ? "ring-2 ring-brand" : "ring-line",
+                    ok && !playing && "group-hover/ep:-translate-y-0.5 group-hover/ep:ring-line-strong",
+                )}
+            >
+                {(n.image || art) && <img src={img(n.image || art)} alt="" loading="lazy" className={cn("size-full object-cover", !n.image && "opacity-60")} />}
+                <span className="absolute top-1 left-1 rounded bg-black/70 px-1 text-[10px] leading-4 font-semibold text-white tabular-nums">{n.number}</span>
+                {n.watched && !playing && (
+                    <span className="absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-brand text-white">
+                        <Check className="size-2.5 stroke-[3]" />
+                    </span>
+                )}
+                {playing && (
+                    <span className="absolute inset-0 grid place-items-center bg-black/45">
+                        <Play className="size-4 fill-white text-white" />
+                    </span>
+                )}
+                {progress > 0.01 && (
+                    <span className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
+                        <span className="block h-full bg-brand transition-[width] duration-500" style={{ width: `${Math.min(100, progress * 100)}%` }} />
+                    </span>
+                )}
+            </span>
+            <span className={cn("line-clamp-2 px-0.5 text-[11px] leading-tight", playing ? "font-semibold text-fg" : "text-muted group-hover/ep:text-fg")}>{name}</span>
+        </button>
+    )
+})
 
 const EPISODE_RANGE = 100
 
