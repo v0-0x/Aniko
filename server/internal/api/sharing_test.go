@@ -53,6 +53,19 @@ func sharingServer(t *testing.T) (*Server, *httptest.Server) {
 	return s, srv
 }
 
+// peerIn finds the other test Kumo in what s lists. On a network with
+// multicast (GitHub's Linux and macOS machines), other test Kumos can be
+// listed too.
+func peerIn(s, other *Server) (share.PeerView, bool) {
+	id := other.app.Share.ID()
+	for _, p := range s.app.Share.Status().Peers {
+		if p.ID == id {
+			return p, true
+		}
+	}
+	return share.PeerView{}, false
+}
+
 func eventually(t *testing.T, what string, ok func() bool) {
 	t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
@@ -94,8 +107,8 @@ func TestLibrarySharing(t *testing.T) {
 	}
 	// The host hears of the guest when it asks, and shares nothing yet.
 	eventually(t, "the host to list the guest", func() bool {
-		st := host.app.Share.Status()
-		return len(st.Peers) == 1 && st.Peers[0].ID == guestID && !st.Peers[0].Allowed
+		p, ok := peerIn(host, guest)
+		return ok && p.ID == guestID && !p.Allowed
 	})
 	if libs := guest.app.Share.Libraries(); len(libs) != 0 {
 		t.Fatalf("shared before the host allowed it: %+v", libs)
@@ -193,8 +206,8 @@ func TestLibrarySharing(t *testing.T) {
 	// Remembered after a restart of the host's sharing.
 	host.app.Share.Stop()
 	host.app.Share.Start()
-	if st := host.app.Share.Status(); len(st.Peers) != 1 || !st.Peers[0].Allowed {
-		t.Fatalf("the host forgot it shares with the guest: %+v", st.Peers)
+	if p, ok := peerIn(host, guest); !ok || !p.Allowed {
+		t.Fatalf("the host forgot it shares with the guest: %+v", host.app.Share.Status().Peers)
 	}
 
 	// The host stops sharing: the guest's library goes.
@@ -339,7 +352,7 @@ func TestHistoryFollowsTheAccount(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	synced := func() bool {
 		do(guest, "GET", "/api/sharing", local, "", nil) // asks again
 		e := guest.app.History.Get(21, 3)
@@ -410,7 +423,7 @@ func TestAccountShared(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	gid, hid := guest.app.Share.ID(), host.app.Share.ID()
 	grant := func(body string) {
 		t.Helper()
@@ -496,7 +509,7 @@ func TestDownloadsToHost(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	gid, hid := guest.app.Share.ID(), host.app.Share.ID()
 	asked := func(ok func() bool) func() bool {
 		return func() bool { do(guest, "GET", "/api/sharing", local, "", nil); return ok() }
@@ -636,7 +649,7 @@ func TestSyncNow(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
 		t.Fatal(err)
 	}
@@ -665,7 +678,10 @@ func TestSyncNow(t *testing.T) {
 		Updated     int      `json:"updated"`
 	}
 	w := do(host, "POST", "/api/sharing/sync", local, "{}", nil)
-	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Devices) != 1 || len(res.Unreachable) != 0 || res.Updated != 1 {
+	// Updated: 1, the guest's position; or 0 when the guest's own exchange
+	// (it asks every few seconds and sends its positions) brought it first.
+	// Either way both have both positions after (below).
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Devices) != 1 || len(res.Unreachable) != 0 || res.Updated > 1 {
 		t.Fatalf("sync: %d %s", w.Code, w.Body)
 	}
 	if e := host.app.History.Get(21, 6); e == nil || e.Position != 700 {
@@ -712,7 +728,7 @@ func TestHistoryCatchesUp(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	asked := func(ok func() bool) func() bool {
 		return func() bool { do(guest, "GET", "/api/sharing", local, "", nil); return ok() }
 	}
@@ -761,7 +777,7 @@ func TestForgetAndUnshareDropGrants(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	gid, hid := guest.app.Share.ID(), host.app.Share.ID()
 	yes := true
 	if err := host.app.Share.SetGrants(gid, share.Grants{Allowed: &yes, Account: &yes, Downloads: &yes}); err != nil {
@@ -807,7 +823,7 @@ func TestPlayerNoteReachesTheHost(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	remote := share.RemotePath(host.app.Share.ID(), path)
 
 	// Not shared with yet: only the guest's log.
@@ -877,7 +893,7 @@ func TestAutoSyncWhenBack(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
 		t.Fatal(err)
 	}

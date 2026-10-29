@@ -28,15 +28,7 @@ func TestParentalControls(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	// By its ID: on a network with multicast, other Kumos can be listed too.
-	eventually(t, "the host to list the guest", func() bool {
-		for _, p := range host.app.Share.Status().Peers {
-			if p.ID == guestID {
-				return true
-			}
-		}
-		return false
-	})
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 
 	// Only for a device the library is shared with.
 	if w := do(host, "POST", "/api/sharing/peers/"+guestID+"/parental", local, `{"blocked":[21]}`, nil); w.Code != http.StatusBadRequest {

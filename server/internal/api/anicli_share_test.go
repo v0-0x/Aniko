@@ -67,7 +67,7 @@ func TestAniCliThroughHost(t *testing.T) {
 	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
 		t.Fatalf("connect: %d %s", w.Code, w.Body)
 	}
-	eventually(t, "the host to list the guest", func() bool { return len(host.app.Share.Status().Peers) == 1 })
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
 	asked := func(ok func() bool) func() bool {
 		return func() bool { do(guest, "GET", "/api/sharing", local, "", nil); return ok() }
 	}
