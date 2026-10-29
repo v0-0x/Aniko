@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -23,18 +24,32 @@ import (
 	"github.com/simo1337s/animetest/server/internal/share"
 )
 
-// sharingServer is a Kumo with library sharing on, serving on 127.0.0.1.
+// sharingServer is a Kumo with library sharing on, serving as a real one
+// does with devices on the network: on every address, at the port its
+// settings say, which it tells the others (its beacons, its requests).
+// Where multicast works (Linux), the test Kumos hear each other's beacons
+// and may go to the address one says; it must answer there. Its URL is on
+// 127.0.0.1.
 func sharingServer(t *testing.T) (*Server, *httptest.Server) {
 	t.Helper()
 	s := newTestServer(t)
+	ln, err := net.Listen("tcp4", "0.0.0.0:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewUnstartedServer(s.middleware(s.mux))
+	_ = srv.Listener.Close()
+	srv.Listener = ln
+	srv.Start()
+	srv.URL = fmt.Sprintf("http://127.0.0.1:%d", ln.Addr().(*net.TCPAddr).Port)
+	t.Cleanup(srv.Close)
 	s.app.Share.Start()
 	cfg := s.app.Settings.Get()
 	cfg.Sharing.Enabled = true
+	cfg.Server.Port = srv.Listener.Addr().(*net.TCPAddr).Port
 	if _, err := s.app.Settings.Save(cfg); err != nil {
 		t.Fatal(err)
 	}
-	srv := httptest.NewServer(s.middleware(s.mux))
-	t.Cleanup(srv.Close)
 	return s, srv
 }
 
