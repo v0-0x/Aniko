@@ -118,12 +118,12 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/library/unmatched", h(s.unmatched))
 	m.HandleFunc("GET /api/library/ignored", h(func(r *http.Request) (any, error) { return s.app.Files.Ignored() }))
 	m.HandleFunc("GET /api/library/files", h(func(r *http.Request) (any, error) { return s.app.Files.All() }))
-	m.HandleFunc("POST /api/library/match", h(s.match))
+	m.HandleFunc("POST /api/library/match", h(libraryEdited(s.match)))
 	m.HandleFunc("GET /api/library/folders", h(func(r *http.Request) (any, error) { return s.app.Scanner.Folders() }))
 	m.HandleFunc("POST /api/library/index", h(s.indexFolders))
-	m.HandleFunc("POST /api/library/unmatch", h(s.unmatch))
-	m.HandleFunc("POST /api/library/ignore", h(s.ignore))
-	m.HandleFunc("PATCH /api/library/file", h(s.patchFile))
+	m.HandleFunc("POST /api/library/unmatch", h(libraryEdited(s.unmatch)))
+	m.HandleFunc("POST /api/library/ignore", h(libraryEdited(s.ignore)))
+	m.HandleFunc("PATCH /api/library/file", h(libraryEdited(s.patchFile)))
 	m.HandleFunc("POST /api/library/open-folder", h(s.openFolder))
 
 	// --- playback

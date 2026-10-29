@@ -222,6 +222,20 @@ var libStats struct {
 	v  hubLibrary
 }
 
+// libraryEdited wraps a handler that changes the library by hand
+// (matching, ignoring…): the numbers are counted again at once.
+func libraryEdited(fn func(*http.Request) (any, error)) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		v, err := fn(r)
+		if err == nil {
+			libStats.Lock()
+			libStats.at = time.Time{}
+			libStats.Unlock()
+		}
+		return v, err
+	}
+}
+
 func (s *Server) hubLibrary() hubLibrary {
 	libStats.Lock()
 	defer libStats.Unlock()
