@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -380,6 +381,35 @@ func (s *Scanner) Forget(folders []string) {
 		return
 	}
 	log.Printf("library: forgot the %d files of %s (no longer in the library; nothing was deleted)", len(gone), strings.Join(folders, ", "))
+	s.hub.Publish(events.LibraryUpdated, nil)
+}
+
+// ForgetGone drops from the index every file that isn't on the disk, its
+// drive gone or not: for a computer whose library is off, where nothing
+// should be kept for a drive coming back (one that moved to a Kumo Hub,
+// say). Files still there (a download kept here) stay.
+func (s *Scanner) ForgetGone() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	all, err := s.Store.All()
+	if err != nil {
+		log.Printf("library: %v", err)
+		return
+	}
+	var gone []string
+	for _, f := range all {
+		if _, err := os.Stat(f.Path); errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR) {
+			gone = append(gone, f.Path)
+		}
+	}
+	if len(gone) == 0 {
+		return
+	}
+	if err := s.Store.Delete(gone...); err != nil {
+		log.Printf("library: %v", err)
+		return
+	}
+	log.Printf("library: forgot %d files that aren't on the disk (the library is off)", len(gone))
 	s.hub.Publish(events.LibraryUpdated, nil)
 }
 

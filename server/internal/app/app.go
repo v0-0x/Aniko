@@ -415,6 +415,10 @@ func (a *App) wire() {
 			}
 			a.Scanner.Forget(out)
 		}
+		// The library off: also what's no longer on the disk, wherever it was.
+		if a.Settings.Get().Library.Off && !old.Library.Off {
+			a.Scanner.ForgetGone()
+		}
 		// A new library folder: index it right away.
 		if fmt.Sprint(old.LibraryDirs()) != fmt.Sprint(cur.LibraryDirs()) && a.Scanner.HasLibrary() {
 			a.Scanner.ScanSoon()
@@ -497,6 +501,11 @@ func (a *App) Start() {
 			a.PrefetchDiscoverArt(d)
 		}
 	}()
+	// The library off: nothing kept that isn't there (Continue watching
+	// would offer it).
+	if a.Settings.Get().Library.Off {
+		go a.Scanner.ForgetGone()
+	}
 	go func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()

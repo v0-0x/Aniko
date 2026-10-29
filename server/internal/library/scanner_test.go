@@ -195,6 +195,21 @@ func TestForgetFoldersOutOfTheLibrary(t *testing.T) {
 	if _, err := s.Scan(context.Background(), ScanOptions{SkipMatching: true}); !errors.Is(err, ErrLibraryOff) {
 		t.Fatalf("a scan with the library off: %v", err)
 	}
+
+	// Still indexed from before, outside every folder: one on a drive that
+	// went to the hub (kept so far, its drive being gone), and a download
+	// still on this computer. With the library off, the first goes.
+	moved := filepath.Join(base, "mnt", "big", "Media", "Show E - 01.mkv")
+	download := filepath.Join(base, "Downloads", "Show F - 01.mkv")
+	touch(t, download)
+	if err := s.Store.Save(&LocalFile{Path: moved, Dir: filepath.Dir(moved), Name: filepath.Base(moved), MediaID: 5, Episode: 1, Kind: "main"},
+		&LocalFile{Path: download, Dir: filepath.Dir(download), Name: filepath.Base(download), MediaID: 6, Episode: 1, Kind: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	s.ForgetGone()
+	if got := paths(t, s); len(got) != 1 || got[0] != download {
+		t.Fatalf("after forgetting what isn't there: %q", got)
+	}
 }
 
 func TestScanKeepsDownloadsOutsideLibrary(t *testing.T) {

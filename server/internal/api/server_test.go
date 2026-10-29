@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -19,7 +20,19 @@ func newTestServer(t *testing.T) *Server {
 	t.Helper()
 	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
 	t.Setenv("LOCALAPPDATA", t.TempDir()) // the runtime dir on Windows
-	a, err := app.New(t.TempDir())
+	// Not t.TempDir: a database write still finishing as the app shuts down
+	// can add a file (SQLite's -wal) while the folder is removed, so its
+	// removal is tried again (after Shutdown, registered below).
+	dir, err := os.MkdirTemp("", "kumo-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		for i := 0; i < 20 && os.RemoveAll(dir) != nil; i++ {
+			time.Sleep(50 * time.Millisecond)
+		}
+	})
+	a, err := app.New(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
