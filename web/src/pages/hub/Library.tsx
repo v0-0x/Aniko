@@ -9,6 +9,7 @@ import { useCollection, useSaveSettings } from "@/lib/queries"
 import { toast } from "@/lib/toast"
 import type { DownloadItem, HubOverview, Status } from "@/lib/types"
 import { img } from "@/lib/utils"
+import { LibraryBrowse } from "./LibraryBrowse"
 import { bytes, Panel, shortPath } from "./parts"
 
 // The hub's library: the folders it shares (on its disks: a USB drive on a
@@ -142,6 +143,8 @@ export default function Library({ o, status }: { o: HubOverview; status: Status 
 
                 <DirPicker open={picking} onOpenChange={setPicking} start={folders[0]} onPick={p => !folders.includes(p) && setFolders([...folders, p])} />
             </div>
+
+            <LibraryBrowse />
 
             <div ref={manage} className="scroll-mt-28">
                 <Panel title="Put the library right">

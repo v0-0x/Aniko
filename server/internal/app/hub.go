@@ -20,7 +20,8 @@ import (
 // A Kumo Hub (kumo --hub) plays nothing: it shares its library with the Kumo
 // apps on the network and keeps them in step (share/hub.go, kumohub). What
 // it doesn't need doesn't run: the player, Discord, extensions, the Discover
-// and artwork prefetching, the episode alerts.
+// prefetching, the episode alerts. Its library's anime are fetched in full,
+// artwork and episode details included (prefetch.go), for its dashboard.
 
 // hubSettings: a hub shares with the network, and its dashboard is a web
 // page (password protected, see api).
@@ -65,9 +66,7 @@ func (a *App) wireHub() {
 	}
 	// The hub follows no one's login (it keeps those it's given).
 	a.Share.UseAccount, a.Share.DropAccount = nil, nil
-	// The library's anime aren't fetched in full (each device does that):
-	// only what matching needs.
-	a.Scanner.OnScanned = nil
+	// No library is shared with a hub.
 	a.Share.OnFiles = nil
 	a.Sampler = kumohub.NewSampler()
 }
@@ -79,6 +78,7 @@ func (a *App) startHub() {
 	a.Update.Start()
 	a.Scanner.StartWatcher()
 	go a.Torrents.RunCounter(a.ctx)
+	go a.runPrefetch(a.ctx)
 	go func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()
@@ -88,6 +88,8 @@ func (a *App) startHub() {
 				log.Printf("startup scan: %v", err)
 			}
 		}
+		// What earlier runs didn't get to (a scan prefetches on its own).
+		a.prefetchLibrary()
 	}()
 	log.Printf("running as a Kumo Hub: %d AniList account(s) given to it", len(a.HubStore.Accounts()))
 }

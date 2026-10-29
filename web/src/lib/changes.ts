@@ -6,6 +6,16 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 15,
+        title: "Kumo Hub: its library, with artwork",
+        changes: [
+            {
+                title: "Browse the hub's library",
+                text: "The hub's dashboard, under Library: every anime it has with its cover, episodes and size, to search and sort; open one for its details and the episodes on the hub. The hub now downloads and keeps every anime's artwork, episode thumbnails and details itself.",
+            },
+        ],
+    },
+    {
         id: 14,
         title: "Kumo Hub: put its library right",
         changes: [
