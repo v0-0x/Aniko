@@ -102,26 +102,34 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
             />
             {tab === "rules" ? (
                 <div className="flex max-h-[60vh] flex-col gap-5 overflow-y-auto pr-1">
-                    <Row label="Block 18+ anime" help="AniList's adult anime and manga: hidden, and never played.">
+                    <Row label="Block 18+ anime" help="AniList's adult anime and manga, Hentai and Ecchi, and anything AniList tags with sexual content (nudity and the like): hidden, and never played.">
                         <Switch label="Block 18+ anime" checked={!!rules.noAdult} onChange={v => setRules(r => ({ ...r, noAdult: v }))} />
                     </Row>
                     <div>
                         <p className="text-sm font-medium">Blocked genres</p>
                         <p className="mt-0.5 mb-2 text-[12.5px] text-muted">Anime with any of these are blocked.</p>
                         <div className="flex flex-wrap gap-1.5">
-                            {GENRES.map(g => (
-                                <button
-                                    key={g}
-                                    onClick={() => toggleGenre(g)}
-                                    aria-pressed={genres.includes(g)}
-                                    className={cn(
-                                        "focus-ring rounded-full border px-3 py-1 text-[13px] transition-colors",
-                                        genres.includes(g) ? "border-rose-400/60 bg-rose-500/15 text-rose-200" : "border-line text-muted hover:border-line-strong hover:text-fg",
-                                    )}
-                                >
-                                    {g}
-                                </button>
-                            ))}
+                            {GENRES.map(g => {
+                                // Ecchi goes with 18+ anyway.
+                                const with18 = !!rules.noAdult && ADULT_GENRES.includes(g)
+                                const on = with18 || genres.includes(g)
+                                return (
+                                    <button
+                                        key={g}
+                                        onClick={() => toggleGenre(g)}
+                                        disabled={with18}
+                                        title={with18 ? "Blocked with 18+" : undefined}
+                                        aria-pressed={on}
+                                        className={cn(
+                                            "focus-ring rounded-full border px-3 py-1 text-[13px] transition-colors disabled:cursor-default",
+                                            on ? "border-rose-400/60 bg-rose-500/15 text-rose-200" : "border-line text-muted hover:border-line-strong hover:text-fg",
+                                        )}
+                                    >
+                                        {g}
+                                        {with18 && <span className="ml-1 text-[11px] text-rose-300/80">18+</span>}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
                     <Row label="Only these anime" help="Nothing else at all: the genres and 18+ don't matter then.">
@@ -213,6 +221,9 @@ function AnimeList({ ids, names, onRemove, onAdd, addLabel }: { ids: number[]; n
         </div>
     )
 }
+
+// AniList's genres that "Block 18+" covers (Hentai isn't in GENRES).
+const ADULT_GENRES = ["Ecchi", "Hentai"]
 
 const SOURCES: Record<string, string> = { local: "From a library", anicli: "Streamed", stream: "Streamed", torrent: "Torrent" }
 

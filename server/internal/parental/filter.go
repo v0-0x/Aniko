@@ -28,10 +28,11 @@ func (f Filter) Apply(ctx context.Context, v any) (any, string) {
 	}
 	var known map[int]Media
 	// The 18+ flag and genres of the anime only named by ID (or missing
-	// their genres), when the rules look at those.
+	// their genres), when the rules look at those; with 18+ blocked, every
+	// anime's tags.
 	if (f.Rules.NoAdult || len(f.Rules.Genres) > 0) && !f.Rules.OnlyAllowed && f.Lookup != nil {
 		need := map[int]bool{}
-		collect(v, need)
+		collect(v, need, f.Rules.NoAdult)
 		if len(need) > 0 {
 			ids := make([]int, 0, len(need))
 			for id := range need {
@@ -110,25 +111,29 @@ func asMedia(o map[string]any, known map[int]Media) (Media, bool) {
 			m.Genres = append(m.Genres, s)
 		}
 	}
-	if k, ok := known[id]; ok && !hasGenres {
-		m.Genres = k.Genres
+	if k, ok := known[id]; ok {
+		if !hasGenres {
+			m.Genres = k.Genres
+		}
 		m.Adult = m.Adult || k.Adult
+		m.Mature = k.Mature
 	}
 	return m, true
 }
 
-// collect finds the IDs of the anime v names without their genres.
-func collect(v any, need map[int]bool) {
+// collect finds the IDs of the anime v names without their genres (all
+// of them with tags: their tags are never there).
+func collect(v any, need map[int]bool, tags bool) {
 	switch t := v.(type) {
 	case []any:
 		for _, e := range t {
-			collect(e, need)
+			collect(e, need, tags)
 		}
 	case map[string]any:
 		if id := number(t["id"]); id > 0 {
 			_, hasAdult := t["isAdult"]
 			_, hasGenres := t["genres"]
-			if hasAdult && !hasGenres {
+			if hasAdult && (!hasGenres || tags) || hasGenres && tags {
 				need[id] = true
 			}
 		}
@@ -144,7 +149,7 @@ func collect(v any, need map[int]bool) {
 			}
 		}
 		for _, e := range t {
-			collect(e, need)
+			collect(e, need, tags)
 		}
 	}
 }

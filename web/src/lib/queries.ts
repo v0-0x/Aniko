@@ -240,10 +240,12 @@ export function useParental() {
     return useQuery({ queryKey: ["parental"], queryFn: () => api.get<ParentalState>("/api/parental"), staleTime: 60_000 })
 }
 
-// The genres to offer as filters: not the ones parental controls block.
+// The genres to offer as filters: not the ones parental controls block
+// (Ecchi and Hentai go with 18+).
 export function useGenres(all: readonly string[]) {
-    const blocked = useParental().data?.rules?.genres
-    if (!blocked?.length) return all
+    const rules = useParental().data?.rules
+    const blocked = [...(rules?.genres ?? []), ...(rules?.noAdult ? ["Ecchi", "Hentai"] : [])]
+    if (!blocked.length) return all
     const b = new Set(blocked.map(g => g.toLowerCase()))
     return all.filter(g => !b.has(g.toLowerCase()))
 }

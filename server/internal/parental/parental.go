@@ -15,7 +15,8 @@ import (
 
 // Rules are a device's parental controls.
 type Rules struct {
-	// NoAdult blocks AniList's 18+ anime (and manga).
+	// NoAdult blocks 18+ anime (and manga): AniList's own, Hentai and
+	// Ecchi, and those tagged with sexual content (Media.Mature).
 	NoAdult bool `json:"noAdult,omitempty"`
 	// Genres are blocked AniList genres ("Ecchi", "Horror"…).
 	Genres []string `json:"genres,omitempty"`
@@ -71,13 +72,19 @@ func ids(in []int) []int {
 
 // Media is what the rules look at: an anime's (or manga's) 18+ flag and
 // genres. Known: the rest was found (an ID alone, not found, is blocked
-// only when the rules allow only some anime or block it by ID).
+// only when the rules allow only some anime or block it by ID). Mature:
+// tagged with sexual content (anilist.MatureTags).
 type Media struct {
 	ID     int
 	Adult  bool
 	Genres []string
+	Mature bool
 	Known  bool
 }
+
+// adultGenres are AniList's genres that count as 18+: Hentai is its 18+
+// genre (even where the flag is missing), Ecchi its fan service one.
+var adultGenres = []string{"Hentai", "Ecchi"}
 
 // Reason says why m is blocked, "" when it isn't.
 func (r *Rules) Reason(m Media) string {
@@ -94,7 +101,7 @@ func (r *Rules) Reason(m Media) string {
 	if r.OnlyAllowed {
 		return ""
 	}
-	if r.NoAdult && m.Adult {
+	if r.NoAdult && (m.Adult || m.Mature) {
 		return "18+"
 	}
 	for _, g := range m.Genres {
@@ -102,8 +109,9 @@ func (r *Rules) Reason(m Media) string {
 			return g
 		}
 	}
-	// "Hentai" is AniList's 18+ genre, even where the flag is missing.
-	if r.NoAdult && slices.ContainsFunc(m.Genres, func(g string) bool { return strings.EqualFold(g, "Hentai") }) {
+	if r.NoAdult && slices.ContainsFunc(m.Genres, func(g string) bool {
+		return slices.ContainsFunc(adultGenres, func(a string) bool { return strings.EqualFold(a, g) })
+	}) {
 		return "18+"
 	}
 	return ""

@@ -74,7 +74,9 @@ func (s *Server) parentalServe(rules *parental.Rules, w http.ResponseWriter, r *
 		_, _ = w.Write(bw.buf.Bytes())
 		return
 	}
-	out, why := parental.Filter{Rules: rules, Lookup: s.parentalLookup}.Apply(r.Context(), v)
+	out, why := parental.Filter{Rules: rules, Lookup: func(ctx context.Context, ids []int) map[int]parental.Media {
+		return s.parentalLookup(ctx, ids, rules.NoAdult)
+	}}.Apply(r.Context(), v)
 	w.Header().Del("Content-Length")
 	if why != "" {
 		writeJSON(w, http.StatusForbidden, map[string]any{"error": parental.Message(why), "parental": true})
@@ -121,7 +123,7 @@ func (s *Server) parentalAsked(rules *parental.Rules, r *http.Request) string {
 	}
 	known := map[int]parental.Media{}
 	if (rules.NoAdult || len(rules.Genres) > 0) && !rules.OnlyAllowed {
-		known = s.parentalLookup(r.Context(), ids)
+		known = s.parentalLookup(r.Context(), ids, rules.NoAdult)
 	}
 	for _, id := range ids {
 		m, ok := known[id]
@@ -146,6 +148,8 @@ type memo struct {
 type memoed[T any] struct {
 	v  T
 	at time.Time
+	// tags: an anime's tags were looked up too (parentalLookup).
+	tags bool
 }
 
 const memoFor = time.Minute
@@ -168,7 +172,7 @@ func (s *Server) mediaOfPath(p string) int {
 	if m.paths == nil || len(m.paths) > 2000 {
 		m.paths = map[string]memoed[int]{}
 	}
-	m.paths[p] = memoed[int]{id, time.Now()}
+	m.paths[p] = memoed[int]{v: id, at: time.Now()}
 	m.mu.Unlock()
 	return id
 }
@@ -190,15 +194,16 @@ func (s *Server) findMediaOfPath(p string) int {
 	return 0
 }
 
-// parentalLookup finds anime's 18+ flag and genres, from what Kumo keeps of
-// AniList (asking it for the rest, briefly).
-func (s *Server) parentalLookup(ctx context.Context, ids []int) map[int]parental.Media {
+// parentalLookup finds anime's 18+ flag and genres, and with tags whether
+// they're tagged with sexual content, from what Kumo keeps of AniList
+// (asking it for the rest, briefly).
+func (s *Server) parentalLookup(ctx context.Context, ids []int, tags bool) map[int]parental.Media {
 	out := map[int]parental.Media{}
 	mm := &s.parentalMemo
 	var missing []int
 	mm.mu.Lock()
 	for _, id := range ids {
-		if e, ok := mm.media[id]; ok && time.Since(e.at) < memoFor {
+		if e, ok := mm.media[id]; ok && time.Since(e.at) < memoFor && (e.tags || !tags) {
 			out[id] = e.v
 		} else {
 			missing = append(missing, id)
@@ -211,15 +216,20 @@ func (s *Server) parentalLookup(ctx context.Context, ids []int) map[int]parental
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	found, _ := s.app.Platform.MediaBatch(ctx, missing)
+	var mature map[int][]string
+	if tags {
+		mature, _ = s.app.Platform.MatureTags(ctx, missing)
+	}
 	mm.mu.Lock()
 	if mm.media == nil || len(mm.media) > 5000 {
 		mm.media = map[int]memoed[parental.Media]{}
 	}
 	for id, m := range found {
 		if m != nil {
-			v := parental.Media{ID: id, Adult: m.IsAdult, Genres: m.Genres, Known: true}
+			t, tagged := mature[id]
+			v := parental.Media{ID: id, Adult: m.IsAdult, Genres: m.Genres, Mature: len(t) > 0, Known: true}
 			out[id] = v
-			mm.media[id] = memoed[parental.Media]{v, time.Now()}
+			mm.media[id] = memoed[parental.Media]{v: v, at: time.Now(), tags: tagged}
 		}
 	}
 	mm.mu.Unlock()

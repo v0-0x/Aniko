@@ -6,6 +6,16 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 13,
+        title: "Parental controls: more 18+",
+        changes: [
+            {
+                title: "Block 18+ anime covers more",
+                text: "Besides AniList's adult anime, it now blocks Ecchi and Hentai, and anime AniList tags with sexual content (nudity and the like) when most of its voters agree. Devices with it on don't offer Ecchi as a filter either.",
+            },
+        ],
+    },
+    {
         id: 12,
         title: "Only the hub's library",
         changes: [

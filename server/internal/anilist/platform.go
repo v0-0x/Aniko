@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -509,6 +510,70 @@ func (p *Platform) MediaBatch(ctx context.Context, ids []int) (map[int]*Media, e
 	}
 	return out, nil
 }
+
+// matureRank: how many of AniList's voters (%) must agree on a sexual
+// content tag for it to count (MatureTags); a passing one doesn't.
+const matureRank = 60
+
+const qMatureTags = `query ($ids: [Int]) {
+	Page(perPage: 50) {
+		media(id_in: $ids) { id tags { name category rank isAdult } }
+	}
+}`
+
+// MatureTags names, for each anime (or manga) by AniList ID, its tags that
+// make it 18+ beyond AniList's own flag, for parental controls: the ones
+// AniList marks adult, and the sexual content ones (nudity and the like)
+// most voters agree on. None: an empty list. Kept a week; not found:
+// missing.
+func (p *Platform) MatureTags(ctx context.Context, ids []int) (map[int][]string, error) {
+	out := map[int][]string{}
+	var missing []int
+	for _, id := range ids {
+		var tags []string
+		if p.db.GetCache(matureKey(id), &tags) {
+			out[id] = tags
+		} else {
+			missing = append(missing, id)
+		}
+	}
+	for len(missing) > 0 {
+		chunk := missing
+		if len(chunk) > 50 {
+			chunk = chunk[:50]
+		}
+		missing = missing[len(chunk):]
+		var res struct {
+			Page struct {
+				Media []struct {
+					ID   int `json:"id"`
+					Tags []struct {
+						Name     string `json:"name"`
+						Category string `json:"category"`
+						Rank     int    `json:"rank"`
+						IsAdult  bool   `json:"isAdult"`
+					} `json:"tags"`
+				} `json:"media"`
+			} `json:"Page"`
+		}
+		if err := p.client.QueryAnon(ctx, qMatureTags, map[string]any{"ids": chunk}, &res); err != nil {
+			return out, err
+		}
+		for _, m := range res.Page.Media {
+			tags := []string{}
+			for _, t := range m.Tags {
+				if t.IsAdult || strings.HasPrefix(strings.ToLower(t.Category), "sexual content") && t.Rank >= matureRank {
+					tags = append(tags, t.Name)
+				}
+			}
+			out[m.ID] = tags
+			p.db.SetCache(matureKey(m.ID), tags, 7*24*time.Hour)
+		}
+	}
+	return out, nil
+}
+
+func matureKey(id int) string { return "mature-tags:" + strconv.Itoa(id) }
 
 // Search queries AniList with caching.
 func (p *Platform) Search(ctx context.Context, params SearchParams) (*MediaPage, error) {

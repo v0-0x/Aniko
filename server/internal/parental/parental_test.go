@@ -16,6 +16,8 @@ func TestReason(t *testing.T) {
 		{Media{ID: 2, Adult: true}, "18+"},
 		{Media{ID: 3, Genres: []string{"horror", "Drama"}}, "horror"},
 		{Media{ID: 4, Genres: []string{"Hentai"}}, "18+"},
+		{Media{ID: 6, Genres: []string{"Comedy", "ecchi"}}, "18+"},
+		{Media{ID: 7, Genres: []string{"Romance"}, Mature: true}, "18+"},
 		{Media{ID: 5}, "blocked"},
 	}
 	for _, c := range cases {
@@ -59,6 +61,8 @@ func TestFilter(t *testing.T) {
 			out := map[int]Media{}
 			for _, id := range ids {
 				switch id {
+				case 3:
+					out[id] = Media{ID: 3, Genres: []string{"Romance"}, Mature: true, Known: true}
 				case 30:
 					out[id] = Media{ID: 30, Adult: true, Known: true}
 				case 40:
@@ -74,7 +78,8 @@ func TestFilter(t *testing.T) {
 	_ = json.Unmarshal([]byte(`{
 		"lists": [{"name": "Watching", "items": [
 			{"id": 900, "mediaId": 1, "media": {"id": 1, "isAdult": false, "genres": ["Comedy"]}},
-			{"id": 901, "mediaId": 2, "media": {"id": 2, "isAdult": true, "genres": ["Romance"]}}
+			{"id": 901, "mediaId": 2, "media": {"id": 2, "isAdult": true, "genres": ["Romance"]}},
+			{"id": 902, "mediaId": 3, "media": {"id": 3, "isAdult": false, "genres": ["Romance"]}}
 		]}],
 		"files": [{"path": "/a.mkv", "mediaId": 30}, {"path": "/b.mkv", "mediaId": 31}, {"path": "/c.mkv", "mediaId": 0}],
 		"relations": [{"relationType": "SEQUEL", "node": {"id": 40, "isAdult": false}}, {"relationType": "PREQUEL", "node": {"id": 41, "isAdult": false}}],
