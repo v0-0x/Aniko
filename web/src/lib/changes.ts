@@ -6,6 +6,17 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 12,
+        title: "Only the hub's library",
+        changes: [
+            {
+                title: "Turn off this computer's library",
+                text: "Moved your anime to a Kumo Hub? Settings › Local library › A library on this computer: off. Kumo forgets this computer's files (nothing is deleted) and plays your hub's library instead. A folder taken out of the library goes too, also when its drive is gone.",
+                to: "/settings?tab=library",
+            },
+        ],
+    },
+    {
         id: 11,
         title: "Parental controls",
         changes: [

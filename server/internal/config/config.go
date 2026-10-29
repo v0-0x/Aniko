@@ -101,6 +101,10 @@ type NotifySettings struct {
 }
 
 type LibrarySettings struct {
+	// Off: this computer has no library of its own; it plays the ones a
+	// Kumo Hub or other computers share with it. The folders below are kept
+	// for when it's turned back on.
+	Off              bool     `json:"off"`
 	Dir              string   `json:"dir"`
 	ExtraDirs        []string `json:"extraDirs"`
 	AutoRefresh      bool     `json:"autoRefresh"`
@@ -557,8 +561,12 @@ func sanitize(s Settings) Settings {
 	return s
 }
 
-// LibraryDirs returns the main library dir followed by the extra ones.
+// LibraryDirs returns the main library dir followed by the extra ones
+// (none when the library is off).
 func (s Settings) LibraryDirs() []string {
+	if s.Library.Off {
+		return nil
+	}
 	var out []string
 	seen := map[string]bool{}
 	for _, d := range append([]string{s.Library.Dir}, s.Library.ExtraDirs...) {

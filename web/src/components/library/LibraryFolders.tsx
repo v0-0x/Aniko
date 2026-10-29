@@ -109,7 +109,7 @@ function useMediaIndex() {
 
 function useRoots() {
     const { data: status } = useStatus()
-    return useMemo(() => [status?.settings.library.dir ?? "", ...(status?.settings.library.extraDirs ?? [])].filter(Boolean), [status])
+    return useMemo(() => (status?.settings.library.off ? [] : [status?.settings.library.dir ?? "", ...(status?.settings.library.extraDirs ?? [])].filter(Boolean)), [status])
 }
 
 // Adds the videos of folders that no scan has added yet to the index, and

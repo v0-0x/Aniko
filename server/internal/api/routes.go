@@ -491,7 +491,7 @@ func (s *Server) saveSettings(r *http.Request) (any, error) {
 		// Torrent client logins too: they never see the passwords, and
 		// pointing the client at another host would send it the password.
 		next.Qbittorrent, next.Transmission = cur.Qbittorrent, cur.Transmission
-		next.Library.Dir, next.Library.ExtraDirs = cur.Library.Dir, cur.Library.ExtraDirs
+		next.Library.Off, next.Library.Dir, next.Library.ExtraDirs = cur.Library.Off, cur.Library.Dir, cur.Library.ExtraDirs
 		// Who this computer's library is shared with is its own business.
 		next.Sharing = cur.Sharing
 		// Where extensions come from, and the apps AniList and Discord

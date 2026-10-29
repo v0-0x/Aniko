@@ -1593,40 +1593,59 @@ function PeerGrant({ label, help, checked, disabled, onChange }: { label: string
 function LibrarySection({ draft, set }: SectionProps) {
     const [, setSearchParams] = useSearchParams()
     const extra = draft.library.extraDirs ?? []
+    const off = !!draft.library.off
     return (
         <>
             <Group title="Local library">
                 <Locked>
-                    <Stack label="Library directory" help="Path of the directory where your media files are located.">
-                        <PathInput value={draft.library.dir} onChange={v => set("library", { dir: v })} placeholder="/mnt/big/Media/Anime" />
-                    </Stack>
-                    <Stack label="Additional library directories" help="Include additional directory paths if your library is spread across multiple locations.">
-                        <div className="flex flex-col gap-2">
-                            {extra.map((d, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <div className="flex-1">
-                                        <PathInput value={d} onChange={v => set("library", { extraDirs: extra.map((x, j) => (j === i ? v : x)) })} />
-                                    </div>
-                                    <button onClick={() => set("library", { extraDirs: extra.filter((_, j) => j !== i) })} aria-label="Remove this folder" className="grid size-10 place-items-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-rose-300">
-                                        <X className="size-4" />
-                                    </button>
-                                </div>
-                            ))}
-                            <button onClick={() => set("library", { extraDirs: [...extra, ""] })} className="grid size-9 place-items-center rounded-full bg-white/[0.07] text-fg hover:bg-white/[0.12]" aria-label="Add directory">
-                                <Plus className="size-4" />
-                            </button>
-                        </div>
-                    </Stack>
+                    <Row
+                        label="A library on this computer"
+                        help={
+                            off
+                                ? "Off: this computer plays the libraries your Kumo Hub and other computers share with it (Settings › Other devices). Its folders are kept for when you turn it back on."
+                                : "Turn it off to use only your Kumo Hub's library (or another computer's). Kumo forgets this computer's files; nothing is deleted from the disk."
+                        }
+                    >
+                        <Switch label="A library on this computer" checked={!off} onChange={v => set("library", { off: !v })} />
+                    </Row>
                 </Locked>
             </Group>
-            <Group title="Scanning">
-                <Row label="Automatically refresh library" help="Watch the folders and pick up new or removed files on their own">
-                    <Switch checked={draft.library.autoRefresh} onChange={v => set("library", { autoRefresh: v })} />
-                </Row>
-                <Row label="Refresh library on startup">
-                    <Switch checked={draft.library.refreshOnStartup} onChange={v => set("library", { refreshOnStartup: v })} />
-                </Row>
-            </Group>
+            {!off && (
+                <>
+                    <Group title="Folders">
+                        <Locked>
+                            <Stack label="Library directory" help="Path of the directory where your media files are located.">
+                                <PathInput value={draft.library.dir} onChange={v => set("library", { dir: v })} placeholder="/mnt/big/Media/Anime" />
+                            </Stack>
+                            <Stack label="Additional library directories" help="Include additional directory paths if your library is spread across multiple locations.">
+                                <div className="flex flex-col gap-2">
+                                    {extra.map((d, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <PathInput value={d} onChange={v => set("library", { extraDirs: extra.map((x, j) => (j === i ? v : x)) })} />
+                                            </div>
+                                            <button onClick={() => set("library", { extraDirs: extra.filter((_, j) => j !== i) })} aria-label="Remove this folder" className="grid size-10 place-items-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-rose-300">
+                                                <X className="size-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button onClick={() => set("library", { extraDirs: [...extra, ""] })} className="grid size-9 place-items-center rounded-full bg-white/[0.07] text-fg hover:bg-white/[0.12]" aria-label="Add directory">
+                                        <Plus className="size-4" />
+                                    </button>
+                                </div>
+                            </Stack>
+                        </Locked>
+                    </Group>
+                    <Group title="Scanning">
+                        <Row label="Automatically refresh library" help="Watch the folders and pick up new or removed files on their own">
+                            <Switch checked={draft.library.autoRefresh} onChange={v => set("library", { autoRefresh: v })} />
+                        </Row>
+                        <Row label="Refresh library on startup">
+                            <Switch checked={draft.library.refreshOnStartup} onChange={v => set("library", { refreshOnStartup: v })} />
+                        </Row>
+                    </Group>
+                </>
+            )}
             <Group title="Library sharing">
                 <Row label="Share this library with your other computers and TVs" help="Who gets it, and the libraries shared with this computer, are in Devices.">
                     <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "devices" })}>

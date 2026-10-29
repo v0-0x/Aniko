@@ -28,8 +28,9 @@ export function DevicePrompts() {
     const [busy, setBusy] = useState("")
     const [hidden, setHidden] = useState(readHidden)
     if (!status || status.client === "lan") return null
-    // A TV has no library to share, nor does a computer without a folder.
-    const canShare = status.platform !== "android" && !!status.settings.library.dir
+    // A TV has no library to share, nor does a computer without a folder
+    // (or with its library off).
+    const canShare = status.platform !== "android" && !!status.settings.library.dir && !status.settings.library.off
     const prompts = (status.devicePrompts ?? []).filter(p => (p.kind === "new" ? canShare : !hidden.includes(`${p.id}@${p.version}`)))
     if (!prompts.length) return null
 

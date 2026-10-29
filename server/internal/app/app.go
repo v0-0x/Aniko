@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -402,6 +403,17 @@ func (a *App) wire() {
 		}
 		if old.Library.AutoRefresh != cur.Library.AutoRefresh || fmt.Sprint(old.LibraryDirs()) != fmt.Sprint(cur.LibraryDirs()) {
 			a.Scanner.StartWatcher()
+		}
+		// Folders out of the library (or the library off): their files go,
+		// also when their drive isn't here.
+		if now := a.Settings.Get().LibraryDirs(); fmt.Sprint(old.LibraryDirs()) != fmt.Sprint(now) {
+			var out []string
+			for _, d := range old.LibraryDirs() {
+				if !slices.Contains(now, d) {
+					out = append(out, d)
+				}
+			}
+			a.Scanner.Forget(out)
 		}
 		// A new library folder: index it right away.
 		if fmt.Sprint(old.LibraryDirs()) != fmt.Sprint(cur.LibraryDirs()) && a.Scanner.HasLibrary() {

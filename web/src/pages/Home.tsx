@@ -242,7 +242,7 @@ export default function HomePage() {
                 {isEmpty && (
                     <Welcome
                         loggedIn={!!status?.loggedIn}
-                        hasDir={!!status?.settings.library.dir}
+                        hasDir={!!status?.settings.library.dir || !!status?.settings.library.off}
                         paired={(status?.paired?.length ?? 0) > 0}
                         onLogin={() => setLoginOpen(true)}
                     />

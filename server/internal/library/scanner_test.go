@@ -142,6 +142,61 @@ func TestScanKeepsFilesOfMissingDrives(t *testing.T) {
 	}
 }
 
+// A folder taken out of the library, or the library turned off: its files
+// go from the index, also when its drive is gone (moved to a Kumo Hub), but
+// not those in a folder still in it, and nothing on the disk.
+func TestForgetFoldersOutOfTheLibrary(t *testing.T) {
+	base := t.TempDir()
+	main := filepath.Join(base, "Anime")
+	usb := filepath.Join(base, "usb", "Anime")
+	a := filepath.Join(main, "Show A", "Show A - 01.mkv")
+	b := filepath.Join(main, "Show B", "Show B - 01.mkv")
+	c := filepath.Join(usb, "Show C", "Show C - 01.mkv")
+	for _, p := range []string{a, b, c} {
+		touch(t, p)
+	}
+	s, settings := newTestScanner(t, main, usb)
+	scan(t, s)
+	set := func(change func(*config.Settings)) {
+		cfg := settings.Get()
+		change(&cfg)
+		if _, err := settings.Save(cfg); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// The USB drive went to the hub, and out of the library.
+	if err := os.RemoveAll(filepath.Join(base, "usb")); err != nil {
+		t.Fatal(err)
+	}
+	set(func(c *config.Settings) { c.Library.ExtraDirs = nil })
+	s.Forget([]string{usb})
+	if got := paths(t, s); len(got) != 2 || got[0] != a || got[1] != b {
+		t.Fatalf("after the USB folder went: %q", got)
+	}
+	// Only one show's folder is the library now: the rest of the old one goes.
+	set(func(c *config.Settings) { c.Library.Dir = filepath.Join(main, "Show A") })
+	s.Forget([]string{main})
+	if got := paths(t, s); len(got) != 1 || got[0] != a {
+		t.Fatalf("after narrowing the folder: %q", got)
+	}
+	// The library off: nothing left, and the file is still on the disk.
+	set(func(c *config.Settings) { c.Library.Off = true })
+	if len(settings.Get().LibraryDirs()) != 0 {
+		t.Fatal("folders while the library is off")
+	}
+	s.Forget([]string{filepath.Join(main, "Show A")})
+	if got := paths(t, s); len(got) != 0 {
+		t.Fatalf("with the library off: %q", got)
+	}
+	if _, err := os.Stat(a); err != nil {
+		t.Fatalf("the file itself: %v", err)
+	}
+	if _, err := s.Scan(context.Background(), ScanOptions{SkipMatching: true}); !errors.Is(err, ErrLibraryOff) {
+		t.Fatalf("a scan with the library off: %v", err)
+	}
+}
+
 func TestScanKeepsDownloadsOutsideLibrary(t *testing.T) {
 	base := t.TempDir()
 	lib := filepath.Join(base, "Anime")

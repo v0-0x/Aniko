@@ -172,6 +172,8 @@ export type CollectionView = {
 
 export type Settings = {
     library: {
+        // This computer has no library of its own (it plays the shared ones).
+        off?: boolean
         dir: string
         extraDirs: string[]
         autoRefresh: boolean

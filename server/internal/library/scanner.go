@@ -148,6 +148,9 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 		}
 		s.hub.Publish(events.ScanProgress, ScanProgress{Stage: "walking", Done: len(found), Message: "Found " + itoa(len(found)) + " files…"})
 	}
+	if cfg.Library.Off {
+		return nil, ErrLibraryOff
+	}
 	if len(walked) == 0 {
 		return nil, errors.New("no library directory found — set one in Settings › Local library")
 	}
@@ -341,6 +344,43 @@ func (s *Scanner) removedFiles(byPath map[string]*LocalFile, found map[string]fs
 		}
 	}
 	return removed
+}
+
+// ErrLibraryOff: this computer's library is off (Settings › Local library).
+var ErrLibraryOff = errors.New("this computer's library is off: it plays the ones your Kumo Hub and other computers share with it (Settings › Local library)")
+
+// Forget drops from the index the files of folders that left the library
+// (taken out of it, or the library turned off); they stay on the disk. A
+// file also in a folder still in the library stays. Unlike a scan, this
+// doesn't wait for the folder's drive: a library moved to a Kumo Hub with
+// its drive is gone from here for good. It waits for a running scan.
+func (s *Scanner) Forget(folders []string) {
+	if len(folders) == 0 {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	roots := s.settings.Get().LibraryDirs()
+	all, err := s.Store.All()
+	if err != nil {
+		log.Printf("library: %v", err)
+		return
+	}
+	var gone []string
+	for _, f := range all {
+		if underAny(f.Path, folders) && !underAny(f.Path, roots) {
+			gone = append(gone, f.Path)
+		}
+	}
+	if len(gone) == 0 {
+		return
+	}
+	if err := s.Store.Delete(gone...); err != nil {
+		log.Printf("library: %v", err)
+		return
+	}
+	log.Printf("library: forgot the %d files of %s (no longer in the library; nothing was deleted)", len(gone), strings.Join(folders, ", "))
+	s.hub.Publish(events.LibraryUpdated, nil)
 }
 
 // ScanSoon starts an incremental scan in the background, or queues one if a

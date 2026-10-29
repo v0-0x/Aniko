@@ -118,7 +118,10 @@ export default function LocalLibraryPage() {
     // The libraries other Kumo apps on the network share with this one.
     const { data: shared } = useSharedLibraries()
     const [source, setSource] = usePersisted<string>("kumo-local-source", "local")
-    const host = source === "local" ? undefined : shared?.find(l => l.host.id === source)
+    // This computer's library off (Settings › Local library): only the
+    // shared ones, the first one to begin with.
+    const off = !!status?.settings.library.off
+    const host = off ? (shared?.find(l => l.host.id === source) ?? shared?.[0]) : source === "local" ? undefined : shared?.find(l => l.host.id === source)
     const files = host ? host.files : localFiles
     const scan = useScan()
     const scanning = useStore(scanStore, s => s.running)
@@ -215,7 +218,7 @@ export default function LocalLibraryPage() {
     )
 
     const loading = collLoading || filesLoading
-    const libraryDir = status?.settings.library.dir
+    const libraryDir = off ? undefined : status?.settings.library.dir
     const trusted = status?.client !== "lan"
     const openFolder = (path?: string) => path && api.post("/api/open", { path }).catch(e => toast.error(e.message))
 
@@ -229,7 +232,7 @@ export default function LocalLibraryPage() {
                             {host ? `Shared by ${host.host.name} over your network${host.host.online ? "" : " (not answering right now)"}.` : "Only anime you have downloaded on this computer."}
                         </p>
                     </div>
-                    {!host && (
+                    {!host && !off && (
                         <div className="flex items-center gap-2">
                             {trusted && libraryDir && (
                                 <IconButton label="Open library folder" variant="subtle" onClick={() => openFolder(libraryDir)}>
@@ -245,13 +248,13 @@ export default function LocalLibraryPage() {
                         </div>
                     )}
                 </div>
-                {!!shared?.length && (
+                {!!shared?.length && (!off || shared.length > 1) && (
                     <Tabs
                         className="mt-6"
-                        value={host ? source : "local"}
+                        value={host ? host.host.id : "local"}
                         onChange={setSource}
                         tabs={[
-                            { value: "local", label: "This computer", icon: <HardDrive className="size-4" /> },
+                            ...(off ? [] : [{ value: "local", label: "This computer", icon: <HardDrive className="size-4" /> }]),
                             ...shared.map(l => ({ value: l.host.id, label: l.host.name, icon: <Share2 className="size-4" /> })),
                         ]}
                     />
@@ -294,7 +297,21 @@ export default function LocalLibraryPage() {
                     </EmptyState>
                 )}
 
-                {!host && !loading && !scanning && groups.length === 0 && !error && (
+                {!host && off && !loading && (
+                    <EmptyState
+                        icon={<Share2 className="size-6" />}
+                        title="This computer's library is off"
+                        action={
+                            <Button variant="primary" onClick={() => navigate("/settings?tab=devices")}>
+                                Other devices
+                            </Button>
+                        }
+                    >
+                        Its anime come from your Kumo Hub and the computers that share their library with it, and none does right now. Turn it back on in Settings › Local library.
+                    </EmptyState>
+                )}
+
+                {!host && !off && !loading && !scanning && groups.length === 0 && !error && (
                     <EmptyState
                         icon={<HardDrive className="size-6" />}
                         title={libraryDir ? "No downloaded anime yet" : "Choose your library folder"}
