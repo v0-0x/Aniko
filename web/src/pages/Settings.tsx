@@ -22,6 +22,7 @@ import {
     MonitorPlay,
     MonitorSmartphone,
     Moon,
+    ShieldCheck,
     Network,
     Palette,
     Plus,
@@ -40,12 +41,13 @@ import { createContext, isValidElement, useContext, useEffect, useLayoutEffect, 
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { DirPicker } from "@/components/DirPicker"
+import { ParentalDialog } from "@/components/ParentalDialog"
 import { LoginDialog } from "@/components/LoginDialog"
 import { Badge, Button, EmptyState, Input, Select, Switch, Textarea } from "@/components/ui"
 import { UpdateBanner, versionName } from "@/components/UpdateBanner"
 import { whatsNewStore } from "@/components/WhatsNew"
 import { api, desktop, type DesktopPrefs } from "@/lib/api"
-import { useCheckUpdate, useOnlineProviders, useSaveSettings, useSharing, useStatus, useUpdateStatus } from "@/lib/queries"
+import { useCheckUpdate, useOnlineProviders, useParental, useSaveSettings, useSharing, useStatus, useUpdateStatus } from "@/lib/queries"
 import { exampleMpvPath, installHint, installSource, platformName } from "@/lib/platform"
 import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
@@ -1253,6 +1255,7 @@ function SharingGroup({ draft, set }: SectionProps) {
             title="Library sharing"
             description="Watch the libraries of Kumo on your other computers at home, and share yours with them. Each computer decides who gets its library. Watching updates the AniList account (or local list) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second: to the computer whose files you watch as you watch, and back."
         >
+            <ParentalHere />
             <Row label="Library sharing" help="Find the Kumo apps on this network, and let them find this one. Turn it on on both computers.">
                 <Switch checked={draft.sharing.enabled} disabled={!trusted} onChange={v => set("sharing", { enabled: v })} />
             </Row>
@@ -1351,6 +1354,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                                     disabled={!trusted}
                                     onChange={v => call(() => api.post(`/api/sharing/peers/${p.id}`, { downloads: v }))}
                                 />
+                                {trusted && <ParentalRow peer={p} />}
                             </div>
                         )}
                         {p.shares && p.sharesAccount && (
@@ -1400,6 +1404,73 @@ function SharingGroup({ draft, set }: SectionProps) {
                 </>
             )}
         </Group>
+    )
+}
+
+// A device's parental controls, set here.
+function ParentalRow({ peer }: { peer: SharingPeer }) {
+    const [open, setOpen] = useState(false)
+    return (
+        <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+                <p className="flex items-center gap-2 text-sm">
+                    Parental controls
+                    {peer.parental && <Badge tone="green">On</Badge>}
+                </p>
+                <p className="mt-0.5 text-xs text-subtle">Block 18+ anime, genres or titles on it, or allow only some; see what it watched.</p>
+            </div>
+            <Button size="sm" icon={<ShieldCheck className="size-4" />} onClick={() => setOpen(true)}>
+                {peer.parental ? "Change" : "Set up"}
+            </Button>
+            <ParentalDialog device={peer} open={open} onOpenChange={setOpen} />
+        </div>
+    )
+}
+
+// Parental controls on this device, set by a computer or hub that shares
+// with it: who set them, and lifting them with their PIN.
+function ParentalHere() {
+    const qc = useQueryClient()
+    const { data } = useParental()
+    const [pin, setPin] = useState("")
+    const [busy, setBusy] = useState(false)
+    if (!data?.active) return null
+    const names = data.from.map(f => f.name).join(" and ")
+    const withPin = data.from.some(f => f.hasPin)
+    const unlock = async () => {
+        setBusy(true)
+        try {
+            await api.post("/api/parental/unlock", { pin })
+            toast.success("Parental controls lifted on this device")
+            setPin("")
+            qc.invalidateQueries()
+        } catch (e) {
+            toast.error((e as Error).message)
+        } finally {
+            setBusy(false)
+        }
+    }
+    return (
+        <div className="flex flex-col gap-3 border-b border-line bg-emerald-500/[0.06] px-4 py-3.5">
+            <p className="flex items-center gap-2 text-sm font-medium">
+                <ShieldCheck className="size-4 text-emerald-300" />
+                Parental controls are on, set by {names}
+            </p>
+            <p className="text-xs text-subtle">
+                {[data.rules?.noAdult && "18+ anime are blocked", data.rules?.genres?.length && `blocked genres: ${data.rules.genres.join(", ")}`, data.rules?.onlyAllowed && "only some anime are allowed", data.rules?.blocked?.length && `${data.rules.blocked.length} anime blocked`]
+                    .filter(Boolean)
+                    .join(" · ")}
+                . They're changed on {names}. Library sharing stays on while they are.
+            </p>
+            {withPin && (
+                <div className="flex gap-2">
+                    <Input type="password" inputMode="numeric" placeholder="PIN" value={pin} onChange={e => setPin(e.target.value)} onKeyDown={e => e.key === "Enter" && pin && unlock()} className="max-w-40" />
+                    <Button size="sm" loading={busy} disabled={!pin} onClick={unlock}>
+                        Lift with the PIN
+                    </Button>
+                </div>
+            )}
+        </div>
     )
 }
 

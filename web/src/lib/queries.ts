@@ -18,6 +18,7 @@ import type {
     MarketEntry,
     Media,
     OnlineProvider,
+    ParentalState,
     PluginState,
     ScheduleItem,
     Settings,
@@ -231,6 +232,20 @@ export function useDiscover() {
 // Library sharing: the Kumo apps on the network (asked again while shown).
 export function useSharing(enabled = true) {
     return useQuery({ queryKey: ["sharing", "status"], queryFn: () => api.get<SharingStatus>("/api/sharing"), enabled, refetchInterval: 4000 })
+}
+
+// Parental controls on this device (set by a computer or hub that shares
+// with it).
+export function useParental() {
+    return useQuery({ queryKey: ["parental"], queryFn: () => api.get<ParentalState>("/api/parental"), staleTime: 60_000 })
+}
+
+// The genres to offer as filters: not the ones parental controls block.
+export function useGenres(all: readonly string[]) {
+    const blocked = useParental().data?.rules?.genres
+    if (!blocked?.length) return all
+    const b = new Set(blocked.map(g => g.toLowerCase()))
+    return all.filter(g => !b.has(g.toLowerCase()))
 }
 
 // The libraries other Kumo apps share with this one.

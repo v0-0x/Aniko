@@ -635,6 +635,7 @@ export type SharingPeer = {
     platform?: string // what it runs on ("android": a TV)
     declined?: boolean // asked on Home whether to share with it: "not now"
     role?: "hub" // a Kumo Hub (no player: it shares and keeps devices in step)
+    parental?: boolean // parental controls are set for it here
 }
 
 export type SharingStatus = { enabled: boolean; id: string; name: string; listening: boolean; peers: SharingPeer[]; addresses: string[] }
@@ -767,3 +768,36 @@ export type HubOverview = {
     encoder: string // "" no ffmpeg
     downloads: number
 }
+
+// Parental controls (server: internal/parental): what a device may watch,
+// set on the computer or hub that shares with it.
+export type ParentalRules = {
+    noAdult?: boolean
+    genres?: string[] | null
+    blocked?: number[] | null
+    onlyAllowed?: boolean
+    allowed?: number[] | null
+    setAt?: number
+}
+
+export type ParentalWatched = {
+    mediaId: number
+    episode: number
+    position: number
+    duration: number
+    source: string
+    at: number // unix seconds
+    title: string
+    cover: string
+    adult: boolean
+}
+
+export type DeviceParental = {
+    rules: ParentalRules | null
+    hasPin: boolean
+    watched: ParentalWatched[]
+    anime: { id: number; title: string; cover: string }[]
+}
+
+// This device's own (GET /api/parental).
+export type ParentalState = { active: boolean; rules: ParentalRules | null; from: { id: string; name: string; hasPin: boolean }[] }

@@ -38,6 +38,8 @@ type Server struct {
 	rebindMu sync.Mutex
 	// The players' notes (POST /api/playback/note).
 	notes noteGuard
+	// What parental controls looked up lately (parental.go).
+	parentalMemo memo
 	// ForceWebUI is set when no desktop shell can exist (headless mode).
 	ForceWebUI bool
 	// AppOnly: on this device other apps reach 127.0.0.1 too (Android), so
@@ -365,7 +367,13 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			w.Header().Set("X-Frame-Options", "DENY")
 		}
 		ctx := context.WithValue(r.Context(), ctxKey{}, kind)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		r = r.WithContext(ctx)
+		// Parental controls set on this device by a computer or hub.
+		if rules := s.app.Share.Parental(); rules.Active() && strings.HasPrefix(r.URL.Path, "/api/") {
+			s.parentalServe(rules, w, r, next)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

@@ -5,7 +5,7 @@ import { ListCardMenu } from "@/components/ListCardMenu"
 import { Carousel, MediaCard, MediaCardSkeleton } from "@/components/MediaCard"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { Button, ChipRow, EmptyState, ErrorState, SectionHeader, Skeleton } from "@/components/ui"
-import { useDiscover, useSearch } from "@/lib/queries"
+import { useDiscover, useGenres, useSearch } from "@/lib/queries"
 import { useStore } from "@/lib/store"
 import { holidayStore } from "@/lib/themes"
 import { HolidayIcon } from "@/components/HolidayBadge"
@@ -22,6 +22,7 @@ const seasonSearch = (season?: string, year?: number) => (season && year ? `/sea
 
 export default function DiscoverPage() {
     const { data, isLoading, error, refetch, isFetching } = useDiscover()
+    const genres = useGenres(GENRES)
     // The holiday theme's row (Halloween's horror...), when it has one.
     const holiday = useStore(holidayStore)
     const picks = holiday?.picks
@@ -64,7 +65,7 @@ export default function DiscoverPage() {
             <div className={cn("relative z-10 flex flex-col gap-10 px-6 md:px-8 xl:px-10", hero ? "-mt-14" : "pt-8")}>
                 <PluginSlot slot="after-discover-screen-header" />
                 <ChipRow label="More genres">
-                    {GENRES.map(g => (
+                    {genres.map(g => (
                         <Link key={g} to={`/search?genre=${encodeURIComponent(g)}`} className="flex h-8 shrink-0 items-center rounded-full bg-white/[0.06] px-3.5 text-[13px] font-medium text-fg/80 transition-colors hover:bg-white/[0.1] hover:text-fg">
                             {g}
                         </Link>

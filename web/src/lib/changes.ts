@@ -6,6 +6,17 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 11,
+        title: "Parental controls",
+        changes: [
+            {
+                title: "Parental controls",
+                text: "On the computer or Kumo Hub that shares with a device (a kid's tablet or TV), Settings › Other devices (or the hub's Devices) › Parental controls: block 18+ anime, chosen genres or titles, or allow only the anime you pick, and see everything it watched. Its Kumo hides the rest and won't open or play it, also away from home; only the computer that set them, or a PIN on the device, lifts them.",
+                to: "/settings?tab=devices",
+            },
+        ],
+    },
+    {
         id: 10,
         title: "Kumo Hub",
         changes: [

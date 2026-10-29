@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Wifi } from "lucide-react"
-import { Badge, EmptyState, Select, Switch } from "@/components/ui"
+import { ShieldCheck, Wifi } from "lucide-react"
+import { useState } from "react"
+import { ParentalDialog } from "@/components/ParentalDialog"
+import { Badge, Button, EmptyState, Select, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
 import { toast } from "@/lib/toast"
 import type { HubDevice, HubOverview } from "@/lib/types"
@@ -126,10 +128,26 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
                         <Setting label="Let it download here" help="Its downloads and torrents go onto the hub, into its library.">
                             <Switch label={`Let ${d.name} download here`} checked={d.downloads} onChange={v => change(d, { downloads: v })} />
                         </Setting>
+                        <ParentalSetting d={d} />
                     </>
                 )}
             </div>
         </div>
+    )
+}
+
+function ParentalSetting({ d }: { d: HubDevice }) {
+    const [open, setOpen] = useState(false)
+    return (
+        <Setting label="Parental controls" help={d.parental ? "On: what it may watch is limited, and what it watches is kept here." : "Block 18+ anime, genres or titles on it, or allow only some; see what it watched."}>
+            <div className="flex items-center gap-2">
+                {d.parental && <Badge tone="green">On</Badge>}
+                <Button size="sm" icon={<ShieldCheck className="size-4" />} onClick={() => setOpen(true)}>
+                    {d.parental ? "Change" : "Set up"}
+                </Button>
+            </div>
+            <ParentalDialog device={d} host="the hub" open={open} onOpenChange={setOpen} />
+        </Setting>
     )
 }
 

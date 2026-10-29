@@ -60,7 +60,13 @@ func (s *Server) servePeer(w http.ResponseWriter, r *http.Request, next http.Han
 	}
 	// Another device: never this computer (isTrusted).
 	ctx := context.WithValue(r.Context(), ctxKey{}, clientLAN)
-	next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, peerKey{}, c)))
+	r = r.WithContext(context.WithValue(ctx, peerKey{}, c))
+	// Its parental controls, set here: nothing blocked is shared with it.
+	if c.Rules.Active() {
+		s.parentalServe(c.Rules, w, r, next)
+		return
+	}
+	next.ServeHTTP(w, r)
 }
 
 func peerOf(r *http.Request) share.Caller {

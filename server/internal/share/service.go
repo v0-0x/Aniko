@@ -31,6 +31,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/history"
 	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
+	"github.com/simo1337s/animetest/server/internal/parental"
 )
 
 const (
@@ -125,6 +126,16 @@ type Service struct {
 	pending   map[[2]int]history.Entry
 	pushTimer *time.Timer
 
+	// Parental controls (parental.go): the rules hosts set for this Kumo,
+	// what it watched waiting to be told them, and, on a host, where what
+	// its devices watched is kept.
+	received     map[string]receivedRules
+	watchMu      sync.Mutex
+	watchPending map[[2]int]Watched
+	watchTimer   *time.Timer
+	watchedOnce  sync.Once
+	watchedErr   error
+
 	mu      sync.Mutex
 	peers   map[string]*peer
 	running *run
@@ -189,6 +200,8 @@ type peer struct {
 	// declined: asked whether to share this Kumo's library with it, the
 	// answer was "not now" (Home doesn't ask again).
 	declined bool
+	// rules: its parental controls, set here (nil: none).
+	rules *parental.Rules
 }
 
 // paired: this Kumo shares its library with it, or it with this one.
@@ -242,6 +255,7 @@ func New(d *db.DB, settings *config.Store, lib Library, hub *events.Hub) (*Servi
 		peers: map[string]*peer{},
 	}
 	s.load()
+	s.loadParental()
 	return s, nil
 }
 
@@ -300,6 +314,8 @@ type savedPeer struct {
 	Platform string   `json:"platform,omitempty"`
 	Declined bool     `json:"declined,omitempty"`
 	Role     string   `json:"role,omitempty"`
+	// Its parental controls, set here.
+	Rules *parental.Rules `json:"rules,omitempty"`
 }
 
 func (s *Service) load() {
@@ -318,6 +334,7 @@ func (s *Service) load() {
 			account: sp.Account, downloads: sp.Downloads, hostDownloads: sp.TakesDownloads,
 			user: sp.User, callerUser: sp.CallerUser, historySeq: sp.HistorySeq, pushedSeq: sp.PushedSeq,
 			wakeMACs: cleanMACs(sp.Wake), platform: cleanPlatform(sp.Platform), declined: sp.Declined, role: cleanRole(sp.Role),
+			rules: sp.Rules,
 		}
 	}
 }
@@ -335,7 +352,7 @@ func (s *Service) save() {
 			Name: p.name, Key: base64.StdEncoding.EncodeToString(p.pub), Port: p.port, Manual: p.manual, Allowed: p.allowed, Shares: p.shares, Seen: p.lastAround().Unix(),
 			Account: p.account, Downloads: p.downloads, TakesDownloads: p.hostDownloads,
 			User: p.user, CallerUser: p.callerUser, HistorySeq: p.historySeq, PushedSeq: p.pushedSeq,
-			Wake: p.wakeMACs, Platform: p.platform, Declined: p.declined, Role: p.role,
+			Wake: p.wakeMACs, Platform: p.platform, Declined: p.declined, Role: p.role, Rules: p.rules,
 		}
 		if p.addr != nil {
 			sp.Addr = p.addr.String()
@@ -540,6 +557,8 @@ type Caller struct {
 	Paired bool
 	// User: the AniList account it says it's on (0: none).
 	User int
+	// Rules: its parental controls, set here (nil: none; only with Allowed).
+	Rules *parental.Rules
 }
 
 // Verify checks a request from another Kumo, and notes it as seen. The
@@ -602,6 +621,10 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 		}
 	}
 	caller := Caller{ID: p.id, Name: p.name, Allowed: p.allowed, Account: p.allowed && p.account, Downloads: p.allowed && p.downloads, Paired: p.paired()}
+	if p.allowed && p.rules.Active() {
+		r := *p.rules
+		caller.Rules = &r
+	}
 	s.mu.Unlock()
 	if !wasOnline {
 		s.hub.Publish("sharing-updated", nil)
@@ -705,6 +728,8 @@ type Hello struct {
 	// account's settings last changed on it (ms).
 	Role    string `json:"role,omitempty"`
 	PrefsAt int64  `json:"prefsAt,omitempty"`
+	// Parental: the guest's parental controls, set here (parental.go).
+	Parental *parental.Rules `json:"parental,omitempty"`
 }
 
 // Hello answers a guest (verified, see Verify).
@@ -719,6 +744,7 @@ func (s *Service) Hello(c Caller) Hello {
 		h.Downloads = c.Downloads
 		h.AniCli = s.AniCliReady != nil && s.AniCliReady()
 		h.Wake = macs()
+		h.Parental = c.Rules
 		// A hub is on each device's own account (hub.go).
 		if s.Hub != nil {
 			h.User = c.User
@@ -897,6 +923,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	if visible || changed {
 		s.hub.Publish("sharing-updated", nil)
 	}
+	s.takeParental(p, h.Parental)
 	s.mu.Lock()
 	was := p.user
 	p.user = 0
@@ -947,6 +974,9 @@ func (s *Service) HistoryChanged(e history.Entry) {
 	s.mu.Lock()
 	on := s.running != nil
 	s.mu.Unlock()
+	if on {
+		s.parentalWatched(e)
+	}
 	if !on || s.user() == 0 {
 		return
 	}
@@ -1602,6 +1632,8 @@ type PeerView struct {
 	Declined bool `json:"declined"`
 	// Role: "hub" for a Kumo Hub (kumo --hub), "" for a Kumo app.
 	Role string `json:"role,omitempty"`
+	// Parental: parental controls are set for it here (parental.go).
+	Parental bool `json:"parental,omitempty"`
 }
 
 func (s *Service) view(p *peer, now time.Time) PeerView {
@@ -1611,7 +1643,7 @@ func (s *Service) view(p *peer, now time.Time) PeerView {
 		Account: p.account, Downloads: p.downloads,
 		SharesAccount: p.shares && p.hostAccount != "", TakesDownloads: p.shares && p.hostDownloads,
 		CanWake: p.shares && len(p.wakeMACs) > 0, Waking: p.waking(now),
-		Platform: p.platform, Declined: p.declined, Role: p.role,
+		Platform: p.platform, Declined: p.declined, Role: p.role, Parental: p.allowed && p.rules.Active(),
 	}
 	if p.addr != nil {
 		v.Address = net.JoinHostPort(p.addr.String(), strconv.Itoa(p.port))

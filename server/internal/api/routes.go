@@ -27,6 +27,7 @@ func (s *Server) routes() {
 	m := s.mux
 	s.peerRoutes()
 	s.hubRoutes()
+	s.parentalRoutes()
 	s.noteRoutes()
 	s.cleanupRoutes()
 	s.backupRoutes()
@@ -499,6 +500,11 @@ func (s *Server) saveSettings(r *http.Request) (any, error) {
 		next.Anilist.ClientID, next.Discord.ClientID = cur.Anilist.ClientID, cur.Discord.ClientID
 		// Which builds this computer installs.
 		next.Updates = cur.Updates
+	}
+	// Parental controls keep library sharing on: the computer that set them
+	// hears what's watched, and can lift them.
+	if cur.Sharing.Enabled && !next.Sharing.Enabled && s.app.Share.Parental().Active() {
+		return nil, forbidden("parental controls are on: library sharing stays on (the computer that set them can lift them)")
 	}
 	// Turning off the web UI from a browser would lock the browser out.
 	if kindOf(r) != clientShell && !next.Server.WebUI && cur.Server.WebUI && !s.ForceWebUI {

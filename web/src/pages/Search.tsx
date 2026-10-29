@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { Button, EmptyState, ErrorState, Input, Select } from "@/components/ui"
-import { useSearch } from "@/lib/queries"
+import { useGenres, useSearch } from "@/lib/queries"
 import type { Media } from "@/lib/types"
 import { cn, GENRES, SEASONS } from "@/lib/utils"
 
@@ -28,6 +28,7 @@ export default function SearchPage() {
     const [text, setText] = useState(q)
     const type = (params.get("type") as "ANIME" | "MANGA") || "ANIME"
     const genres = params.getAll("genre")
+    const offered = useGenres(GENRES)
     const season = params.get("season") ?? ""
     const year = params.get("year") ?? ""
     // A format of the other type (e.g. from an old link) isn't sent, as the select shows.
@@ -153,7 +154,7 @@ export default function SearchPage() {
                     )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {GENRES.map(g => {
+                    {offered.map(g => {
                         const on = genres.includes(g)
                         return (
                             <button

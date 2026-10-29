@@ -48,6 +48,11 @@ export function connectEvents(qc: QueryClient) {
                 // Whether a computer runs ani-cli for this one (features).
                 qc.invalidateQueries({ queryKey: ["status"] })
                 break
+            case "parental-updated":
+                // Parental controls set or lifted here: every page again,
+                // with or without what they block.
+                qc.invalidateQueries()
+                break
             case "history-updated":
                 // Watched on another Kumo of the same account: Continue
                 // watching and the episodes' positions.
