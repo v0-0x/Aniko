@@ -39,8 +39,9 @@ import {
 import { createContext, isValidElement, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
+import { DirPicker } from "@/components/DirPicker"
 import { LoginDialog } from "@/components/LoginDialog"
-import { Badge, Button, Dialog, EmptyState, Input, Select, Switch, Textarea } from "@/components/ui"
+import { Badge, Button, EmptyState, Input, Select, Switch, Textarea } from "@/components/ui"
 import { UpdateBanner, versionName } from "@/components/UpdateBanner"
 import { whatsNewStore } from "@/components/WhatsNew"
 import { api, desktop, type DesktopPrefs } from "@/lib/api"
@@ -553,66 +554,6 @@ function Collapsible({ title, children }: { title: string; children: React.React
         </div>
     )
     return search ? <SearchContext.Provider value={{ ...search, all }}>{body}</SearchContext.Provider> : body
-}
-
-function DirPicker({ open, onOpenChange, onPick, start }: { open: boolean; onOpenChange: (v: boolean) => void; onPick: (p: string) => void; start?: string }) {
-    const [path, setPath] = useState(start ?? "")
-    const { data, error } = useQuery({
-        queryKey: ["dirs", path],
-        // roots: the drives on Windows.
-        queryFn: () => api.get<{ path: string; parent: string; dirs: string[]; sep?: string; roots?: string[] | null }>(`/api/fs/dirs?path=${encodeURIComponent(path)}`),
-        enabled: open,
-    })
-    useEffect(() => {
-        if (open) setPath(start ?? "")
-    }, [open, start])
-    return (
-        <Dialog
-            open={open}
-            onOpenChange={onOpenChange}
-            title="Choose a folder"
-            className="w-[min(94vw,620px)]"
-            footer={
-                <Button
-                    variant="primary"
-                    onClick={() => {
-                        if (data) onPick(data.path)
-                        onOpenChange(false)
-                    }}
-                >
-                    Use this folder
-                </Button>
-            }
-        >
-            <Input value={data?.path ?? path} onChange={e => setPath(e.target.value)} onKeyDown={e => e.key === "Enter" && setPath((e.target as HTMLInputElement).value)} icon={<Folder className="size-4" />} />
-            {error && <p className="mt-2 text-sm text-rose-300">{(error as Error).message}</p>}
-            {!!data?.roots?.length && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                    {data.roots.map(r => (
-                        <Button key={r} size="xs" variant={data.path.toLowerCase().startsWith(r.toLowerCase()) ? "primary" : "subtle"} icon={<HardDrive className="size-3.5" />} onClick={() => setPath(r)}>
-                            {r.replace(/\\$/, "")}
-                        </Button>
-                    ))}
-                </div>
-            )}
-            <div className="mt-3 flex max-h-80 flex-col overflow-y-auto">
-                {data && data.parent !== data.path && (
-                    <button onClick={() => setPath(data.parent)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted hover:bg-white/[0.05]">
-                        <FolderOpen className="size-4" /> ..
-                    </button>
-                )}
-                {data?.dirs.map(d => (
-                    <button
-                        key={d}
-                        onClick={() => setPath(`${data.path.replace(/[\\/]$/, "")}${data.sep ?? "/"}${d}`)}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-white/[0.05]"
-                    >
-                        <Folder className="size-4 text-brand-strong" /> {d}
-                    </button>
-                ))}
-            </div>
-        </Dialog>
-    )
 }
 
 // Settings only the computer Kumo runs on may change (from a device on the
@@ -1325,6 +1266,11 @@ function SharingGroup({ draft, set }: SectionProps) {
                     <Switch checked={draft.sharing.autoSync ?? true} disabled={!trusted} onChange={v => set("sharing", { autoSync: v })} />
                 </Row>
             )}
+            {draft.sharing.enabled && peers.some(p => p.role === "hub") && (
+                <Row label="Same theme on all my devices" help="Through the Kumo Hub: the colors, the look and the player settings stay the same on the devices on your AniList account. Changed on one, they change on the others.">
+                    <Switch checked={draft.sharing.syncPrefs ?? true} disabled={!trusted} onChange={v => set("sharing", { syncPrefs: v })} />
+                </Row>
+            )}
             {draft.sharing.enabled !== !!saved?.enabled && <p className="px-4 py-3 text-xs text-amber-200/80">Save to turn library sharing {draft.sharing.enabled ? "on" : "off"}.</p>}
             {saved?.enabled && sharing && (
                 <>
@@ -1347,6 +1293,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                                 <p className="flex items-center gap-2 text-sm font-medium">
                                     <span className={cn("size-2 shrink-0 rounded-full", p.online ? "bg-emerald-400" : "bg-white/20")} />
                                     <span className="truncate">{p.name}</span>
+                                    {p.role === "hub" && <Badge tone="brand">Kumo Hub</Badge>}
                                 </p>
                                 <p className="mt-0.5 text-xs text-subtle">
                                     {[
@@ -1367,8 +1314,12 @@ function SharingGroup({ draft, set }: SectionProps) {
                                         {p.waking ? "Waking…" : "Wake"}
                                     </Button>
                                 )}
-                                <span className="text-xs text-muted">Share my library</span>
-                                <Switch checked={p.allowed} disabled={!trusted} onChange={v => call(() => api.post(`/api/sharing/peers/${p.id}`, { allowed: v }))} />
+                                {p.role !== "hub" && (
+                                    <>
+                                        <span className="text-xs text-muted">Share my library</span>
+                                        <Switch checked={p.allowed} disabled={!trusted} onChange={v => call(() => api.post(`/api/sharing/peers/${p.id}`, { allowed: v }))} />
+                                    </>
+                                )}
                                 {!p.online && trusted && (
                                     <button
                                         onClick={() => confirm(`Remove ${p.name} from the list? It shows up again when it's back on the network.`) && call(() => api.del(`/api/sharing/peers/${p.id}`))}
@@ -1381,9 +1332,10 @@ function SharingGroup({ draft, set }: SectionProps) {
                                 )}
                             </div>
                         </div>
+                        {p.role === "hub" && <HubPeer hub={p} trusted={trusted} loggedIn={!!status?.loggedIn} />}
                         {/* With the library: this computer's AniList account,
                             and downloading here (a TV has neither). */}
-                        {p.allowed && (
+                        {p.allowed && p.role !== "hub" && (
                             <div className="mt-3 ml-1 flex flex-col gap-3 border-l border-line pl-4">
                                 <PeerGrant
                                     label="Share my AniList account"
@@ -1404,7 +1356,13 @@ function SharingGroup({ draft, set }: SectionProps) {
                         {p.shares && p.sharesAccount && (
                             <div className="mt-3 ml-1 flex items-center justify-between gap-4 border-l border-line pl-4">
                                 <div className="min-w-0">
-                                    <p className="text-sm">{p.usingAccount ? `Using ${p.name}'s AniList account` : `${p.name} shares its AniList account with you`}</p>
+                                    <p className="text-sm">
+                                        {p.usingAccount
+                                            ? `Using ${p.role === "hub" ? "the AniList login" : `${p.name}'s AniList account`} ${p.role === "hub" ? `${p.name} gives this device` : ""}`.trim()
+                                            : p.role === "hub"
+                                              ? `${p.name} gives this device an AniList login`
+                                              : `${p.name} shares its AniList account with you`}
+                                    </p>
                                     <p className="mt-0.5 text-xs text-subtle">
                                         {p.usingAccount ? "Your list and progress here are that account's." : "Use it here instead of this device's own login."}
                                     </p>
@@ -1442,6 +1400,71 @@ function SharingGroup({ draft, set }: SectionProps) {
                 </>
             )}
         </Group>
+    )
+}
+
+// A Kumo Hub around: its owner shares its library with this device (on its
+// dashboard), and this device can give it its AniList login, settings and
+// watch history, for the account's other devices.
+function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolean; loggedIn: boolean }) {
+    const [busy, setBusy] = useState<"" | "send" | "account">("")
+    const qc = useQueryClient()
+    const run = async (what: "send" | "account") => {
+        setBusy(what)
+        try {
+            if (what === "send") {
+                const r = await api.post<{ message: string }>(`/api/sharing/hubs/${hub.id}/send`)
+                toast.success(r.message)
+            } else {
+                await api.post(`/api/sharing/hubs/${hub.id}/account`)
+                toast.success(`${hub.name} has your AniList login`)
+            }
+            qc.invalidateQueries({ queryKey: ["sharing"] })
+        } catch (e) {
+            toast.error((e as Error).message)
+        } finally {
+            setBusy("")
+        }
+    }
+    if (!hub.shares)
+        return (
+            <p className="mt-3 ml-1 border-l border-line pl-4 text-xs leading-relaxed text-subtle">
+                {hub.online ? (
+                    <>
+                        Waiting for the hub to share with this device: on its dashboard (<span className="text-muted">http://{hub.address}</span>), turn on Devices › this device › Share the library.
+                    </>
+                ) : (
+                    "The hub is off or away."
+                )}
+            </p>
+        )
+    if (!trusted || !loggedIn)
+        return (
+            <p className="mt-3 ml-1 border-l border-line pl-4 text-xs leading-relaxed text-subtle">
+                It keeps this device in step with the others on the same AniList account.
+            </p>
+        )
+    return (
+        <div className="mt-3 ml-1 flex flex-col gap-3 border-l border-line pl-4">
+            <div className="flex items-center justify-between gap-4 max-sm:flex-wrap">
+                <div className="min-w-0">
+                    <p className="text-sm">Send it everything from this device</p>
+                    <p className="mt-0.5 text-xs text-subtle">Your AniList login, your theme and player settings, and every position you've watched: your other devices start where this one is.</p>
+                </div>
+                <Button size="sm" variant="primary" loading={busy === "send"} disabled={!!busy && busy !== "send"} onClick={() => run("send")}>
+                    Send
+                </Button>
+            </div>
+            <div className="flex items-center justify-between gap-4 max-sm:flex-wrap">
+                <div className="min-w-0">
+                    <p className="text-sm">Give it my AniList login</p>
+                    <p className="mt-0.5 text-xs text-subtle">The hub can then give your account to devices that aren't logged in (a TV), when you choose so on its dashboard.</p>
+                </div>
+                <Button size="sm" loading={busy === "account"} disabled={!!busy && busy !== "account"} onClick={() => run("account")}>
+                    Give
+                </Button>
+            </div>
+        </div>
     )
 }
 
@@ -1685,6 +1708,7 @@ function TranscodeSection({ draft, set }: SectionProps) {
                             { value: "vaapi", label: "VA-API (AMD / Intel)" },
                             { value: "nvenc", label: "NVENC (NVIDIA)" },
                             { value: "qsv", label: "Quick Sync (Intel)" },
+                            { value: "v4l2m2m", label: "V4L2 (Raspberry Pi)" },
                         ]}
                     />
                 </Row>

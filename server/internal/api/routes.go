@@ -26,6 +26,7 @@ import (
 func (s *Server) routes() {
 	m := s.mux
 	s.peerRoutes()
+	s.hubRoutes()
 	s.noteRoutes()
 	s.cleanupRoutes()
 	s.backupRoutes()
@@ -424,7 +425,10 @@ func (s *Server) status(r *http.Request) (any, error) {
 	_, feat.YtDlp = util.LookPath("yt-dlp")
 	_, feat.XdgOpen = util.LookPath("xdg-open")
 	feat.XdgOpen = feat.XdgOpen || runtime.GOOS == "windows" || runtime.GOOS == "darwin" // Explorer, Finder
-	kind := map[clientKind]string{clientShell: "desktop", clientLocal: "local", clientLAN: "lan"}[kindOf(r)]
+	kind := map[clientKind]string{clientShell: "desktop", clientLocal: "local", clientLAN: "lan", clientOwner: "owner"}[kindOf(r)]
+	if s.app.HubStore != nil && kindOf(r) == clientLAN {
+		return s.hubStatus(r, nil), nil
+	}
 	host, _ := os.Hostname()
 	var lan []string
 	if cfg.Server.AllowLAN {
@@ -436,7 +440,7 @@ func (s *Server) status(r *http.Request) (any, error) {
 	if isTrusted(r) {
 		prompts = s.app.Share.Prompts()
 	}
-	return map[string]any{
+	st := map[string]any{
 		"version":        config.AppVersion,
 		"appName":        config.AppName,
 		"user":           s.app.Platform.Viewer(),
@@ -461,7 +465,11 @@ func (s *Server) status(r *http.Request) (any, error) {
 		"webUiForced":  s.ForceWebUI,
 		"setupRunning": setupRunning(),
 		"settings":     settingsFor(r, cfg),
-	}, nil
+	}
+	if s.app.HubStore != nil {
+		return s.hubStatus(r, st), nil
+	}
+	return st, nil
 }
 
 func (s *Server) saveSettings(r *http.Request) (any, error) {

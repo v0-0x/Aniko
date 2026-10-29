@@ -53,6 +53,10 @@ func (s *Service) SealAccount(c Caller) (SealedAccount, error) {
 		return SealedAccount{}, errors.New("this Kumo doesn't share its AniList account with you")
 	}
 	token := s.accountToken()
+	// A hub gives each device the login chosen for it.
+	if s.Hub != nil {
+		token = s.Hub.Token(s.Hub.DeviceAccount(c.ID))
+	}
 	if token == "" {
 		return SealedAccount{}, errNoAccount
 	}

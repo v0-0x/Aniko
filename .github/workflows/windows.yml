@@ -43,6 +43,7 @@ on:
       - "packaging/macos/**"
       - "android/**"
       - "packaging/android/**"
+      - "packaging/hub/**"
   workflow_dispatch:
     inputs:
       publish:

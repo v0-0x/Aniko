@@ -10,7 +10,8 @@ export class ApiError extends Error {
     }
 }
 
-type Listener = () => void
+// Told what the server said (hub: it's a Kumo Hub's dashboard).
+type Listener = (data: { hub?: boolean } | null) => void
 const authListeners = new Set<Listener>()
 export function onPasswordRequired(fn: Listener) {
     authListeners.add(fn)
@@ -32,7 +33,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
         data = text
     }
     if (!res.ok) {
-        if (res.status === 401 && data?.passwordRequired) authListeners.forEach(fn => fn())
+        if (res.status === 401 && data?.passwordRequired) authListeners.forEach(fn => fn(data))
         const msg = (data && typeof data === "object" && data.error) || (typeof data === "string" && data) || res.statusText
         throw new ApiError(msg, res.status, data)
     }

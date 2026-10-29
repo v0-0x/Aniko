@@ -434,3 +434,11 @@ func cleanName(s string) string {
 	}
 	return s
 }
+
+// cleanRole is what another Kumo says it is: RoleHub, or nothing.
+func cleanRole(s string) string {
+	if s == RoleHub {
+		return s
+	}
+	return ""
+}

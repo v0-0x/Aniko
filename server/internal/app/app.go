@@ -26,6 +26,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/extensions"
 	"github.com/simo1337s/animetest/server/internal/history"
 	"github.com/simo1337s/animetest/server/internal/images"
+	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
 	"github.com/simo1337s/animetest/server/internal/lifecycle"
 	"github.com/simo1337s/animetest/server/internal/manga"
@@ -77,6 +78,13 @@ type App struct {
 	ShellToken string
 	DataDir    string
 
+	// HubStore is set when Kumo runs as a Kumo Hub (kumo --hub, package
+	// kumohub): it plays nothing, shares its library with the Kumo apps on
+	// the network and keeps them in step; the heavy parts don't run.
+	HubStore *kumohub.Store
+	Streams  *kumohub.Streams
+	Sampler  *kumohub.Sampler
+
 	prefetch *prefetcher
 
 	ctx    context.Context
@@ -108,7 +116,17 @@ func (l *LogBuffer) Lines() []string {
 	return append([]string(nil), l.lines...)
 }
 
-func New(dataDir string) (*App, error) {
+// Options say how Kumo runs.
+type Options struct {
+	// Hub: as a Kumo Hub (see App.HubStore).
+	Hub bool
+}
+
+func New(dataDir string, opts ...Options) (*App, error) {
+	var opt Options
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 	logs := &LogBuffer{out: os.Stderr}
 	log.SetOutput(logs)
 	log.SetFlags(log.LstdFlags)
@@ -153,6 +171,17 @@ func New(dataDir string) (*App, error) {
 	if a.Share, err = share.New(d, settings, files, hub); err != nil {
 		return nil, fmt.Errorf("library sharing: %w", err)
 	}
+	if opt.Hub {
+		if a.HubStore, err = kumohub.New(d); err != nil {
+			return nil, fmt.Errorf("hub: %w", err)
+		}
+		a.Streams = kumohub.NewStreams()
+		// It updates from its own releases (hub-v…).
+		a.Update.GOOS = update.HubSystem
+		if err := a.hubSettings(); err != nil {
+			return nil, err
+		}
+	}
 	// Libraries other Kumo apps share with this one show with its own.
 	lib.Remote = a.Share.RemoteFiles
 	a.ShellToken = randomToken()
@@ -193,9 +222,14 @@ func (a *App) wire() {
 	}
 	a.Share.OnFiles = a.prefetchLibrary
 	// Kumos on the same AniList account keep their watch histories in step,
-	// as positions are saved.
-	a.Share.History = a.History
-	a.History.OnChange = a.Share.HistoryChanged
+	// as positions are saved. A hub keeps every account's instead (hub.go).
+	if a.HubStore != nil {
+		a.wireHub()
+	} else {
+		a.Share.History = a.History
+		a.History.OnChange = a.Share.HistoryChanged
+		a.wirePrefs()
+	}
 	a.Share.OnWatchedElsewhere = func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()
@@ -210,6 +244,10 @@ func (a *App) wire() {
 		return host != "" || err != nil, err
 	}
 	a.Share.User = func() int {
+		// A hub is on each device's account, not one of its own.
+		if a.HubStore != nil {
+			return 0
+		}
 		if v := a.Platform.Viewer(); v != nil {
 			return v.ID
 		}
@@ -408,6 +446,10 @@ func (a *App) AccountChanged() {
 
 // Start runs the background jobs.
 func (a *App) Start() {
+	if a.HubStore != nil {
+		a.startHub()
+		return
+	}
 	a.Share.Start()
 	go a.runPrefetch(a.ctx)
 	a.Extensions.LoadAll()

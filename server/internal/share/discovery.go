@@ -35,6 +35,8 @@ type beacon struct {
 	// Ask: what this Kumo shares with the one it's sent to changed: ask
 	// again now.
 	Ask bool `json:"ask,omitempty"`
+	// Role: RoleHub on a Kumo Hub.
+	Role string `json:"role,omitempty"`
 }
 
 const protocol = 1

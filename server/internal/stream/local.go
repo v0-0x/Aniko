@@ -16,6 +16,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/simo1337s/animetest/server/internal/config"
@@ -31,6 +33,10 @@ type Local struct {
 	settings *config.Store
 	files    *library.Store
 	db       *db.DB
+	// MaxTranscodes: how many videos may be converted at once (0: any). A
+	// Kumo Hub's small computer converts one or two at most.
+	MaxTranscodes int
+	transcoding   atomic.Int32
 }
 
 func NewLocal(s *config.Store, f *library.Store, d *db.DB) *Local {
@@ -386,6 +392,10 @@ func (pl plan) args(cfg config.Settings, p *Probe, path string, start float64) [
 			args = append(args, "-c:v", "h264_nvenc", "-preset", "p4", "-cq", "23")
 		case "qsv":
 			args = append(args, "-c:v", "h264_qsv", "-global_quality", "23")
+		case "v4l2m2m":
+			// A Raspberry Pi's encoder: 8-bit 4:2:0 up to 1080p, by bitrate.
+			args = append(args, "-vf", "scale='min(1920,iw)':-2,format=yuv420p", "-c:v", "h264_v4l2m2m",
+				"-b:v", "6M", "-maxrate", "8M", "-bufsize", "12M", "-g", "48")
 		default:
 			args = append(args, "-c:v", "libx264", "-preset", cfg.Transcode.Preset, "-crf", "21", "-pix_fmt", "yuv420p", "-profile:v", "high")
 		}
@@ -552,6 +562,14 @@ func (l *Local) ServeTranscode(w http.ResponseWriter, r *http.Request, path stri
 	}
 	pl := l.plan(p, method, audio, caps, false)
 	method = pl.method
+	if method == "transcode" {
+		release, ok := l.TranscodeSlot()
+		if !ok {
+			http.Error(w, "this computer is converting as many videos as it can already: try again when one stops", http.StatusServiceUnavailable)
+			return
+		}
+		defer release()
+	}
 	args := append(pl.args(cfg, p, path, start), "-movflags", "frag_keyframe+empty_moov+default_base_moof", "-f", "mp4", "pipe:1")
 
 	// ffmpeg is stopped when the request ends, or as soon as the player stops
@@ -646,4 +664,53 @@ func (l *Local) ServeSubtitle(w http.ResponseWriter, r *http.Request, path strin
 	}
 	l.db.SetCache(key, string(out), 7*24*time.Hour)
 	_, _ = w.Write(out)
+}
+
+// TranscodeSlot takes one of the conversions allowed at once (see
+// MaxTranscodes): release gives it back; false when none is free.
+func (l *Local) TranscodeSlot() (release func(), ok bool) {
+	if l.MaxTranscodes <= 0 {
+		return func() {}, true
+	}
+	if n := l.transcoding.Add(1); int(n) > l.MaxTranscodes {
+		l.transcoding.Add(-1)
+		return nil, false
+	}
+	var once sync.Once
+	return func() { once.Do(func() { l.transcoding.Add(-1) }) }, true
+}
+
+// Transcoding is how many videos are being converted now.
+func (l *Local) Transcoding() int { return int(l.transcoding.Load()) }
+
+// Encoder is what converts video that can't be played as it is: the
+// encoder ffmpeg is told to use, "" when ffmpeg isn't there.
+func (l *Local) Encoder() string {
+	cfg := l.settings.Get()
+	if _, ok := util.LookPath(cfg.Transcode.FfmpegPath); !ok {
+		return ""
+	}
+	switch cfg.Transcode.HwAccel {
+	case "vaapi":
+		return "h264_vaapi"
+	case "nvenc":
+		return "h264_nvenc"
+	case "qsv":
+		return "h264_qsv"
+	case "v4l2m2m":
+		return "h264_v4l2m2m"
+	}
+	return "libx264"
+}
+
+// HasV4L2Encoder reports a Raspberry Pi's video encoder, as ffmpeg can use
+// it (h264_v4l2m2m, and the Pi's encoder device).
+func HasV4L2Encoder(ffmpeg string) bool {
+	if _, err := os.Stat("/dev/video11"); err != nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, ffmpeg, "-hide_banner", "-encoders").Output()
+	return err == nil && strings.Contains(string(out), "h264_v4l2m2m")
 }

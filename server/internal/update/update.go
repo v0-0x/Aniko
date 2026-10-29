@@ -357,6 +357,11 @@ func (c *Checker) applyable() (bool, string) {
 		return c.macApplyable(exe, err)
 	case "android":
 		return true, "Kumo downloads the new version and Android asks you to install it."
+	case HubSystem:
+		if err != nil || !c.Writable(filepath.Dir(exe)) {
+			return false, "The hub's program can't be replaced where it is: install the hub again with its install script."
+		}
+		return true, "The hub downloads the new version, swaps it in and starts again (a few seconds)."
 	}
 	return false, "Kumo can't update itself on this system."
 }
@@ -596,8 +601,12 @@ func (c *Checker) against(ctx context.Context, g *github, latest *Version, what 
 // fromReleases: Windows, macOS and Android update from GitHub Releases,
 // Linux from the default branch.
 func fromReleases(goos string) bool {
-	return goos == "windows" || goos == "darwin" || goos == "android"
+	return goos == "windows" || goos == "darwin" || goos == "android" || goos == HubSystem
 }
+
+// HubSystem is what a Kumo Hub updates as (Checker.GOOS): its own releases,
+// hub-v<version>, one archive per processor (see applyHub).
+const HubSystem = "hub"
 
 // releasePrefix starts the tags of a system's releases: <prefix><version>.
 func releasePrefix(goos string) string {
@@ -606,6 +615,8 @@ func releasePrefix(goos string) string {
 		return "macos-v"
 	case "android":
 		return "android-v"
+	case HubSystem:
+		return "hub-v"
 	}
 	return "windows-v"
 }
@@ -617,6 +628,8 @@ func releaseAsset(goos, version string) string {
 		return "Kumo-" + version + "-macos-universal.zip"
 	case "android":
 		return "Kumo-" + version + "-android.apk"
+	case HubSystem:
+		return HubArchive(version, runtime.GOARCH)
 	}
 	return "Kumo-Setup-" + version + "-windows-x64.exe"
 }
@@ -628,6 +641,8 @@ func releaseFile(goos string) string {
 		return "zip of the app"
 	case "android":
 		return "APK"
+	case HubSystem:
+		return "archive for this computer"
 	}
 	return "installer"
 }
@@ -643,7 +658,7 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 	prefix := releasePrefix(c.GOOS)
 	best := pickRelease(releases, prefix, c.beta())
 	if best == nil {
-		system := map[string]string{"darwin": "macOS", "android": "Android"}[c.GOOS]
+		system := map[string]string{"darwin": "macOS", "android": "Android", HubSystem: "the Kumo Hub"}[c.GOOS]
 		if system == "" {
 			system = "Windows"
 		}
@@ -803,6 +818,8 @@ func (c *Checker) Apply() error {
 			err = c.applyMac(c.ctx, g, target, inst)
 		case "android":
 			err = c.applyAndroid(c.ctx, g, target, inst)
+		case HubSystem:
+			err = c.applyHub(c.ctx, g, target, inst)
 		default:
 			err = c.applyLinux(c.ctx, g, target)
 		}

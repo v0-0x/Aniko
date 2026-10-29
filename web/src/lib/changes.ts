@@ -6,6 +6,21 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 10,
+        title: "Kumo Hub",
+        changes: [
+            {
+                title: "A hub for your home",
+                text: "Kumo Hub is Kumo for a Raspberry Pi (or any Linux computer that stays on): it shares its library with your computers, TVs and phones, and keeps the devices on the same AniList account in step as you watch: stop on the TV, carry on from the same second on the computer. Its dashboard, in a browser, shows what it's streaming to whom and how the Pi is doing. To set one up, see packaging/hub/README.md on GitHub.",
+            },
+            {
+                title: "With a hub",
+                text: "Settings › Other devices shows the hub. Send it your AniList login, theme and watch history from your main device, and your other devices start where it is; your theme and player settings then stay the same on all of them. Devices you allow can download onto the hub.",
+                to: "/settings?tab=devices",
+            },
+        ],
+    },
+    {
         id: 9,
         title: "Episodes in the player",
         changes: [

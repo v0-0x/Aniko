@@ -141,7 +141,7 @@ type TranscodeSettings struct {
 	// "auto" picks direct play when the browser can decode the file,
 	// remux when only the container is the problem, transcode otherwise.
 	Mode      string `json:"mode"`
-	HwAccel   string `json:"hwAccel"` // "", "vaapi", "nvenc", "qsv"
+	HwAccel   string `json:"hwAccel"` // "", "vaapi", "nvenc", "qsv", "v4l2m2m" (Raspberry Pi)
 	VaapiNode string `json:"vaapiNode"`
 	Preset    string `json:"preset"`
 }
@@ -215,6 +215,10 @@ type SharingSettings struct {
 	// AutoSync: Continue watching is synced with the paired Kumos when they
 	// come back, without pressing Sync.
 	AutoSync bool `json:"autoSync"`
+	// SyncPrefs: with a Kumo Hub, the theme and the like (SharedPrefs) are
+	// the same on every device on this AniList account: changed here, they
+	// change there.
+	SyncPrefs bool `json:"syncPrefs"`
 }
 
 type ServerSettings struct {
@@ -338,7 +342,7 @@ func Defaults() Settings {
 		},
 		Discord:    DiscordSettings{RichPresence: false},
 		Extensions: ExtensionSettings{MarketplaceURL: DefaultMarketplaceURL},
-		Sharing:    SharingSettings{KeepAwake: true, AutoSync: true},
+		Sharing:    SharingSettings{KeepAwake: true, AutoSync: true, SyncPrefs: true},
 		Notify:     NotifySettings{NewEpisodes: true, Downloads: true},
 		Updates:    UpdateSettings{Channel: "stable"},
 	}

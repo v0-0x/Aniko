@@ -134,6 +134,16 @@ Kumo for Android is made for TVs (a Fire TV Stick, Android TV) and plays the lib
 
 When something doesn't play right on the TV (no picture, it stops), the TV writes what it saw to its log and to the computer's (Settings › Logs & cache), which helps find out why.
 
+## Kumo Hub (Raspberry Pi)
+
+Kumo Hub is Kumo without a player, for a computer that stays on, like a Raspberry Pi 4: it shares its library with the Kumo apps at home, streams to them (converting with the Pi's video chip what a device can't play), keeps the devices on the same AniList account in step as they watch (progress, list, theme), takes their downloads if you let it, and has a dashboard in the browser showing what it streams to whom and how the Pi is doing. On the Pi:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/v0-0x/kumo-anime/HEAD/packaging/hub/install.sh | bash
+```
+
+Then open `http://<your Pi>.local:43211` and follow [packaging/hub/README.md](packaging/hub/README.md). Releases are tagged `hub-vX.Y.Z`; the hub updates itself from its dashboard.
+
 ## Development
 
 ```bash

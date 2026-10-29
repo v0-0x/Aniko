@@ -49,12 +49,36 @@ const MangaReaderPage = lazy(() => import("./pages/MangaReader"))
 const WebviewPage = lazy(() => import("./pages/Webview"))
 const ProfilePage = lazy(() => import("./pages/Profile"))
 
+// A Kumo Hub (kumo --hub) shows its dashboard instead of the app.
+const HubApp = lazy(() => import("./pages/hub/HubApp"))
+
 export default function App() {
+    const { data: status, isError, isFetching } = useStatus()
+    const needsPassword = useStore(passwordStore)
+    useEffect(() => {
+        const off = onPasswordRequired(d => passwordStore.set(d?.hub ? "hub" : true))
+        return () => {
+            off()
+        }
+    }, [])
+    if (needsPassword) return <PasswordGate hub={needsPassword === "hub"} />
+    if (status?.hub)
+        return (
+            <Suspense fallback={<div className="h-full bg-frame" />}>
+                <HubApp status={status} />
+            </Suspense>
+        )
+    // Until the server says what it is (a moment): not the app's pages
+    // asking it for things.
+    if (!status && (!isError || isFetching)) return <div className="h-full bg-frame" />
+    return <KumoApp />
+}
+
+function KumoApp() {
     const qc = useQueryClient()
     const navigate = useNavigate()
     const location = useLocation()
     const { data: status } = useStatus()
-    const needsPassword = useStore(passwordStore)
     // The desktop app's small picture-in-picture window (lib/pip.ts): only
     // the player.
     const mini = location.pathname === "/mini"
@@ -91,13 +115,6 @@ export default function App() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [],
     )
-    useEffect(() => {
-        const off = onPasswordRequired(() => passwordStore.set(true))
-        return () => {
-            off()
-        }
-    }, [])
-
     // Apply UI preferences. Settings previews the colors and holiday theme
     // before they're saved; when that preview ends (Discard, leaving the
     // page) the saved ones come back. The date is looked at again each hour:
@@ -146,7 +163,6 @@ export default function App() {
         api.post("/api/plugins/navigate", { pathname: location.pathname, searchParams: sp }).catch(() => {})
     }, [location.pathname, location.search])
 
-    if (needsPassword) return <PasswordGate />
     if (mini) return <MiniPlayer />
 
     return (
@@ -242,7 +258,7 @@ function MiniPlayer() {
     )
 }
 
-function PasswordGate() {
+function PasswordGate({ hub }: { hub?: boolean }) {
     const [pw, setPw] = useState("")
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState("")
@@ -264,8 +280,8 @@ function PasswordGate() {
         <div className="grid h-full place-items-center bg-bg p-6">
             <div className="card w-full max-w-sm p-8 text-center rise-in">
                 <KumoLogo className="mx-auto size-11" />
-                <h1 className="mt-4 text-xl font-semibold">Kumo</h1>
-                <p className="mt-1 text-sm text-muted">This server is password protected.</p>
+                <h1 className="mt-4 text-xl font-semibold">{hub ? "Kumo Hub" : "Kumo"}</h1>
+                <p className="mt-1 text-sm text-muted">{hub ? "Sign in to the hub's dashboard with its password." : "This server is password protected."}</p>
                 <div className="mt-6 flex flex-col gap-3">
                     <Input type="password" autoFocus icon={<Lock className="size-4" />} placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} />
                     {err && <p className="text-sm text-rose-300">{err}</p>}

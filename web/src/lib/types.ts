@@ -222,7 +222,9 @@ export type Settings = {
     // downloadTo: the Kumo this one's downloads go to (its ID; "" here).
     // keepAwake: don't let this computer sleep while another device plays its
     // files. autoSync: sync watch history when a paired device comes back.
-    sharing: { enabled: boolean; name: string; downloadTo?: string; keepAwake?: boolean; autoSync?: boolean }
+    // syncPrefs: the theme and player settings kept in step with the other
+    // devices on the same AniList account, through a Kumo Hub.
+    sharing: { enabled: boolean; name: string; downloadTo?: string; keepAwake?: boolean; autoSync?: boolean; syncPrefs?: boolean }
     notify?: { newEpisodes: boolean; downloads: boolean }
     // Which releases Kumo updates to: stable ones, or betas too.
     updates?: { channel: "stable" | "beta" }
@@ -265,7 +267,11 @@ export type Status = {
     loggedIn: boolean
     anilistAuthUrl: string
     features: { mpv: boolean; ffmpeg: boolean; ffprobe: boolean; aniCli: boolean; aniCliHost?: string; ytDlp: boolean; xdgOpen: boolean }
-    client: "desktop" | "local" | "lan"
+    // owner: a browser on the network signed in to a Kumo Hub's dashboard.
+    client: "desktop" | "local" | "lan" | "owner"
+    // A Kumo Hub (kumo --hub): it shows its dashboard, not the app. setup:
+    // its password isn't set yet (set with its setup code).
+    hub?: { setup: boolean }
     hostname: string
     platform?: string // "linux", "windows"…
     scanning: boolean
@@ -628,6 +634,7 @@ export type SharingPeer = {
     waking?: boolean
     platform?: string // what it runs on ("android": a TV)
     declined?: boolean // asked on Home whether to share with it: "not now"
+    role?: "hub" // a Kumo Hub (no player: it shares and keeps devices in step)
 }
 
 export type SharingStatus = { enabled: boolean; id: string; name: string; listening: boolean; peers: SharingPeer[]; addresses: string[] }
@@ -688,3 +695,75 @@ export type Activity = {
 }
 
 export type ActivityPage = { items: Activity[]; hasMore: boolean }
+
+// A Kumo Hub's dashboard (GET /api/hub/overview; server: api/hub.go).
+export type HubSystem = {
+    model: string // "Raspberry Pi 4 Model B Rev 1.4"
+    hostname: string
+    arch: string
+    cores: number
+    cpu: number // all cores, 0-100
+    kumoCpu: number // the hub's own share
+    load: number
+    memTotal: number
+    memUsed: number
+    kumoMem: number
+    temp: number // °C, 0 unknown
+    throttled: boolean // the Pi slows itself down (heat, power)
+    uptime: number // seconds
+    started: number // ms
+    netRx: number // bytes a second
+    netTx: number
+    disks: { path: string; total: number; free: number }[] | null
+}
+
+export type HubStream = {
+    id: number
+    device: string
+    file: string
+    kind: "file" | "remux" | "transcode" | "hls"
+    started: number // ms
+    ended?: number
+    bytes: number
+    rate: number // bytes a second
+}
+
+export type HubPlaying = {
+    device: string
+    name: string
+    user: number
+    mediaId: number
+    episode: number
+    position: number
+    duration: number
+    at: number // ms
+    title: string
+    cover: string
+}
+
+export type HubDevice = SharingPeer & {
+    user: number // the AniList account it's on (0: none)
+    accountUser: number // the login the hub gives it (with account)
+}
+
+export type HubAccount = { user: number; name: string; avatar: string; givenBy: string; addedAt: number; devices: number; history: number }
+
+export type HubEvent = { at: number; kind: string; device?: string; user?: number; text: string; mediaId?: number; episode?: number; title?: string }
+
+export type HubOverview = {
+    name: string
+    version: string
+    addresses: string[] | null
+    port: number
+    system: HubSystem
+    streams: HubStream[]
+    recent: HubStream[]
+    sent: number
+    playing: HubPlaying[]
+    devices: HubDevice[]
+    accounts: HubAccount[]
+    activity: HubEvent[] | null
+    library: { folders: string[] | null; files: number; anime: number; size: number; unmatched: number; scanning: boolean }
+    encoder: string // "" no ffmpeg
+    downloads: number
+}

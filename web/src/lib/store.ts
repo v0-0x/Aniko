@@ -51,7 +51,8 @@ export type PlayerRequest =
 
 export const playerStore = createStore<PlayerRequest | null>(null)
 
-export const passwordStore = createStore<boolean>(false)
+// The server asks for its password ("hub": a Kumo Hub's dashboard does).
+export const passwordStore = createStore<boolean | "hub">(false)
 
 export const searchOpenStore = createStore<boolean>(false)
 
