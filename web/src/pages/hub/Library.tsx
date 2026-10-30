@@ -96,10 +96,18 @@ export default function Library({ o, status }: { o: HubOverview; status: Status 
                                             </p>
                                             {d.status === "downloading" ? (
                                                 <div className="mt-1.5 flex items-center gap-2">
-                                                    <Progress value={d.progress} className="h-1 flex-1" />
-                                                    <span className="shrink-0 text-xs text-muted tabular-nums">
-                                                        {Math.floor(d.progress * 100)}% {d.speed && `· ${d.speed}`}
-                                                    </span>
+                                                    {d.done && !d.progress ? (
+                                                        <span className="text-xs text-muted tabular-nums">
+                                                            {d.done} downloaded {d.speed && `· ${d.speed}`}
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <Progress value={d.progress} className="h-1 flex-1" />
+                                                            <span className="shrink-0 text-xs text-muted tabular-nums">
+                                                                {Math.floor(d.progress * 100)}% {d.speed && `· ${d.speed}`} {d.eta && `· ${d.eta} left`}
+                                                            </span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <p className="text-xs text-muted">{d.status === "failed" ? d.error || "Failed" : d.status === "completed" ? "Done" : "Waiting"}</p>

@@ -384,6 +384,8 @@ export type DownloadItem = {
     progress: number
     speed: string
     eta: string
+    // How much video is downloaded when the length isn't known ("12:30").
+    done?: string
     error?: string
     output?: string
     createdAt: number

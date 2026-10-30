@@ -50,6 +50,7 @@ type Item struct {
 	Progress   float64           `json:"progress"` // 0-1
 	Speed      string            `json:"speed"`
 	ETA        string            `json:"eta"`
+	Done       string            `json:"done,omitempty"` // how much so far when the total isn't known (ffmpeg: minutes of video)
 	Error      string            `json:"error,omitempty"`
 	Output     string            `json:"output,omitempty"`
 	Quality    string            `json:"quality,omitempty"`
@@ -147,7 +148,7 @@ func (m *Manager) load() {
 			continue
 		}
 		if active(it.Status) {
-			it.Status, it.Progress, it.Speed, it.ETA = StatusQueued, 0, "", ""
+			it.Status, it.Progress, it.Speed, it.ETA, it.Done = StatusQueued, 0, "", "", ""
 			m.restored = append(m.restored, it.ID)
 		}
 		m.items[it.ID] = &it
@@ -275,7 +276,7 @@ func (m *Manager) Cancel(id string) {
 		m.mu.Unlock()
 		return
 	}
-	it.Status, it.Speed, it.ETA = StatusCanceled, "", ""
+	it.Status, it.Speed, it.ETA, it.Done = StatusCanceled, "", "", ""
 	r := m.runs[id]
 	if r != nil {
 		r.stale = true
@@ -298,7 +299,7 @@ func (m *Manager) Retry(id string) error {
 		m.mu.Unlock()
 		return nil
 	}
-	it.Status, it.Error, it.Progress, it.Speed, it.ETA = StatusQueued, "", 0, "", ""
+	it.Status, it.Error, it.Progress, it.Speed, it.ETA, it.Done = StatusQueued, "", 0, "", "", ""
 	// A canceled run that is still stopping requeues the item once it's done.
 	if m.runs[id] == nil {
 		m.queue(id)
@@ -395,7 +396,7 @@ func (m *Manager) execute(r *run) {
 	} else {
 		it.Status, it.Progress = StatusCompleted, 1
 	}
-	it.Speed, it.ETA = "", ""
+	it.Speed, it.ETA, it.Done = "", "", ""
 	done := *it
 	m.mu.Unlock()
 	m.save(it, true)
@@ -649,11 +650,16 @@ func (m *Manager) ffmpeg(r *run, res *Resolved, out, ffmpegPath, ffprobePath str
 		return a
 	}
 
-	// Probe the duration to compute a percentage.
-	var duration float64
-	if p, ok := util.LookPath(ffprobePath); ok {
+	// How long the episode is, for a percentage: from its HLS playlist,
+	// else from ffprobe.
+	duration := hlsLength(ctx, res)
+	if p, ok := util.LookPath(ffprobePath); ok && duration <= 0 {
 		pctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		args := append(headerArgs(), "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", res.URL)
+		args := headerArgs()
+		if hlsExtensionPicky(ffmpegPath) {
+			args = append(args, "-extension_picky", "0")
+		}
+		args = append(args, "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", res.URL)
 		if b, err := exec.CommandContext(pctx, p, args...).Output(); err == nil {
 			duration, _ = strconv.ParseFloat(strings.TrimSpace(string(b)), 64)
 		}
@@ -671,19 +677,34 @@ func (m *Manager) ffmpeg(r *run, res *Resolved, out, ffmpegPath, ffprobePath str
 	cmd := exec.CommandContext(ctx, ffmpegPath, args...)
 	cmd.WaitDelay = 10 * time.Second
 	progress := m.progress(r)
+	// Times faster than real time, from ffmpeg's "speed=12.5x".
+	var speed float64
 	stdout := &lineWriter{fn: func(line string) {
 		k, v, ok := strings.Cut(line, "=")
 		if !ok {
 			return
 		}
 		switch k {
-		case "out_time_us", "out_time_ms":
-			us, _ := strconv.ParseFloat(v, 64)
-			if duration > 0 {
-				progress(func(it *Item) { it.Progress = min(us/1e6/duration, 0.99) })
+		case "out_time_us", "out_time_ms": // both in microseconds
+			us, err := strconv.ParseFloat(v, 64)
+			if err != nil || us < 0 {
+				return
 			}
+			done := us / 1e6
+			progress(func(it *Item) {
+				if duration > 0 {
+					it.Progress = min(done/duration, 0.99)
+					if speed > 0 {
+						it.ETA = clock(max(duration-done, 0) / speed)
+					}
+				} else {
+					it.Done = clock(done)
+				}
+			})
 		case "speed":
-			progress(func(it *Item) { it.Speed = strings.TrimSpace(v) })
+			v = strings.TrimSpace(v)
+			speed, _ = strconv.ParseFloat(strings.TrimSuffix(v, "x"), 64)
+			progress(func(it *Item) { it.Speed = v })
 		}
 	}}
 	var lastErr string

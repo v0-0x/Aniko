@@ -6,6 +6,17 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 17,
+        title: "Download progress from the hub",
+        changes: [
+            {
+                title: "Downloads show how far they are",
+                text: "Episodes downloaded with ffmpeg (the hub's way, and a computer's without yt-dlp) stayed at 0% until they were done. They now show their percentage and the time left, or the minutes downloaded when the episode's length can't be found.",
+                to: "/downloads",
+            },
+        ],
+    },
+    {
         id: 16,
         title: "Search opens the Search page",
         changes: [

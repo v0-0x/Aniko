@@ -134,6 +134,8 @@ function HostDownloads({ host, items, error, refetch, local }: { host: string; i
 function Row({ item, onCancel, onRetry, onRemove }: { item: DownloadItem; onCancel?: () => void; onRetry?: () => void; onRemove?: () => void }) {
     const statusLabel = { queued: "Queued", resolving: "Resolving stream", downloading: "Downloading", completed: "Completed", failed: "Failed", canceled: "Canceled" }[item.status]
     const tone = { queued: "gray", resolving: "blue", downloading: "brand", completed: "green", failed: "red", canceled: "gray" }[item.status] as "gray"
+    // Its length isn't known: how much is downloaded, instead of a percentage.
+    const soFar = item.done && !item.progress
     return (
         <div className="card flex items-center gap-4 p-3 pr-4">
             <Link to={`/entry?id=${item.mediaId}`} className="shrink-0">
@@ -151,13 +153,13 @@ function Row({ item, onCancel, onRetry, onRemove }: { item: DownloadItem; onCanc
                     <Badge tone={tone}>{statusLabel}</Badge>
                     {item.status === "downloading" && (
                         <span className="text-xs text-muted tabular-nums">
-                            {Math.floor(item.progress * 100)}% {item.speed && `· ${item.speed}`} {item.eta && `· ETA ${item.eta}`}
+                            {soFar ? `${item.done} downloaded` : `${Math.floor(item.progress * 100)}%`} {item.speed && `· ${item.speed}`} {item.eta && `· ETA ${item.eta}`}
                         </span>
                     )}
                     {item.error && <span className="truncate text-xs text-rose-300" title={item.error}>{item.error}</span>}
                     {item.status === "completed" && item.output && <span className="truncate text-xs text-subtle" title={item.output}>{item.output}</span>}
                 </div>
-                {(item.status === "downloading" || item.status === "resolving") && <Progress value={item.progress} className={cn("mt-2.5", item.status === "resolving" && "opacity-50")} />}
+                {(item.status === "downloading" || item.status === "resolving") && !soFar && <Progress value={item.progress} className={cn("mt-2.5", item.status === "resolving" && "opacity-50")} />}
             </div>
             <div className="flex shrink-0 gap-1">
                 {onCancel && (
