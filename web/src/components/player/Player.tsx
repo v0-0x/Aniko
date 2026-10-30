@@ -28,7 +28,7 @@ import {
 import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, ApiError, qs } from "@/lib/api"
-import { markNoPicture, prefersHls, randomId, videoCaps, videoFormat } from "@/lib/playback"
+import { markNoPicture, pictureState, prefersHls, randomId, setSoftwareVideo, softwareVideo, videoCaps, videoFormat } from "@/lib/playback"
 import { canPip, closeMini, expandMini, openMini } from "@/lib/pip"
 import { useSettings } from "@/lib/queries"
 import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
@@ -216,10 +216,10 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const allCaps = useMemo(() => videoCaps(hlsMode && Hls.isSupported() ? "mse" : "element"), [hlsMode])
     // Formats that showed no picture here: converted (see the picture
     // watchdog). And, last, the video converted in software rather than by
-    // the computer's encoder.
+    // the computer's encoder: kept for this device once chosen.
     const [noPic, setNoPic] = useState<string[]>([])
     const caps = useMemo(() => allCaps.filter(c => !noPic.includes(c)), [allCaps, noPic])
-    const [software, setSoftware] = useState(false)
+    const [software, setSoftware] = useState(() => softwareVideo())
     const clientId = useMemo(() => randomId(), [])
     const base = req.kind === "local" && method !== "direct" && stream ? stream.base : offset
     const absTime = (v: HTMLVideoElement) => v.currentTime + base
@@ -293,7 +293,10 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     const handed = req.tracks
                     if (handed?.audio !== undefined && handed.audio < audio.length) ai = handed.audio
                     setAudioIndex(ai)
-                    const m = ai === 0 && res.probe.method === "direct" ? "direct" : res.probe.method === "direct" ? "remux" : res.probe.method
+                    // Converted in software on this device (Grey picture?): always
+                    // converted, never the file as it is.
+                    const m =
+                        softwareVideo() && res.probe.video?.length ? "transcode" : ai === 0 && res.probe.method === "direct" ? "direct" : res.probe.method === "direct" ? "remux" : res.probe.method
                     setMethod(m)
                     // Ignore saved positions past the end of this file.
                     // (One handed over from the other player is where it was, also
@@ -552,14 +555,18 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     }, [videoSrc, stream, videoKey])
 
     // No picture: a TV's WebView sometimes plays the sound under a grey
-    // picture. Sound for a few seconds without one video frame shown:
+    // picture: either no frame is shown at all, or the frames shown are one
+    // flat grey (what a decoder shows with no picture to start from; seen on
+    // the Fire TV with the Pi's video, 2026-10-30). Sound for a few seconds
+    // with no frame shown, or only flat grey ones:
     //   1. it's opened again from there, in a new video element, as closing
     //      and opening the player would do (a first-time glitch);
     //   2. when still nothing is decoded and the video was copied (the TV
     //      said it plays that format), it's converted, and the format is
     //      converted for this device from then on (lib/playback);
     //   3. when converted video shows nothing either (a computer's encoder
-    //      the TV can't take), it's converted in software;
+    //      the TV can't take), it's converted in software, and from then on
+    //      for this device (lib/playback softwareVideo);
     //   4. then it says so, and the sound plays on.
     // Each try is in the computer's log, where the file is (a note).
     useEffect(() => {
@@ -577,16 +584,25 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         if (rvfc) handle = v.requestVideoFrameCallback(onFrame)
         const decoded = () => ("getVideoPlaybackQuality" in v ? v.getVideoPlaybackQuality().totalVideoFrames : 1)
         const shown = () => (rvfc ? frames : decoded()) > 0
+        // A small copy of the frame, to tell a picture from flat grey.
+        const canvas = document.createElement("canvas")
+        canvas.width = 32
+        canvas.height = 18
+        let grey = false
         let from = -1
         // Counted again from a seek; not while Aniko is in the background
         // (nothing is drawn then).
         const onSeek = () => void (from = -1)
         v.addEventListener("seeking", onSeek)
         const timer = setInterval(() => {
-            if (shown()) return clearInterval(timer)
             if (v.paused || v.readyState < 3 || v.seeking || document.hidden) {
                 from = -1
                 return
+            }
+            if (shown()) {
+                // A picture (or one that can't be read): nothing to do.
+                if (pictureState(v, canvas) !== "grey") return clearInterval(timer)
+                grey = true
             }
             if (from < 0) {
                 from = v.currentTime
@@ -601,7 +617,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
             // The server copies the video when the TV says it plays it.
             const copied = !software && !!format && caps.includes(format)
             note(
-                `no picture after 3s of sound (try ${tries}, ${method}${software ? " software" : ""}${stream?.hls ? " hls" : ""}, ` +
+                `${grey ? "only a flat grey picture" : "no picture"} after 3s of sound (try ${tries}, ${method}${software ? " software" : ""}${stream?.hls ? " hls" : ""}, ` +
                     `video ${copied ? "copied" : "converted"}, from ${Math.round(at)}s, ` +
                     `${format || "?"} ${vt?.height ?? "?"}p, ${decoded()} decoded, ${rvfc ? frames + " shown" : "no frame callback"}, ` +
                     `${v.videoWidth}x${v.videoHeight}, ready ${v.readyState})`,
@@ -614,7 +630,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
             }
             if (tries === 1) {
                 reopen(at)
-            } else if (decoded() > 0) {
+            } else if (decoded() > 0 && !grey) {
                 // Frames decoded, none shown: converting wouldn't change that.
             } else if (copied) {
                 toast.info("Converting the video for this device…")
@@ -622,6 +638,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 again(() => setNoPic(n => [...n, format]))
             } else if (!software) {
                 toast.info("Converting the video another way…")
+                setSoftwareVideo(true)
                 again(() => setSoftware(true))
             } else {
                 pictureTries.current = 4
@@ -1685,11 +1702,33 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                             <DropdownItem
                                                 onSelect={() => {
                                                     const v = videoRef.current
+                                                    // The video too: copied, it would stay as it was.
+                                                    const vt = probe?.video?.[0]
+                                                    if (vt) setNoPic(n => [...n, videoFormat(vt)])
                                                     setOffset(v ? absTime(v) : 0)
                                                     setMethod("transcode")
                                                 }}
                                             >
                                                 Force transcoding
+                                            </DropdownItem>
+                                            <DropdownSeparator />
+                                        </>
+                                    )}
+                                    {req.kind === "local" && !!probe?.video?.length && (
+                                        <>
+                                            <DropdownItem
+                                                onSelect={() => {
+                                                    const v = videoRef.current
+                                                    const on = !software
+                                                    setSoftwareVideo(on)
+                                                    note(on ? "grey picture: converted in software from now on, on this device" : "converted as before again, on this device")
+                                                    if (on) toast.info("Converting the video in software on this device from now on")
+                                                    setOffset(v ? absTime(v) : 0)
+                                                    setSoftware(on)
+                                                    setMethod("transcode")
+                                                }}
+                                            >
+                                                {software ? "● Converted in software here (turn off)" : "Grey picture? Convert in software"}
                                             </DropdownItem>
                                             <DropdownSeparator />
                                         </>

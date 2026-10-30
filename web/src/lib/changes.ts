@@ -7,6 +7,20 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 26,
+        title: "The TV's grey picture",
+        changes: [
+            {
+                title: "A grey picture is caught too",
+                text: "When the TV shows only a flat grey picture under the sound, Aniko now notices, the same as when it shows none: it opens the video again, then converts it, and last converts it in software, which this TV then keeps doing.",
+            },
+            {
+                title: "Grey picture? Convert in software",
+                text: "In the player's settings (the gauge): converts the video in software on the computer or hub, for this device from then on. Choose it again to turn it off.",
+            },
+        ],
+    },
+    {
         id: 25,
         title: "Kumo is now Aniko",
         changes: [

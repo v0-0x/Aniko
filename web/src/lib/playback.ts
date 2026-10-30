@@ -97,6 +97,60 @@ export function markNoPicture(format: string) {
     }
 }
 
+// This device's video converted in software (libx264) rather than by the
+// computer's or the hub's encoder, whatever it could play as is: chosen in
+// the player (Grey picture?), or by the picture watchdog when the encoder's
+// video showed only a flat grey here.
+const SOFTWARE_VIDEO = "aniko-software-video"
+
+export function softwareVideo(): boolean {
+    try {
+        return localStorage.getItem(SOFTWARE_VIDEO) === "1"
+    } catch {
+        return false
+    }
+}
+
+export function setSoftwareVideo(on: boolean) {
+    try {
+        if (on) localStorage.setItem(SOFTWARE_VIDEO, "1")
+        else localStorage.removeItem(SOFTWARE_VIDEO)
+    } catch {
+        /* not kept: asked again next time */
+    }
+}
+
+// What the video shows, from a small copy of the frame: "grey" when it's one
+// flat grey (what a decoder shows when it has no picture to start from),
+// "picture" otherwise, "unknown" when it can't be read (drawn outside the
+// page, or from another site).
+export function pictureState(v: HTMLVideoElement, canvas: HTMLCanvasElement): "picture" | "grey" | "unknown" {
+    try {
+        const ctx = canvas.getContext("2d", { willReadFrequently: true })
+        if (!ctx || !v.videoWidth) return "unknown"
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height)
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+        let n = 0
+        let sum = 0
+        let sq = 0
+        let chroma = 0
+        for (let i = 0; i < d.length; i += 4) {
+            if (d[i + 3] < 250) continue
+            const y = (d[i] + d[i + 1] + d[i + 2]) / 3
+            sum += y
+            sq += y * y
+            chroma = Math.max(chroma, Math.abs(d[i] - d[i + 1]), Math.abs(d[i + 1] - d[i + 2]), Math.abs(d[i] - d[i + 2]))
+            n++
+        }
+        if (n < (d.length / 4) * 0.9) return "unknown"
+        const mean = sum / n
+        const sd = Math.sqrt(Math.max(0, sq / n - mean * mean))
+        return sd < 6 && chroma < 16 && mean > 60 && mean < 200 ? "grey" : "picture"
+    } catch {
+        return "unknown"
+    }
+}
+
 // A random id; crypto.randomUUID only exists on https and localhost, and
 // devices on the home network use plain http.
 export function randomId() {
