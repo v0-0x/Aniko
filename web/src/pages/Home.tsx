@@ -69,7 +69,12 @@ export default function HomePage() {
         const out: { key: string; name: string; items: CollectionItem[] }[] = []
         if (watching.length) out.push({ key: "CURRENT", name: "Currently watching", items: watching })
         for (const l of rest) out.push({ key: l.status, name: l.name, items: l.items })
-        if (data?.localOnly?.length) out.push({ key: "LOCAL", name: "In your library", items: data.localOnly })
+        // Everything in the library (the hub's and other shared ones too), as
+        // on the Local library page: on a list or not.
+        const library = new Map<number, CollectionItem>()
+        for (const l of ls) for (const it of l.items) if (it.localFiles > 0) library.set(it.media.id, it)
+        for (const it of data?.localOnly ?? []) library.set(it.media.id, it)
+        if (library.size) out.push({ key: "LOCAL", name: "In your library", items: [...library.values()] })
         return out.map(l => ({ ...l, items: filterItems(l.items) })).filter(l => l.items.length > 0)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, genre, onlyLocal, sort])

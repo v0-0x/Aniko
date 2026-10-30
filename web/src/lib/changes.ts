@@ -6,6 +6,16 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 18,
+        title: "Your whole library on Home",
+        changes: [
+            {
+                title: "In your library, all of it",
+                text: "Home's In your library now shows every anime in your library, the hub's included, as the Local library page does. It used to leave out the ones on your AniList lists, which show in their list's row too.",
+            },
+        ],
+    },
+    {
         id: 17,
         title: "Download progress from the hub",
         changes: [
