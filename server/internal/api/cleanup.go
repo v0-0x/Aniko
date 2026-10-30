@@ -167,7 +167,16 @@ func (s *Server) cleanup(r *http.Request) (any, error) {
 func (s *Server) cleanupRoutes() {
 	m := s.mux
 	m.HandleFunc("GET /api/library/cleanup", h(s.cleanup))
-	m.HandleFunc("POST /api/library/trash", h(func(r *http.Request) (any, error) {
+	// The trash alone (the hub's dashboard: Put the library right › Deleted).
+	m.HandleFunc("GET /api/library/trash", h(func(r *http.Request) (any, error) {
+		items := s.app.Trash.Items()
+		var bytes int64
+		for _, it := range items {
+			bytes += it.Size
+		}
+		return map[string]any{"items": items, "bytes": bytes}, nil
+	}))
+	m.HandleFunc("POST /api/library/trash", h(libraryEdited(func(r *http.Request) (any, error) {
 		if !isTrusted(r) {
 			return nil, forbidden("only this computer can remove its files")
 		}
@@ -185,8 +194,8 @@ func (s *Server) cleanupRoutes() {
 			s.app.Hub.Publish("library-updated", nil)
 		}
 		return map[string]any{"moved": len(moved), "failed": failed}, nil
-	}))
-	m.HandleFunc("POST /api/library/trash/restore", h(func(r *http.Request) (any, error) {
+	})))
+	m.HandleFunc("POST /api/library/trash/restore", h(libraryEdited(func(r *http.Request) (any, error) {
 		if !isTrusted(r) {
 			return nil, forbidden("only this computer can put its files back")
 		}
@@ -201,9 +210,9 @@ func (s *Server) cleanupRoutes() {
 			s.app.Hub.Publish("library-updated", nil)
 		}
 		return map[string]any{"restored": len(restored), "failed": failed}, nil
-	}))
+	})))
 	// Deleted for good: the ones given, or all of them.
-	m.HandleFunc("POST /api/library/trash/empty", h(func(r *http.Request) (any, error) {
+	m.HandleFunc("POST /api/library/trash/empty", h(libraryEdited(func(r *http.Request) (any, error) {
 		if !isTrusted(r) {
 			return nil, forbidden("only this computer can delete its files")
 		}
@@ -215,5 +224,5 @@ func (s *Server) cleanupRoutes() {
 		}
 		freed, err := s.app.Trash.Empty(body.IDs)
 		return map[string]any{"freed": freed}, err
-	}))
+	})))
 }

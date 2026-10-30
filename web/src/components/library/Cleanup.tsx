@@ -10,7 +10,7 @@ import { toast } from "@/lib/toast"
 import { cn, formatBytes, relativeTime } from "@/lib/utils"
 
 type CleanupFile = { path: string; name: string; size: number; mediaId: number; episode: number; title: string; resolution?: string; watchedAt?: number }
-type TrashItem = { id: string; path: string; name: string; size: number; mediaId: number; episode: number; deletedAt: number }
+export type TrashItem = { id: string; path: string; name: string; size: number; mediaId: number; episode: number; deletedAt: number }
 type CleanupView = {
     disk: { total: number; free: number } | null
     libraryBytes: number
@@ -273,7 +273,8 @@ function Duplicates({ groups, busy, readOnly, onTrash }: Props & { groups: Clean
 }
 
 // Kumo's trash: put back, or deleted for good (the space freed).
-function TrashList({ items, bytes, readOnly, onChange }: { items: TrashItem[]; bytes: number; readOnly: boolean; onChange: () => void }) {
+// Kumo's trash: put back, or emptied for good. Also the hub's (pages/hub).
+export function TrashList({ items, bytes, readOnly, onChange, title = "Kumo's trash" }: { items: TrashItem[]; bytes: number; readOnly: boolean; onChange: () => void; title?: string }) {
     const [busy, setBusy] = useState("")
     const restore = async (ids: string[]) => {
         setBusy(ids.length === 1 ? ids[0] : "all")
@@ -307,7 +308,7 @@ function TrashList({ items, bytes, readOnly, onChange }: { items: TrashItem[]; b
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h3 className="flex items-center gap-2 text-[15px] font-semibold">
-                        <Trash2 className="size-4 text-muted" /> Kumo's trash
+                        <Trash2 className="size-4 text-muted" /> {title}
                     </h3>
                     <p className="text-[13px] text-muted">Files put away here stay on their drive until it's emptied, and 30 days at most.</p>
                 </div>

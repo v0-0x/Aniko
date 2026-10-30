@@ -460,6 +460,22 @@ func (a *App) AccountChanged() {
 	}()
 }
 
+// purgeTrash empties what's been in the trash a month, now and daily.
+func (a *App) purgeTrash() {
+	for {
+		if freed, err := a.Trash.Purge(time.Now()); err != nil {
+			log.Printf("trash: %v", err)
+		} else if freed > 0 {
+			log.Printf("trash: emptied what was there for 30 days (%d MB)", freed>>20)
+		}
+		select {
+		case <-a.ctx.Done():
+			return
+		case <-time.After(24 * time.Hour):
+		}
+	}
+}
+
 // Start runs the background jobs.
 func (a *App) Start() {
 	if a.HubStore != nil {
@@ -474,21 +490,7 @@ func (a *App) Start() {
 	a.Scanner.StartWatcher()
 	go a.Torrents.RunCounter(a.ctx)
 	go a.Notify.Run(a.ctx)
-	// What's been in the trash a month goes, now and daily.
-	go func() {
-		for {
-			if freed, err := a.Trash.Purge(time.Now()); err != nil {
-				log.Printf("trash: %v", err)
-			} else if freed > 0 {
-				log.Printf("trash: emptied what was there for 30 days (%d MB)", freed>>20)
-			}
-			select {
-			case <-a.ctx.Done():
-				return
-			case <-time.After(24 * time.Hour):
-			}
-		}
-	}()
+	go a.purgeTrash()
 	go a.AutoDL.Loop(a.ctx, func() (bool, time.Duration) {
 		cfg := a.Settings.Get()
 		return cfg.Torrent.AutoDownloader, time.Duration(cfg.Torrent.AutoDownloadMinutes) * time.Minute

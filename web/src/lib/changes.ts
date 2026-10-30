@@ -6,6 +6,16 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 21,
+        title: "Kumo Hub: delete from its library",
+        changes: [
+            {
+                title: "Delete anime and episodes on the hub",
+                text: "The hub's dashboard, under Library › Anime: open an anime to delete it from the hub, or single episodes. They go to the hub's trash first (Put the library right › Deleted), where they can be put back for 30 days.",
+            },
+        ],
+    },
+    {
         id: 20,
         title: "A back arrow",
         changes: [

@@ -79,6 +79,8 @@ func (a *App) startHub() {
 	a.Scanner.StartWatcher()
 	go a.Torrents.RunCounter(a.ctx)
 	go a.runPrefetch(a.ctx)
+	// Files deleted from the dashboard go to the trash: it empties itself.
+	go a.purgeTrash()
 	go func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()

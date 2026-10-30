@@ -1,11 +1,12 @@
-import { useQuery } from "@tanstack/react-query"
-import { Film, Search } from "lucide-react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Film, Search, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
-import { Badge, Dialog, EmptyState, Input, Select } from "@/components/ui"
+import { Badge, Button, Dialog, EmptyState, IconButton, Input, Select } from "@/components/ui"
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { useCollection, useLibraryFiles } from "@/lib/queries"
-import type { EntryView, EpisodeView, Media } from "@/lib/types"
+import { toast } from "@/lib/toast"
+import type { EntryView, EpisodeView, LocalFile, Media } from "@/lib/types"
 import { cleanDescription, cover, formatBytes, formatLabel, img, title } from "@/lib/utils"
 import { Panel } from "./parts"
 
@@ -125,14 +126,41 @@ export function LibraryBrowse() {
                     )}
                 </>
             )}
-            {open && <AnimeDetails media={open} onClose={() => setOpen(null)} />}
+            {open && <AnimeDetails media={open} files={(files ?? []).filter(f => f.mediaId === open.id && !f.ignored)} onClose={() => setOpen(null)} />}
         </Panel>
     )
 }
 
-// An anime as the hub has it: its details, and the episodes on its disks.
-function AnimeDetails({ media, onClose }: { media: Media; onClose: () => void }) {
+// An anime as the hub has it: its details, and the episodes on its disks,
+// which can be deleted: they go to the hub's trash (Put the library right ›
+// Deleted), from which they can be put back for 30 days.
+function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFile[]; onClose: () => void }) {
     const { data, isLoading } = useQuery({ queryKey: ["entry", media.id], queryFn: () => api.get<EntryView>(`/api/anime/${media.id}`) })
+    const qc = useQueryClient()
+    const [asking, setAsking] = useState<string | null>(null) // "all", or a file's path
+    const [busy, setBusy] = useState(false)
+    const toTrash = async (paths: string[]) => {
+        setBusy(true)
+        try {
+            const res = await api.post<{ moved: number; failed: Record<string, string> | null }>("/api/library/trash", { paths })
+            const failed = Object.values(res.failed ?? {})
+            if (res.moved) toast.success(`${res.moved === 1 ? "Moved" : `${res.moved} files moved`} to the hub's trash. Put back from Put the library right › Deleted.`)
+            if (failed.length) toast.error(`${failed.length} couldn't be moved: ${failed[0]}`)
+            setAsking(null)
+            await Promise.all([
+                qc.invalidateQueries({ queryKey: ["library"] }),
+                qc.invalidateQueries({ queryKey: ["collection"] }),
+                qc.invalidateQueries({ queryKey: ["entry", media.id] }),
+                qc.invalidateQueries({ queryKey: ["hub", "overview"] }),
+            ])
+            if (res.moved >= files.length) onClose()
+        } catch (e) {
+            toast.error((e as Error).message)
+        } finally {
+            setBusy(false)
+        }
+    }
+    const size = files.reduce((n, f) => n + f.size, 0)
     const m = data?.media ?? media
     const eps = [...(data?.episodes ?? []), ...(data?.specials ?? []), ...(data?.others ?? [])].filter(e => e.hasFile && e.file && !e.file.host)
     const facts = [formatLabel(m.format), m.seasonYear, m.episodes ? `${m.episodes} episodes` : "", m.averageScore ? `${m.averageScore}%` : ""].filter(Boolean).join(" · ")
@@ -155,13 +183,41 @@ function AnimeDetails({ media, onClose }: { media: Media; onClose: () => void })
                     </div>
                 </div>
                 <div>
-                    <p className="mb-2 text-sm font-medium">On the hub · {eps.length}</p>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium">On the hub · {eps.length}</p>
+                        {files.length > 0 && asking !== "all" && (
+                            <Button size="sm" variant="danger" icon={<Trash2 className="size-4" />} onClick={() => setAsking("all")}>
+                                Delete from the hub
+                            </Button>
+                        )}
+                    </div>
+                    {asking === "all" && (
+                        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.07] px-3 py-2.5 text-sm">
+                            <span className="min-w-0 flex-1">
+                                Move its {files.length} {files.length === 1 ? "file" : "files"} ({formatBytes(size)}) to the hub's trash? You can put them back for 30 days.
+                            </span>
+                            <Button size="sm" variant="danger" loading={busy} onClick={() => toTrash(files.map(f => f.path))}>
+                                Move to the trash
+                            </Button>
+                            <Button size="sm" variant="ghost" disabled={busy} onClick={() => setAsking(null)}>
+                                Cancel
+                            </Button>
+                        </div>
+                    )}
                     {isLoading ? (
                         <div className="h-24 rounded-lg shimmer" />
                     ) : (
                         <ul className="flex flex-col divide-y divide-line">
                             {eps.map(e => (
-                                <Episode key={e.file!.path} e={e} />
+                                <Episode
+                                    key={e.file!.path}
+                                    e={e}
+                                    asking={asking === e.file!.path}
+                                    busy={busy}
+                                    onAsk={() => setAsking(e.file!.path)}
+                                    onCancel={() => setAsking(null)}
+                                    onDelete={() => toTrash([e.file!.path])}
+                                />
                             ))}
                         </ul>
                     )}
@@ -171,7 +227,7 @@ function AnimeDetails({ media, onClose }: { media: Media; onClose: () => void })
     )
 }
 
-function Episode({ e }: { e: EpisodeView }) {
+function Episode({ e, asking, busy, onAsk, onCancel, onDelete }: { e: EpisodeView; asking: boolean; busy: boolean; onAsk: () => void; onCancel: () => void; onDelete: () => void }) {
     const label = e.kind === "special" ? "Special" : e.kind === "nc" ? "OP / ED" : `Episode ${e.number}`
     return (
         <li className="flex items-center gap-3 py-2">
@@ -189,6 +245,21 @@ function Episode({ e }: { e: EpisodeView }) {
                     {e.file!.name} · {formatBytes(e.file!.size)}
                 </p>
             </div>
+            {asking ? (
+                <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-xs text-muted">Move to the trash?</span>
+                    <Button size="xs" variant="danger" loading={busy} onClick={onDelete}>
+                        Yes
+                    </Button>
+                    <Button size="xs" variant="ghost" disabled={busy} onClick={onCancel}>
+                        No
+                    </Button>
+                </div>
+            ) : (
+                <IconButton size="sm" label="Delete this episode from the hub" onClick={onAsk}>
+                    <Trash2 className="size-4" />
+                </IconButton>
+            )}
         </li>
     )
 }

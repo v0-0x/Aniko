@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -89,6 +90,10 @@ func TestCleanup(t *testing.T) {
 	items := s.app.Trash.Items()
 	if len(items) != 1 {
 		t.Fatalf("trash: %+v", items)
+	}
+	// The trash alone, as the hub's dashboard lists it.
+	if w := do(s, "GET", "/api/library/trash", "127.0.0.1:5000", "", nil); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"id":"`+items[0].ID+`"`) || !strings.Contains(w.Body.String(), `"bytes":`+strconv.FormatInt(items[0].Size, 10)) {
+		t.Fatalf("trash list: %d %s", w.Code, w.Body.String())
 	}
 	if w := do(s, "POST", "/api/library/trash/restore", "127.0.0.1:5000", `{"ids":["`+items[0].ID+`"]}`, nil); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"restored":1`) {
 		t.Fatalf("restore: %d %s", w.Code, w.Body.String())
