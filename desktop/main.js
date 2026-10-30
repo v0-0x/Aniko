@@ -20,6 +20,28 @@ const isMac = process.platform === "darwin"
 const EXIT_RESTART = 75
 const EXIT_INSTALLING = 76
 
+// macOS: Kumo's updater (Aniko's name before 2.0.37) put this version in
+// the app it had, Kumo.app, which the Finder and Launchpad show as "Kumo".
+// The app takes Aniko's name, then opens again from there, before anything
+// else starts from the old path (helpers, the server). Aniko's own updates
+// install as Aniko.app (server/internal/update/apply_mac.go).
+function renameKumoApp() {
+    if (!isMac || !app.isPackaged) return false
+    const bundle = path.resolve(process.execPath, "..", "..", "..")
+    const renamed = path.join(path.dirname(bundle), "Aniko.app")
+    if (path.basename(bundle) !== "Kumo.app" || fs.existsSync(renamed)) return false
+    try {
+        fs.renameSync(bundle, renamed)
+    } catch (err) {
+        console.error("couldn't rename Kumo.app to Aniko.app:", err)
+        return false
+    }
+    app.relaunch({ execPath: path.join(renamed, "Contents", "MacOS", path.basename(process.execPath)), args: process.argv.slice(1) })
+    app.exit(0)
+    return true
+}
+if (renameKumoApp()) return
+
 // On Windows this is the AppUserModelID, which must match "appId" in
 // electron-builder.yml: the installer's shortcuts carry it, and the taskbar
 // groups the window with them.

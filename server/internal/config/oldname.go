@@ -1,6 +1,6 @@
 package config
 
-// Aniko was called Kumo until 2.0.37. What it kept under that name moves to
+// Aniko was called Kumo before 2.0.37. What it kept under that name moves to
 // the new one the first time the new version starts, and what was set up
 // with the old name (a service's environment, a script) still counts.
 

@@ -16,7 +16,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "On every device",
-                text: "The computers, the TV app and the hub all update to Aniko by themselves and keep finding each other. On a Mac the app becomes Aniko.app at its next update.",
+                text: "The computers, the TV app and the hub all update to Aniko by themselves and keep finding each other. On a Mac, the app still called Kumo renames itself Aniko when it opens.",
             },
         ],
     },

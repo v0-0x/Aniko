@@ -92,7 +92,7 @@ Aniko was called Kumo before 2.0.37, and every copy updates to Aniko by itself, 
 
 - **Arch Linux**: Kumo's **Update** button installs Aniko as before. With `git pull && cd packaging/arch && makepkg -sif`, pacman asks once whether to remove `kumo` (the old package): answer `y`.
 - **Windows**: the update moves the app to an Aniko folder, with new shortcuts. A taskbar pin of Kumo's may need pinning again.
-- **macOS**: the update arrives in the app still named Kumo.app; its next update renames it Aniko.app.
+- **macOS**: the update arrives in the app still named Kumo.app, which renames itself Aniko.app when it opens (and opens again from there).
 - **Android TV**: the update installs over Kumo in place.
 - **Kumo Hub** updates itself to Aniko Hub, still as the `kumo-hub` service. Running the [install command](#aniko-hub-raspberry-pi) again moves it to the new names (`aniko-hub`), with its data.
 
