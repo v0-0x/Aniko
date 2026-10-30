@@ -25,7 +25,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { api } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
 import { useCollection, useDownloads, useStatus } from "@/lib/queries"
-import { notificationsMutedStore, searchOpenStore, torrentCountStore, useStore } from "@/lib/store"
+import { notificationsMutedStore, torrentCountStore, useStore } from "@/lib/store"
 import { holidayStore, useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn, img } from "@/lib/utils"
@@ -167,12 +167,6 @@ export function Sidebar() {
                 to={it.to}
                 // Icons only (narrow): named for screen readers too.
                 aria-label={wide ? undefined : it.label}
-                onClick={e => {
-                    if (it.to === "/search" && !e.metaKey && !e.ctrlKey) {
-                        e.preventDefault()
-                        searchOpenStore.set(true)
-                    }
-                }}
                 className={cn(
                     "focus-ring relative flex h-9 shrink-0 items-center text-[13.5px] font-medium transition-colors [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75] [&>svg]:transition-colors",
                     classic ? "rounded-md" : "rounded-lg",

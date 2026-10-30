@@ -6,6 +6,17 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 16,
+        title: "Search opens the Search page",
+        changes: [
+            {
+                title: "Search, with its filters",
+                text: "Search in the sidebar now opens the Search page, with its filters by season, year, format, status and genre. Ctrl K still opens quick search from anywhere, the player included.",
+                to: "/search",
+            },
+        ],
+    },
+    {
         id: 15,
         title: "Kumo Hub: its library, with artwork",
         changes: [
