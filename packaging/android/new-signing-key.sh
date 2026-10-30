@@ -17,7 +17,7 @@
 # Aniko can't update the installed one, which must then be reinstalled.
 set -euo pipefail
 
-repo="${ANIKO_REPO:-v0-0x/kumo-anime}"
+repo="${ANIKO_REPO:-v0-0x/Aniko}"
 dir="${XDG_DATA_HOME:-$HOME/.local/share}/kumo-android-key"
 keystore="$dir/kumo-release.p12"
 alias=kumo

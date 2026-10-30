@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 type fakeResult struct {

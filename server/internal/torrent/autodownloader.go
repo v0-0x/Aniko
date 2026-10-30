@@ -13,11 +13,11 @@ import (
 
 	"github.com/5rahim/habari"
 
-	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/events"
-	"github.com/simo1337s/animetest/server/internal/library"
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Rule tells the auto downloader which releases to grab for an anime.

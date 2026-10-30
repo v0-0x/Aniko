@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/history"
-	"github.com/simo1337s/animetest/server/internal/library"
-	"github.com/simo1337s/animetest/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
 // sharingServer is an Aniko with library sharing on, serving as a real one

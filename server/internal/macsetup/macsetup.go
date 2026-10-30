@@ -22,8 +22,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 //go:embed install-tools.command

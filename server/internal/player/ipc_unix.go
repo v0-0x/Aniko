@@ -5,7 +5,7 @@ package player
 import (
 	"path/filepath"
 
-	"github.com/simo1337s/animetest/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/config"
 )
 
 // ipcAddress is where mpv listens for commands: a Unix socket.

@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // SkipInterval is an opening/ending/recap range reported by AniSkip.

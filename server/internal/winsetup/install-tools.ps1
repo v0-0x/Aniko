@@ -20,7 +20,7 @@
 
 param(
     # The GitHub repository Aniko updates from.
-    [string]$Repo = "v0-0x/kumo-anime",
+    [string]$Repo = "v0-0x/Aniko",
     # The same repository by its number, as Aniko's updater asks for it: it
     # stays the same when the repository is renamed or moves.
     [string]$RepoID = "1406820679",

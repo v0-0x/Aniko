@@ -14,7 +14,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 //go:embed install-tools.ps1

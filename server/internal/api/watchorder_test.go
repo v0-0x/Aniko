@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/backup"
-	"github.com/simo1337s/animetest/server/internal/watchorder"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/backup"
+	"github.com/v0-0x/Aniko/server/internal/watchorder"
 )
 
 // The watch order through the API, from AniList's links as Aniko keeps

@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/simo1337s/animetest/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
 // A player's notes: what went wrong while it played (no picture, say),

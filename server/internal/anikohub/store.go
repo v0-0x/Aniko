@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/history"
 )
 
 var schema = []string{

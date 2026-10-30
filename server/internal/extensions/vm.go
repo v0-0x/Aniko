@@ -21,7 +21,7 @@ import (
 
 	"github.com/5rahim/habari"
 
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Compile turns a payload into goja-ready JavaScript.

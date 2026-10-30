@@ -7,7 +7,7 @@ server with the app's window on top of it.
 ## Install
 
 1. Download `Aniko-X.Y.Z-macos-universal.dmg` from the newest **Aniko X.Y.Z for
-   macOS** [release](https://github.com/v0-0x/kumo-anime/releases) (tag
+   macOS** [release](https://github.com/v0-0x/Aniko/releases) (tag
    `macos-vX.Y.Z`).
 2. Open it and drag **Aniko** onto **Applications**.
 3. Open Aniko from your Applications folder.

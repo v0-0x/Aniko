@@ -40,7 +40,7 @@ video being converted adds ffmpeg's own while it runs.
 On the Pi, as your usual user (not root):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/v0-0x/kumo-anime/HEAD/packaging/hub/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/v0-0x/Aniko/HEAD/packaging/hub/install.sh | bash
 ```
 
 Add `-s -- --beta` after `bash` for the newest beta. The script installs

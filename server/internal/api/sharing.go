@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/history"
-	"github.com/simo1337s/animetest/server/internal/player"
-	"github.com/simo1337s/animetest/server/internal/share"
-	"github.com/simo1337s/animetest/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/player"
+	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/stream"
 )
 
 // Library sharing with other Aniko apps on the home network (package share).

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // The proxy lets the in-app player load streams that need special headers

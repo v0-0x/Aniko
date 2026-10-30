@@ -37,10 +37,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/events"
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Version is a build of Aniko.

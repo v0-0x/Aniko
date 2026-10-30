@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/simo1337s/animetest/server/internal/macsetup"
-	"github.com/simo1337s/animetest/server/internal/winsetup"
+	"github.com/v0-0x/Aniko/server/internal/macsetup"
+	"github.com/v0-0x/Aniko/server/internal/winsetup"
 )
 
 // installPrograms opens the setup that installs the programs Aniko uses on

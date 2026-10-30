@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/simo1337s/animetest/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 // The sub/dub saved by earlier versions whenever an episode played is

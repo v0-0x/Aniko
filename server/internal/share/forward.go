@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/stream"
 )
 
 // A host's files are played through this Aniko's server: the player asks it

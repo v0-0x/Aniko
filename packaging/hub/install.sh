@@ -4,7 +4,7 @@
 # starts with it. Run it as the user the hub is to run as (not root: it asks
 # for sudo when it needs it):
 #
-#   curl -fsSL https://raw.githubusercontent.com/v0-0x/kumo-anime/HEAD/packaging/hub/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/v0-0x/Aniko/HEAD/packaging/hub/install.sh | bash
 #
 # or, in the folder of an aniko-hub-<version>-linux-<arch>.tar.gz you
 # unpacked: ./install.sh (it installs the aniko-hub next to it).
@@ -25,7 +25,7 @@ set -euo pipefail
 # All in a function, run at the end: piped from curl, a download cut short
 # runs nothing.
 main() {
-REPO=v0-0x/kumo-anime
+REPO=v0-0x/Aniko
 beta=0 ffmpeg=1 anicli=1 uninstall=0 purge=0
 for arg in "$@"; do
   case $arg in

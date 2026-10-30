@@ -198,7 +198,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           New-Item -ItemType Directory -Force ../dist/windows | Out-Null
-          $config = "github.com/simo1337s/animetest/server/internal/config"
+          $config = "github.com/v0-0x/Aniko/server/internal/config"
           go build -trimpath -ldflags "-s -w -X $config.AppVersion=$env:VERSION -X $config.Commit=$env:GITHUB_SHA" -o ../dist/windows/aniko.exe ./cmd/aniko
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $reported = & ../dist/windows/aniko.exe --version

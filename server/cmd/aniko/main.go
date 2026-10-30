@@ -15,14 +15,14 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/api"
-	"github.com/simo1337s/animetest/server/internal/app"
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
-	"github.com/simo1337s/animetest/server/internal/util"
-	"github.com/simo1337s/animetest/server/internal/webui"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/api"
+	"github.com/v0-0x/Aniko/server/internal/app"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/webui"
 )
 
 func main() {

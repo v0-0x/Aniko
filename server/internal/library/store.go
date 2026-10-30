@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/simo1337s/animetest/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 // LocalFile is a video file found in one of the library directories.

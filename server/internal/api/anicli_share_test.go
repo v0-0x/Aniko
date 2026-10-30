@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/simo1337s/animetest/server/internal/anicli"
+	"github.com/v0-0x/Aniko/server/internal/anicli"
 )
 
 // fakeAniCli installs the ani-cli stand-in of the anicli tests, listing

@@ -78,11 +78,11 @@ The server also rejects other websites' requests (Origin check) and DNS rebindin
 sudo pacman -S --needed base-devel go nodejs npm electron mpv ffmpeg
 yay -S ani-cli            # sub/dub streaming & downloads (recommended)
 sudo pacman -S yt-dlp     # optional, better downloads
-git clone https://github.com/v0-0x/kumo-anime aniko && cd aniko
+git clone https://github.com/v0-0x/Aniko aniko && cd aniko
 cd packaging/arch && makepkg -si
 ```
 
-No git? Download the source from GitHub (**Code › Download ZIP**), unpack it (`bsdtar -xf kumo-anime-*.zip`) and run `makepkg -si` in its `packaging/arch` folder.
+No git? Download the source from GitHub (**Code › Download ZIP**), unpack it (`bsdtar -xf Aniko-*.zip`) and run `makepkg -si` in its `packaging/arch` folder.
 
 Start **Aniko** from your app menu (or run `aniko`).
 
@@ -107,7 +107,7 @@ You can still update by hand, in the folder you cloned Aniko into:
 
 ```bash
 pkill -f /usr/lib/aniko          # Aniko can't be replaced while it runs
-git remote set-url origin https://github.com/v0-0x/kumo-anime.git   # once, for a clone of the old address
+git remote set-url origin https://github.com/v0-0x/Aniko.git   # once, for a clone of an old address
 git pull && cd packaging/arch && makepkg -sif
 ```
 
@@ -130,19 +130,19 @@ With linger on, the PC's library is there for the TV as soon as the PC is on, no
 
 ## Windows
 
-Aniko also runs on Windows 10/11 (64-bit), released separately from the Arch package: get the installer (`Aniko-Setup-X.Y.Z-windows-x64.exe`) or the portable zip from the newest **Aniko X.Y.Z for Windows** [release](https://github.com/v0-0x/kumo-anime/releases) (tag `windows-vX.Y.Z`). Those files are Windows-only; on Arch, use the PKGBUILD above. The installer also offers to install the programs Aniko uses (Git, ani-cli, ffmpeg, mpv, yt-dlp…) with Scoop, and the installed app updates itself from its Home page too.
+Aniko also runs on Windows 10/11 (64-bit), released separately from the Arch package: get the installer (`Aniko-Setup-X.Y.Z-windows-x64.exe`) or the portable zip from the newest **Aniko X.Y.Z for Windows** [release](https://github.com/v0-0x/Aniko/releases) (tag `windows-vX.Y.Z`). Those files are Windows-only; on Arch, use the PKGBUILD above. The installer also offers to install the programs Aniko uses (Git, ani-cli, ffmpeg, mpv, yt-dlp…) with Scoop, and the installed app updates itself from its Home page too.
 
 What to install alongside it (ffmpeg, mpv, yt-dlp, ani-cli, qBittorrent), where it keeps its data, how to build it and how releases are made: [packaging/windows/README.md](packaging/windows/README.md).
 
 ## macOS
 
-Aniko runs on macOS 13 Ventura or newer, on Apple silicon and Intel Macs (one universal app): get the disk image (`Aniko-X.Y.Z-macos-universal.dmg`) from the newest **Aniko X.Y.Z for macOS** [release](https://github.com/v0-0x/kumo-anime/releases) (tag `macos-vX.Y.Z`) and drag Aniko to Applications. It isn't notarized by Apple: the first time, allow it in System Settings › Privacy & Security (**Open Anyway**). Aniko downloads the programs it uses (ffmpeg, yt-dlp, ani-cli) from its Settings, with no Homebrew needed, and updates itself from its Home page.
+Aniko runs on macOS 13 Ventura or newer, on Apple silicon and Intel Macs (one universal app): get the disk image (`Aniko-X.Y.Z-macos-universal.dmg`) from the newest **Aniko X.Y.Z for macOS** [release](https://github.com/v0-0x/Aniko/releases) (tag `macos-vX.Y.Z`) and drag Aniko to Applications. It isn't notarized by Apple: the first time, allow it in System Settings › Privacy & Security (**Open Anyway**). Aniko downloads the programs it uses (ffmpeg, yt-dlp, ani-cli) from its Settings, with no Homebrew needed, and updates itself from its Home page.
 
 How to open it the first time, where it keeps its data, how to build it: [packaging/macos/README.md](packaging/macos/README.md).
 
 ## Android / Fire TV
 
-Aniko for Android is made for TVs (a Fire TV Stick, Android TV) and plays the libraries the computers at home share, with the remote: get `Aniko-X.Y.Z-android.apk` from the newest **Aniko X.Y.Z for Android** [release](https://github.com/v0-0x/kumo-anime/releases) (tag `android-vX.Y.Z`). On a Fire TV, install the **Downloader** app, allow it in Settings › My Fire TV › Developer options › Install unknown apps, and open the APK's address in it. Then, on a computer with Aniko, turn on **Library sharing** (Settings › Other devices): the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses your account, with no login on the TV) and **Let it download here** (the TV's downloads and torrents go to that computer, and it becomes where the TV downloads by default). Its downloads page and auto downloader then work on that computer. The app updates itself from its Home page (if Android's install question was cancelled, **Install** asks again); see [android/README.md](android/README.md).
+Aniko for Android is made for TVs (a Fire TV Stick, Android TV) and plays the libraries the computers at home share, with the remote: get `Aniko-X.Y.Z-android.apk` from the newest **Aniko X.Y.Z for Android** [release](https://github.com/v0-0x/Aniko/releases) (tag `android-vX.Y.Z`). On a Fire TV, install the **Downloader** app, allow it in Settings › My Fire TV › Developer options › Install unknown apps, and open the APK's address in it. Then, on a computer with Aniko, turn on **Library sharing** (Settings › Other devices): the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses your account, with no login on the TV) and **Let it download here** (the TV's downloads and torrents go to that computer, and it becomes where the TV downloads by default). Its downloads page and auto downloader then work on that computer. The app updates itself from its Home page (if Android's install question was cancelled, **Install** asks again); see [android/README.md](android/README.md).
 
 When something doesn't play right on the TV (no picture, it stops), the TV writes what it saw to its log and to the computer's (Settings › Logs & cache), which helps find out why.
 
@@ -151,7 +151,7 @@ When something doesn't play right on the TV (no picture, it stops), the TV write
 Aniko Hub is Aniko without a player, for a computer that stays on, like a Raspberry Pi 4: it shares its library with the Aniko apps at home, streams to them (converting with the Pi's video chip what a device can't play), keeps the devices on the same AniList account in step as they watch (progress, list, theme), takes their downloads if you let it, and has a dashboard in the browser showing what it streams to whom and how the Pi is doing. On the Pi:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/v0-0x/kumo-anime/HEAD/packaging/hub/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/v0-0x/Aniko/HEAD/packaging/hub/install.sh | bash
 ```
 
 Then open `http://<your Pi>.local:43211` and follow [packaging/hub/README.md](packaging/hub/README.md). Releases are tagged `hub-vX.Y.Z`; the hub updates itself from its dashboard.

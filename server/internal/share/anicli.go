@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anicli"
+	"github.com/v0-0x/Aniko/server/internal/anicli"
 )
 
 // An Aniko where ani-cli doesn't run (Android: it's a shell script) streams

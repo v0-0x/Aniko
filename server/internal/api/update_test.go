@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/update"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/update"
 )
 
 func TestUpdateRoutes(t *testing.T) {

@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/simo1337s/animetest/server/internal/awake"
+	"github.com/v0-0x/Aniko/server/internal/awake"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,7 +13,7 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/app"
+	"github.com/v0-0x/Aniko/server/internal/app"
 )
 
 func newTestServer(t *testing.T) *Server {

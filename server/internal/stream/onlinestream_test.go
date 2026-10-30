@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/simo1337s/animetest/server/internal/anicli"
-	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/anicli"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 // aniCliService is a Service whose ani-cli is the stand-in of the anicli

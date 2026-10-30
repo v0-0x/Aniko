@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
 // hubPeerRoutes are what an Aniko Hub answers the devices it shares with

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/history"
-	"github.com/simo1337s/animetest/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
 // A host sets a guest's parental controls: the guest gets them, its Aniko

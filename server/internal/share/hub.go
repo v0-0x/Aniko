@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/history"
 )
 
 // An Aniko Hub (aniko --hub, package anikohub) is an Aniko that plays nothing: a

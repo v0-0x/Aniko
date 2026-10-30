@@ -17,7 +17,7 @@ import (
 	"github.com/dop251/goja"
 	"github.com/imroc/req/v3"
 
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Fetcher performs HTTP requests for extensions. It impersonates Chrome's

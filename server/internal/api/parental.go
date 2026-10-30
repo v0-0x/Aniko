@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/parental"
-	"github.com/simo1337s/animetest/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/parental"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
 // Parental controls (internal/parental) in the API. On a device that has

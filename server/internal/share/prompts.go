@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/config"
 )
 
 // Prompt is what Home asks about another Aniko on the network: whether to

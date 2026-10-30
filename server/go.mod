@@ -1,4 +1,4 @@
-module github.com/simo1337s/animetest/server
+module github.com/v0-0x/Aniko/server
 
 go 1.26.0
 

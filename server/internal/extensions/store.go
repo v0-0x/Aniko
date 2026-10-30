@@ -6,7 +6,7 @@ import (
 
 	"github.com/dop251/goja"
 
-	"github.com/simo1337s/animetest/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 func stringifyJS(vm *goja.Runtime, v goja.Value) (json.RawMessage, bool) {

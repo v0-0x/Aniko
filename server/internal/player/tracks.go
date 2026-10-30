@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 // TrackPrefs remembers which audio and subtitle track the user picked for an

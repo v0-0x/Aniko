@@ -25,7 +25,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
 )
 
 // macBundle returns the app that the server program exe is in, or "" when

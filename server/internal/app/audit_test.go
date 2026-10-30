@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/downloads"
-	"github.com/simo1337s/animetest/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/downloads"
+	"github.com/v0-0x/Aniko/server/internal/library"
 )
 
 func newHub(t *testing.T) (*App, string) {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/simo1337s/animetest/server/internal/app"
+	"github.com/v0-0x/Aniko/server/internal/app"
 )
 
 func newHubServer(t *testing.T) *Server {

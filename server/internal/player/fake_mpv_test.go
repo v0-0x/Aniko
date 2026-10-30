@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // shortTempDir returns a test directory whose path leaves room for unix

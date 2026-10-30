@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/library"
-	"github.com/simo1337s/animetest/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/stream"
 )
 
 // An Aniko Hub (aniko --hub) plays nothing: it shares its library with the Aniko
@@ -78,12 +78,12 @@ func (a *App) startHub() {
 	a.Downloads.Start()
 	a.Update.Start()
 	a.Scanner.StartWatcher()
-	go a.Torrents.RunCounter(a.ctx)
-	go a.runPrefetch(a.ctx)
+	a.background(func() { a.Torrents.RunCounter(a.ctx) })
+	a.background(func() { a.runPrefetch(a.ctx) })
 	a.HubStore.Log(anikohub.Event{Kind: "start", By: "hub", Text: "started (Aniko Hub " + config.AppVersion + ")"})
 	a.emptyHubTrash()
-	go a.pruneAudit()
-	go func() {
+	a.background(a.pruneAudit)
+	a.background(func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()
 		a.Platform.RefreshViewer(ctx)
@@ -94,7 +94,7 @@ func (a *App) startHub() {
 		}
 		// What earlier runs didn't get to (a scan prefetches on its own).
 		a.prefetchLibrary()
-	}()
+	})
 	log.Printf("running as an Aniko Hub: %d AniList account(s) given to it", len(a.HubStore.Accounts()))
 }
 

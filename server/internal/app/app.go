@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/simo1337s/animetest/server/internal/awake"
+	"github.com/v0-0x/Aniko/server/internal/awake"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,27 +17,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anicli"
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/discord"
-	"github.com/simo1337s/animetest/server/internal/downloads"
-	"github.com/simo1337s/animetest/server/internal/events"
-	"github.com/simo1337s/animetest/server/internal/extensions"
-	"github.com/simo1337s/animetest/server/internal/history"
-	"github.com/simo1337s/animetest/server/internal/images"
-	"github.com/simo1337s/animetest/server/internal/library"
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
-	"github.com/simo1337s/animetest/server/internal/manga"
-	"github.com/simo1337s/animetest/server/internal/metadata"
-	"github.com/simo1337s/animetest/server/internal/notify"
-	"github.com/simo1337s/animetest/server/internal/player"
-	"github.com/simo1337s/animetest/server/internal/share"
-	"github.com/simo1337s/animetest/server/internal/stream"
-	"github.com/simo1337s/animetest/server/internal/torrent"
-	"github.com/simo1337s/animetest/server/internal/update"
+	"github.com/v0-0x/Aniko/server/internal/anicli"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/discord"
+	"github.com/v0-0x/Aniko/server/internal/downloads"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/extensions"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/images"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/manga"
+	"github.com/v0-0x/Aniko/server/internal/metadata"
+	"github.com/v0-0x/Aniko/server/internal/notify"
+	"github.com/v0-0x/Aniko/server/internal/player"
+	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/update"
 )
 
 type App struct {
@@ -90,6 +90,9 @@ type App struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+	// bg: the background jobs Start runs, which Shutdown waits for (they
+	// stop with ctx) before it closes the database.
+	bg sync.WaitGroup
 }
 
 // LogBuffer keeps the last server log lines for the Logs page (and, on a
@@ -488,6 +491,15 @@ func (a *App) purgeTrash() {
 	}
 }
 
+// background runs a job of Start's, which Shutdown waits for.
+func (a *App) background(job func()) {
+	a.bg.Add(1)
+	go func() {
+		defer a.bg.Done()
+		job()
+	}()
+}
+
 // Start runs the background jobs.
 func (a *App) Start() {
 	if a.HubStore != nil {
@@ -495,32 +507,34 @@ func (a *App) Start() {
 		return
 	}
 	a.Share.Start()
-	go a.runPrefetch(a.ctx)
+	a.background(func() { a.runPrefetch(a.ctx) })
 	a.Extensions.LoadAll()
 	a.Downloads.Start()
 	a.Update.Start()
 	a.Scanner.StartWatcher()
-	go a.Torrents.RunCounter(a.ctx)
-	go a.Notify.Run(a.ctx)
-	go a.purgeTrash()
-	go a.AutoDL.Loop(a.ctx, func() (bool, time.Duration) {
-		cfg := a.Settings.Get()
-		return cfg.Torrent.AutoDownloader, time.Duration(cfg.Torrent.AutoDownloadMinutes) * time.Minute
+	a.background(func() { a.Torrents.RunCounter(a.ctx) })
+	a.background(func() { a.Notify.Run(a.ctx) })
+	a.background(a.purgeTrash)
+	a.background(func() {
+		a.AutoDL.Loop(a.ctx, func() (bool, time.Duration) {
+			cfg := a.Settings.Get()
+			return cfg.Torrent.AutoDownloader, time.Duration(cfg.Torrent.AutoDownloadMinutes) * time.Minute
+		})
 	})
-	go func() {
+	a.background(func() {
 		// The Discover page, ready before it's opened.
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()
 		if d, err := a.Platform.WarmDiscover(ctx); err == nil {
 			a.PrefetchDiscoverArt(d)
 		}
-	}()
+	})
 	// The library off: nothing kept that isn't there (Continue watching
 	// would offer it).
 	if a.Settings.Get().Library.Off {
-		go a.Scanner.ForgetGone()
+		a.background(a.Scanner.ForgetGone)
 	}
-	go func() {
+	a.background(func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()
 		a.Platform.RefreshViewer(ctx)
@@ -534,7 +548,7 @@ func (a *App) Start() {
 		}
 		// What earlier runs didn't get to (a scan prefetches on its own).
 		a.prefetchLibrary()
-	}()
+	})
 }
 
 func (a *App) Shutdown() {
@@ -552,6 +566,15 @@ func (a *App) Shutdown() {
 	a.Scanner.StopWatcher()
 	a.Discord.Clear()
 	a.Extensions.Shutdown()
+	// The background jobs end with ctx; what they write (the database, the
+	// artwork in the data folder) is done before it closes.
+	done := make(chan struct{})
+	go func() { a.bg.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		log.Printf("shutdown: background jobs still running after 10s")
+	}
 	_ = a.DB.Close()
 	if a.Logs.File != nil {
 		_ = a.Logs.File.Close()

@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/config"
 )
 
 // Torrent is a torrent as reported by a client.

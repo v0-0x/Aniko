@@ -188,7 +188,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p ../dist/macos
-          config=github.com/simo1337s/animetest/server/internal/config
+          config=github.com/v0-0x/Aniko/server/internal/config
           for arch in arm64 amd64; do
             out=../dist/macos/aniko-$arch
             [ "$arch" = amd64 ] && out=../dist/macos/aniko-x64

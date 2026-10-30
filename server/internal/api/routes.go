@@ -16,11 +16,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/share"
-	"github.com/simo1337s/animetest/server/internal/stream"
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 func (s *Server) routes() {

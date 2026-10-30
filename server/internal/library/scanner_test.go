@@ -3,7 +3,7 @@ package library
 import (
 	"context"
 	"errors"
-	"github.com/simo1337s/animetest/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/events"
 )
 
 func newTestScanner(t *testing.T, dirs ...string) (*Scanner, *config.Store) {

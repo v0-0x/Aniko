@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
 )
 
 // HubArchive names an Aniko Hub release's archive for a processor (Go's

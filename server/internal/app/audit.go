@@ -9,9 +9,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/anikohub"
-	"github.com/simo1337s/animetest/server/internal/downloads"
-	"github.com/simo1337s/animetest/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/downloads"
+	"github.com/v0-0x/Aniko/server/internal/library"
 )
 
 // A hub's audit log (anikohub.Event): what the app itself puts in it.

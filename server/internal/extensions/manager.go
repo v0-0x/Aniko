@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/events"
-	"github.com/simo1337s/animetest/server/internal/torrent"
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Loaded is an installed extension.

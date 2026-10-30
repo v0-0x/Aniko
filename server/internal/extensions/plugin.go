@@ -12,7 +12,7 @@ import (
 
 	"github.com/dop251/goja"
 
-	"github.com/simo1337s/animetest/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/events"
 )
 
 // PluginHostServices are the app features plugins can call. Each function

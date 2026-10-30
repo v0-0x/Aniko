@@ -165,7 +165,7 @@ jobs:
           fi
           echo "NDK: $ndk"
           tc="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          config=github.com/simo1337s/animetest/server/internal/config
+          config=github.com/v0-0x/Aniko/server/internal/config
           libs=../android/app/src/main/jniLibs
           build() {
             local abi=$1 goarch=$2 cc=$3 goarm=${4:-}

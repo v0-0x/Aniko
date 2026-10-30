@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
-	"github.com/simo1337s/animetest/server/internal/update"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/update"
 )
 
 // Updates of Aniko itself (see package update). Devices on the LAN see the

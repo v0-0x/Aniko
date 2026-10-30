@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
 )
 
 // zipEntry is a file of a test zip: a link when link is set.

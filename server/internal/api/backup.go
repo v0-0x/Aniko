@@ -7,10 +7,10 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/backup"
-	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/lifecycle"
-	"github.com/simo1337s/animetest/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/backup"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
 // Settings › Backup & data: the user's data as one file, and back. Only this

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // How long an episode is, for an ffmpeg download's percentage: ffmpeg

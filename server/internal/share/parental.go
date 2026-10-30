@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/simo1337s/animetest/server/internal/history"
-	"github.com/simo1337s/animetest/server/internal/parental"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/parental"
 )
 
 // Parental controls (internal/parental) between Anikos: a host (a computer

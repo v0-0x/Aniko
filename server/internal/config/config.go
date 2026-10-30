@@ -10,7 +10,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/simo1337s/animetest/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 const (
@@ -22,9 +22,9 @@ const (
 
 	// UpdateRepo is the GitHub repository Aniko looks for updates in
 	// ($ANIKO_UPDATE_REPO overrides it), asked for by its number
-	// (UpdateRepoID): it was renamed once, and an old name can be taken by
-	// anyone, who would then make the updates.
-	UpdateRepo   = "v0-0x/kumo-anime"
+	// (UpdateRepoID): it has been renamed (kumo-anime, now Aniko), and an
+	// old name can be taken by anyone, who would then make the updates.
+	UpdateRepo   = "v0-0x/Aniko"
 	UpdateRepoID = "1406820679"
 )
 

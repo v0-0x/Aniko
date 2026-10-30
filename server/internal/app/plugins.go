@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/extensions"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/extensions"
 )
 
 // pluginServices exposes app data to plugins in the shapes marketplace
