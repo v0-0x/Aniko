@@ -7,6 +7,31 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 24,
+        title: "The TV: the picture, and dubs",
+        changes: [
+            {
+                title: "No more grey picture",
+                text: "When the TV plays an episode's sound under a grey picture, Kumo now converts the video for it (and keeps converting that format for this TV), and as a last resort converts it another way. Each try is written in the log of the computer or hub the episode is on.",
+            },
+            {
+                title: "Dubs without subtitles",
+                text: "On the TV, a dub starts without subtitles; turn them on from the player when you want them. Switching to the original audio turns them back on.",
+            },
+        ],
+    },
+    {
+        id: 23,
+        hub: true,
+        title: "Kumo Hub: the TV's picture",
+        changes: [
+            {
+                title: "A picture from the Raspberry Pi",
+                text: "Videos the hub converted with the Pi's encoder played their sound under a grey picture on the TV: the video's start information was missing. It's sent now, and the hub's Server log says how each video is sent (copied or converted).",
+            },
+        ],
+    },
+    {
         id: 22,
         hub: true,
         title: "Kumo Hub: an audit log",

@@ -116,8 +116,16 @@ func TestHubDeleteAndDownloadAgain(t *testing.T) {
 	if e := s.app.HubStore.AuditEvent(d.ID); e.Again.Queued == 0 || !e.Again.Dub {
 		t.Errorf("not marked queued: %+v", e.Again)
 	}
-	if dl := auditOf(t, s, "?group=downloads", signedIn); len(dl) == 0 || dl[0].Kind != "again" || dl[0].Text != "started downloading again (dubbed): 2 episodes of" || dl[0].Title != "One Piece" {
-		t.Errorf("downloads: %+v", dl)
+	// (The downloads may have failed already, here without ani-cli, and be
+	// noted after it.)
+	var again *kumohub.Event
+	for _, e := range auditOf(t, s, "?group=downloads", signedIn) {
+		if e.Kind == "again" {
+			again = &e
+		}
+	}
+	if again == nil || again.Text != "started downloading again (dubbed): 2 episodes of" || again.Title != "One Piece" || again.By != "dashboard" {
+		t.Errorf("downloading again: %+v", again)
 	}
 	// Nothing to download again: only an opening.
 	ncop := add("One Piece - NCOP2.mkv", 0, "nc")

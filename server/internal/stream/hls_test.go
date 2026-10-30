@@ -421,3 +421,91 @@ func readAll(res *http.Response) ([]byte, error) {
 		}
 	}
 }
+
+// A Raspberry Pi's encoder gives the video's header only with its first
+// frame: its MP4 is written once that's there (delay_moov), or a TV plays
+// the sound under a grey picture. The software encoder, the last resort of
+// a player with no picture, converts the video even where it could be
+// copied, at 720p on a Pi.
+func TestPiEncoderAndSoftware(t *testing.T) {
+	hevc10 := &Probe{Path: "/a/Show - 01.mkv", Container: "matroska,webm", Video: []ProbeStream{{Codec: "hevc", Profile: "Main 10", PixFmt: "yuv420p10le"}}, Audio: []ProbeStream{{Codec: "aac", Channels: 2}}}
+	st := testSettings(t)
+	cfg := st.Get()
+	cfg.Transcode.HwAccel = "v4l2m2m"
+	if _, err := st.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	l := &Local{settings: st}
+	tv := CapsOf([]string{"h264"})
+	join := func(a []string) string { return strings.Join(a, " ") }
+
+	pl := l.plan(hevc10, "", 0, tv, false)
+	if a := join(pl.args(cfg, hevc10, "/a/x.mkv", 0)); pl.videoCopy || !strings.Contains(a, "-c:v h264_v4l2m2m") {
+		t.Fatalf("converted on the Pi: %s", a)
+	}
+	if f := pl.movflags(cfg); !strings.Contains(f, "delay_moov") || !strings.Contains(f, "empty_moov") {
+		t.Errorf("the Pi's movflags: %s", f)
+	}
+	if d := pl.describe(cfg, hevc10); d != "video converted (hevc-10 to h264, h264_v4l2m2m), audio converted" {
+		t.Errorf("described: %s", d)
+	}
+
+	// A copy, and other encoders: written at once as before.
+	copied := l.plan(hevc10, "", 0, CapsOf([]string{"h264", "hevc", "hevc-10"}), false)
+	if f := copied.movflags(cfg); strings.Contains(f, "delay_moov") || !copied.videoCopy {
+		t.Errorf("a copy: %s (copy %v)", f, copied.videoCopy)
+	}
+	pc := cfg
+	pc.Transcode.HwAccel = "vaapi"
+	if f := pl.movflags(pc); strings.Contains(f, "delay_moov") {
+		t.Errorf("VAAPI: %s", f)
+	}
+
+	// Software: converted even where the player says it plays HEVC.
+	sw := copied.WithSoftware()
+	a := join(sw.args(cfg, hevc10, "/a/x.mkv", 0))
+	if sw.videoCopy || sw.method != "transcode" || !strings.Contains(a, "-c:v libx264 -preset ultrafast") || !strings.Contains(a, "min(1280,iw)") || strings.Contains(a, "v4l2m2m") || strings.Contains(a, "hvc1") {
+		t.Errorf("software on the Pi: %+v %s", sw, a)
+	}
+	if f := sw.movflags(cfg); strings.Contains(f, "delay_moov") {
+		t.Errorf("software's movflags: %s", f)
+	}
+	if a := join(sw.args(pc, hevc10, "/a/x.mkv", 0)); !strings.Contains(a, "-c:v libx264 -preset") || strings.Contains(a, "1280") || strings.Contains(a, "vaapi") {
+		t.Errorf("software on a computer: %s", a)
+	}
+}
+
+// With real ffmpeg: an encoder that gives the video's header only with its
+// first frame (as a Raspberry Pi's does; libx264 told not to make a global
+// header here) leaves the streamed MP4 without one, so players drop the
+// video and play the sound; the Pi's movflags (delay_moov) put it there.
+func TestHeaderFromTheFirstFrame(t *testing.T) {
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Skip("ffmpeg not installed")
+	}
+	ffprobe, err := exec.LookPath("ffprobe")
+	if err != nil {
+		t.Skip("ffprobe not installed")
+	}
+	cfg := testSettings(t).Get()
+	cfg.Transcode.HwAccel = "v4l2m2m"
+	pi := plan{method: "transcode"}
+	header := func(movflags string) string {
+		out := filepath.Join(t.TempDir(), "out.mp4")
+		args := []string{"-loglevel", "error", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=24", "-t", "4",
+			"-c:v", "libx264", "-preset", "ultrafast", "-flags:v", "-global_header", "-g", "48",
+			"-movflags", movflags, "-f", "mp4", out}
+		if b, err := exec.Command(ffmpeg, args...).CombinedOutput(); err != nil {
+			t.Skipf("can't encode with libx264: %v %s", err, b)
+		}
+		b, _ := exec.Command(ffprobe, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=extradata_size,width", "-of", "default=nw=1", out).CombinedOutput()
+		return strings.TrimSpace(string(b))
+	}
+	if got := header("frag_keyframe+empty_moov+default_base_moof"); strings.Contains(got, "width=320") {
+		t.Logf("this ffmpeg makes the header anyway: %s", got)
+	}
+	if got := header(pi.movflags(cfg)); !strings.Contains(got, "width=320") || strings.Contains(got, "extradata_size=0") {
+		t.Errorf("with the Pi's movflags, the video's header: %q", got)
+	}
+}

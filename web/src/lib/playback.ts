@@ -53,16 +53,48 @@ export function videoCaps(via: "mse" | "element"): string[] {
         ["vp9", "vp09.00.40.08"],
         ["vp9-10", "vp09.02.40.10"],
     ]
+    const none = noPicture()
     for (const [cap, codecs] of tests) {
         // Android's WebView says yes to 10-bit H.264 and plays only its
         // sound: the TVs' decoders don't have it.
         if (cap === "h264-10" && /Android/.test(ua)) continue
+        if (none.includes(cap)) continue
         if (can(codecs)) caps.push(cap)
     }
     // Chromium plays Matroska (.mkv) files as they are; Safari doesn't, nor
     // Android's (a TV's WebView): those get them repackaged into MP4.
     if (chromium && via === "element" && !/Android/.test(ua)) caps.push("mkv")
     return caps
+}
+
+// A video's format as the server names it (stream.videoFormat): "hevc-10".
+export function videoFormat(v: { codec: string; profile?: string; pixFmt?: string }) {
+    const deep = /p10|p12/.test(v.pixFmt ?? "") || /10/.test(v.profile ?? "")
+    return deep ? `${v.codec}-10` : v.codec
+}
+
+// The formats this device said it plays and then showed no picture of (the
+// player's picture watchdog): converted for it from then on. Plain H.264
+// isn't put here, as everything is converted to it.
+const NO_PICTURE = "kumo-no-picture"
+
+export function noPicture(): string[] {
+    try {
+        const v = JSON.parse(localStorage.getItem(NO_PICTURE) ?? "[]")
+        return Array.isArray(v) ? v.filter(x => typeof x === "string") : []
+    } catch {
+        return []
+    }
+}
+
+export function markNoPicture(format: string) {
+    if (format === "h264") return
+    try {
+        const all = noPicture()
+        if (!all.includes(format)) localStorage.setItem(NO_PICTURE, JSON.stringify([...all, format]))
+    } catch {
+        /* not kept: asked again next time */
+    }
 }
 
 // A random id; crypto.randomUUID only exists on https and localhost, and

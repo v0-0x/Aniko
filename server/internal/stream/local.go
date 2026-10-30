@@ -328,6 +328,18 @@ type plan struct {
 	audioCopy bool
 	hevc      bool // copied HEVC: tagged so Apple devices play it
 	audio     int  // the audio track, among the file's audio tracks
+	// The video converted by ffmpeg's own (software) encoder, not this
+	// computer's: a player that showed no picture of the other (see
+	// WithSoftware).
+	software bool
+}
+
+// WithSoftware is the plan with the video converted in software (libx264),
+// whatever the player could play or the computer's encoder is: the last
+// thing a player that showed no picture tries (?encoder=software).
+func (pl plan) WithSoftware() plan {
+	pl.software, pl.videoCopy, pl.hevc, pl.method = true, false, false, "transcode"
+	return pl
 }
 
 // plan works out the conversion for method (direct or "" means decide),
@@ -366,7 +378,7 @@ func (l *Local) plan(p *Probe, method string, audio int, caps Caps, hls bool) pl
 func (pl plan) args(cfg config.Settings, p *Probe, path string, start float64) []string {
 	args := []string{"-hide_banner", "-loglevel", "error", "-nostdin"}
 	hw := cfg.Transcode.HwAccel
-	if !pl.videoCopy && hw == "vaapi" {
+	if !pl.videoCopy && !pl.software && hw == "vaapi" {
 		args = append(args, "-vaapi_device", cfg.Transcode.VaapiNode)
 	}
 	if start > 0 {
@@ -383,6 +395,13 @@ func (pl plan) args(cfg config.Settings, p *Probe, path string, start float64) [
 		args = append(args, "-c:v", "copy")
 		if pl.hevc {
 			args = append(args, "-tag:v", "hvc1")
+		}
+	} else if pl.software {
+		if hw == "v4l2m2m" {
+			// A Raspberry Pi's CPU: as fast as it goes, at 720p.
+			args = append(args, "-vf", "scale='min(1280,iw)':-2,format=yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-profile:v", "high", "-g", "48")
+		} else {
+			args = append(args, "-c:v", "libx264", "-preset", cfg.Transcode.Preset, "-crf", "21", "-pix_fmt", "yuv420p", "-profile:v", "high")
 		}
 	} else {
 		switch hw {
@@ -406,6 +425,45 @@ func (pl plan) args(cfg config.Settings, p *Probe, path string, start float64) [
 		args = append(args, "-c:a", "aac", "-ac", "2", "-b:a", "192k")
 	}
 	return append(args, "-sn", "-dn")
+}
+
+// describe says what the plan does, for the log: "video copied (hevc-10),
+// audio converted".
+func (pl plan) describe(cfg config.Settings, p *Probe) string {
+	video := "no video"
+	if len(p.Video) > 0 {
+		f := videoFormat(p.Video[0])
+		switch {
+		case pl.videoCopy:
+			video = "video copied (" + f + ")"
+		case pl.software:
+			video = "video converted in software (" + f + " to h264, libx264)"
+		default:
+			video = "video converted (" + f + " to h264, " + encoderName(cfg) + ")"
+		}
+	}
+	audio := "audio converted"
+	if pl.audioCopy {
+		audio = "audio copied"
+	}
+	if len(p.Audio) == 0 {
+		audio = "no audio"
+	}
+	return video + ", " + audio
+}
+
+// movflags make the MP4 a stream players start on before it's done
+// (fragments, the header first). A Raspberry Pi's encoder (h264_v4l2m2m)
+// gives the video's header (SPS/PPS) only with its first frame, not when
+// it starts as other encoders do: written first, the MP4's header had none,
+// and a TV played the sound under a grey picture. delay_moov writes it once
+// the first frame is there.
+func (pl plan) movflags(cfg config.Settings) string {
+	flags := "frag_keyframe+empty_moov+default_base_moof"
+	if !pl.videoCopy && !pl.software && cfg.Transcode.HwAccel == "v4l2m2m" {
+		flags += "+delay_moov"
+	}
+	return flags
 }
 
 // SeekPoint returns where a stream asked to start at t really starts, which
@@ -561,6 +619,9 @@ func (l *Local) ServeTranscode(w http.ResponseWriter, r *http.Request, path stri
 		return
 	}
 	pl := l.plan(p, method, audio, caps, false)
+	if r.URL.Query().Get("encoder") == "software" {
+		pl = pl.WithSoftware()
+	}
 	method = pl.method
 	if method == "transcode" {
 		release, ok := l.TranscodeSlot()
@@ -570,7 +631,10 @@ func (l *Local) ServeTranscode(w http.ResponseWriter, r *http.Request, path stri
 		}
 		defer release()
 	}
-	args := append(pl.args(cfg, p, path, start), "-movflags", "frag_keyframe+empty_moov+default_base_moof", "-f", "mp4", "pipe:1")
+	args := append(pl.args(cfg, p, path, start), "-movflags", pl.movflags(cfg), "-f", "mp4", "pipe:1")
+	// What each stream is, for the log: why a player shows no picture
+	// starts there.
+	log.Printf("stream: %s from %.0fs: %s", filepath.Base(path), start, pl.describe(cfg, p))
 
 	// ffmpeg is stopped when the request ends, or as soon as the player stops
 	// reading (see below).
@@ -690,6 +754,11 @@ func (l *Local) Encoder() string {
 	if _, ok := util.LookPath(cfg.Transcode.FfmpegPath); !ok {
 		return ""
 	}
+	return encoderName(cfg)
+}
+
+// encoderName is the H.264 encoder the settings pick.
+func encoderName(cfg config.Settings) string {
 	switch cfg.Transcode.HwAccel {
 	case "vaapi":
 		return "h264_vaapi"

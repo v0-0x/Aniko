@@ -28,7 +28,7 @@ import {
 import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, ApiError, qs } from "@/lib/api"
-import { prefersHls, randomId, videoCaps } from "@/lib/playback"
+import { markNoPicture, prefersHls, randomId, videoCaps, videoFormat } from "@/lib/playback"
 import { canPip, closeMini, expandMini, openMini } from "@/lib/pip"
 import { useSettings } from "@/lib/queries"
 import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
@@ -205,13 +205,21 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const ended = useRef(false)
     const skipped = useRef<Set<string>>(new Set())
     const prefsRef = useRef<TrackPrefs | null>(null)
+    // An online stream that's the dub.
+    const dubbed = useRef(false)
 
     const mediaId = req.mediaId
     const episode = req.episode
     const source = req.kind === "local" ? "local" : req.provider === "ani-cli" ? "anicli" : "stream"
     // Safari and iPhone/iPad get converted files as HLS (see lib/playback).
     const hlsMode = useMemo(() => prefersHls(), [])
-    const caps = useMemo(() => videoCaps(hlsMode && Hls.isSupported() ? "mse" : "element"), [hlsMode])
+    const allCaps = useMemo(() => videoCaps(hlsMode && Hls.isSupported() ? "mse" : "element"), [hlsMode])
+    // Formats that showed no picture here: converted (see the picture
+    // watchdog). And, last, the video converted in software rather than by
+    // the computer's encoder.
+    const [noPic, setNoPic] = useState<string[]>([])
+    const caps = useMemo(() => allCaps.filter(c => !noPic.includes(c)), [allCaps, noPic])
+    const [software, setSoftware] = useState(false)
     const clientId = useMemo(() => randomId(), [])
     const base = req.kind === "local" && method !== "direct" && stream ? stream.base : offset
     const absTime = (v: HTMLVideoElement) => v.currentTime + base
@@ -324,6 +332,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     } else {
                         setSubKey(pickSub(subOpts, handSub ? p : null, settings?.playback.preferredSubLang ?? "", (res.probe.subtitles ?? []).find(s => s.default)?.typeIndex))
                     }
+                    // On a TV, a dub starts without subtitles (also when some
+                    // were kept with it): turned on by hand when wanted.
+                    if (tv && audio[ai] && isEnglishTrack(audio[ai].lang, audio[ai].title)) setSubKey("off")
                     if (handed?.sub && (handed.sub === "off" || subOpts.some(o => o.key === handed.sub))) setSubKey(handed.sub)
                 } else {
                     const res = await api.get<{ sources: StreamSource[]; resumeAt: number; tracks: TrackPrefs | null; title: string; dub?: boolean }>(
@@ -333,6 +344,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     prefsRef.current = res.tracks
                     // The other version, when the one asked for has no stream.
                     const dub = res.dub ?? !!req.dub
+                    dubbed.current = dub
                     if (dub !== !!req.dub) toast.info(dub ? "This episode is only dubbed: playing the dub" : "No dub of this episode: playing it with subtitles")
                     const media = await api.get<EntryView>(`/api/anime/${req.mediaId}`).catch(() => null)
                     setTitle(`${animeTitle(media?.media) || res.title || "Episode"} — Episode ${req.episode}${dub ? " (Dub)" : ""}`)
@@ -370,11 +382,13 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     }, [])
 
     // handed: the subtitles picked in the other player (picture in picture).
+    // On a TV, a dub starts without them.
     const applyStreamSubs = (src?: StreamSource, handed?: string) => {
         const opts: SubOption[] = (src?.subtitles ?? []).map((s, i) => ({ key: `s${i}`, label: s.language || `Subtitle ${i + 1}`, lang: s.language, title: s.language, index: i, url: s.url }))
         setSubs(opts)
         const def = opts.find((_, i) => src?.subtitles[i].isDefault) ?? opts.find(o => /eng/i.test(o.lang))
         if (handed && (handed === "off" || opts.some(o => o.key === handed))) setSubKey(handed)
+        else if (tv && dubbed.current) setSubKey("off")
         else setSubKey(pickSub(opts, prefsRef.current, settings?.playback.preferredSubLang ?? "", undefined, def?.key))
     }
 
@@ -411,7 +425,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                         .catch(e => ({ start: offset, method: e instanceof ApiError && offset > 0 ? "transcode" : undefined }))
                     if (!cancelled)
                         setStream({
-                            url: `/api/local/transcode${qs({ path: req.path, start: sp.start.toFixed(3), audio: audioIndex, method: sp.method || method, caps: c })}`,
+                            url: `/api/local/transcode${qs({ path: req.path, start: sp.start.toFixed(3), audio: audioIndex, method: sp.method || method, caps: c, encoder: software ? "software" : undefined })}`,
                             base: sp.start,
                             hls: false,
                         })
@@ -424,7 +438,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
             cancelled = true
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [req, probe, method, offset, audioIndex, restart])
+    }, [req, probe, method, offset, audioIndex, restart, caps, software])
 
     // End the HLS session when the player closes.
     const sessionRef = useRef<string | undefined>(undefined)
@@ -537,16 +551,21 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoSrc, stream, videoKey])
 
-    // No picture: a TV's WebView sometimes plays the sound of a converted
-    // file and shows a grey picture, the first time (opened again, it plays).
-    // Sound for a few seconds without one video frame shown: it's opened
-    // again from there, in a new video element, as closing and opening the
-    // player would do; and when even that shows nothing decoded, the video is
-    // converted too.
+    // No picture: a TV's WebView sometimes plays the sound under a grey
+    // picture. Sound for a few seconds without one video frame shown:
+    //   1. it's opened again from there, in a new video element, as closing
+    //      and opening the player would do (a first-time glitch);
+    //   2. when still nothing is decoded and the video was copied (the TV
+    //      said it plays that format), it's converted, and the format is
+    //      converted for this device from then on (lib/playback);
+    //   3. when converted video shows nothing either (a computer's encoder
+    //      the TV can't take), it's converted in software;
+    //   4. then it says so, and the sound plays on.
+    // Each try is in the computer's log, where the file is (a note).
     useEffect(() => {
         const v = videoRef.current
         // Not for a file without video (sound only).
-        if (!v || !videoSrc || req.kind !== "local" || pictureTries.current >= 2 || (probe && !probe.video?.length)) return
+        if (!v || !videoSrc || req.kind !== "local" || pictureTries.current >= 4 || (probe && !probe.video?.length)) return
         // Frames shown (requestVideoFrameCallback), or else decoded.
         const rvfc = "requestVideoFrameCallback" in v
         let frames = 0
@@ -578,18 +597,35 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
             const at = absTime(v)
             const tries = ++pictureTries.current
             const vt = probe?.video?.[0]
+            const format = vt ? videoFormat(vt) : ""
+            // The server copies the video when the TV says it plays it.
+            const copied = !software && !!format && caps.includes(format)
             note(
-                `no picture after 3s of sound (try ${tries}, ${method}${stream?.hls ? " hls" : ""}, from ${Math.round(at)}s, ` +
-                    `${vt?.codec ?? "?"} ${vt?.height ?? "?"}p, ${decoded()} decoded, ${rvfc ? frames + " shown" : "no frame callback"}, ` +
+                `no picture after 3s of sound (try ${tries}, ${method}${software ? " software" : ""}${stream?.hls ? " hls" : ""}, ` +
+                    `video ${copied ? "copied" : "converted"}, from ${Math.round(at)}s, ` +
+                    `${format || "?"} ${vt?.height ?? "?"}p, ${decoded()} decoded, ${rvfc ? frames + " shown" : "no frame callback"}, ` +
                     `${v.videoWidth}x${v.videoHeight}, ready ${v.readyState})`,
             )
-            if (tries === 1) {
-                reopen(at)
-            } else if (decoded() === 0 && method !== "transcode") {
-                toast.info("Converting the video for this device…")
+            const again = (next: () => void) => {
                 startAt.current = 0
                 setOffset(at)
+                next()
                 setMethod("transcode")
+            }
+            if (tries === 1) {
+                reopen(at)
+            } else if (decoded() > 0) {
+                // Frames decoded, none shown: converting wouldn't change that.
+            } else if (copied) {
+                toast.info("Converting the video for this device…")
+                markNoPicture(format)
+                again(() => setNoPic(n => [...n, format]))
+            } else if (!software) {
+                toast.info("Converting the video another way…")
+                again(() => setSoftware(true))
+            } else {
+                pictureTries.current = 4
+                toast.error("This device shows no picture of this video: only its sound plays.")
             }
         }, 500)
         return () => {
@@ -863,6 +899,18 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         const english = (a: { language: string; title: string }) => isEnglishTrack(a.language, a.title)
         const picked = audio[i]
         const mode = picked && audio.some(english) && audio.some(a => !english(a)) ? (english(picked) ? "dub" : "sub") : undefined
+        // On a TV: the dub without subtitles, the original with them.
+        if (tv && picked && english(picked)) {
+            setSubKey("off")
+            saveTrackPrefs({ audio: i, mode, sub: "off" })
+            return
+        }
+        const full = subs.find(o => !o.bitmap && (langIn(o.lang, "eng,en") || /english/i.test(o.title)) && !/sign|song|forced/i.test(o.title))
+        if (tv && mode === "sub" && subKey === "off" && full) {
+            setSubKey(full.key)
+            saveTrackPrefs({ audio: i, mode, sub: full.key })
+            return
+        }
         saveTrackPrefs({ audio: i, mode })
     }
     const changeSub = (key: string) => {

@@ -334,6 +334,8 @@ export type ProbeStream = {
     channels?: number
     width?: number
     height?: number
+    profile?: string
+    pixFmt?: string
     bitmap?: boolean
 }
 
