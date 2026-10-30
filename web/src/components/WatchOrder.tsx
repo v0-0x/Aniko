@@ -108,17 +108,13 @@ function Entries({ order, view, current, status }: { order: Order; view: View; c
     return (
         <>
             <p className="text-sm text-muted">
-                {view === "release"
-                    ? "In the order it came out."
-                    : order.edited
-                      ? "Your order, kept on this device."
-                      : "In story order, from AniList's prequel and sequel links. Where they say nothing, by release date."}
+                {view === "release" ? "The order it came out in." : order.edited ? "Your order, kept on this device." : "The order the story happens in."}
                 {hidden > 0 && ` ${hidden} hidden.`}
             </p>
             {conflicts && (
                 <p className="flex items-center gap-2 text-sm text-amber-300">
                     <TriangleAlert className="size-4 shrink-0" />
-                    AniList's links contradict each other here, so part of this order is by release date. Edit it if it's wrong.
+                    Part of this order is a guess. Edit it if it's wrong.
                 </p>
             )}
             <ol className="flex flex-col divide-y divide-line rounded-xl border border-line">
@@ -168,7 +164,7 @@ function Row({
                     {note && <Badge>{note}</Badge>}
                     {story && entry.conflict && (
                         <span className="flex items-center gap-1 text-amber-300">
-                            <TriangleAlert className="size-3.5" /> links conflict
+                            <TriangleAlert className="size-3.5" /> order unsure
                         </span>
                     )}
                     {story && entry.byDate && (

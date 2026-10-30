@@ -21,7 +21,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Story and release order",
-                text: "An anime's page now shows its franchise in order, under the episodes and in Details: the story's (from AniList's prequel and sequel links, release dates where they say nothing) and the release order, with recaps marked skippable and spin-offs apart. Edit the story order to your own; it's kept on this device.",
+                text: "An anime's page now shows its franchise in order, under the episodes and in Details: the order the story happens in and the order it came out in, with recaps marked skippable and spin-offs apart. Edit the story order to your own; it's kept on this device.",
             },
         ],
     },
