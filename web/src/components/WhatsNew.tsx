@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Button, Dialog } from "@/components/ui"
 import { RELEASES } from "@/lib/changes"
-import { useStatus } from "@/lib/queries"
+import { useSharing, useStatus } from "@/lib/queries"
 import { createStore, playerStore, useStore } from "@/lib/store"
 
 // The newest entry of RELEASES this device has shown (it's shown once, on
@@ -62,8 +62,16 @@ export function WhatsNew() {
         markSeen()
         whatsNewStore.set(null)
     }
-    const releases = open === "all" ? RELEASES : RELEASES.filter(r => r.id > since)
-    if (!open || releases.length === 0) return null
+    // Kumo Hub's entries only where there's a hub: among the Kumos this one
+    // knows (Settings › Other devices).
+    const { data: sharing, isLoading: sharingLoading } = useSharing(!!open)
+    const hub = !!sharing?.peers?.some(p => p.role === "hub")
+    const releases = (open === "all" ? RELEASES : RELEASES.filter(r => r.id > since)).filter(r => !r.hub || hub)
+    // Only a hub's news since the last time, and no hub here: nothing to say.
+    useEffect(() => {
+        if (open === "new" && !sharingLoading && releases.length === 0) close()
+    })
+    if (!open || sharingLoading || releases.length === 0) return null
     return (
         <Dialog open onOpenChange={v => !v && close()} title="What's new in Kumo" className="w-[min(94vw,640px)]" footer={<Button variant="primary" onClick={close}>Got it</Button>}>
             <div className="flex flex-col gap-6">

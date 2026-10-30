@@ -2,11 +2,13 @@
 // update (components/WhatsNew). A new entry gets the next id.
 
 export type Change = { title: string; text: string; to?: string }
-export type Release = { id: number; title: string; changes: Change[] }
+// hub: about Kumo Hub; shown only on a device that knows a hub.
+export type Release = { id: number; title: string; changes: Change[]; hub?: boolean }
 
 export const RELEASES: Release[] = [
     {
         id: 21,
+        hub: true,
         title: "Kumo Hub: delete from its library",
         changes: [
             {
@@ -69,6 +71,7 @@ export const RELEASES: Release[] = [
     },
     {
         id: 15,
+        hub: true,
         title: "Kumo Hub: its library, with artwork",
         changes: [
             {
@@ -79,6 +82,7 @@ export const RELEASES: Release[] = [
     },
     {
         id: 14,
+        hub: true,
         title: "Kumo Hub: put its library right",
         changes: [
             {
@@ -99,6 +103,7 @@ export const RELEASES: Release[] = [
     },
     {
         id: 12,
+        hub: true,
         title: "Only the hub's library",
         changes: [
             {
@@ -121,6 +126,7 @@ export const RELEASES: Release[] = [
     },
     {
         id: 10,
+        hub: true,
         title: "Kumo Hub",
         changes: [
             {
