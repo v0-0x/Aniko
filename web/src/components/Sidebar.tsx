@@ -1,4 +1,5 @@
 import {
+    ArrowLeft,
     Bell,
     BellOff,
     BookOpen,
@@ -22,7 +23,7 @@ import {
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
-import { api } from "@/lib/api"
+import { api, desktop } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
 import { useCollection, useDownloads, useStatus } from "@/lib/queries"
 import { notificationsMutedStore, torrentCountStore, useStore } from "@/lib/store"
@@ -114,6 +115,51 @@ export function useNavGroups(): { label: string; items: NavItem[] }[] {
     ]
 }
 
+// Back to the page before, when there's one in Kumo. Not on a TV: its
+// remote has Back. In the desktop app, Alt+Left (⌘[ on a Mac) and a
+// mouse's back button too, which a browser does by itself.
+function BackButton({ wide }: { wide: boolean }) {
+    const location = useLocation()
+    const navigate = useNavigate()
+    // React Router counts the pages it went through (history.state.idx).
+    const canGoBack = ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0
+    useEffect(() => {
+        if (!canGoBack || !desktop()) return
+        const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))
+        const onKey = (e: KeyboardEvent) => {
+            const mac = navigator.platform.startsWith("Mac")
+            if (((!mac && e.altKey && e.key === "ArrowLeft") || (mac && e.metaKey && e.key === "[")) && !typing(e.target)) {
+                e.preventDefault()
+                navigate(-1)
+            }
+        }
+        const onMouse = (e: MouseEvent) => {
+            if (e.button === 3) {
+                e.preventDefault()
+                navigate(-1)
+            }
+        }
+        window.addEventListener("keydown", onKey)
+        window.addEventListener("mouseup", onMouse)
+        return () => {
+            window.removeEventListener("keydown", onKey)
+            window.removeEventListener("mouseup", onMouse)
+        }
+    }, [canGoBack, navigate, location.key])
+    if (!canGoBack) return null
+    return (
+        <Tooltip content="Back" side={wide ? "bottom" : "right"}>
+            <button
+                onClick={() => navigate(-1)}
+                aria-label="Back"
+                className="focus-ring grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-white/[0.06] hover:text-fg"
+            >
+                <ArrowLeft className="size-[18px] stroke-[1.75]" />
+            </button>
+        </Tooltip>
+    )
+}
+
 // Labels from 1024px wide; narrower, only the icons, named by tooltips.
 const WIDE = "(min-width: 1024px)"
 // A short window (a laptop's): the groups without their names, closer.
@@ -203,14 +249,22 @@ export function Sidebar() {
 
     return (
         <aside className={cn("relative z-40 flex h-full shrink-0 flex-col py-3", wide ? "w-56 px-3" : "w-16 items-center px-2")}>
-            {/* Home is the first link below: the remote skips this one. */}
-            <button onClick={() => navigate("/")} data-tv-skip-nav className={cn("focus-ring mb-4 flex h-10 items-center gap-2.5 rounded-md", wide ? "px-2" : "justify-center")} aria-label="Kumo home">
-                <span className="relative shrink-0">
-                    <KumoLogo className="size-7" />
-                    <HolidayOnLogo holiday={holiday} />
-                </span>
-                {wide && <KumoWordmark className="h-[18px] w-auto text-fg" />}
-            </button>
+            <div className={cn("mb-4 flex", wide ? "items-center gap-1" : "flex-col items-center gap-1")}>
+                {/* Home is the first link below: the remote skips this one. */}
+                <button
+                    onClick={() => navigate("/")}
+                    data-tv-skip-nav
+                    className={cn("focus-ring flex h-10 items-center gap-2.5 rounded-md", wide ? "min-w-0 flex-1 px-2" : "justify-center")}
+                    aria-label="Kumo home"
+                >
+                    <span className="relative shrink-0">
+                        <KumoLogo className="size-7" />
+                        <HolidayOnLogo holiday={holiday} />
+                    </span>
+                    {wide && <KumoWordmark className="h-[18px] w-auto text-fg" />}
+                </button>
+                {!tv && <BackButton wide={wide} />}
+            </div>
 
             <nav
                 ref={navRef}

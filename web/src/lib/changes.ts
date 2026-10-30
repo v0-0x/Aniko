@@ -6,6 +6,16 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 20,
+        title: "A back arrow",
+        changes: [
+            {
+                title: "Back, at the top left",
+                text: "Once you've opened a page (an anime, a setting, a list), an arrow next to the Kumo logo takes you back to the one before. In the desktop app, Alt+Left (⌘[ on a Mac) and a mouse's back button do too.",
+            },
+        ],
+    },
+    {
         id: 19,
         title: "Watch order (experimental)",
         changes: [
