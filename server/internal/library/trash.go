@@ -221,16 +221,16 @@ func (t *Trash) Delete(paths []string) (removed []Removed, failed map[string]str
 	defer t.mu.Unlock()
 	failed = map[string]string{}
 	var gone []string
-	for _, p := range paths {
-		p = filepath.Clean(p)
+	for _, given := range paths {
+		p := filepath.Clean(given)
 		f, st, err := t.check(p)
 		if err != nil {
-			failed[p] = err.Error()
+			failed[given] = err.Error()
 			continue
 		}
 		subs := subtitlesOf(p)
 		if err := os.Remove(p); err != nil {
-			failed[p] = "couldn't delete it: " + err.Error()
+			failed[given] = "couldn't delete it: " + err.Error()
 			continue
 		}
 		for _, sub := range subs {

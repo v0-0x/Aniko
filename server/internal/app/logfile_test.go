@@ -18,6 +18,7 @@ func TestLogFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { l.Close() }) // Windows deletes no open file
 	pad := strings.Repeat("x", 1000)
 	n := 3 * logFileMax / 1000
 	for i := 0; i < n; i++ {
@@ -71,6 +72,7 @@ func TestLogFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { l2.Close() })
 	fmt.Fprintln(l2, "started again")
 	if lines, _, _ := l2.Lines("", false, 0, 2); lines[0] != "started again" || !strings.Contains(lines[1], fmt.Sprintf("line %d ", n-1)) {
 		t.Errorf("after reopening: %.40q", lines)
@@ -80,7 +82,11 @@ func TestLogFile(t *testing.T) {
 // Past logFiles files, the oldest goes.
 func TestLogFileKeepsTen(t *testing.T) {
 	dir := t.TempDir()
-	l, _ := OpenLogFile(dir)
+	l, err := OpenLogFile(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { l.Close() })
 	big := strings.Repeat("y", logFileMax-10) + "\n"
 	for i := 0; i < logFiles+3; i++ {
 		l.Write([]byte(big))
