@@ -26,16 +26,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Kumo's server, the same as on a computer, built for Android and shipped as
- * the app's "native library" libkumo.so (Android extracts those somewhere it
+ * Aniko's server, the same as on a computer, built for Android and shipped as
+ * the app's "native library" libaniko.so (Android extracts those somewhere it
  * may run them). The app shows the web UI it serves on 127.0.0.1.
  */
-final class KumoServer {
+final class AnikoServer {
     static final int PORT = 43211;
     static final String URL = "http://127.0.0.1:" + PORT + "/";
-    private static final String TAG = "kumo";
+    private static final String TAG = "aniko";
 
-    private static KumoServer instance;
+    private static AnikoServer instance;
 
     private final Context ctx;
     private Process process;
@@ -46,12 +46,12 @@ final class KumoServer {
     // The server's last lines, to show when it doesn't start.
     private final ArrayDeque<String> last = new ArrayDeque<>();
 
-    private KumoServer(Context ctx) {
+    private AnikoServer(Context ctx) {
         this.ctx = ctx.getApplicationContext();
     }
 
-    static synchronized KumoServer get(Context ctx) {
-        if (instance == null) instance = new KumoServer(ctx);
+    static synchronized AnikoServer get(Context ctx) {
+        if (instance == null) instance = new AnikoServer(ctx);
         return instance;
     }
 
@@ -66,7 +66,7 @@ final class KumoServer {
     }
 
     private File binary() {
-        return new File(ctx.getApplicationInfo().nativeLibraryDir, "libkumo.so");
+        return new File(ctx.getApplicationInfo().nativeLibraryDir, "libaniko.so");
     }
 
     /** Starts the server, unless it's running. */
@@ -78,7 +78,7 @@ final class KumoServer {
         }
         // The one this app started before it was ended may still be
         // stopping (saving where a video was): this one waits for its port.
-        // One that doesn't stop by itself (started by an older Kumo, which
+        // One that doesn't stop by itself (started by an older Aniko, which
         // didn't ask that) is asked to.
         waitForPort(40);
         if (portTaken()) {
@@ -86,7 +86,7 @@ final class KumoServer {
             waitForPort(40);
         }
         File files = ctx.getFilesDir();
-        File data = new File(files, "kumo");
+        File data = dataDir();
         File cache = ctx.getCacheDir();
         File run = new File(cache, "run");
         //noinspection ResultOfMethodCallIgnored
@@ -100,9 +100,9 @@ final class KumoServer {
         cmd.add("--exit-with-stdin");
         ProcessBuilder pb = new ProcessBuilder(cmd).directory(files).redirectErrorStream(true);
         environment(pb.environment());
-        // The app's WebView proves it's Kumo's with it (a cookie): other
+        // The app's WebView proves it's Aniko's with it (a cookie): other
         // apps reach 127.0.0.1 too, and get nothing.
-        pb.environment().put("KUMO_SHELL_TOKEN", token());
+        pb.environment().put("ANIKO_SHELL_TOKEN", token());
         synchronized (last) {
             last.clear();
         }
@@ -121,9 +121,22 @@ final class KumoServer {
                 }
             } catch (IOException ignored) {
             }
-        }, "kumo-log");
+        }, "aniko-log");
         logs.setDaemon(true);
         logs.start();
+    }
+
+    /**
+     * The server's data: files/aniko. Aniko was called Kumo before 2.0.37, and
+     * kept it in files/kumo, which moves there the first time (or stays in
+     * use while it can't be).
+     */
+    private File dataDir() {
+        File files = ctx.getFilesDir();
+        File data = new File(files, "aniko");
+        File old = new File(files, "kumo");
+        if (!data.exists() && old.isDirectory() && !old.renameTo(data)) return old;
+        return data;
     }
 
     private void environment(Map<String, String> env) {
@@ -134,9 +147,9 @@ final class KumoServer {
         env.put("XDG_RUNTIME_DIR", new File(cache, "run").getAbsolutePath());
         env.put("XDG_CACHE_HOME", cache.getAbsolutePath());
         env.put("XDG_CONFIG_HOME", new File(files, "config").getAbsolutePath());
-        env.put("KUMO_DATA_DIR", new File(files, "kumo").getAbsolutePath());
+        env.put("ANIKO_DATA_DIR", dataDir().getAbsolutePath());
         env.put("TZ", TimeZone.getDefault().getID());
-        env.put("KUMO_DEVICE_NAME", deviceName());
+        env.put("ANIKO_DEVICE_NAME", deviceName());
     }
 
     /**
@@ -169,7 +182,7 @@ final class KumoServer {
                 }
             }
             p.destroy();
-        }, "kumo-stop").start();
+        }, "aniko-stop").start();
     }
 
     private static void waitForPort(int quarters) {
@@ -203,8 +216,9 @@ final class KumoServer {
             } catch (IOException e) {
                 continue; // another app's: not readable
             }
-            // Kumo's server, wherever an older install put it.
-            if (cmd.contains("/libkumo.so")) {
+            // Aniko's server, wherever an older install put it (libkumo.so:
+            // its name before the rename).
+            if (cmd.contains("/libaniko.so") || cmd.contains("/libkumo.so")) {
                 Log.i(TAG, "stopping the server left from before (" + pid + ")");
                 android.os.Process.sendSignal(pid, 15); // SIGTERM: it saves, then stops
             }
@@ -222,7 +236,7 @@ final class KumoServer {
     }
 
     /**
-     * What the app's WebView proves it's Kumo's with (in a cookie, see
+     * What the app's WebView proves it's Aniko's with (in a cookie, see
      * MainActivity): made once, kept where only this app can read it.
      */
     synchronized String token() {
@@ -326,7 +340,7 @@ final class KumoServer {
         List<String> found = new ArrayList<>();
         String mark = pid > 0 ? "(" + pad(pid) + ")" : null;
         for (String line : lc.lines) {
-            boolean ours = (mark != null && line.contains(mark)) || line.contains("libkumo");
+            boolean ours = (mark != null && line.contains(mark)) || line.contains("libaniko");
             // The server's own lines are shown already.
             if (!ours || line.startsWith("I/" + TAG)) continue;
             found.add(line);
@@ -394,7 +408,7 @@ final class KumoServer {
                     }
                 } catch (IOException ignored) {
                 }
-            }, "kumo-run");
+            }, "aniko-run");
             reader.setDaemon(true);
             reader.start();
             long until = System.currentTimeMillis() + ms;
@@ -428,7 +442,7 @@ final class KumoServer {
                 + ", " + TextUtils.join("/", Build.SUPPORTED_ABIS) + ", program: " + abi + ", " + (binary().length() / (1024 * 1024)) + " MB";
     }
 
-    /** What the other Kumo apps call this one: the device's name. */
+    /** What the other Aniko apps call this one: the device's name. */
     private String deviceName() {
         String name = null;
         if (Build.VERSION.SDK_INT >= 25) {
@@ -438,6 +452,6 @@ final class KumoServer {
             name = Settings.Secure.getString(ctx.getContentResolver(), "bluetooth_name");
         }
         if (name == null || name.trim().isEmpty()) name = Build.MODEL;
-        return name == null ? "Kumo" : name.trim();
+        return name == null ? "Aniko" : name.trim();
     }
 }

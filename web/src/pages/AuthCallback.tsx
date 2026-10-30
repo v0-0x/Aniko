@@ -26,7 +26,7 @@ export default function AuthCallbackPage() {
             return
         }
         if (!takeLogin()) {
-            setError("This login wasn't started from Kumo: log in again with Kumo's own Log in button.")
+            setError("This login wasn't started from Aniko: log in again with Aniko's own Log in button.")
             return
         }
         api.post<{ name: string }>("/api/auth/anilist", { token })
@@ -41,7 +41,7 @@ export default function AuthCallbackPage() {
     return (
         <div className="grid min-h-full place-items-center p-10">
             {error ? (
-                <EmptyState title="AniList login failed" action={<Button onClick={() => navigate("/", { replace: true })}>Back to Kumo</Button>}>
+                <EmptyState title="AniList login failed" action={<Button onClick={() => navigate("/", { replace: true })}>Back to Aniko</Button>}>
                     {error}
                 </EmptyState>
             ) : (

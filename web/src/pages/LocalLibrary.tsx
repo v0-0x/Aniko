@@ -115,9 +115,9 @@ export default function LocalLibraryPage() {
     const { data: status } = useStatus()
     const { data: coll, isLoading: collLoading, error } = useCollection()
     const { data: localFiles, isLoading: filesLoading } = useLibraryFiles()
-    // The libraries other Kumo apps on the network share with this one.
+    // The libraries other Aniko apps on the network share with this one.
     const { data: shared } = useSharedLibraries()
-    const [source, setSource] = usePersisted<string>("kumo-local-source", "local")
+    const [source, setSource] = usePersisted<string>("aniko-local-source", "local")
     // This computer's library off (Settings › Local library): only the
     // shared ones, the first one to begin with.
     const off = !!status?.settings.library.off
@@ -130,9 +130,9 @@ export default function LocalLibraryPage() {
     const navigate = useNavigate()
     const libraryMenu = useLibraryCardMenu()
 
-    const [filter, setFilter] = usePersisted<StatusFilter>("kumo-local-filter", "ALL")
-    const [sort, setSort] = usePersisted<SortKey>("kumo-local-sort", "added")
-    const [view, setView] = usePersisted<View>("kumo-local-view", "grid")
+    const [filter, setFilter] = usePersisted<StatusFilter>("aniko-local-filter", "ALL")
+    const [sort, setSort] = usePersisted<SortKey>("aniko-local-sort", "added")
+    const [view, setView] = usePersisted<View>("aniko-local-view", "grid")
     const [q, setQ] = useState("")
 
     const groups = useMemo(() => {
@@ -144,7 +144,7 @@ export default function LocalLibraryPage() {
 
     // Each filter's counts are of what the other one shows (Paused under
     // Movies: the paused movies).
-    const [type, setType] = usePersisted<TypeFilter>("kumo-local-type", "ALL")
+    const [type, setType] = usePersisted<TypeFilter>("aniko-local-type", "ALL")
     const counts = useMemo(() => {
         const of = type !== "ALL" && TYPES.some(t => t.value === type) && groups.some(g => typeOf(g) === type) ? groups.filter(g => typeOf(g) === type) : groups
         const c: Record<string, number> = { ALL: of.length }
@@ -307,7 +307,7 @@ export default function LocalLibraryPage() {
                             </Button>
                         }
                     >
-                        Its anime come from your Kumo Hub and the computers that share their library with it, and none does right now. Turn it back on in Settings › Local library.
+                        Its anime come from your Aniko Hub and the computers that share their library with it, and none does right now. Turn it back on in Settings › Local library.
                     </EmptyState>
                 )}
 
@@ -329,10 +329,10 @@ export default function LocalLibraryPage() {
                     >
                         {libraryDir ? (
                             <>
-                                Kumo looks for video files in <span className="font-mono text-fg/80">{libraryDir}</span>. Download episodes with ani-cli or torrents, or copy files there.
+                                Aniko looks for video files in <span className="font-mono text-fg/80">{libraryDir}</span>. Download episodes with ani-cli or torrents, or copy files there.
                             </>
                         ) : (
-                            "Pick the folder where your anime lives and Kumo will scan and match it automatically."
+                            "Pick the folder where your anime lives and Aniko will scan and match it automatically."
                         )}
                     </EmptyState>
                 )}

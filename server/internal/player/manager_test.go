@@ -22,7 +22,7 @@ import (
 // features (AniList progress, AniSkip) off and mpv replaced by fakes.
 func newTestManager(t *testing.T, edit func(*config.Settings)) (*Manager, *fakeLauncher) {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

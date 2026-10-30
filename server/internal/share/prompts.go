@@ -9,9 +9,9 @@ import (
 	"github.com/simo1337s/animetest/server/internal/config"
 )
 
-// Prompt is what Home asks about another Kumo on the network: whether to
-// share this Kumo's library with one that's new ("new"), or to update one
-// of the two, their versions differing ("older": its Kumo is older than
+// Prompt is what Home asks about another Aniko on the network: whether to
+// share this Aniko's library with one that's new ("new"), or to update one
+// of the two, their versions differing ("older": its Aniko is older than
 // this one, "newer": this one is).
 type Prompt struct {
 	Kind     string `json:"kind"`
@@ -21,7 +21,7 @@ type Prompt struct {
 	Version  string `json:"version"`
 }
 
-// Prompts are Home's questions about the other Kumos, for the app on this
+// Prompts are Home's questions about the other Anikos, for the app on this
 // computer (not a device on the network: it can't change sharing).
 func (s *Service) Prompts() []Prompt {
 	now := time.Now()
@@ -36,7 +36,7 @@ func (s *Service) Prompts() []Prompt {
 			continue
 		}
 		pr := Prompt{ID: p.id, Name: s.view(p, now).Name, Platform: p.platform, Version: p.version}
-		// One that shares its library with this Kumo isn't new here.
+		// One that shares its library with this Aniko isn't new here.
 		if !p.allowed && !p.shares && !p.declined {
 			pr.Kind = "new"
 			out = append(out, pr)
@@ -59,7 +59,7 @@ func (s *Service) Prompts() []Prompt {
 	return out
 }
 
-// compareVersions compares two Kumo versions (2.0.<commits since 2.0.0's>,
+// compareVersions compares two Aniko versions (2.0.<commits since 2.0.0's>,
 // 1.0.<number of commits> before):
 // ok is false when either isn't one, or is a build's default (1.0.0: built
 // by hand, its version unknown).

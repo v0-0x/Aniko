@@ -123,7 +123,7 @@ func newTestChecker(t *testing.T, gh *fakeGitHub) *Checker {
 	c.Client = gh.Client()
 	c.CacheDir = filepath.Join(t.TempDir(), "update")
 	c.Token = func(context.Context) string { return "secret-token" }
-	c.Executable = func() (string, error) { return "/home/me/kumo/dist/kumo", nil }
+	c.Executable = func() (string, error) { return "/home/me/aniko/dist/aniko", nil }
 	c.StartInstaller = func(string, ...string) error { return fmt.Errorf("no installer in tests") }
 	c.Version, c.Commit, c.GOOS = "1.0.50", oldSHA, "linux"
 	c.Channel = func() string { return gh.channel }
@@ -238,8 +238,8 @@ func windowsReleases(installer []byte) []map[string]any {
 			"html_url":         "https://github.com/o/r/releases/tag/" + tag,
 			"target_commitish": headSHA, "published_at": "2026-10-02T08:00:00Z",
 			"assets": []map[string]any{
-				{"id": 41, "name": "Kumo-" + v + "-windows-x64-portable.zip", "size": 10, "digest": "sha256:00"},
-				{"id": 42, "name": "Kumo-Setup-" + v + "-windows-x64.exe", "size": len(installer), "digest": "sha256:" + hex.EncodeToString(sum[:])},
+				{"id": 41, "name": "Aniko-" + v + "-windows-x64-portable.zip", "size": 10, "digest": "sha256:00"},
+				{"id": 42, "name": "Aniko-Setup-" + v + "-windows-x64.exe", "size": len(installer), "digest": "sha256:" + hex.EncodeToString(sum[:])},
 			},
 		}
 	}
@@ -271,7 +271,7 @@ func TestCheckWindowsPicksNewestRelease(t *testing.T) {
 	if !slices.Equal(st.Changes, []string{"Newer", "Older"}) || st.ChangesTotal != 2 {
 		t.Fatalf("changes %q (%d)", st.Changes, st.ChangesTotal)
 	}
-	if c.asset == nil || c.asset.ID != 42 || c.asset.Name != "Kumo-Setup-1.0.10-windows-x64.exe" || !strings.HasPrefix(c.asset.Digest, "sha256:") {
+	if c.asset == nil || c.asset.ID != 42 || c.asset.Name != "Aniko-Setup-1.0.10-windows-x64.exe" || !strings.HasPrefix(c.asset.Digest, "sha256:") {
 		t.Fatalf("installer %+v", c.asset)
 	}
 	if !slices.Contains(gh.paths(), "/repos/o/r/releases?per_page=100") {
@@ -321,14 +321,14 @@ func TestLastPage(t *testing.T) {
 
 // The environment's tokens come first, in this order.
 func TestTokenFromEnvironment(t *testing.T) {
-	t.Setenv("KUMO_GITHUB_TOKEN", "kumo")
+	t.Setenv("ANIKO_GITHUB_TOKEN", "aniko")
 	t.Setenv("GH_TOKEN", "gh")
 	t.Setenv("GITHUB_TOKEN", "github")
 	ctx := context.Background()
-	if tok := githubToken(ctx); tok != "kumo" {
-		t.Fatalf("token %q, want KUMO_GITHUB_TOKEN's", tok)
+	if tok := githubToken(ctx); tok != "aniko" {
+		t.Fatalf("token %q, want ANIKO_GITHUB_TOKEN's", tok)
 	}
-	t.Setenv("KUMO_GITHUB_TOKEN", "")
+	t.Setenv("ANIKO_GITHUB_TOKEN", "")
 	if tok := githubToken(ctx); tok != "gh" {
 		t.Fatalf("token %q, want GH_TOKEN's", tok)
 	}
@@ -344,7 +344,7 @@ func TestTokenFromPrograms(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the stand-in programs are shell scripts")
 	}
-	for _, k := range []string{"KUMO_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"} {
+	for _, k := range []string{"ANIKO_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"} {
 		t.Setenv(k, "")
 	}
 	bin := t.TempDir()
@@ -436,10 +436,10 @@ func TestExtract(t *testing.T) {
 		entry{hdr: tar.Header{Typeflag: tar.TypeXGlobalHeader, PAXRecords: map[string]string{"comment": headSHA}}},
 		dirEntry("o-r-2222222/"),
 		dirEntry("o-r-2222222/packaging/arch/"),
-		fileEntry("o-r-2222222/packaging/arch/PKGBUILD", "pkgname=kumo\n", 0o644),
-		fileEntry("o-r-2222222/packaging/kumo.sh", "#!/bin/sh\n", 0o755),
+		fileEntry("o-r-2222222/packaging/arch/PKGBUILD", "pkgname=aniko\n", 0o644),
+		fileEntry("o-r-2222222/packaging/aniko.sh", "#!/bin/sh\n", 0o755),
 		entry{hdr: tar.Header{Typeflag: tar.TypeSymlink, Name: "o-r-2222222/passwd", Linkname: "/etc/passwd"}},
-		entry{hdr: tar.Header{Typeflag: tar.TypeLink, Name: "o-r-2222222/hard", Linkname: "o-r-2222222/packaging/kumo.sh"}},
+		entry{hdr: tar.Header{Typeflag: tar.TypeLink, Name: "o-r-2222222/hard", Linkname: "o-r-2222222/packaging/aniko.sh"}},
 		entry{hdr: tar.Header{Typeflag: tar.TypeChar, Name: "o-r-2222222/tty", Devmajor: 5}},
 		entry{hdr: tar.Header{Typeflag: tar.TypeFifo, Name: "o-r-2222222/fifo"}},
 	))
@@ -451,13 +451,13 @@ func TestExtract(t *testing.T) {
 	if top != filepath.Join(dest, "o-r-2222222") {
 		t.Fatalf("top %q", top)
 	}
-	if b, err := os.ReadFile(filepath.Join(top, "packaging", "arch", "PKGBUILD")); err != nil || string(b) != "pkgname=kumo\n" {
+	if b, err := os.ReadFile(filepath.Join(top, "packaging", "arch", "PKGBUILD")); err != nil || string(b) != "pkgname=aniko\n" {
 		t.Fatalf("PKGBUILD: %q %v", b, err)
 	}
 	if runtime.GOOS != "windows" {
-		st, err := os.Stat(filepath.Join(top, "packaging", "kumo.sh"))
+		st, err := os.Stat(filepath.Join(top, "packaging", "aniko.sh"))
 		if err != nil || st.Mode().Perm()&0o111 == 0 {
-			t.Fatalf("kumo.sh lost its exec bit: %v %v", st, err)
+			t.Fatalf("aniko.sh lost its exec bit: %v %v", st, err)
 		}
 		st, err = os.Stat(filepath.Join(top, "packaging", "arch", "PKGBUILD"))
 		if err != nil || st.Mode().Perm()&0o111 != 0 {
@@ -499,7 +499,7 @@ func TestExtractRefusesPathsOutside(t *testing.T) {
 // Windows
 
 func TestDownloadChecksDigest(t *testing.T) {
-	installer := []byte("MZ the new Kumo installer")
+	installer := []byte("MZ the new Aniko installer")
 	gh := newFakeGitHub(t)
 	gh.mux.HandleFunc("GET /repos/o/r/releases/assets/42", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Accept") != "application/octet-stream" {
@@ -511,9 +511,9 @@ func TestDownloadChecksDigest(t *testing.T) {
 	})
 	gh.mux.HandleFunc("GET /files/installer.exe", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(installer) })
 	c := newTestChecker(t, gh)
-	g := &github{api: gh.URL, repo: "o/r", client: gh.Client(), token: "secret-token", userAgent: "Kumo/test"}
+	g := &github{api: gh.URL, repo: "o/r", client: gh.Client(), token: "secret-token", userAgent: "Aniko/test"}
 	dir := t.TempDir()
-	file := filepath.Join(dir, "Kumo-Setup-1.0.10-windows-x64.exe")
+	file := filepath.Join(dir, "Aniko-Setup-1.0.10-windows-x64.exe")
 	var last int64
 	if err := c.download(context.Background(), g, "/repos/o/r/releases/assets/42", "application/octet-stream", file, int64(len(installer)), func(done, total int64) {
 		if total != int64(len(installer)) {
@@ -545,15 +545,15 @@ func TestDownloadChecksDigest(t *testing.T) {
 // installedWindows makes c look like an installed Windows copy.
 func installedWindows(t *testing.T, c *Checker) {
 	t.Helper()
-	dir := filepath.Join(t.TempDir(), "Kumo")
+	dir := filepath.Join(t.TempDir(), "Aniko")
 	if err := os.MkdirAll(filepath.Join(dir, "resources"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "Uninstall Kumo.exe"), nil, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "Uninstall Aniko.exe"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	c.GOOS, c.Version = "windows", "1.0.9"
-	c.Executable = func() (string, error) { return filepath.Join(dir, "resources", "kumo.exe"), nil }
+	c.Executable = func() (string, error) { return filepath.Join(dir, "resources", "aniko.exe"), nil }
 }
 
 // waitState waits until the update is ready or failed.
@@ -574,7 +574,7 @@ func waitState(t *testing.T, c *Checker) Status {
 }
 
 func TestApplyWindows(t *testing.T) {
-	installer := []byte("MZ the new Kumo installer")
+	installer := []byte("MZ the new Aniko installer")
 	gh := newFakeGitHub(t)
 	gh.json("GET /repos/o/r/releases", windowsReleases(installer))
 	gh.mux.HandleFunc("GET /repos/o/r/releases/assets/42", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(installer) })
@@ -595,7 +595,7 @@ func TestApplyWindows(t *testing.T) {
 	select {
 	case exit = <-c.Exits.C():
 	case <-time.After(10 * time.Second):
-		t.Fatalf("Kumo wasn't asked to quit: %+v", c.Status())
+		t.Fatalf("Aniko wasn't asked to quit: %+v", c.Status())
 	}
 	if exit.Code != lifecycle.CodeInstalling || exit.Restart || exit.Before == nil {
 		t.Fatalf("exit %+v", exit)
@@ -603,14 +603,14 @@ func TestApplyWindows(t *testing.T) {
 	if st := waitState(t, c); st.State != StateInstalling {
 		t.Fatalf("state %q: %s", st.State, st.Message)
 	}
-	// The installer starts once Kumo has shut down.
+	// The installer starts once Aniko has shut down.
 	if started != nil {
-		t.Fatal("the installer started before Kumo quit")
+		t.Fatal("the installer started before Aniko quit")
 	}
 	if err := exit.Before(); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(c.CacheDir, "Kumo-Setup-1.0.10-windows-x64.exe")
+	path := filepath.Join(c.CacheDir, "Aniko-Setup-1.0.10-windows-x64.exe")
 	if want := []string{path, "--updated", "/S", "--force-run"}; !slices.Equal(started, want) {
 		t.Fatalf("started %q, want %q", started, want)
 	}
@@ -638,12 +638,12 @@ func TestApplyWindowsDamagedDownload(t *testing.T) {
 	}
 	select {
 	case e := <-c.Exits.C():
-		t.Fatalf("Kumo was asked to quit: %+v", e)
+		t.Fatalf("Aniko was asked to quit: %+v", e)
 	default:
 	}
 }
 
-// When the installer can't start, Kumo has already shut down: it restarts
+// When the installer can't start, Aniko has already shut down: it restarts
 // and the next run says what happened.
 func TestApplyWindowsInstallerDidntStart(t *testing.T) {
 	installer := []byte("MZ installer")
@@ -664,7 +664,7 @@ func TestApplyWindowsInstallerDidntStart(t *testing.T) {
 	next := newTestChecker(t, gh)
 	next.CacheDir = c.CacheDir
 	next.Start()
-	if st := next.Status(); st.State != StateFailed || !strings.Contains(st.Message, "access denied") || !strings.Contains(st.Message, "Kumo-Setup-1.0.10-windows-x64.exe") {
+	if st := next.Status(); st.State != StateFailed || !strings.Contains(st.Message, "access denied") || !strings.Contains(st.Message, "Aniko-Setup-1.0.10-windows-x64.exe") {
 		t.Fatalf("next run: state %q: %s", st.State, st.Message)
 	}
 	if _, err := os.Stat(filepath.Join(c.CacheDir, failureFile)); !os.IsNotExist(err) {
@@ -684,7 +684,7 @@ func TestApplyNeedsAnUpdate(t *testing.T) {
 	}
 }
 
-// Kumo asks GitHub for its repository by number: its old name, after a
+// Aniko asks GitHub for its repository by number: its old name, after a
 // rename, could be taken by anyone, who'd then make the updates.
 func TestRepositoryByNumber(t *testing.T) {
 	c := New(events.NewHub(), lifecycle.NewExits())
@@ -696,7 +696,7 @@ func TestRepositoryByNumber(t *testing.T) {
 	if g.root() != "/repositories/"+config.UpdateRepoID {
 		t.Errorf("root %q", g.root())
 	}
-	t.Setenv("KUMO_UPDATE_REPO", "me/fork")
+	t.Setenv("ANIKO_UPDATE_REPO", "me/fork")
 	c2 := New(events.NewHub(), lifecycle.NewExits())
 	t.Cleanup(c2.Stop)
 	if g := (&github{repo: c2.Repo, repoID: c2.RepoID}); g.root() != "/repos/me/fork" {
@@ -714,7 +714,7 @@ func TestVersionOf(t *testing.T) {
 	}
 	var pkg struct {
 		Version string `json:"version"`
-		Base    int    `json:"kumoVersionBase"`
+		Base    int    `json:"anikoVersionBase"`
 	}
 	if err := json.Unmarshal(raw, &pkg); err != nil {
 		t.Fatal(err)

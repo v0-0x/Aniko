@@ -34,10 +34,10 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
             )}
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <StatTile label="CPU" icon={<Cpu />} value={`${Math.round(s.cpu)}%`} sub={`Kumo ${Math.round(s.kumoCpu)}% · load ${s.load.toFixed(2)}`}>
+                <StatTile label="CPU" icon={<Cpu />} value={`${Math.round(s.cpu)}%`} sub={`Aniko ${Math.round(s.anikoCpu)}% · load ${s.load.toFixed(2)}`}>
                     <Sparkline values={samples.map(x => x.cpu)} times={times} max={100} format={v => `${Math.round(v)}%`} label="CPU use" />
                 </StatTile>
-                <StatTile label="Memory" icon={<MemoryStick />} value={bytes(s.memUsed)} sub={`of ${bytes(s.memTotal)} · Kumo ${bytes(s.kumoMem)}`}>
+                <StatTile label="Memory" icon={<MemoryStick />} value={bytes(s.memUsed)} sub={`of ${bytes(s.memTotal)} · Aniko ${bytes(s.anikoMem)}`}>
                     <Meter value={s.memUsed} max={s.memTotal} label="Memory in use" className="mt-auto mb-1" />
                 </StatTile>
                 <StatTile
@@ -139,7 +139,7 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
                 <div className="flex min-w-0 flex-col gap-5">
                     <Panel title={`Devices · ${online.length} online`} action={<More onClick={() => go("devices")}>Manage</More>}>
                         {o.devices.length === 0 ? (
-                            <EmptyState title="No devices yet">Open Kumo on a computer or TV on this network and turn on Settings › Other devices: it shows up here.</EmptyState>
+                            <EmptyState title="No devices yet">Open Aniko on a computer or TV on this network and turn on Settings › Other devices: it shows up here.</EmptyState>
                         ) : (
                             <ul className="divide-y divide-line">
                                 {o.devices.slice(0, 8).map(d => (

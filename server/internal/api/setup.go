@@ -9,9 +9,9 @@ import (
 	"github.com/simo1337s/animetest/server/internal/winsetup"
 )
 
-// installPrograms opens the setup that installs the programs Kumo uses on
+// installPrograms opens the setup that installs the programs Aniko uses on
 // this computer: on Windows with Scoop (Git, ani-cli, ffmpeg, mpv, yt-dlp...)
-// in a PowerShell window, on macOS by downloads into Kumo's folder, in
+// in a PowerShell window, on macOS by downloads into Aniko's folder, in
 // Terminal.
 func (s *Server) installPrograms(r *http.Request) (any, error) {
 	if !isTrusted(r) {
@@ -24,7 +24,7 @@ func (s *Server) installPrograms(r *http.Request) (any, error) {
 	case "darwin":
 		err = macsetup.Start()
 	default:
-		return nil, badRequest("Kumo installs its programs itself on Windows and macOS only: install them with your package manager")
+		return nil, badRequest("Aniko installs its programs itself on Windows and macOS only: install them with your package manager")
 	}
 	if err != nil {
 		if errors.Is(err, winsetup.ErrRunning) || errors.Is(err, macsetup.ErrRunning) {

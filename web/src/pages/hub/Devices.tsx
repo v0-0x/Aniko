@@ -10,7 +10,7 @@ import { cn, compareVersions, img } from "@/lib/utils"
 import { DeviceIcon } from "./Overview"
 import { ago, OnlineDot } from "./parts"
 
-// The Kumo apps around the hub: which get its library, which AniList login
+// The Aniko apps around the hub: which get its library, which AniList login
 // each is given, which may download onto it.
 
 type Change = { allowed?: boolean; account?: boolean; downloads?: boolean; accountUser?: number }
@@ -31,12 +31,12 @@ export default function Devices({ o }: { o: HubOverview }) {
     return (
         <div className="flex flex-col gap-6">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-                A device shows up here when Kumo is open on it with <span className="text-fg">Settings › Other devices</span> on. Share the library with it, and it plays the hub's episodes and
+                A device shows up here when Aniko is open on it with <span className="text-fg">Settings › Other devices</span> on. Share the library with it, and it plays the hub's episodes and
                 keeps its progress, AniList list and theme in step with the other devices on the same AniList account, as they change.
             </p>
             {o.devices.length === 0 && (
                 <EmptyState icon={<Wifi />} title="No devices yet">
-                    Open Kumo on a computer, TV or phone on this network and turn on Settings › Other devices.
+                    Open Aniko on a computer, TV or phone on this network and turn on Settings › Other devices.
                 </EmptyState>
             )}
             {waiting.length > 0 && (
@@ -77,10 +77,10 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
                     <p className="truncate text-[12.5px] text-muted">
                         {d.online ? "Online" : `Last seen ${ago(d.lastSeen * 1000)}`}
                         {d.address && ` · ${d.address}`}
-                        {d.version && ` · Kumo ${d.version}`}
+                        {d.version && ` · Aniko ${d.version}`}
                     </p>
                 </div>
-                {older && <Badge tone="amber">Older Kumo</Badge>}
+                {older && <Badge tone="amber">Older Aniko</Badge>}
                 {d.error && d.allowed && (
                     <Badge tone="red" className="max-sm:hidden">
                         Not answering

@@ -90,7 +90,7 @@ export default function MangaReaderPage() {
     const marked = useRef<string>("")
     // How big pages show: 1 fills the space below the buttons, less leaves
     // more room around them. Remembered by this browser.
-    const [zoom, setZoom] = usePersisted("kumo-manga-zoom", 1)
+    const [zoom, setZoom] = usePersisted("aniko-manga-zoom", 1)
     const zoomBy = (d: number) => setZoom(z => Math.round(Math.min(1, Math.max(0.5, z + d)) * 100) / 100)
 
     const { data: chapters } = useMangaChapters(id, provider)

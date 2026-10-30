@@ -216,7 +216,7 @@ export function LibraryFolders() {
                 <div className="mt-2 flex flex-col gap-2">
                     <div>
                         <h3 className="font-semibold">Nothing to match yet</h3>
-                        <p className="text-sm text-muted">Kumo found these folders, but nothing in them it can play.</p>
+                        <p className="text-sm text-muted">Aniko found these folders, but nothing in them it can play.</p>
                     </div>
                     {unusable.map(f => (
                         <ProblemRow key={f.dir} folder={f} trusted={trusted} />

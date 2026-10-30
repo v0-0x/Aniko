@@ -100,7 +100,7 @@ func (s *Server) serve(ln net.Listener, addr string) {
 	s.mu.Lock()
 	s.srv, s.addr = srv, addr
 	s.mu.Unlock()
-	log.Printf("Kumo listening on http://%s", addr)
+	log.Printf("Aniko listening on http://%s", addr)
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("http: %v", err)
@@ -178,7 +178,7 @@ const (
 	clientShell clientKind = iota
 	clientLocal
 	clientLAN
-	// clientOwner: a browser on the network signed in to a Kumo Hub's
+	// clientOwner: a browser on the network signed in to an Aniko Hub's
 	// dashboard (its password): the hub's owner, as trusted as its own
 	// computer.
 	clientOwner
@@ -264,7 +264,7 @@ func (s *Server) webUIEnabled() bool {
 
 func (s *Server) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Other Kumo apps (library sharing) are checked apart from browsers.
+		// Other Aniko apps (library sharing) are checked apart from browsers.
 		if strings.HasPrefix(r.URL.Path, "/api/peer/") {
 			s.servePeer(w, r, next)
 			return
@@ -278,7 +278,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		case cfg.Server.AllowLAN && isLANIP(ip):
 			kind = clientLAN
 		default:
-			http.Error(w, "Kumo only accepts connections from this computer and your local network.", http.StatusForbidden)
+			http.Error(w, "Aniko only accepts connections from this computer and your local network.", http.StatusForbidden)
 			return
 		}
 		if !hostAllowed(r.Host) {
@@ -295,7 +295,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			kind = clientShell
 		}
 		if kind == clientLocal && s.AppOnly {
-			http.Error(w, "Kumo only answers its own app on this device.", http.StatusForbidden)
+			http.Error(w, "Aniko only answers its own app on this device.", http.StatusForbidden)
 			return
 		}
 
@@ -393,12 +393,12 @@ func kindOf(r *http.Request) clientKind {
 // browser), which may do host-level things like opening folders.
 func isTrusted(r *http.Request) bool { return kindOf(r) != clientLAN }
 
-const webUIDisabledPage = `<!doctype html><html><head><meta charset="utf-8"><title>Kumo</title>
+const webUIDisabledPage = `<!doctype html><html><head><meta charset="utf-8"><title>Aniko</title>
 <style>body{margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0b;color:#ececee;font-family:system-ui,sans-serif}
 .c{max-width:440px;padding:32px;border:1px solid #23232e;border-radius:16px;background:#12121a;text-align:center}
 h1{font-size:20px;margin:0 0 8px}p{color:#9a9ab0;line-height:1.5}</style></head>
-<body><div class="c"><h1>The Kumo Web UI is turned off</h1>
-<p>Open the Kumo desktop app and enable <b>Settings › Network & web UI</b> to use Kumo from a browser.</p></div></body></html>`
+<body><div class="c"><h1>The Aniko Web UI is turned off</h1>
+<p>Open the Aniko desktop app and enable <b>Settings › Network & web UI</b> to use Aniko from a browser.</p></div></body></html>`
 
 // ---------------------------------------------------------------------------
 // JSON helpers

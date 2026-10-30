@@ -1,9 +1,9 @@
 //go:build !windows
 
-// Package macsetup installs the programs Kumo uses on macOS: it opens
+// Package macsetup installs the programs Aniko uses on macOS: it opens
 // install-tools.command in Terminal, where the user follows it. The script
 // downloads ready-made ffmpeg, ffprobe, yt-dlp and ani-cli for this Mac
-// (Apple silicon or Intel) into Kumo's own folder (util.ToolsDir), with no
+// (Apple silicon or Intel) into Aniko's own folder (util.ToolsDir), with no
 // Homebrew and no password, and installs mpv with Homebrew on Apple silicon
 // when Homebrew is there.
 package macsetup
@@ -93,7 +93,7 @@ func shellQuote(s string) string {
 // Start opens the setup in Terminal and returns at once.
 func Start() error {
 	if goos != "darwin" {
-		return errors.New("Kumo installs its programs itself on macOS and Windows only: install them with your package manager")
+		return errors.New("Aniko installs its programs itself on macOS and Windows only: install them with your package manager")
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -106,7 +106,7 @@ func Start() error {
 	if bin == "" {
 		bin = filepath.Join(config.DataDir(), "bin")
 	}
-	text := strings.Replace(string(script), "'@KUMO_BIN@'", shellQuote(bin), 1)
+	text := strings.Replace(string(script), "'@ANIKO_BIN@'", shellQuote(bin), 1)
 	if err := os.WriteFile(path, []byte(text), 0o700); err != nil {
 		return err
 	}

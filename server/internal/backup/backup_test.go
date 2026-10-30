@@ -3,8 +3,8 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	"path/filepath"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -14,17 +14,17 @@ import (
 	"github.com/simo1337s/animetest/server/internal/history"
 )
 
-type kumo struct {
+type aniko struct {
 	d     *db.DB
 	hist  *history.Store
 	store *config.Store
 	dir   string
 }
 
-func newKumo(t *testing.T) *kumo {
+func newAniko(t *testing.T) *aniko {
 	t.Helper()
 	dir := t.TempDir()
-	d, err := db.Open(filepath.Join(dir, "kumo.db"))
+	d, err := db.Open(filepath.Join(dir, "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,17 +33,17 @@ func newKumo(t *testing.T) *kumo {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &kumo{d: d, hist: history.NewStore(d), store: store, dir: dir}
+	return &aniko{d: d, hist: history.NewStore(d), store: store, dir: dir}
 }
 
-func (k *kumo) exec(t *testing.T, q string, args ...any) {
+func (k *aniko) exec(t *testing.T, q string, args ...any) {
 	t.Helper()
 	if _, err := k.d.Write(q, args...); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func (k *kumo) count(t *testing.T, q string, args ...any) int {
+func (k *aniko) count(t *testing.T, q string, args ...any) int {
 	t.Helper()
 	var n int
 	if err := k.d.QueryRow(q, args...).Scan(&n); err != nil {
@@ -52,11 +52,11 @@ func (k *kumo) count(t *testing.T, q string, args ...any) int {
 	return n
 }
 
-// A backup goes into another Kumo: what's newer there stays, its network
+// A backup goes into another Aniko: what's newer there stays, its network
 // and sharing settings too; logins only when asked; the data from before
 // is saved.
 func TestBackupRoundTrip(t *testing.T) {
-	a := newKumo(t)
+	a := newAniko(t)
 	now := time.Now().Unix()
 	cfg := a.store.Get()
 	cfg.Playback.AutoPlayNext = true
@@ -94,7 +94,7 @@ func TestBackupRoundTrip(t *testing.T) {
 		t.Errorf("files kept: %d, want only the one matched by hand", got)
 	}
 
-	b := newKumo(t)
+	b := newAniko(t)
 	bcfg := b.store.Get()
 	bcfg.Server.Port = 42000
 	if _, err := b.store.Save(bcfg); err != nil {
@@ -168,7 +168,7 @@ func TestBackupRoundTrip(t *testing.T) {
 // With logins: the AniList login and the passwords come along (the login
 // only where there's none).
 func TestBackupWithLogins(t *testing.T) {
-	a := newKumo(t)
+	a := newAniko(t)
 	cfg := a.store.Get()
 	cfg.Qbittorrent.Password = "secret"
 	_, _ = a.store.Save(cfg)
@@ -182,7 +182,7 @@ func TestBackupWithLogins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b := newKumo(t)
+	b := newAniko(t)
 	sum, err := Restore(b.d, b.hist, b.store, read, filepath.Join(b.dir, "backups"), "1.0.140", "Laptop")
 	if err != nil {
 		t.Fatal(err)
@@ -197,7 +197,7 @@ func TestBackupWithLogins(t *testing.T) {
 }
 
 func TestReadRejects(t *testing.T) {
-	for _, in := range []string{"", "{}", "not json", `{"kumo": 99, "version": "9.9.9"}`} {
+	for _, in := range []string{"", "{}", "not json", `{"aniko": 99, "version": "9.9.9"}`} {
 		if _, err := Read(strings.NewReader(in)); err == nil {
 			t.Errorf("read %q", in)
 		}

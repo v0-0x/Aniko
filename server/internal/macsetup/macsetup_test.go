@@ -17,7 +17,7 @@ func TestSetupRunsInTerminal(t *testing.T) {
 	tmp := t.TempDir()
 	var opens []string
 	dir, open, goos = func() string { return tmp }, func(p string) error { opens = append(opens, p); return nil }, "darwin"
-	toolsDir = func() string { return "/Users/me/Library/Application Support/Kumo's/bin" }
+	toolsDir = func() string { return "/Users/me/Library/Application Support/Aniko's/bin" }
 	t.Cleanup(func() { opened = time.Time{} })
 
 	if Running() {
@@ -35,20 +35,20 @@ func TestSetupRunsInTerminal(t *testing.T) {
 		t.Fatalf("script %v (%v): want it executable by its owner only", st.Mode(), err)
 	}
 	b, _ := os.ReadFile(path)
-	want := bytes.Replace(script, []byte("'@KUMO_BIN@'"), []byte(`'/Users/me/Library/Application Support/Kumo'\''s/bin'`), 1)
+	want := bytes.Replace(script, []byte("'@ANIKO_BIN@'"), []byte(`'/Users/me/Library/Application Support/Aniko'\''s/bin'`), 1)
 	if bytes.Equal(want, script) || !bytes.Equal(b, want) {
-		t.Error("the script isn't install-tools.command with Kumo's programs folder in it")
+		t.Error("the script isn't install-tools.command with Aniko's programs folder in it")
 	}
 	// The shell reads the folder back as it is.
 	var line string
 	for _, l := range strings.Split(string(b), "\n") {
-		if strings.HasPrefix(l, "KUMO_BIN=") {
+		if strings.HasPrefix(l, "ANIKO_BIN=") {
 			line = l
 		}
 	}
-	out, err := exec.Command("bash", "-c", line+`; printf %s "$KUMO_BIN"`).Output()
-	if err != nil || string(out) != "/Users/me/Library/Application Support/Kumo's/bin" {
-		t.Errorf("%s: KUMO_BIN = %q (%v)", line, out, err)
+	out, err := exec.Command("bash", "-c", line+`; printf %s "$ANIKO_BIN"`).Output()
+	if err != nil || string(out) != "/Users/me/Library/Application Support/Aniko's/bin" {
+		t.Errorf("%s: ANIKO_BIN = %q (%v)", line, out, err)
 	}
 	// Until the script wrote its pid file, it counts as running.
 	if !Running() || Start() != ErrRunning {

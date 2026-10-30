@@ -17,14 +17,14 @@ import (
 	"github.com/simo1337s/animetest/server/internal/stream"
 )
 
-// A host's files are played through this Kumo's server: the player asks it
+// A host's files are played through this Aniko's server: the player asks it
 // as for a local file, and it forwards the request to the host (signed),
-// and the answer back. The host converts the video for this Kumo's player
+// and the answer back. The host converts the video for this Aniko's player
 // when needed, like for one of its own.
 
-var errNotShared = errors.New("that library isn't shared with this Kumo any more")
+var errNotShared = errors.New("that library isn't shared with this Aniko any more")
 
-// host is a Kumo that shares its library with this one.
+// host is an Aniko that shares its library with this one.
 func (s *Service) host(id string) *peer {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -191,7 +191,7 @@ func remoteSession(id string) (host, session string, ok bool) {
 	return host, session, ok && sessionID.MatchString(host) && sessionID.MatchString(session)
 }
 
-// IsRemoteSession reports an HLS session on another Kumo.
+// IsRemoteSession reports an HLS session on another Aniko.
 func IsRemoteSession(id string) bool {
 	_, _, ok := remoteSession(id)
 	return ok

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/simo1337s/animetest/server/internal/anikohub"
 	"github.com/simo1337s/animetest/server/internal/downloads"
-	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
 )
 
@@ -55,16 +55,16 @@ func TestEmptyHubTrash(t *testing.T) {
 	if items := a.Trash.Items(); len(items) != 0 {
 		t.Errorf("still in the trash: %+v", items)
 	}
-	if entries, _ := os.ReadDir(filepath.Join(root, ".kumo-trash")); len(entries) != 0 {
+	if entries, _ := os.ReadDir(filepath.Join(root, ".aniko-trash")); len(entries) != 0 {
 		t.Errorf("still on the disk: %v", entries)
 	}
-	ev, _, _ := a.HubStore.Audit(kumohub.AuditQuery{Kinds: []string{"delete"}})
+	ev, _, _ := a.HubStore.Audit(anikohub.AuditQuery{Kinds: []string{"delete"}})
 	if len(ev) != 1 || ev[0].By != "hub" || len(ev[0].Files) != 1 || ev[0].Again == nil || !ev[0].Again.Dub || ev[0].Again.Provider != "ani-cli" || ev[0].Again.Episodes[0] != 3 {
 		t.Fatalf("noted: %+v", ev)
 	}
 	// Nothing in it: nothing noted.
 	a.emptyHubTrash()
-	if ev, _, _ := a.HubStore.Audit(kumohub.AuditQuery{Kinds: []string{"delete"}}); len(ev) != 1 {
+	if ev, _, _ := a.HubStore.Audit(anikohub.AuditQuery{Kinds: []string{"delete"}}); len(ev) != 1 {
 		t.Errorf("%d deletions noted", len(ev))
 	}
 }
@@ -77,7 +77,7 @@ func TestAuditDownload(t *testing.T) {
 	a.auditDownload(downloads.Item{MediaID: 9, Episode: 4, AnimeTitle: "Show", Status: downloads.StatusCompleted, Output: out})
 	a.auditDownload(downloads.Item{MediaID: 9, Episode: 5, AnimeTitle: "Show", Status: downloads.StatusFailed, Error: "no stream found"})
 	a.auditDownload(downloads.Item{MediaID: 9, Episode: 6, Status: downloads.StatusCanceled})
-	ev, _, _ := a.HubStore.Audit(kumohub.AuditQuery{Kinds: kumohub.AuditGroups["downloads"]})
+	ev, _, _ := a.HubStore.Audit(anikohub.AuditQuery{Kinds: anikohub.AuditGroups["downloads"]})
 	if len(ev) != 2 {
 		t.Fatalf("%d noted: %+v", len(ev), ev)
 	}

@@ -25,7 +25,7 @@ const (
 
 var codeGeassMedia = testMedia(1575, cgTitle, "Code Geass: Hangyaku no Lelouch", 25)
 
-// hianime lists a new entry (a compilation movie) before the one Kumo
+// hianime lists a new entry (a compilation movie) before the one Aniko
 // remembered: the remembered position now holds another anime.
 var codeGeassReordered = []string{
 	entry("cg-initiation", "Code Geass: Lelouch of the Rebellion I - Initiation", 1),

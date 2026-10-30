@@ -1,8 +1,8 @@
-# Kumo Hub
+# Aniko Hub
 
-Kumo Hub is Kumo without a player, for a computer that stays on: a
+Aniko Hub is Aniko without a player, for a computer that stays on: a
 Raspberry Pi 4 or 5, or any Linux computer. It shares its library with the
-Kumo apps on your home network (computers, TVs, phones) and keeps them in
+Aniko apps on your home network (computers, TVs, phones) and keeps them in
 step:
 
 - **Streaming.** The devices play the hub's episodes as they are, which costs
@@ -44,12 +44,12 @@ curl -fsSL https://raw.githubusercontent.com/v0-0x/kumo-anime/HEAD/packaging/hub
 ```
 
 Add `-s -- --beta` after `bash` for the newest beta. The script installs
-the hub for your Pi's processor into `~/.local/bin/kumo-hub`, ffmpeg and
+the hub for your Pi's processor into `~/.local/bin/aniko-hub`, ffmpeg and
 ani-cli, and a service that starts the hub with the Pi. At the end it prints
 the dashboard's address and a **setup code**.
 
-Or download `kumo-hub-<version>-linux-<arm64|arm|amd64>.tar.gz` from the
-newest **Kumo Hub** release, unpack it and run its `./install.sh`.
+Or download `aniko-hub-<version>-linux-<arm64|arm|amd64>.tar.gz` from the
+newest **Aniko Hub** release, unpack it and run its `./install.sh`.
 
 Options: `--beta`, `--no-ffmpeg`, `--no-ani-cli`, `--uninstall` (keeps the
 hub's data), `--purge` (removes its data too).
@@ -59,10 +59,10 @@ hub's data), `--purge` (removes its data too).
 1. Open the dashboard from a browser on the network:
    `http://raspberrypi.local:43211` (your Pi's name, or its address).
 2. Type the setup code and choose the dashboard's password. (On the Pi,
-   `~/.local/bin/kumo-hub --setup-code` shows the code again.)
+   `~/.local/bin/aniko-hub --setup-code` shows the code again.)
 3. **Library › Add a folder**: the folder your anime are in. The hub finds
    the episodes and matches them to their anime.
-4. On each computer, TV or phone with Kumo, turn on **Settings › Other
+4. On each computer, TV or phone with Aniko, turn on **Settings › Other
    devices**. The device shows up on the dashboard under **Devices**: turn on
    **Share the library** for it.
 5. On one device logged in to AniList, in **Settings › Other devices**, on
@@ -84,10 +84,10 @@ there offers the betas too.
 
 ## When something's wrong
 
-- **The hub's log:** `journalctl -u kumo-hub -f`
-- **Restart it:** `sudo systemctl restart kumo-hub`
+- **The hub's log:** `journalctl -u aniko-hub -f`
+- **Restart it:** `sudo systemctl restart aniko-hub`
 - **The dashboard doesn't open:** check the service runs
-  (`systemctl status kumo-hub`) and use the Pi's address instead of its
+  (`systemctl status aniko-hub`) and use the Pi's address instead of its
   name.
 - **A device doesn't show up:** some routers keep devices from finding each
   other. In the device's Settings › Other devices, **Add by address** with
@@ -100,9 +100,9 @@ there offers the betas too.
 - **Forgot the dashboard's password:** on the Pi,
 
   ```bash
-  sudo systemctl stop kumo-hub
-  ~/.local/bin/kumo-hub --reset-password
-  sudo systemctl start kumo-hub
+  sudo systemctl stop aniko-hub
+  ~/.local/bin/aniko-hub --reset-password
+  sudo systemctl start aniko-hub
   ```
 
   then open the dashboard and set a new one with the setup code it prints.

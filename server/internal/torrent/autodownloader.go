@@ -48,7 +48,7 @@ type AutoDownloader struct {
 	files    *library.Store
 	hub      *events.Hub
 	mu       sync.Mutex
-	// Send, when set, sends a release where this Kumo's downloads go (the
+	// Send, when set, sends a release where this Aniko's downloads go (the
 	// computer a TV's go to), and reports whether it did; else it goes to
 	// the torrent client here.
 	Send func(ctx context.Context, mediaID int, uris []string) (bool, error)
@@ -300,7 +300,7 @@ func (a *AutoDownloader) grab(ctx context.Context, r *Rule, media *anilist.Media
 			log.Printf("auto downloader rule %d: %s: %v", r.ID, res.Name, err)
 			continue
 		}
-		// Where this Kumo's downloads go, when it isn't here.
+		// Where this Aniko's downloads go, when it isn't here.
 		if a.Send != nil {
 			sent, err := a.Send(ctx, media.ID, []string{magnet})
 			if sent && err != nil {

@@ -14,9 +14,9 @@ import (
 )
 
 // lookBare finds a program by name on the PATH. Programs installed while
-// Kumo runs (with Scoop, winget or an installer) are only on the PATH
+// Aniko runs (with Scoop, winget or an installer) are only on the PATH
 // Windows gives the programs started afterwards: when the name isn't found,
-// Kumo takes that PATH on (also for the programs it starts) and looks again.
+// Aniko takes that PATH on (also for the programs it starts) and looks again.
 func lookBare(name string) (string, bool) {
 	if p, err := exec.LookPath(name); err == nil {
 		return p, true
@@ -36,7 +36,7 @@ var (
 	newPathDirs = registryPathDirs
 )
 
-// refreshPath adds to Kumo's PATH the folders of the current Windows PATH
+// refreshPath adds to Aniko's PATH the folders of the current Windows PATH
 // that it lacks, and reports whether there were any. It looks at most every
 // few seconds.
 func refreshPath() bool {

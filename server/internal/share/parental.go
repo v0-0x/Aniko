@@ -11,9 +11,9 @@ import (
 	"github.com/simo1337s/animetest/server/internal/parental"
 )
 
-// Parental controls (internal/parental) between Kumos: a host (a computer
-// or a Kumo Hub) sets a device's rules; they go to the device with the
-// host's hello, and the device's Kumo keeps them, also when the host is
+// Parental controls (internal/parental) between Anikos: a host (a computer
+// or an Aniko Hub) sets a device's rules; they go to the device with the
+// host's hello, and the device's Aniko keeps them, also when the host is
 // away, until the host lifts them (or the PIN set with them does). The
 // device tells the host what it watches.
 
@@ -21,7 +21,7 @@ const parentalKey = "parental:received"
 
 // ---------------------------------------------------------------- the host
 
-// SetRules sets the parental controls of a device this Kumo shares with
+// SetRules sets the parental controls of a device this Aniko shares with
 // (none: no rules). pin "" keeps the PIN there was; "-" removes it.
 func (s *Service) SetRules(id string, r parental.Rules, pin string) error {
 	r = r.Clean()
@@ -65,7 +65,7 @@ func (s *Service) RulesOf(id string) *parental.Rules {
 }
 
 // Watched is an episode a device with parental controls watched, as it
-// told this Kumo.
+// told this Aniko.
 type Watched struct {
 	MediaID  int     `json:"mediaId"`
 	Episode  int     `json:"episode"`
@@ -147,7 +147,7 @@ func (s *Service) WatchedBy(id string, limit int) []Watched {
 
 // -------------------------------------------------------------- the device
 
-// received are the rules hosts set for this Kumo, by host ID, with the
+// received are the rules hosts set for this Aniko, by host ID, with the
 // host's name.
 type receivedRules struct {
 	Name  string         `json:"name"`
@@ -202,7 +202,7 @@ func (s *Service) takeParental(p *peer, r *parental.Rules) {
 	s.hub.Publish("parental-updated", nil)
 }
 
-// Parental are the parental controls on this Kumo (nil: none): every
+// Parental are the parental controls on this Aniko (nil: none): every
 // host's, the strictest of them.
 func (s *Service) Parental() *parental.Rules {
 	s.mu.Lock()
@@ -217,7 +217,7 @@ func (s *Service) Parental() *parental.Rules {
 	return parental.Merge(all)
 }
 
-// ParentalFrom names the hosts whose parental controls are on this Kumo,
+// ParentalFrom names the hosts whose parental controls are on this Aniko,
 // and whether each can be lifted here with a PIN.
 type ParentalSource struct {
 	ID     string `json:"id"`
@@ -236,7 +236,7 @@ func (s *Service) ParentalFrom() []ParentalSource {
 	return out
 }
 
-// UnlockParental lifts, on this Kumo, the parental controls of the hosts
+// UnlockParental lifts, on this Aniko, the parental controls of the hosts
 // whose PIN this is (they're back when the host sends them again). It
 // returns how many were lifted.
 func (s *Service) UnlockParental(pin string) int {

@@ -1,11 +1,11 @@
 [Unit]
-Description=Kumo anime server (headless, web UI on 127.0.0.1:43211)
+Description=Aniko anime server (headless, web UI on 127.0.0.1:43211)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/lib/kumo/kumo --web-ui
+ExecStart=/usr/lib/aniko/aniko --web-ui
 Restart=on-failure
 RestartSec=5
 

@@ -8,7 +8,7 @@ import (
 )
 
 // Every anime with files, this computer's or shared with it by another
-// Kumo, gets all its data downloaded once: its AniList page, ani.zip's
+// Aniko, gets all its data downloaded once: its AniList page, ani.zip's
 // episode titles and summaries, its artwork and episode thumbnails. Its page
 // then opens at once, also offline. One anime every few seconds when they
 // have to be fetched, which leaves room under AniList's rate limit for the
@@ -59,7 +59,7 @@ func (a *App) PrefetchAnime(ids ...int) {
 }
 
 // prefetchLibrary queues every anime with files: after a scan, when the
-// libraries shared with this Kumo change, at startup.
+// libraries shared with this Aniko change, at startup.
 func (a *App) prefetchLibrary() {
 	files, _ := a.Files.All()
 	files = append(files, a.Share.RemoteFiles()...)
@@ -74,7 +74,7 @@ func (a *App) prefetchLibrary() {
 	a.PrefetchAnime(ids...)
 }
 
-// runPrefetch downloads the queued anime's data, one at a time, until Kumo
+// runPrefetch downloads the queued anime's data, one at a time, until Aniko
 // stops.
 func (a *App) runPrefetch(ctx context.Context) {
 	p := a.prefetch

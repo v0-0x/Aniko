@@ -13,10 +13,10 @@ const videosFolder = "Videos"
 
 func defaultDataDir() string {
 	if d := os.Getenv("XDG_DATA_HOME"); d != "" {
-		return filepath.Join(d, "kumo")
+		return filepath.Join(d, "aniko")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".local", "share", "kumo")
+	return filepath.Join(home, ".local", "share", "aniko")
 }
 
 func runtimeDir() string {
@@ -24,7 +24,7 @@ func runtimeDir() string {
 	if base == "" {
 		base = os.TempDir()
 	}
-	return filepath.Join(base, "kumo")
+	return filepath.Join(base, "aniko")
 }
 
 // findQbittorrent prefers a native qBittorrent and falls back to the

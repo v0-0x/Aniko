@@ -30,7 +30,7 @@ export function LibraryBrowse() {
     const { data: coll, isLoading } = useCollection()
     const { data: files } = useLibraryFiles()
     const [q, setQ] = useState("")
-    const [sort, setSort] = usePersisted("kumo-hub-library-sort", "added")
+    const [sort, setSort] = usePersisted("aniko-hub-library-sort", "added")
     const [shown, setShown] = useState(PAGE)
     const [open, setOpen] = useState<Media | null>(null)
 

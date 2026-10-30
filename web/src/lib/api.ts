@@ -1,4 +1,4 @@
-// Tiny fetch wrapper for the Kumo API.
+// Tiny fetch wrapper for the Aniko API.
 
 export class ApiError extends Error {
     status: number
@@ -10,7 +10,7 @@ export class ApiError extends Error {
     }
 }
 
-// Told what the server said (hub: it's a Kumo Hub's dashboard).
+// Told what the server said (hub: it's an Aniko Hub's dashboard).
 type Listener = (data: { hub?: boolean } | null) => void
 const authListeners = new Set<Listener>()
 export function onPasswordRequired(fn: Listener) {

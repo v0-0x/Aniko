@@ -23,7 +23,7 @@ func newTestServer(t *testing.T) *Server {
 	// Not t.TempDir: a database write still finishing as the app shuts down
 	// can add a file (SQLite's -wal) while the folder is removed, so its
 	// removal is tried again (after Shutdown, registered below).
-	dir, err := os.MkdirTemp("", "kumo-test-")
+	dir, err := os.MkdirTemp("", "aniko-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func newTestServer(t *testing.T) *Server {
 		t.Fatal(err)
 	}
 	t.Cleanup(a.Shutdown)
-	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>kumo</html>")}})
+	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>aniko</html>")}})
 }
 
 func do(s *Server, method, path, remote string, body string, mod func(r *http.Request)) *httptest.ResponseRecorder {

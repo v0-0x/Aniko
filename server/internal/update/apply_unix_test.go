@@ -27,8 +27,8 @@ func fakeArch(t *testing.T, withPkexec bool) string {
 			t.Fatal(err)
 		}
 	}
-	script("makepkg", `printf '%s\n' "$PWD" "$*" "$KUMO_COMMIT" "$KUMO_VERSION" "$PKGDEST" "$LC_ALL" >"$FAKE_OUT/makepkg"
-echo "==> Making package: kumo 1.0.0-1 (Wed Oct  7 10:00:00 2026)"
+	script("makepkg", `printf '%s\n' "$PWD" "$*" "$ANIKO_COMMIT" "$ANIKO_VERSION" "$PKGDEST" "$LC_ALL" >"$FAKE_OUT/makepkg"
+echo "==> Making package: aniko 1.0.0-1 (Wed Oct  7 10:00:00 2026)"
 if [ -n "$FAKE_MAKEPKG_FAIL" ]; then
     echo "==> Missing dependencies:"
     echo "  -> go"
@@ -39,11 +39,11 @@ echo "==> Checking buildtime dependencies..."
 echo "==> Starting build()..."
 echo "cd web && npm ci --no-audit --no-fund && npm run build"
 echo "> tsc --noEmit && vite build" >&2
-echo "cd server && CGO_ENABLED=0 go build -trimpath -o ../dist/kumo ./cmd/kumo"
+echo "cd server && CGO_ENABLED=0 go build -trimpath -o ../dist/aniko ./cmd/aniko"
 echo "==> Starting package()..."
-: >"$PKGDEST/kumo-1.0.0-1-x86_64.pkg.tar.zst"
-: >"$PKGDEST/kumo-debug-1.0.0-1-x86_64.pkg.tar.zst"
-echo "==> Finished making: kumo 1.0.0-1 (Wed Oct  7 10:01:00 2026)"
+: >"$PKGDEST/aniko-1.0.0-1-x86_64.pkg.tar.zst"
+: >"$PKGDEST/aniko-debug-1.0.0-1-x86_64.pkg.tar.zst"
+echo "==> Finished making: aniko 1.0.0-1 (Wed Oct  7 10:01:00 2026)"
 `)
 	script("pacman", "exit 0\n")
 	if withPkexec {
@@ -66,7 +66,7 @@ func linuxUpdate(t *testing.T) *fakeGitHub {
 		entry{hdr: tar.Header{Typeflag: tar.TypeXGlobalHeader, PAXRecords: map[string]string{"comment": headSHA}}},
 		dirEntry("o-r-2222222/"),
 		dirEntry("o-r-2222222/packaging/arch/"),
-		fileEntry("o-r-2222222/packaging/arch/PKGBUILD", "pkgname=kumo\n", 0o644),
+		fileEntry("o-r-2222222/packaging/arch/PKGBUILD", "pkgname=aniko\n", 0o644),
 		fileEntry("o-r-2222222/Makefile", "server:\n", 0o644),
 	)
 	// Like GitHub: the API redirects to codeload, with a token in the query.
@@ -80,7 +80,7 @@ func linuxUpdate(t *testing.T) *fakeGitHub {
 func archChecker(t *testing.T, gh *fakeGitHub) *Checker {
 	t.Helper()
 	c := newTestChecker(t, gh)
-	c.Executable = func() (string, error) { return "/usr/lib/kumo/kumo", nil }
+	c.Executable = func() (string, error) { return "/usr/lib/aniko/aniko", nil }
 	st := check(t, c)
 	if !st.Available || !st.CanApply {
 		t.Fatalf("available %v, canApply %v (%s), error %q", st.Available, st.CanApply, st.ApplyNote, st.Error)
@@ -117,7 +117,7 @@ func TestApplyLinux(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := waitState(t, c)
-	if st.State != StateReady || st.ManualCommand != "" || !strings.Contains(st.Message, "Restart Kumo") || st.Progress != 100 {
+	if st.State != StateReady || st.ManualCommand != "" || !strings.Contains(st.Message, "Restart Aniko") || st.Progress != 100 {
 		t.Fatalf("state %q (%d%%): %s / %q", st.State, st.Progress, st.Message, st.ManualCommand)
 	}
 
@@ -133,10 +133,10 @@ func TestApplyLinux(t *testing.T) {
 		t.Fatalf("makepkg ran as\n%q\nwant\n%q", mk, want)
 	}
 	pk := readLines(t, filepath.Join(out, "pkexec"))
-	if want := []string{"pacman", "-U", "--noconfirm", filepath.Join(pkgdest, "kumo-1.0.0-1-x86_64.pkg.tar.zst")}; strings.Join(pk, "\n") != strings.Join(want, "\n") {
+	if want := []string{"pacman", "-U", "--noconfirm", "--ask=4", filepath.Join(pkgdest, "aniko-1.0.0-1-x86_64.pkg.tar.zst")}; strings.Join(pk, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("pkexec ran with %q, want %q", pk, want)
 	}
-	// The source is gone once built; the package stays until Kumo restarts.
+	// The source is gone once built; the package stays until Aniko restarts.
 	if _, err := os.Stat(filepath.Join(c.CacheDir, "src")); !os.IsNotExist(err) {
 		t.Fatalf("the build tree is still there: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestApplyLinux(t *testing.T) {
 	})
 	// It doesn't clean up the package that's waiting for a restart.
 	c.cleanup()
-	if _, err := os.Stat(filepath.Join(pkgdest, "kumo-1.0.0-1-x86_64.pkg.tar.zst")); err != nil {
+	if _, err := os.Stat(filepath.Join(pkgdest, "aniko-1.0.0-1-x86_64.pkg.tar.zst")); err != nil {
 		t.Fatalf("cleanup removed the package: %v", err)
 	}
 }
@@ -191,8 +191,8 @@ func TestApplyLinuxInstallByHand(t *testing.T) {
 				t.Fatal(err)
 			}
 			st := waitState(t, c)
-			pkg := filepath.Join(c.CacheDir, "pkg", "kumo-1.0.0-1-x86_64.pkg.tar.zst")
-			if st.State != StateReady || st.ManualCommand != "sudo pacman -U --noconfirm '"+pkg+"'" || !strings.Contains(st.Message, "terminal") {
+			pkg := filepath.Join(c.CacheDir, "pkg", "aniko-1.0.0-1-x86_64.pkg.tar.zst")
+			if st.State != StateReady || st.ManualCommand != "sudo pacman -U --noconfirm --ask=4 '"+pkg+"'" || !strings.Contains(st.Message, "terminal") {
 				t.Fatalf("state %q: %q / %q", st.State, st.Message, st.ManualCommand)
 			}
 		})
@@ -216,7 +216,7 @@ func TestApplyLinuxMissingBuildTools(t *testing.T) {
 func TestApplyLinuxOnlyThePackage(t *testing.T) {
 	fakeArch(t, true)
 	c := newTestChecker(t, linuxUpdate(t))
-	c.Executable = func() (string, error) { return "/home/me/kumo/dist/kumo", nil }
+	c.Executable = func() (string, error) { return "/home/me/aniko/dist/aniko", nil }
 	if st := check(t, c); !st.Available || st.CanApply {
 		t.Fatalf("available %v, canApply %v", st.Available, st.CanApply)
 	}

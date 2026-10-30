@@ -11,7 +11,7 @@ import (
 
 func trashFixture(t *testing.T) (*Trash, *Store, string) {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

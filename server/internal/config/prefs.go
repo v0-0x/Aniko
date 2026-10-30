@@ -1,7 +1,7 @@
 package config
 
 // SharedPrefs are the settings a device keeps the same as the others on its
-// AniList account, through a Kumo Hub: how Kumo looks, and how it plays.
+// AniList account, through an Aniko Hub: how Aniko looks, and how it plays.
 // What depends on the device (the card size, Home's sections, the player
 // and the paths) isn't.
 type SharedPrefs struct {

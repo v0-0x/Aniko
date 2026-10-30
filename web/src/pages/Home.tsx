@@ -31,8 +31,8 @@ export default function HomePage() {
     const scan = useScan()
     const scanning = useStore(scanStore, s => s.running)
     const [genre, setGenre] = useState<string | null>(null)
-    const [onlyLocal, setOnlyLocal] = usePersisted("kumo-home-only-local", false)
-    const [sort, setSort] = usePersisted<SortKey>("kumo-home-sort", "activity")
+    const [onlyLocal, setOnlyLocal] = usePersisted("aniko-home-only-local", false)
+    const [sort, setSort] = usePersisted<SortKey>("aniko-home-sort", "activity")
     const [loginOpen, setLoginOpen] = useState(false)
     const navigate = useNavigate()
     const qc = useQueryClient()
@@ -95,7 +95,7 @@ export default function HomePage() {
         }
     }
 
-    // Paired with another Kumo (a TV, a computer): Sync brings the watch
+    // Paired with another Aniko (a TV, a computer): Sync brings the watch
     // history from each to the other now, and the AniList list, so Continue
     // watching goes on from where it stopped on any of them.
     const paired = status?.paired ?? []
@@ -348,7 +348,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                 ) : (
                     <div className="rise-in">
                         <p className="text-sm font-medium text-white/65">Welcome to</p>
-                        <h1 className="mt-1 text-4xl font-semibold tracking-tight">Kumo</h1>
+                        <h1 className="mt-1 text-4xl font-semibold tracking-tight">Aniko</h1>
                     </div>
                 )}
             </div>
@@ -388,7 +388,7 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
         if (it.hasFile && it.filePath) playLocal(it.filePath, it.media.id, it.episode)
         else if (status?.settings.onlineStream.enabled) {
             // Same provider and sub/dub as last time for this anime.
-            const provider = readLocal(`kumo-provider-${it.media.id}`) || status.settings.onlineStream.defaultProvider || "ani-cli"
+            const provider = readLocal(`aniko-provider-${it.media.id}`) || status.settings.onlineStream.defaultProvider || "ani-cli"
             const dub = await fetchLanguageMode(it.media.id, status.settings.aniCli.defaultMode === "dub")
             playStream(provider, it.media.id, it.episode, dub)
         } else navigate(`/entry?id=${it.media.id}`)
@@ -471,7 +471,7 @@ function GenreBar({ genres, value, onChange }: { genres: string[]; value: string
 }
 
 function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; hasDir: boolean; paired: boolean; onLogin: () => void }) {
-    // Kumo's Android app (a TV's): the anime are on the computer, and so is
+    // Aniko's Android app (a TV's): the anime are on the computer, and so is
     // the AniList login, which it can share.
     const steps = androidApp
         ? [
@@ -479,7 +479,7 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
                   done: paired,
                   icon: <FolderOpen className="size-5" />,
                   title: "Watch your computer's library",
-                  text: "On your computer's Kumo, open Settings › Other devices, turn sharing on and share with this device. It shows up here by itself.",
+                  text: "On your computer's Aniko, open Settings › Other devices, turn sharing on and share with this device. It shows up here by itself.",
                   action: (
                       <Link to="/settings?tab=devices">
                           <Button size="sm">See devices</Button>
@@ -499,8 +499,8 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
               },
           ]
         : [
-        { done: loggedIn, icon: <LogIn className="size-5" />, title: "Connect AniList", text: "Sync your lists, progress and scores (optional — Kumo works offline too).", action: <Button size="sm" variant="primary" onClick={onLogin}>Log in</Button> },
-        { done: hasDir, icon: <FolderOpen className="size-5" />, title: "Choose your library folder", text: "Kumo scans it, matches every file to AniList and grabs artwork, descriptions and episode titles.", action: <Link to="/settings?tab=library"><Button size="sm">Open settings</Button></Link> },
+        { done: loggedIn, icon: <LogIn className="size-5" />, title: "Connect AniList", text: "Sync your lists, progress and scores (optional — Aniko works offline too).", action: <Button size="sm" variant="primary" onClick={onLogin}>Log in</Button> },
+        { done: hasDir, icon: <FolderOpen className="size-5" />, title: "Choose your library folder", text: "Aniko scans it, matches every file to AniList and grabs artwork, descriptions and episode titles.", action: <Link to="/settings?tab=library"><Button size="sm">Open settings</Button></Link> },
         { done: false, icon: <Puzzle className="size-5" />, title: "Add extensions", text: "Install streaming, torrent and manga providers or plugins from the marketplace.", action: <Link to="/extensions?tab=marketplace"><Button size="sm">Browse marketplace</Button></Link> },
           ]
     return (

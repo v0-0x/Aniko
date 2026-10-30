@@ -43,7 +43,7 @@ export default function ExtensionsPage() {
     const { data: installed } = useExtensions()
     const [manualOpen, setManualOpen] = useState(false)
     // From another device on the network: what's installed is shown, but only
-    // the computer Kumo runs on installs and sets up extensions (the server
+    // the computer Aniko runs on installs and sets up extensions (the server
     // refuses the rest).
     const { data: status } = useStatus()
     const lan = status?.client === "lan"
@@ -60,7 +60,7 @@ export default function ExtensionsPage() {
                     </Button>
                 )}
             </div>
-            {lan && <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-muted">Extensions are installed and set up on the computer Kumo runs on; from here you can see them.</p>}
+            {lan && <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-muted">Extensions are installed and set up on the computer Aniko runs on; from here you can see them.</p>}
             <Tabs
                 className="mb-8"
                 value={tab}
@@ -190,7 +190,7 @@ function InstalledCard({ ext, update, onChange }: { ext: ExtensionInfo; update?:
             <div className="flex flex-wrap gap-1.5">
                 <Badge>{m.language === "typescript" ? "TS" : "JS"}</Badge>
                 {m.lang && <Badge className="uppercase">{m.lang}</Badge>}
-                {!ext.supported && <Badge tone="amber">Not supported by Kumo yet</Badge>}
+                {!ext.supported && <Badge tone="amber">Not supported by Aniko yet</Badge>}
                 {ext.error && <Badge tone="red">Error</Badge>}
                 {ext.configError && <Badge tone="amber">Needs configuration</Badge>}
                 {needsGrant && <Badge tone="amber">Permissions needed</Badge>}
@@ -344,11 +344,11 @@ function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpe
                         <p className="flex items-center gap-2 font-semibold">
                             <ShieldAlert className="size-4" /> Page modification
                         </p>
-                        <p className="mt-1 text-xs">This plugin wants to modify the app’s pages. Kumo doesn’t allow that, so those features won’t work.</p>
+                        <p className="mt-1 text-xs">This plugin wants to modify the app’s pages. Aniko doesn’t allow that, so those features won’t work.</p>
                     </div>
                 )}
                 <p className="text-xs text-subtle">
-                    Kumo never gives plugins access to your files, terminal or local network. {scopes.includes("anilist-token") && "This plugin can read your AniList token to make requests on your behalf."}
+                    Aniko never gives plugins access to your files, terminal or local network. {scopes.includes("anilist-token") && "This plugin can read your AniList token to make requests on your behalf."}
                 </p>
             </div>
         </Dialog>

@@ -1,14 +1,14 @@
 package update
 
-// macOS: Kumo is the app Kumo.app, wherever the user put it (/Applications
-// usually), and the server is its Contents/Resources/kumo. The update
-// downloads the newest release's zip of the app (Kumo-<v>-macos-universal.zip)
-// and unpacks it next to the app, in macStaging. Once Kumo has shut down,
+// macOS: Aniko is the app Aniko.app, wherever the user put it (/Applications
+// usually), and the server is its Contents/Resources/aniko. The update
+// downloads the newest release's zip of the app (Aniko-<v>-macos-universal.zip)
+// and unpacks it next to the app, in macStaging. Once Aniko has shut down,
 // the new app takes the old one's place (two renames, so nothing is ever
 // half copied), and a small helper waits for the desktop app to quit, then
 // removes the old app and opens the new one.
 //
-// Kumo's own download isn't quarantined, so macOS opens the new app without
+// Aniko's own download isn't quarantined, so macOS opens the new app without
 // asking again.
 
 import (
@@ -43,7 +43,7 @@ func macBundle(exe string) string {
 // macStaging is where an update unpacks the new app: next to the app, on
 // the same disk, so that it moves into place with a rename.
 func macStaging(app string) string {
-	return filepath.Join(filepath.Dir(app), ".kumo-update")
+	return filepath.Join(filepath.Dir(app), ".aniko-update")
 }
 
 // macApplyable says whether this copy can update itself (see applyable).
@@ -55,18 +55,18 @@ func (c *Checker) macApplyable(exe string, err error) (bool, string) {
 	dir := filepath.Dir(app)
 	switch {
 	case app == "":
-		return false, "This copy of Kumo isn't the macOS app: update it with git pull and make, or get the app from Kumo's releases."
+		return false, "This copy of Aniko isn't the macOS app: update it with git pull and make, or get the app from Aniko's releases."
 	case strings.Contains(app, "/AppTranslocation/"):
 		// macOS runs apps opened from a download's folder from a read-only
 		// copy, until they're moved.
-		return false, "macOS runs this copy of Kumo from a temporary copy: drag Kumo to your Applications folder and open it from there, then it can update itself."
+		return false, "macOS runs this copy of Aniko from a temporary copy: drag Aniko to your Applications folder and open it from there, then it can update itself."
 	case !c.Writable(dir):
 		if strings.HasPrefix(app, "/Volumes/") {
-			return false, "Kumo runs from its disk image: drag it to your Applications folder and open it from there, then it can update itself."
+			return false, "Aniko runs from its disk image: drag it to your Applications folder and open it from there, then it can update itself."
 		}
-		return false, "Kumo can't write to " + dir + ", where it is: download the new version from its page."
+		return false, "Aniko can't write to " + dir + ", where it is: download the new version from its page."
 	}
-	return true, "Kumo downloads the new version and puts it in this one's place: Kumo closes and opens again."
+	return true, "Aniko downloads the new version and puts it in this one's place: Aniko closes and opens again."
 }
 
 func (c *Checker) applyMac(ctx context.Context, g *github, target Version, zipAsset *asset) error {
@@ -79,7 +79,7 @@ func (c *Checker) applyMac(ctx context.Context, g *github, target Version, zipAs
 	}
 	app := macBundle(exe)
 	if app == "" {
-		return errors.New("this copy of Kumo isn't the macOS app")
+		return errors.New("this copy of Aniko isn't the macOS app")
 	}
 	dir := c.CacheDir
 	if err := removeAll(dir); err != nil {
@@ -90,7 +90,7 @@ func (c *Checker) applyMac(ctx context.Context, g *github, target Version, zipAs
 	}
 	path := filepath.Join(dir, filepath.Base(zipAsset.Name))
 	err = c.download(ctx, g, g.root()+"/releases/assets/"+strconv.FormatInt(zipAsset.ID, 10), "application/octet-stream", path, zipAsset.Size, func(done, total int64) {
-		c.progress(StateDownloading, percent(done, total), "Downloading Kumo "+display(target)+"…")
+		c.progress(StateDownloading, percent(done, total), "Downloading Aniko "+display(target)+"…")
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't download the new version: %w", err)
@@ -100,7 +100,7 @@ func (c *Checker) applyMac(ctx context.Context, g *github, target Version, zipAs
 		return err
 	}
 
-	c.step(StateInstalling, -1, "Unpacking Kumo "+display(target)+"…")
+	c.step(StateInstalling, -1, "Unpacking Aniko "+display(target)+"…")
 	staging := macStaging(app)
 	if err := removeAll(staging); err != nil {
 		return fmt.Errorf("couldn't remove the last update's files: %w", err)
@@ -111,22 +111,22 @@ func (c *Checker) applyMac(ctx context.Context, g *github, target Version, zipAs
 		_ = removeAll(staging)
 		return fmt.Errorf("couldn't unpack the new version: %w", err)
 	}
-	if !isFile(filepath.Join(newApp, "Contents", "Resources", "kumo")) {
+	if !isFile(filepath.Join(newApp, "Contents", "Resources", "aniko")) {
 		_ = removeAll(staging)
-		return errors.New("the new version's app has no Kumo server in it")
+		return errors.New("the new version's app has no Aniko server in it")
 	}
 	if err := ctx.Err(); err != nil {
 		_ = removeAll(staging)
 		return err
 	}
 
-	c.step(StateInstalling, -1, "Installing Kumo "+display(target)+": Kumo closes now and opens again when it's done.")
+	c.step(StateInstalling, -1, "Installing Aniko "+display(target)+": Aniko closes now and opens again when it's done.")
 	exit := lifecycle.Exit{Code: lifecycle.CodeInstalling, Before: func() error {
 		return c.swapApp(app, newApp, staging, target)
 	}}
 	if c.Exits == nil || !c.Exits.Request(exit) {
 		_ = removeAll(staging)
-		return errors.New("Kumo is already shutting down")
+		return errors.New("Aniko is already shutting down")
 	}
 	return nil
 }
@@ -139,17 +139,18 @@ while kill -0 "$1" 2>/dev/null && [ "$i" -lt 300 ]; do sleep 0.1; i=$((i+1)); do
 rm -rf "$3"
 open "$2"`
 
-// swapApp puts the new app in the old one's place, once Kumo has shut down
+// swapApp puts the new app in the old one's place, once Aniko has shut down
 // (the desktop app is still running, from the old app's files). When that
-// fails, Kumo restarts as it was and says why (see lifecycle.Exit).
+// fails, Aniko restarts as it was and says why (see lifecycle.Exit).
 func (c *Checker) swapApp(app, newApp, staging string, target Version) error {
 	old := filepath.Join(staging, "old.app")
+	dest := renamedApp(app)
 	if err := os.Rename(app, old); err != nil {
 		_ = removeAll(staging)
 		c.saveFailure(swapFailure(err, target))
 		return fmt.Errorf("moving the old app: %w", err)
 	}
-	if err := os.Rename(newApp, app); err != nil {
+	if err := os.Rename(newApp, dest); err != nil {
 		if back := os.Rename(old, app); back != nil {
 			log.Printf("update: couldn't put the old app back in %s: %v", app, back)
 		}
@@ -157,19 +158,33 @@ func (c *Checker) swapApp(app, newApp, staging string, target Version) error {
 		c.saveFailure(swapFailure(err, target))
 		return fmt.Errorf("moving the new app: %w", err)
 	}
-	if err := c.StartHelper("/bin/sh", "-c", reopen, "kumo-update", strconv.Itoa(c.ParentPID()), app, staging); err != nil {
-		// The new version is in place: Kumo restarts into it instead, and
+	if err := c.StartHelper("/bin/sh", "-c", reopen, "aniko-update", strconv.Itoa(c.ParentPID()), dest, staging); err != nil {
+		// The new version is in place: Aniko restarts into it instead, and
 		// its next update removes the old app.
 		return fmt.Errorf("starting the helper that opens the new version: %w", err)
 	}
 	return nil
 }
 
+// renamedApp is where the new version goes: the app's own place, or
+// Aniko.app next to it for the app Kumo.app (Aniko's old name, which an
+// update from Kumo left), unless something is there already.
+func renamedApp(app string) string {
+	if filepath.Base(app) != "Kumo.app" {
+		return app
+	}
+	dest := filepath.Join(filepath.Dir(app), "Aniko.app")
+	if _, err := os.Lstat(dest); !errors.Is(err, fs.ErrNotExist) {
+		return app
+	}
+	return dest
+}
+
 // swapFailure says why the new app couldn't take the old one's place.
 func swapFailure(err error, target Version) string {
-	msg := "Kumo couldn't put the new version (" + display(target) + ") in its place: " + err.Error() + "."
+	msg := "Aniko couldn't put the new version (" + display(target) + ") in its place: " + err.Error() + "."
 	if errors.Is(err, fs.ErrPermission) || errors.Is(err, syscall.EPERM) {
-		msg += " If macOS said Kumo was prevented from modifying apps, allow it in System Settings › Privacy & Security › App Management and update again;"
+		msg += " If macOS said Aniko was prevented from modifying apps, allow it in System Settings › Privacy & Security › App Management and update again;"
 	}
 	return msg + " or download the new version from its release page."
 }

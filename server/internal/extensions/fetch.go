@@ -23,7 +23,7 @@ import (
 // Fetcher performs HTTP requests for extensions. It impersonates Chrome's
 // TLS fingerprint (as extensions expect) and refuses to connect to loopback or
 // private addresses, so an extension can never reach the user's LAN
-// (router, torrent client, Kumo itself...).
+// (router, torrent client, Aniko itself...).
 type Fetcher struct {
 	follow   *req.Client
 	noFollow *req.Client

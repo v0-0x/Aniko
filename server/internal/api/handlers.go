@@ -721,7 +721,7 @@ func (s *Server) osDownload(r *http.Request) (any, error) {
 	if err := decode(r, &body); err != nil {
 		return nil, err
 	}
-	// Downloads go to another Kumo (a TV's, say: to the computer's).
+	// Downloads go to another Aniko (a TV's, say: to the computer's).
 	if host, err := s.app.Share.SendDownload(r.Context(), share.DownloadStream, body); err != nil || host != "" {
 		if err != nil {
 			return nil, badRequest(err.Error())
@@ -875,7 +875,7 @@ func (s *Server) addTorrents(ctx context.Context, mediaID int, uris []string) (s
 	return save, s.app.Torrents.Add(ctx, uris, save)
 }
 
-// hostTorrents forwards a torrent client request (op) to the Kumo this
+// hostTorrents forwards a torrent client request (op) to the Aniko this
 // one's downloads go to; ok is false when they're this one's. A POST's body
 // goes along.
 func (s *Server) hostTorrents(r *http.Request, op string) (json.RawMessage, bool, error) {
@@ -900,7 +900,7 @@ func (s *Server) hostTorrents(r *http.Request, op string) (json.RawMessage, bool
 	return raw, ok, nil
 }
 
-// hostTorrentStatus is the status of the torrent client of the Kumo this
+// hostTorrentStatus is the status of the torrent client of the Aniko this
 // one's downloads go to, with its name (host).
 func (s *Server) hostTorrentStatus(r *http.Request) (map[string]any, bool) {
 	raw, host, ok, err := s.app.Share.TorrentsHost(r.Context(), "status", nil)

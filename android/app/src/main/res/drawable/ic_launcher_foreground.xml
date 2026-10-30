@@ -1,22 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The logo's k (packaging/icons/kumo.svg, 64 units) in the middle of the
-     adaptive icon's 108, inside the 66 every shape shows. -->
+<!-- The logo's A and spark (packaging/icons/aniko.svg, 64 units) in the
+     middle of the adaptive icon's 108, inside the 66 every shape shows. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:scaleX="1.125"
-        android:scaleY="1.125"
-        android:translateX="18"
-        android:translateY="18">
+        android:translateX="22"
+        android:translateY="22">
         <path
-            android:fillColor="#00000000"
-            android:pathData="M24.5,15.5V48.5M41,28L24.5,42M31.5,36.2L41.5,48.5"
-            android:strokeColor="#141416"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:strokeWidth="8" />
+            android:fillColor="#ECECEE"
+            android:pathData="M42.74 43.66Q43.2 44.61 43.24 45.28Q43.28 45.95 42.84 46.47Q42.4 46.98 41.41 47.48Q39.88 48.21 39.04 47.92Q38.2 47.63 37.47 46.1L29.98 30.44L22.53 46.1Q21.77 47.59 20.94 47.88Q20.12 48.17 18.59 47.44Q17.6 46.98 17.16 46.47Q16.72 45.95 16.76 45.24Q16.8 44.54 17.3 43.58L27.34 22.68Q27.73 21.92 28.47 21.46Q29.22 21 30.02 21Q30.59 21 31.09 21.21Q31.59 21.42 31.99 21.8Q32.39 22.18 32.66 22.72ZM23.56 41.48 25.93 36.55H34.07L36.44 41.48Z" />
+        <path
+            android:fillColor="#7C6CF2"
+            android:pathData="M48 10Q49.05 15.95 55 17Q49.05 18.05 48 24Q46.95 18.05 41 17Q46.95 15.95 48 10Z" />
     </group>
 </vector>

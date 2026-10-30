@@ -25,10 +25,10 @@ export function WebviewFrame({ pluginId, id, html, options, className }: { plugi
             if (d?.pluginId === pluginId && d.webviewId === id) ref.current?.contentWindow?.postMessage({ __kumoToWebview: true, name: d.name, payload: d.payload }, "*")
         }
         window.addEventListener("message", onMsg)
-        window.addEventListener("kumo-webview-message", onServer)
+        window.addEventListener("aniko-webview-message", onServer)
         return () => {
             window.removeEventListener("message", onMsg)
-            window.removeEventListener("kumo-webview-message", onServer)
+            window.removeEventListener("aniko-webview-message", onServer)
         }
     }, [pluginId, id])
     const height = options.height || (options.autoHeight ? "560px" : "420px")

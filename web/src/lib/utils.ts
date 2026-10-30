@@ -159,7 +159,7 @@ export function relativeTime(unix: number) {
     return new Date(unix * 1000).toLocaleDateString()
 }
 
-// Compares two Kumo versions (1.0.<number of commits>): null when either
+// Compares two Aniko versions (1.0.<number of commits>): null when either
 // isn't one, or is 1.0.0 (built by hand: its version is unknown).
 export function compareVersions(a?: string, b?: string): number | null {
     const parse = (v?: string) => {

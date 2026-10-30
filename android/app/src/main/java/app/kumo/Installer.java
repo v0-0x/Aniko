@@ -23,7 +23,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 
 /**
- * Installs an update: the APK of a newer Kumo, which the server downloaded
+ * Installs an update: the APK of a newer Aniko, which the server downloaded
  * (and checked) into the app's own files. Android shows what it installs and
  * asks first; the answer comes back to MainActivity (ACTION).
  */
@@ -37,7 +37,7 @@ final class Installer {
     private Installer() {
     }
 
-    /** Whether an install answer comes from an install Kumo asked for. */
+    /** Whether an install answer comes from an install Aniko asked for. */
     static boolean isOurs(Context ctx, Intent intent) {
         String got = intent.getStringExtra(EXTRA_SECRET);
         return got != null && MessageDigest.isEqual(got.getBytes(), secret(ctx).getBytes());
@@ -61,29 +61,29 @@ final class Installer {
         File apk;
         try {
             apk = new File(path).getCanonicalFile();
-            // Only an APK in Kumo's own files.
+            // Only an APK in Aniko's own files.
             String own = a.getApplicationInfo().dataDir;
             String ownCache = a.getCacheDir().getCanonicalPath();
             String p = apk.getPath();
             if (!p.endsWith(".apk") || !(p.startsWith(new File(own).getCanonicalPath() + File.separator) || p.startsWith(ownCache + File.separator)) || !apk.isFile()) {
-                Toast.makeText(a, "That isn't a Kumo update.", Toast.LENGTH_LONG).show();
+                Toast.makeText(a, "That isn't an Aniko update.", Toast.LENGTH_LONG).show();
                 return;
             }
         } catch (IOException e) {
             Toast.makeText(a, "Can't read the update: " + e.getMessage(), Toast.LENGTH_LONG).show();
             return;
         }
-        // Android 8+: Kumo needs the user's permission to install apps.
+        // Android 8+: Aniko needs the user's permission to install apps.
         if (Build.VERSION.SDK_INT >= 26 && !a.getPackageManager().canRequestPackageInstalls()) {
             try {
                 a.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + a.getPackageName())));
-                Toast.makeText(a, "Allow Kumo to install apps, then press Install again.", Toast.LENGTH_LONG).show();
+                Toast.makeText(a, "Allow Aniko to install apps, then press Install again.", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
                 // No such screen (a Fire TV): where it is, said until OK is
                 // pressed (a toast goes before it's read on a TV).
                 new AlertDialog.Builder(a)
-                        .setTitle("Allow Kumo to install its updates")
-                        .setMessage("Turn on installing unknown apps for Kumo. On a Fire TV: Settings › My Fire TV › Developer options › Install unknown apps › Kumo.\n\nThen press Install again.")
+                        .setTitle("Allow Aniko to install its updates")
+                        .setMessage("Turn on installing unknown apps for Aniko. On a Fire TV: Settings › My Fire TV › Developer options › Install unknown apps › Aniko.\n\nThen press Install again.")
                         .setPositiveButton("OK", null)
                         .show();
             }
@@ -111,7 +111,7 @@ final class Installer {
                 final String why = failed;
                 new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(app, why, Toast.LENGTH_LONG).show());
             }
-        }, "kumo-install").start();
+        }, "aniko-install").start();
     }
 
     // An APK being handed to Android's installer.
@@ -125,7 +125,7 @@ final class Installer {
                 return null;
             case PackageInstaller.STATUS_FAILURE_CONFLICT:
             case PackageInstaller.STATUS_FAILURE_INCOMPATIBLE:
-                return "This update can't replace the Kumo installed here (it was signed differently). Uninstall Kumo, then install the new one.";
+                return "This update can't replace the Aniko installed here (it was signed differently). Uninstall Aniko, then install the new one.";
             case PackageInstaller.STATUS_FAILURE_STORAGE:
                 return "There isn't enough space for the update. Free some, then press Install again.";
             case PackageInstaller.STATUS_FAILURE_BLOCKED:
@@ -144,7 +144,7 @@ final class Installer {
         try {
             int id = installer.createSession(params);
             session = installer.openSession(id);
-            try (InputStream in = new FileInputStream(apk); OutputStream out = session.openWrite("kumo.apk", 0, apk.length())) {
+            try (InputStream in = new FileInputStream(apk); OutputStream out = session.openWrite("aniko.apk", 0, apk.length())) {
                 byte[] buf = new byte[256 * 1024];
                 int n;
                 while ((n = in.read(buf)) > 0) out.write(buf, 0, n);

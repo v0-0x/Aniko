@@ -19,7 +19,7 @@ func newHubServer(t *testing.T) *Server {
 		t.Fatal(err)
 	}
 	t.Cleanup(a.Shutdown)
-	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>kumo</html>")}})
+	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>aniko</html>")}})
 }
 
 // A hub's dashboard is its owner's: before the password is set (with the

@@ -17,7 +17,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     const settings = status?.settings
     const { data: providers } = useOnlineProviders()
     const media = entry.media
-    const [provider, setProvider] = useState<string>(() => readLocal(`kumo-provider-${media.id}`) || settings?.onlineStream.defaultProvider || "ani-cli")
+    const [provider, setProvider] = useState<string>(() => readLocal(`aniko-provider-${media.id}`) || settings?.onlineStream.defaultProvider || "ani-cli")
     // Sub/dub is remembered per anime on the server (also used by "continue
     // watching", the next-episode button and local files).
     const language = useLanguageMode(media.id)
@@ -39,7 +39,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     const marker = useEpisodeMarker(media, entry.listEntry)
     const qc = useQueryClient()
 
-    useEffect(() => writeLocal(`kumo-provider-${media.id}`, provider), [provider, media.id])
+    useEffect(() => writeLocal(`aniko-provider-${media.id}`, provider), [provider, media.id])
 
     // Wait for the remembered choice, or the first request would list (and
     // remember) the default mode instead. The only version there is isn't a
@@ -135,11 +135,11 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                         <p className="font-semibold text-amber-200">{status?.platform === "android" ? "ani-cli doesn’t run on Android" : "ani-cli isn’t installed"}</p>
                         {status?.platform === "android" ? (
                             <p className="mt-1 text-muted">
-                                It runs on a computer with Kumo and ani-cli instead: there, turn on <b>Share my library</b> for this device (Settings › Other devices). Or pick an extension
+                                It runs on a computer with Aniko and ani-cli instead: there, turn on <b>Share my library</b> for this device (Settings › Other devices). Or pick an extension
                                 provider from the marketplace.
                             </p>
                         ) : canInstallPrograms(status) ? (
-                            <p className="mt-1 text-muted">Kumo can install it, with the programs it needs, or pick an extension provider from the marketplace.</p>
+                            <p className="mt-1 text-muted">Aniko can install it, with the programs it needs, or pick an extension provider from the marketplace.</p>
                         ) : (
                             <p className="mt-1 text-muted">
                                 {installSource(status?.platform, "ani-cli")} <code className="rounded bg-black/40 px-1.5 py-0.5">{installHint(status?.platform, "ani-cli")}</code> (it also
@@ -296,7 +296,7 @@ function ManualMatchDialog({
         }
     }
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} title="Pick the right anime" description="Search the provider and choose the matching entry. Kumo remembers your choice.">
+        <Dialog open={open} onOpenChange={onOpenChange} title="Pick the right anime" description="Search the provider and choose the matching entry. Aniko remembers your choice.">
             <div className="flex gap-2">
                 <Input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && search()} placeholder="Search…" icon={<Search className="size-4" />} />
                 {canDub && (
@@ -399,7 +399,7 @@ function DownloadDialog({ open, onOpenChange, provider, mediaId, dub, episodes, 
     )
 }
 
-// Windows and macOS: Kumo's setup installs ani-cli (on Windows with Git,
+// Windows and macOS: Aniko's setup installs ani-cli (on Windows with Git,
 // whose bash runs it).
 function InstallAniCli({ running }: { running: boolean }) {
     const { data: status } = useStatus()

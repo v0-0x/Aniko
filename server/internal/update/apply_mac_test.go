@@ -60,14 +60,14 @@ func makeZip(t *testing.T, entries ...zipEntry) []byte {
 // newMacApp is the zip of the new version, like electron-builder makes it.
 func newMacApp(t *testing.T) []byte {
 	return makeZip(t,
-		zipEntry{name: "Kumo.app/"},
-		zipEntry{name: "Kumo.app/Contents/Info.plist", data: "<plist>1.0.10</plist>", mode: 0o644},
-		zipEntry{name: "Kumo.app/Contents/MacOS/Kumo", data: "new shell", mode: 0o755},
-		zipEntry{name: "Kumo.app/Contents/Resources/kumo", data: "new server", mode: 0o755},
-		zipEntry{name: "Kumo.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework", data: "framework", mode: 0o755},
-		zipEntry{name: "Kumo.app/Contents/Frameworks/Electron Framework.framework/Versions/Current", link: "A"},
-		zipEntry{name: "Kumo.app/Contents/Frameworks/Electron Framework.framework/Electron Framework", link: "Versions/Current/Electron Framework"},
-		zipEntry{name: "__MACOSX/Kumo.app/._Info.plist", data: "resource fork", mode: 0o644},
+		zipEntry{name: "Aniko.app/"},
+		zipEntry{name: "Aniko.app/Contents/Info.plist", data: "<plist>1.0.10</plist>", mode: 0o644},
+		zipEntry{name: "Aniko.app/Contents/MacOS/Aniko", data: "new shell", mode: 0o755},
+		zipEntry{name: "Aniko.app/Contents/Resources/aniko", data: "new server", mode: 0o755},
+		zipEntry{name: "Aniko.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework", data: "framework", mode: 0o755},
+		zipEntry{name: "Aniko.app/Contents/Frameworks/Electron Framework.framework/Versions/Current", link: "A"},
+		zipEntry{name: "Aniko.app/Contents/Frameworks/Electron Framework.framework/Electron Framework", link: "Versions/Current/Electron Framework"},
+		zipEntry{name: "__MACOSX/Aniko.app/._Info.plist", data: "resource fork", mode: 0o644},
 	)
 }
 
@@ -79,9 +79,9 @@ func macReleases(app []byte) []map[string]any {
 			"tag_name": tag, "html_url": "https://github.com/o/r/releases/tag/" + tag,
 			"target_commitish": headSHA, "published_at": "2026-10-08T08:00:00Z",
 			"assets": []map[string]any{
-				{"id": 51, "name": "Kumo-" + v + "-macos-universal.dmg", "size": 10, "digest": "sha256:00"},
-				{"id": 52, "name": "Kumo-" + v + "-macos-universal.zip", "size": len(app), "digest": "sha256:" + hex.EncodeToString(sum[:])},
-				{"id": 53, "name": "Kumo-Setup-" + v + "-windows-x64.exe", "size": 10, "digest": "sha256:00"},
+				{"id": 51, "name": "Aniko-" + v + "-macos-universal.dmg", "size": 10, "digest": "sha256:00"},
+				{"id": 52, "name": "Aniko-" + v + "-macos-universal.zip", "size": len(app), "digest": "sha256:" + hex.EncodeToString(sum[:])},
+				{"id": 53, "name": "Aniko-Setup-" + v + "-windows-x64.exe", "size": 10, "digest": "sha256:00"},
 			},
 		}
 	}
@@ -97,8 +97,8 @@ func macReleases(app []byte) []map[string]any {
 // Applications folder), and returns the app.
 func installedMac(t *testing.T, c *Checker) string {
 	t.Helper()
-	app := filepath.Join(t.TempDir(), "Applications", "Kumo.app")
-	for name, data := range map[string]string{"Contents/MacOS/Kumo": "old shell", "Contents/Resources/kumo": "old server"} {
+	app := filepath.Join(t.TempDir(), "Applications", "Aniko.app")
+	for name, data := range map[string]string{"Contents/MacOS/Aniko": "old shell", "Contents/Resources/aniko": "old server"} {
 		p := filepath.Join(app, name)
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
@@ -108,7 +108,7 @@ func installedMac(t *testing.T, c *Checker) string {
 		}
 	}
 	c.GOOS, c.Version = "darwin", "1.0.9"
-	c.Executable = func() (string, error) { return filepath.Join(app, "Contents", "Resources", "kumo"), nil }
+	c.Executable = func() (string, error) { return filepath.Join(app, "Contents", "Resources", "aniko"), nil }
 	return app
 }
 
@@ -121,7 +121,7 @@ func TestCheckMacPicksNewestRelease(t *testing.T) {
 	if st.Error != "" || !st.Available || st.Latest == nil || st.Latest.Version != "1.0.10" || st.Latest.URL != "https://github.com/o/r/releases/tag/macos-v1.0.10" {
 		t.Fatalf("error %q, available %v, latest %+v", st.Error, st.Available, st.Latest)
 	}
-	if c.asset == nil || c.asset.ID != 52 || c.asset.Name != "Kumo-1.0.10-macos-universal.zip" {
+	if c.asset == nil || c.asset.ID != 52 || c.asset.Name != "Aniko-1.0.10-macos-universal.zip" {
 		t.Fatalf("app %+v", c.asset)
 	}
 	if !st.CanApply {
@@ -145,12 +145,12 @@ func TestMacApplyable(t *testing.T) {
 		exe, note    string
 		ok, writable bool
 	}{
-		{"/Applications/Kumo.app/Contents/Resources/kumo", "puts it in this one's place", true, true},
-		{"/Users/me/Applications/Kumo.app/Contents/Resources/kumo", "puts it in this one's place", true, true},
-		{"/Users/me/kumo/dist/kumo", "isn't the macOS app", false, true},
-		{"/private/var/folders/x/T/AppTranslocation/1234/d/Kumo.app/Contents/Resources/kumo", "Applications folder", false, false},
-		{"/Volumes/Kumo 1.0.10/Kumo.app/Contents/Resources/kumo", "disk image", false, false},
-		{"/Applications/Kumo.app/Contents/Resources/kumo", "can't write to /Applications", false, false},
+		{"/Applications/Aniko.app/Contents/Resources/aniko", "puts it in this one's place", true, true},
+		{"/Users/me/Applications/Aniko.app/Contents/Resources/aniko", "puts it in this one's place", true, true},
+		{"/Users/me/aniko/dist/aniko", "isn't the macOS app", false, true},
+		{"/private/var/folders/x/T/AppTranslocation/1234/d/Aniko.app/Contents/Resources/aniko", "Applications folder", false, false},
+		{"/Volumes/Aniko 1.0.10/Aniko.app/Contents/Resources/aniko", "disk image", false, false},
+		{"/Applications/Aniko.app/Contents/Resources/aniko", "can't write to /Applications", false, false},
 	} {
 		writable = tc.writable
 		c.Executable = func() (string, error) { return tc.exe, nil }
@@ -184,7 +184,7 @@ func TestApplyMac(t *testing.T) {
 	select {
 	case exit = <-c.Exits.C():
 	case <-time.After(10 * time.Second):
-		t.Fatalf("Kumo wasn't asked to quit: %+v", c.Status())
+		t.Fatalf("Aniko wasn't asked to quit: %+v", c.Status())
 	}
 	if exit.Code != lifecycle.CodeInstalling || exit.Restart || exit.Before == nil {
 		t.Fatalf("exit %+v", exit)
@@ -192,18 +192,18 @@ func TestApplyMac(t *testing.T) {
 	if st := waitState(t, c); st.State != StateInstalling {
 		t.Fatalf("state %q: %s", st.State, st.Message)
 	}
-	// Until Kumo has shut down, the old app stays.
-	if b, _ := os.ReadFile(filepath.Join(installed, "Contents", "Resources", "kumo")); string(b) != "old server" || helper != nil {
-		t.Fatalf("the app was replaced before Kumo quit (server %q, helper %q)", b, helper)
+	// Until Aniko has shut down, the old app stays.
+	if b, _ := os.ReadFile(filepath.Join(installed, "Contents", "Resources", "aniko")); string(b) != "old server" || helper != nil {
+		t.Fatalf("the app was replaced before Aniko quit (server %q, helper %q)", b, helper)
 	}
 	staging := macStaging(installed)
 	if err := exit.Before(); err != nil {
 		t.Fatal(err)
 	}
-	if b, _ := os.ReadFile(filepath.Join(installed, "Contents", "Resources", "kumo")); string(b) != "new server" {
+	if b, _ := os.ReadFile(filepath.Join(installed, "Contents", "Resources", "aniko")); string(b) != "new server" {
 		t.Fatalf("server %q after the update", b)
 	}
-	if st, err := os.Stat(filepath.Join(installed, "Contents", "Resources", "kumo")); err != nil || st.Mode().Perm()&0o111 == 0 {
+	if st, err := os.Stat(filepath.Join(installed, "Contents", "Resources", "aniko")); err != nil || st.Mode().Perm()&0o111 == 0 {
 		t.Fatalf("the new server isn't executable: %v %v", st.Mode(), err)
 	}
 	framework := filepath.Join(installed, "Contents", "Frameworks", "Electron Framework.framework")
@@ -216,10 +216,10 @@ func TestApplyMac(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(staging, "__MACOSX")); !os.IsNotExist(err) {
 		t.Fatalf("__MACOSX unpacked: %v", err)
 	}
-	if b, _ := os.ReadFile(filepath.Join(staging, "old.app", "Contents", "Resources", "kumo")); string(b) != "old server" {
+	if b, _ := os.ReadFile(filepath.Join(staging, "old.app", "Contents", "Resources", "aniko")); string(b) != "old server" {
 		t.Fatalf("old app: %q", b)
 	}
-	want := []string{"/bin/sh", "-c", reopen, "kumo-update", "4321", installed, staging}
+	want := []string{"/bin/sh", "-c", reopen, "aniko-update", "4321", installed, staging}
 	if !slices.Equal(helper, want) {
 		t.Fatalf("helper %q, want %q", helper, want)
 	}
@@ -249,7 +249,7 @@ func TestApplyMac(t *testing.T) {
 }
 
 // When the new app can't take the old one's place, the old one stays and
-// Kumo restarts into it, then says what happened.
+// Aniko restarts into it, then says what happened.
 func TestApplyMacSwapFails(t *testing.T) {
 	app := newMacApp(t)
 	gh := newFakeGitHub(t)
@@ -265,13 +265,13 @@ func TestApplyMacSwapFails(t *testing.T) {
 	exit := <-c.Exits.C()
 	waitState(t, c)
 	// Something took the new app away meanwhile.
-	if err := os.RemoveAll(filepath.Join(macStaging(installed), "Kumo.app")); err != nil {
+	if err := os.RemoveAll(filepath.Join(macStaging(installed), "Aniko.app")); err != nil {
 		t.Fatal(err)
 	}
 	if err := exit.Before(); err == nil {
 		t.Fatal("Before succeeded")
 	}
-	if b, _ := os.ReadFile(filepath.Join(installed, "Contents", "Resources", "kumo")); string(b) != "old server" {
+	if b, _ := os.ReadFile(filepath.Join(installed, "Contents", "Resources", "aniko")); string(b) != "old server" {
 		t.Fatalf("the old app isn't back: server %q", b)
 	}
 	if _, err := os.Stat(macStaging(installed)); !os.IsNotExist(err) {
@@ -287,17 +287,17 @@ func TestApplyMacSwapFails(t *testing.T) {
 
 func TestUnzipAppRefusesUnsafeZips(t *testing.T) {
 	for name, z := range map[string][]byte{
-		"link out of the app": makeZip(t, zipEntry{name: "Kumo.app/Contents/Resources/kumo", data: "x", mode: 0o755}, zipEntry{name: "Kumo.app/evil", link: "../../etc"}),
-		"absolute link":       makeZip(t, zipEntry{name: "Kumo.app/evil", link: "/etc/passwd"}),
+		"link out of the app": makeZip(t, zipEntry{name: "Aniko.app/Contents/Resources/aniko", data: "x", mode: 0o755}, zipEntry{name: "Aniko.app/evil", link: "../../etc"}),
+		"absolute link":       makeZip(t, zipEntry{name: "Aniko.app/evil", link: "/etc/passwd"}),
 		// Each link points inside, but one through the other goes out.
 		"links through links": makeZip(t,
-			zipEntry{name: "Kumo.app/Contents/Resources/kumo", data: "x", mode: 0o755},
-			zipEntry{name: "Kumo.app/Contents/Resources/b", link: "../.."},
-			zipEntry{name: "Kumo.app/Contents/Resources/b/c", link: "../../.."},
-			zipEntry{name: "Kumo.app/Contents/Resources/b/c/PWNED.txt", data: "x", mode: 0o644}),
+			zipEntry{name: "Aniko.app/Contents/Resources/aniko", data: "x", mode: 0o755},
+			zipEntry{name: "Aniko.app/Contents/Resources/b", link: "../.."},
+			zipEntry{name: "Aniko.app/Contents/Resources/b/c", link: "../../.."},
+			zipEntry{name: "Aniko.app/Contents/Resources/b/c/PWNED.txt", data: "x", mode: 0o644}),
 		"path out of it": makeZip(t, zipEntry{name: "../evil", data: "x", mode: 0o644}),
-		"two apps":       makeZip(t, zipEntry{name: "Kumo.app/a", data: "x", mode: 0o644}, zipEntry{name: "Other.app/a", data: "x", mode: 0o644}),
-		"no app":         makeZip(t, zipEntry{name: "Kumo/a", data: "x", mode: 0o644}),
+		"two apps":       makeZip(t, zipEntry{name: "Aniko.app/a", data: "x", mode: 0o644}, zipEntry{name: "Other.app/a", data: "x", mode: 0o644}),
+		"no app":         makeZip(t, zipEntry{name: "Aniko/a", data: "x", mode: 0o644}),
 	} {
 		dir := t.TempDir()
 		archive := filepath.Join(dir, "app.zip")
@@ -317,9 +317,9 @@ func TestUnzipAppRefusesUnsafeZips(t *testing.T) {
 // does and checks that macOS still takes its signature, and that its server
 // runs. The macOS release workflow runs it on the zip it made.
 func TestReleasedMacApp(t *testing.T) {
-	archive := os.Getenv("KUMO_MAC_APP_ZIP")
+	archive := os.Getenv("ANIKO_MAC_APP_ZIP")
 	if archive == "" {
-		t.Skip("KUMO_MAC_APP_ZIP isn't set")
+		t.Skip("ANIKO_MAC_APP_ZIP isn't set")
 	}
 	app, err := unzipApp(archive, filepath.Join(t.TempDir(), "out"))
 	if err != nil {
@@ -330,12 +330,57 @@ func TestReleasedMacApp(t *testing.T) {
 			t.Fatalf("codesign --verify: %v\n%s", err, out)
 		}
 	}
-	out, err := exec.Command(filepath.Join(app, "Contents", "Resources", "kumo"), "--version").CombinedOutput()
+	out, err := exec.Command(filepath.Join(app, "Contents", "Resources", "aniko"), "--version").CombinedOutput()
 	if err != nil {
-		t.Fatalf("kumo --version: %v\n%s", err, out)
+		t.Fatalf("aniko --version: %v\n%s", err, out)
 	}
-	if want := os.Getenv("KUMO_MAC_APP_VERSION"); want != "" && strings.TrimSpace(string(out)) != "Kumo "+want {
-		t.Fatalf("kumo --version says %q, want Kumo %s", out, want)
+	if want := os.Getenv("ANIKO_MAC_APP_VERSION"); want != "" && strings.TrimSpace(string(out)) != "Aniko "+want {
+		t.Fatalf("aniko --version says %q, want Aniko %s", out, want)
 	}
 	t.Logf("%s", out)
+}
+
+// An update of the app still called Kumo.app (from before the rename, which
+// Kumo's own updater left) puts the new version in Aniko.app, unless
+// something has that name already.
+func TestSwapAppRenamesKumo(t *testing.T) {
+	for _, taken := range []bool{false, true} {
+		dir := t.TempDir()
+		app := filepath.Join(dir, "Kumo.app")
+		staging := macStaging(app)
+		newApp := filepath.Join(staging, "Aniko.app")
+		for p, data := range map[string]string{filepath.Join(app, "old"): "old", filepath.Join(newApp, "new"): "new"} {
+			if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(p, []byte(data), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		want := filepath.Join(dir, "Aniko.app")
+		if taken {
+			if err := os.Mkdir(want, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			want = app
+		}
+		c := newTestChecker(t, newFakeGitHub(t))
+		var opened string
+		c.StartHelper = func(_ string, args ...string) error {
+			opened = args[len(args)-2]
+			return nil
+		}
+		c.ParentPID = func() int { return 1 }
+		if err := c.swapApp(app, newApp, staging, Version{Version: "2.0.37"}); err != nil {
+			t.Fatal(err)
+		}
+		if b, err := os.ReadFile(filepath.Join(want, "new")); err != nil || string(b) != "new" || opened != want {
+			t.Fatalf("taken %v: the new app in %s: %q %v, opened %q", taken, want, b, err, opened)
+		}
+		if !taken {
+			if _, err := os.Stat(app); !os.IsNotExist(err) {
+				t.Fatalf("Kumo.app is still there: %v", err)
+			}
+		}
+	}
 }

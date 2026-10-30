@@ -261,7 +261,7 @@ func FirstNonEmpty(vals ...string) string {
 }
 
 // Detach starts a command that outlives the request that launched it, on
-// its own: Ctrl+C on Kumo's terminal doesn't also close it.
+// its own: Ctrl+C on Aniko's terminal doesn't also close it.
 func Detach(name string, args ...string) error {
 	return start(exec.Command(name, args...))
 }

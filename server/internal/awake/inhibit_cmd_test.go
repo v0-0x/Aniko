@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// The program reading from Kumo ends once Kumo's end of the pipe closes (as
-// when Kumo crashes), not only when it's stopped.
-func TestInhibitorEndsWithKumo(t *testing.T) {
+// The program reading from Aniko ends once Aniko's end of the pipe closes (as
+// when Aniko crashes), not only when it's stopped.
+func TestInhibitorEndsWithAniko(t *testing.T) {
 	c := &cmdInhibitor{args: []string{"cat"}, stdin: true}
 	if err := c.start(); err != nil {
 		t.Skip("no cat:", err)
@@ -24,7 +24,7 @@ func TestInhibitorEndsWithKumo(t *testing.T) {
 	if !running {
 		t.Fatal("ended at once")
 	}
-	// Kumo gone: its end of the pipe closed by the system.
+	// Aniko gone: its end of the pipe closed by the system.
 	_ = pipe.Close()
 	for i := 0; i < 50; i++ {
 		c.mu.Lock()
@@ -35,5 +35,5 @@ func TestInhibitorEndsWithKumo(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	t.Fatal("it went on without Kumo")
+	t.Fatal("it went on without Aniko")
 }

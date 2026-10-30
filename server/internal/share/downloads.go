@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-// A host can let a Kumo it shares its library with download onto it: the
-// episodes and torrents that Kumo downloads go to the host's library (and
+// A host can let an Aniko it shares its library with download onto it: the
+// episodes and torrents that Aniko downloads go to the host's library (and
 // come back shared). Made for a TV, which has no room for them, nor ani-cli
-// or a torrent client. When a host allows it, it becomes where that Kumo's
+// or a torrent client. When a host allows it, it becomes where that Aniko's
 // downloads go (Settings › Other devices can change it back); when it
-// stops, they're saved on that Kumo again.
+// stops, they're saved on that Aniko again.
 
 // What a guest sends a host to download.
 const (
@@ -40,7 +40,7 @@ type TorrentDownload struct {
 	URIs    []string `json:"uris"`
 }
 
-// downloadsGranted follows a host allowing this Kumo to download onto it,
+// downloadsGranted follows a host allowing this Aniko to download onto it,
 // or no longer.
 func (s *Service) downloadsGranted(p *peer, takes bool) {
 	cfg := s.settings.Get()
@@ -63,7 +63,7 @@ func (s *Service) downloadsGranted(p *peer, takes bool) {
 	}
 }
 
-// DownloadHost is the Kumo this one's downloads go to: its name ("" when
+// DownloadHost is the Aniko this one's downloads go to: its name ("" when
 // they're saved here). An error when it's set but can't take them now.
 func (s *Service) DownloadHost() (string, error) {
 	id := s.settings.Get().Sharing.DownloadTo
@@ -80,14 +80,14 @@ func (s *Service) DownloadHost() (string, error) {
 	s.mu.Unlock()
 	if !ok {
 		if name == "" {
-			name = "The other Kumo"
+			name = "The other Aniko"
 		}
 		return "", fmt.Errorf("%s doesn't take downloads from this device any more (Settings › Other devices)", name)
 	}
 	return name, nil
 }
 
-// SendDownload has the Kumo this one's downloads go to download something
+// SendDownload has the Aniko this one's downloads go to download something
 // (a StreamDownload or a TorrentDownload), and returns its name.
 func (s *Service) SendDownload(ctx context.Context, kind string, what any) (string, error) {
 	name, err := s.DownloadHost()
@@ -128,7 +128,7 @@ func (s *Service) SendDownload(ctx context.Context, kind string, what any) (stri
 	return name, nil
 }
 
-// TorrentsHost asks the Kumo this one's downloads go to about its torrent
+// TorrentsHost asks the Aniko this one's downloads go to about its torrent
 // client (op: status, list, action, start; GET without body, else POST):
 // its torrents are this one's then, a TV's are its computer's. ok is false
 // when the downloads are this one's own.
@@ -136,14 +136,14 @@ func (s *Service) TorrentsHost(ctx context.Context, op string, body any) (raw js
 	return s.askDownloadHost(ctx, "/api/peer/torrents/"+op, body)
 }
 
-// DownloadsHost asks the Kumo this one's downloads go to about its
+// DownloadsHost asks the Aniko this one's downloads go to about its
 // downloads (op: list; or <id>/cancel, <id>/retry with a body): a TV's
 // Downloads page shows its computer's. ok as for TorrentsHost.
 func (s *Service) DownloadsHost(ctx context.Context, op string, body any) (raw json.RawMessage, host string, ok bool, err error) {
 	return s.askDownloadHost(ctx, "/api/peer/downloads/"+op, body)
 }
 
-// askDownloadHost asks the Kumo this one's downloads go to (GET without a
+// askDownloadHost asks the Aniko this one's downloads go to (GET without a
 // body, else POST).
 func (s *Service) askDownloadHost(ctx context.Context, path string, body any) (raw json.RawMessage, host string, ok bool, err error) {
 	name, err := s.DownloadHost()

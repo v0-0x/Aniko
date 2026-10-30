@@ -58,7 +58,7 @@ var sameSiteHeaders = map[string]bool{"referer": true, "origin": true, "user-age
 
 // IsDocumentRequest reports a navigation or frame load. Proxied and cached
 // remote content is only ever loaded as media/images/XHR by the app, never
-// opened as a page on Kumo's origin.
+// opened as a page on Aniko's origin.
 func IsDocumentRequest(r *http.Request) bool {
 	switch r.Header.Get("Sec-Fetch-Dest") {
 	case "document", "iframe", "frame", "embed", "object":
@@ -87,7 +87,7 @@ func SafeContentType(ct string) string {
 
 // ServeProxy implements GET /api/proxy.
 func ServeProxy(w http.ResponseWriter, r *http.Request) {
-	// Remote content must never run as a page on Kumo's origin.
+	// Remote content must never run as a page on Aniko's origin.
 	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'")
 	if IsDocumentRequest(r) {
 		http.Error(w, "not a page", http.StatusForbidden)

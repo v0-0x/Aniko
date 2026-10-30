@@ -19,7 +19,7 @@ import (
 
 func newTestScanner(t *testing.T, dirs ...string) (*Scanner, *config.Store) {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestScanKeepsFilesOfMissingDrives(t *testing.T) {
 }
 
 // A folder taken out of the library, or the library turned off: its files
-// go from the index, also when its drive is gone (moved to a Kumo Hub), but
+// go from the index, also when its drive is gone (moved to an Aniko Hub), but
 // not those in a folder still in it, and nothing on the disk.
 func TestForgetFoldersOutOfTheLibrary(t *testing.T) {
 	base := t.TempDir()
@@ -297,7 +297,7 @@ func TestFoldersExplainSkippedFolders(t *testing.T) {
 	touch(t, filepath.Join(lib, "Creditless", "Show NCOP.mkv"))
 	touch(t, filepath.Join(lib, "Artbook", "Scans", "01.jpg"))
 	touch(t, filepath.Join(lib, "Notes", "readme.txt"))
-	touch(t, filepath.Join(lib, "Kumo Download", ".kumo-download-abc", "Show - 01 [SUB].mp4"))
+	touch(t, filepath.Join(lib, "Aniko Download", ".aniko-download-abc", "Show - 01 [SUB].mp4"))
 	if err := os.MkdirAll(filepath.Join(lib, "Empty"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -327,7 +327,7 @@ func TestFoldersExplainSkippedFolders(t *testing.T) {
 		"Creditless":                        "Ignore patterns skip its videos (*NCOP*)",
 		"Artbook":                           "No video files in this folder or its subfolders",
 		"Notes":                             "No video files here (1 .txt)",
-		"Kumo Download":                     "Still downloading (1 unfinished file)",
+		"Aniko Download":                    "Still downloading (1 unfinished file)",
 		"Empty":                             "The folder is empty",
 	}
 	for label, want := range problems {
@@ -335,7 +335,7 @@ func TestFoldersExplainSkippedFolders(t *testing.T) {
 			t.Errorf("%s: want problem %q, got %+v (listed: %v)", label, want, f, ok)
 		}
 	}
-	for _, label := range []string{"[Lulu] Code Geass/Scans", "Artbook/Scans", "Kumo Download/.kumo-download-abc"} {
+	for _, label := range []string{"[Lulu] Code Geass/Scans", "Artbook/Scans", "Aniko Download/.aniko-download-abc"} {
 		if f, ok := got[label]; ok {
 			t.Errorf("%s shouldn't be listed: %+v", label, f)
 		}

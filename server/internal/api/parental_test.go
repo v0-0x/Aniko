@@ -12,7 +12,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/share"
 )
 
-// A host sets a guest's parental controls: the guest gets them, its Kumo
+// A host sets a guest's parental controls: the guest gets them, its Aniko
 // hides and refuses what they block (and keeps sharing on), the host shares
 // nothing blocked with it, hears what it watches, and can lift them; a PIN
 // lifts them on the guest.

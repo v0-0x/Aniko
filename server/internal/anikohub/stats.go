@@ -1,4 +1,4 @@
-package kumohub
+package anikohub
 
 import (
 	"bufio"
@@ -17,13 +17,13 @@ type System struct {
 	Hostname string  `json:"hostname"` // the computer's name
 	Arch     string  `json:"arch"`
 	Cores    int     `json:"cores"`
-	CPU      float64 `json:"cpu"`     // all cores, 0-100, since the last look
-	KumoCPU  float64 `json:"kumoCpu"` // the hub's own share, 0-100
-	Load     float64 `json:"load"`    // 1-minute load average
+	CPU      float64 `json:"cpu"`      // all cores, 0-100, since the last look
+	AnikoCPU float64 `json:"anikoCpu"` // the hub's own share, 0-100
+	Load     float64 `json:"load"`     // 1-minute load average
 	MemTotal int64   `json:"memTotal"`
 	MemUsed  int64   `json:"memUsed"`
-	KumoMem  int64   `json:"kumoMem"` // the hub's own (resident)
-	Temp     float64 `json:"temp"`    // °C (0: unknown)
+	AnikoMem int64   `json:"anikoMem"` // the hub's own (resident)
+	Temp     float64 `json:"temp"`     // °C (0: unknown)
 	// Throttled: the Pi slows itself down (too hot, or too little power).
 	Throttled bool    `json:"throttled"`
 	Uptime    int64   `json:"uptime"`  // seconds the computer has been on
@@ -42,13 +42,13 @@ type Disk struct {
 
 // Sampler keeps the last look, to tell rates (CPU, network) since then.
 type Sampler struct {
-	mu      sync.Mutex
-	started time.Time
-	at      time.Time
-	cpuIdle uint64
-	cpuAll  uint64
-	kumoCPU uint64 // ticks
-	rx, tx  uint64
+	mu       sync.Mutex
+	started  time.Time
+	at       time.Time
+	cpuIdle  uint64
+	cpuAll   uint64
+	anikoCPU uint64 // ticks
+	rx, tx   uint64
 }
 
 func NewSampler() *Sampler { return &Sampler{started: time.Now()} }
@@ -61,7 +61,7 @@ func (s *Sampler) Look(folders []string) System {
 		sys.Model = strings.TrimRight(string(b), "\x00\n ")
 	}
 	idle, all := cpuTicks()
-	kumo := selfTicks()
+	aniko := selfTicks()
 	rx, tx := netBytes()
 	now := time.Now()
 
@@ -70,18 +70,18 @@ func (s *Sampler) Look(folders []string) System {
 		if d := all - s.cpuAll; d > 0 && all >= s.cpuAll {
 			sys.CPU = round1(100 * float64(d-(idle-s.cpuIdle)) / float64(d))
 			// The hub's ticks against all of the cores' ticks.
-			sys.KumoCPU = round1(100 * float64(kumo-s.kumoCPU) / float64(d))
+			sys.AnikoCPU = round1(100 * float64(aniko-s.anikoCPU) / float64(d))
 		}
 		if secs := now.Sub(s.at).Seconds(); secs > 0 && rx >= s.rx && tx >= s.tx {
 			sys.NetRx = float64(rx-s.rx) / secs
 			sys.NetTx = float64(tx-s.tx) / secs
 		}
 	}
-	s.at, s.cpuIdle, s.cpuAll, s.kumoCPU, s.rx, s.tx = now, idle, all, kumo, rx, tx
+	s.at, s.cpuIdle, s.cpuAll, s.anikoCPU, s.rx, s.tx = now, idle, all, aniko, rx, tx
 	s.mu.Unlock()
 
 	sys.MemTotal, sys.MemUsed = memory()
-	sys.KumoMem = selfMemory()
+	sys.AnikoMem = selfMemory()
 	sys.Temp = temperature()
 	sys.Throttled = throttled()
 	sys.Load = loadAverage()

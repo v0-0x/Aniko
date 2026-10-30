@@ -21,7 +21,7 @@ export function showAlert(qc: QueryClient, a: Alert, navigate: ((to: string) => 
     }
     if (document.visibilityState !== "visible" && systemNotifications() === "granted") {
         try {
-            const n = new Notification(a.title, { body: a.body, icon: a.image ? img(a.image) : "/kumo.svg", tag: `kumo-${a.kind}-${a.mediaId ?? ""}` })
+            const n = new Notification(a.title, { body: a.body, icon: a.image ? img(a.image) : "/aniko.svg", tag: `aniko-${a.kind}-${a.mediaId ?? ""}` })
             n.onclick = () => {
                 window.focus()
                 open()
@@ -50,7 +50,7 @@ function playAlert(qc: QueryClient, a: Alert) {
     api.post("/api/playback/local", { path: a.path, mediaId: a.mediaId, episode: a.episode, player: "mpv" }).catch((e: Error) => toast.error(e.message))
 }
 
-// Whether this browser shows Kumo's notifications: "unsupported" where it
+// Whether this browser shows Aniko's notifications: "unsupported" where it
 // can't (not over https, the TV app), else the permission.
 export function systemNotifications(): NotificationPermission | "unsupported" {
     if (typeof Notification === "undefined" || !window.isSecureContext) return "unsupported"

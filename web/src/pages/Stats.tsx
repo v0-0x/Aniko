@@ -7,8 +7,8 @@ import { useCollection } from "@/lib/queries"
 import type { CollectionItem } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-// Your anime in numbers: from your list (AniList's, or Kumo's own), and
-// what you watched in Kumo month by month.
+// Your anime in numbers: from your list (AniList's, or Aniko's own), and
+// what you watched in Aniko month by month.
 
 type Month = { month: string; episodes: number; minutes: number }
 
@@ -59,7 +59,7 @@ export default function StatsPage() {
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
             <div className="mb-8">
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Stats</h1>
-                <p className="mt-1 text-muted">Your anime in numbers: your list, and what you watched in Kumo.</p>
+                <p className="mt-1 text-muted">Your anime in numbers: your list, and what you watched in Aniko.</p>
             </div>
             <div className="flex flex-col gap-8">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -113,7 +113,7 @@ function ChartCard({ title, note, table, children }: { title: string; note?: str
     )
 }
 
-// Episodes finished in Kumo, month by month: one series, in the accent.
+// Episodes finished in Aniko, month by month: one series, in the accent.
 function MonthlyChart({ months }: { months: Month[] }) {
     const [hover, setHover] = useState<number | null>(null)
     const max = Math.max(0, ...months.map(m => m.episodes))
@@ -142,9 +142,9 @@ function MonthlyChart({ months }: { months: Month[] }) {
         </table>
     )
     return (
-        <ChartCard title="Episodes watched in Kumo" note="By the month you last watched each one, the last 12 months" table={table}>
+        <ChartCard title="Episodes watched in Aniko" note="By the month you last watched each one, the last 12 months" table={table}>
             {empty ? (
-                <p className="py-10 text-center text-sm text-muted">No episodes finished in Kumo these 12 months yet. Each one you watch to the end here shows up by month.</p>
+                <p className="py-10 text-center text-sm text-muted">No episodes finished in Aniko these 12 months yet. Each one you watch to the end here shows up by month.</p>
             ) : (
                 // Headroom above the plot: the hover readout over the tallest
                 // month stays clear of the title.

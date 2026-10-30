@@ -111,9 +111,9 @@ func (s *Scanner) Folders() ([]FolderInfo, error) {
 					}
 				}
 				if strings.HasPrefix(name, ".") {
-					// Hidden, like scans skip them, except Kumo's own
+					// Hidden, like scans skip them, except Aniko's own
 					// downloads in progress.
-					if isDir && strings.HasPrefix(name, ".kumo-download-") {
+					if isDir && strings.HasPrefix(name, ".aniko-download-") {
 						c.unfinished++
 					}
 					continue
@@ -259,7 +259,7 @@ func labelFor(root, dir string) string {
 func readableError(err error) string {
 	switch {
 	case errors.Is(err, fs.ErrPermission):
-		return "Kumo isn't allowed to read this folder (permission denied)"
+		return "Aniko isn't allowed to read this folder (permission denied)"
 	case errors.Is(err, fs.ErrNotExist):
 		return "The folder doesn't exist (is the drive connected?)"
 	}

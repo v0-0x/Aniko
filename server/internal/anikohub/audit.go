@@ -1,4 +1,4 @@
-package kumohub
+package anikohub
 
 import (
 	"encoding/json"

@@ -12,8 +12,8 @@ import (
 	"github.com/simo1337s/animetest/server/internal/watchorder"
 )
 
-// The watch order through the API, from AniList's links as Kumo keeps
-// them (no AniList here): Kumo's order, yours saved and applied from
+// The watch order through the API, from AniList's links as Aniko keeps
+// them (no AniList here): Aniko's order, yours saved and applied from
 // another anime of the same franchise, a backup keeping it, and reset.
 func TestWatchOrderRoutes(t *testing.T) {
 	s := newTestServer(t)
@@ -47,7 +47,7 @@ func TestWatchOrderRoutes(t *testing.T) {
 	}
 	o := get(102)
 	if got := story(o); len(got) != 3 || got[0] != 100 || got[1] != 101 || got[2] != 102 || o.Key != 100 || o.Edited {
-		t.Fatalf("Kumo's order = %v (key %d, edited %v), want [100 101 102], key 100", got, o.Key, o.Edited)
+		t.Fatalf("Aniko's order = %v (key %d, edited %v), want [100 101 102], key 100", got, o.Key, o.Edited)
 	}
 
 	if w := do(s, "PUT", "/api/watch-order/100", local, `{"order":[101,102,100],"hidden":[100]}`, nil); w.Code != http.StatusOK {

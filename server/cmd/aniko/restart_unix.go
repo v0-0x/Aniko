@@ -11,9 +11,9 @@ import (
 // canReexec: the server can replace itself with a new run of its program.
 const canReexec = true
 
-// reexec runs Kumo's program again in this process, with the same
+// reexec runs Aniko's program again in this process, with the same
 // arguments and environment, so it keeps its PID (systemd sees no exit)
-// and its terminal. Kumo's own files and sockets close on exec. It only
+// and its terminal. Aniko's own files and sockets close on exec. It only
 // returns when that fails.
 func reexec() error {
 	exe, err := os.Executable()

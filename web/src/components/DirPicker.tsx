@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { Button, Dialog, Input } from "./ui"
 
-// A folder on the computer Kumo runs on, chosen by browsing it (Settings,
-// a Kumo Hub's dashboard).
+// A folder on the computer Aniko runs on, chosen by browsing it (Settings,
+// an Aniko Hub's dashboard).
 export function DirPicker({ open, onOpenChange, onPick, start }: { open: boolean; onOpenChange: (v: boolean) => void; onPick: (p: string) => void; start?: string }) {
     const [path, setPath] = useState(start ?? "")
     const { data, error } = useQuery({

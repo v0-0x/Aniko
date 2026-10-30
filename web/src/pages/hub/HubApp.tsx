@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Gauge, KeyRound, Library, LogOut, ScrollText, Settings as SettingsIcon, Users, Wifi } from "lucide-react"
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { Toaster } from "sonner"
-import { KumoLogo } from "@/components/Sidebar"
+import { AnikoLogo } from "@/components/Sidebar"
 import { Badge, Button, Input, Spinner, Tabs, TooltipProvider } from "@/components/ui"
 import { api } from "@/lib/api"
 import { applyTheme, resolveTheme } from "@/lib/themes"
@@ -10,7 +10,7 @@ import type { Status } from "@/lib/types"
 import { span, useHubOverview } from "./parts"
 import Overview from "./Overview"
 
-// A Kumo Hub's dashboard (kumo --hub), in place of the app: what the hub
+// An Aniko Hub's dashboard (aniko --hub), in place of the app: what the hub
 // streams to whom, its devices and AniList logins, its library, and the
 // computer it runs on (a Raspberry Pi). Its owner's: signed in with its
 // password, set the first time with its setup code.
@@ -37,7 +37,7 @@ export default function HubApp({ status }: { status: Status }) {
         if (ui) applyTheme(resolveTheme(ui))
     }, [ui])
     useEffect(() => {
-        document.title = "Kumo Hub"
+        document.title = "Aniko Hub"
     }, [])
     const setup = !!status.hub?.setup && status.client === "lan"
     return (
@@ -86,15 +86,15 @@ function Dashboard({ status }: { status: Status }) {
             <div id="hub-scroll" className="relative min-h-0 flex-1 overflow-y-auto border-line bg-bg sm:rounded-[14px] sm:border sm:shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]">
                 <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
                     <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-4 sm:px-6">
-                        <KumoLogo className="size-9 shrink-0" />
+                        <AnikoLogo className="size-9 shrink-0" />
                         <div className="min-w-0 flex-1">
                             <h1 className="flex items-center gap-2 text-[17px] leading-tight font-semibold">
-                                <span className="truncate">{o?.name || status.hostname || "Kumo Hub"}</span>
+                                <span className="truncate">{o?.name || status.hostname || "Aniko Hub"}</span>
                                 <Badge tone="brand" className="shrink-0">
                                     Hub
                                 </Badge>
                             </h1>
-                            <p className="truncate text-[12.5px] text-muted">{machine || `Kumo Hub ${status.version}`}</p>
+                            <p className="truncate text-[12.5px] text-muted">{machine || `Aniko Hub ${status.version}`}</p>
                         </div>
                         {status.client === "owner" && (
                             <Button size="sm" variant="ghost" icon={<LogOut className="size-4" />} onClick={signOut}>
@@ -153,7 +153,7 @@ function Dashboard({ status }: { status: Status }) {
 }
 
 // The first time: the setup code (in the hub's log, and from
-// kumo-hub --setup-code) sets the dashboard's password.
+// aniko-hub --setup-code) sets the dashboard's password.
 function Setup() {
     const qc = useQueryClient()
     const [code, setCode] = useState("")
@@ -186,11 +186,11 @@ function Setup() {
                     submit()
                 }}
             >
-                <KumoLogo className="size-11" />
-                <h1 className="mt-4 text-xl font-semibold">Set up your Kumo Hub</h1>
+                <AnikoLogo className="size-11" />
+                <h1 className="mt-4 text-xl font-semibold">Set up your Aniko Hub</h1>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted">
                     Choose the password for this dashboard. To prove the hub is yours, type its setup code: the install printed it, and on the hub
-                    <code className="mx-1 rounded bg-white/[0.06] px-1.5 py-0.5 text-[12.5px] text-fg">kumo-hub --setup-code</code>
+                    <code className="mx-1 rounded bg-white/[0.06] px-1.5 py-0.5 text-[12.5px] text-fg">aniko-hub --setup-code</code>
                     shows it again.
                 </p>
                 <div className="mt-6 flex flex-col gap-4">

@@ -26,7 +26,7 @@ const (
 	typeWatching = 3
 	// status_display_type: the status under your name (member list, DMs)
 	// shows the activity's details, the anime ("Watching Frieren"), rather
-	// than the Discord application's name ("Watching Kumo").
+	// than the Discord application's name ("Watching Aniko").
 	statusShowsDetails = 2
 )
 

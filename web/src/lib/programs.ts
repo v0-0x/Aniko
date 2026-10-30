@@ -1,14 +1,14 @@
-// The programs Kumo uses and the setup that installs them: on Windows
+// The programs Aniko uses and the setup that installs them: on Windows
 // server/internal/winsetup (Scoop, Git, ani-cli, ffmpeg, mpv, yt-dlp… in a
 // PowerShell window), on macOS server/internal/macsetup (downloads into
-// Kumo's folder, in Terminal).
+// Aniko's folder, in Terminal).
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { toast } from "@/lib/toast"
 import { api } from "./api"
 import type { Status } from "./types"
 
-// The programs that aren't installed, the ones most of Kumo needs first.
+// The programs that aren't installed, the ones most of Aniko needs first.
 export function missingPrograms(status?: Status) {
     const f = status?.features
     if (!f) return []
@@ -21,7 +21,7 @@ export function missingPrograms(status?: Status) {
     return all.filter(([, ok]) => !ok).map(([name]) => name)
 }
 
-// Whether Kumo can install its programs itself: on Windows and macOS, from
+// Whether Aniko can install its programs itself: on Windows and macOS, from
 // this computer (not from another device on the network).
 export function canInstallPrograms(status?: Status) {
     return (status?.platform === "windows" || status?.platform === "darwin") && status.client !== "lan"
@@ -37,7 +37,7 @@ export function useInstallPrograms(status?: Status) {
     return useMutation({
         mutationFn: () => api.post("/api/setup/programs"),
         onSuccess: () => {
-            toast.success(`Kumo's setup opened in a ${setupWindow(status)} window`)
+            toast.success(`Aniko's setup opened in a ${setupWindow(status)} window`)
             qc.invalidateQueries({ queryKey: ["status"] })
         },
         onError: (e: any) => toast.error(e.message),

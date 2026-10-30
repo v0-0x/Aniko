@@ -22,7 +22,7 @@ import (
 // configured, so nothing is ever launched.
 func newTestAutoDownloader(t *testing.T, srv *httptest.Server) *AutoDownloader {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,9 +210,9 @@ func TestAutoDownloaderNeedsProgress(t *testing.T) {
 	}
 }
 
-// Where this Kumo's downloads go elsewhere (a TV's computer), the releases
+// Where this Aniko's downloads go elsewhere (a TV's computer), the releases
 // go there, not to a torrent client here (there's none), and are recorded;
-// when that Kumo can't take them, the rule stops.
+// when that Aniko can't take them, the rule stops.
 func TestAutoDownloaderSendsElsewhere(t *testing.T) {
 	srv := httptest.NewServer(http.NotFoundHandler())
 	a := newTestAutoDownloader(t, srv)

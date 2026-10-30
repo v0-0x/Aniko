@@ -17,7 +17,7 @@ export default function MangaEntryPage() {
     const { data: status } = useStatus()
     const { data: media, isLoading, error: mediaError, refetch: refetchMedia, isFetching: mediaFetching } = useQuery({ queryKey: ["manga", "media", id], queryFn: () => api.get<Media>(`/api/manga/${id}`), enabled: id > 0 })
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
-    const [provider, setProvider] = useState<string>(() => localStorage.getItem(`kumo-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
+    const [provider, setProvider] = useState<string>(() => localStorage.getItem(`aniko-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
     const effective = provider || providers?.[0]?.id || ""
     const { data: ch, isLoading: chLoading, error, refetch, isFetching } = useMangaChapters(id, effective)
     const { data: position } = useQuery({
@@ -108,7 +108,7 @@ export default function MangaEntryPage() {
                         value={effective}
                         onChange={v => {
                             setProvider(v)
-                            localStorage.setItem(`kumo-manga-provider-${id}`, v)
+                            localStorage.setItem(`aniko-manga-provider-${id}`, v)
                         }}
                         options={(providers ?? []).map(p => ({ value: p.id, label: p.name }))}
                     />

@@ -24,7 +24,7 @@ func aniCliService(t *testing.T, catalog ...string) (*Service, func() int) {
 	}
 	tmp := t.TempDir()
 	t.Setenv("XDG_RUNTIME_DIR", tmp)
-	t.Setenv("KUMO_DATA_DIR", tmp)
+	t.Setenv("ANIKO_DATA_DIR", tmp)
 	bin := filepath.Join(tmp, "bin")
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		t.Fatal(err)
@@ -43,9 +43,9 @@ func aniCliService(t *testing.T, catalog ...string) (*Service, func() int) {
 		t.Fatal(err)
 	}
 	log := filepath.Join(tmp, "runs.log")
-	t.Setenv("KUMO_FAKE_CATALOG", cat)
-	t.Setenv("KUMO_FAKE_LOG", log)
-	d, err := db.Open(filepath.Join(tmp, "kumo.db"))
+	t.Setenv("ANIKO_FAKE_CATALOG", cat)
+	t.Setenv("ANIKO_FAKE_LOG", log)
+	d, err := db.Open(filepath.Join(tmp, "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestModesFromAniCli(t *testing.T) {
 func TestModesUnknown(t *testing.T) {
 	svc, _ := aniCliService(t, "sub-only\tSub Only Show\t3\tsub")
 	media := &anilist.Media{ID: 1, Title: anilist.Title{English: "Sub Only Show"}}
-	if err := os.Remove(filepath.Join(os.Getenv("KUMO_DATA_DIR"), "bin", "fake-ani-cli")); err != nil {
+	if err := os.Remove(filepath.Join(os.Getenv("ANIKO_DATA_DIR"), "bin", "fake-ani-cli")); err != nil {
 		t.Fatal(err)
 	}
 	ctx := context.Background()

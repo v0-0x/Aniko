@@ -1,4 +1,4 @@
-# Kumo setup for Windows: installs the programs Kumo uses, for this Windows
+# Aniko setup for Windows: installs the programs Aniko uses, for this Windows
 # user (no administrator rights), with Scoop (https://scoop.sh):
 #
 #   git      Git for Windows: its bash runs ani-cli, with the curl, sed and
@@ -7,21 +7,21 @@
 #   ffmpeg   the in-app player (most files) and episode downloads
 #   mpv      the external player (extras bucket)
 #   yt-dlp   episode downloads; aria2 too (ani-cli downloads with it)
-#   fzf      ani-cli checks for it (Kumo answers ani-cli's menus itself)
-#   gh       the GitHub CLI, only if Kumo's repository is private: signed in
-#            to GitHub, Kumo can then check for and download its updates
+#   fzf      ani-cli checks for it (Aniko answers ani-cli's menus itself)
+#   gh       the GitHub CLI, only if Aniko's repository is private: signed in
+#            to GitHub, Aniko can then check for and download its updates
 #
 # Programs that are already installed, with Scoop or otherwise, are left
-# alone, so it's safe to run again. The Kumo installer offers to run it, and
-# Kumo runs it from Settings > Desktop app & programs.
+# alone, so it's safe to run again. The Aniko installer offers to run it, and
+# Aniko runs it from Settings > Desktop app & programs.
 #
 # Keep this file ASCII: Windows PowerShell reads a script without a byte
 # order mark in the computer's code page.
 
 param(
-    # The GitHub repository Kumo updates from.
+    # The GitHub repository Aniko updates from.
     [string]$Repo = "v0-0x/kumo-anime",
-    # The same repository by its number, as Kumo's updater asks for it: it
+    # The same repository by its number, as Aniko's updater asks for it: it
     # stays the same when the repository is renamed or moves.
     [string]$RepoID = "1406820679",
     # Close the window at the end without waiting for Enter.
@@ -34,7 +34,7 @@ $ErrorActionPreference = "Continue"
 # Windows PowerShell's download progress bar makes downloads very slow.
 $ProgressPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-try { $Host.UI.RawUI.WindowTitle = "Kumo setup" } catch {}
+try { $Host.UI.RawUI.WindowTitle = "Aniko setup" } catch {}
 
 $script:failed = @()
 $scoopDir = if ($env:SCOOP) { $env:SCOOP } else { Join-Path $env:USERPROFILE "scoop" }
@@ -66,7 +66,7 @@ function Install($app, $command, $why) {
     }
 }
 
-Write-Host "Kumo setup: installs the programs Kumo uses with Scoop, for your Windows user." -ForegroundColor Cyan
+Write-Host "Aniko setup: installs the programs Aniko uses with Scoop, for your Windows user." -ForegroundColor Cyan
 Write-Host "It takes a few minutes. Programs you already have are skipped."
 
 try {
@@ -80,7 +80,7 @@ try {
         }
         # Scoop's installer, run as a script of its own: when it gives up it
         # ends its own PowerShell, not this one.
-        $installer = Join-Path $env:TEMP "kumo-install-scoop.ps1"
+        $installer = Join-Path $env:TEMP "aniko-install-scoop.ps1"
         Invoke-RestMethod -Uri "https://get.scoop.sh" -OutFile $installer
         $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
         $admin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -108,24 +108,24 @@ try {
     Install "aria2" "aria2c" "ani-cli's downloads"
     Install "fzf" "fzf" "ani-cli checks for it"
     Install "mpv" "mpv" "the external player"
-    # A bash script: Kumo finds it in Scoop's folder.
+    # A bash script: Aniko finds it in Scoop's folder.
     Install "ani-cli" $null "sub/dub streaming"
 
-    # Kumo checks GitHub for its updates. Were its repository private, that
+    # Aniko checks GitHub for its updates. Were its repository private, that
     # would take a GitHub sign-in, which the GitHub CLI keeps.
     $public = $true
     try {
-        Invoke-RestMethod -Uri "https://api.github.com/repositories/$RepoID" -Headers @{ "User-Agent" = "Kumo-setup" } | Out-Null
+        Invoke-RestMethod -Uri "https://api.github.com/repositories/$RepoID" -Headers @{ "User-Agent" = "Aniko-setup" } | Out-Null
     } catch {
         $public = $false
     }
     if (-not $public) {
-        Install "gh" "gh" "signs Kumo in to GitHub for its updates"
+        Install "gh" "gh" "signs Aniko in to GitHub for its updates"
         if (Have "gh") {
             gh auth status --hostname github.com *> $null
             if ($LASTEXITCODE -ne 0) {
                 Step "Signing in to GitHub"
-                Write-Host "Kumo checks GitHub for its updates, and its repository is private:"
+                Write-Host "Aniko checks GitHub for its updates, and its repository is private:"
                 Write-Host "sign in with the GitHub account that can see $Repo."
                 $answer = Read-Host "Sign in now? [Y/n]"
                 if ($answer -notmatch "^\s*[nN]") {
@@ -139,16 +139,16 @@ try {
     }
 } catch {
     Write-Host ""
-    Write-Host "Kumo setup stopped: $_" -ForegroundColor Red
+    Write-Host "Aniko setup stopped: $_" -ForegroundColor Red
     $script:failed += "the rest"
 }
 
 Write-Host ""
 if ($script:failed.Count -eq 0) {
-    Write-Host "All done. Kumo finds the new programs by itself." -ForegroundColor Green
+    Write-Host "All done. Aniko finds the new programs by itself." -ForegroundColor Green
 } else {
     Write-Host ("Not installed: " + ($script:failed -join ", ") + ".") -ForegroundColor Yellow
-    Write-Host "Run the setup again from Kumo (Settings > Desktop app & programs), or see"
+    Write-Host "Run the setup again from Aniko (Settings > Desktop app & programs), or see"
     Write-Host "https://github.com/$Repo/blob/HEAD/packaging/windows/README.md"
 }
 if (-not $NoPause) {

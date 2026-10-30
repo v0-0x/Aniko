@@ -34,7 +34,7 @@ export default function HubSettings({ o, status }: { o: HubOverview; status: Sta
                     <Row label="Colors" help="Of this dashboard only: each device keeps its own, in step with the others on its AniList account.">
                         <Select
                             className="w-40"
-                            value={settings.ui.colorTheme || "kumo"}
+                            value={settings.ui.colorTheme || "aniko"}
                             onChange={v => set("ui", { colorTheme: v })}
                             options={COLOR_THEMES.map(t => ({ value: t.id, label: t.name }))}
                         />
@@ -156,7 +156,7 @@ function Updates({ settings, set }: { settings: Settings; set: SetFn }) {
         >
             <div className="flex flex-col gap-3 p-4">
                 <p className="text-sm">
-                    Kumo Hub <span className="font-medium">{u?.current.version ?? "…"}</span>
+                    Aniko Hub <span className="font-medium">{u?.current.version ?? "…"}</span>
                     {u?.current.beta && (
                         <Badge tone="amber" className="ml-2">
                             Beta

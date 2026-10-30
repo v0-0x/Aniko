@@ -1,11 +1,11 @@
 // Package anicli drives the installed ani-cli script non-interactively.
 //
-// ani-cli only has an interactive interface, so Kumo runs it with small shim
+// ani-cli only has an interactive interface, so Aniko runs it with small shim
 // programs placed first in PATH: the fzf/rofi/dmenu shims record the menu
 // entries ani-cli offers (search results, episode lists) and the player shim
 // records the resolved stream URL, referrer and subtitle instead of playing.
 // This keeps all the scraping logic inside ani-cli itself, so updating ani-cli
-// (`ani-cli -U` or your AUR helper) keeps Kumo working when sites change.
+// (`ani-cli -U` or your AUR helper) keeps Aniko working when sites change.
 package anicli
 
 import (
@@ -30,7 +30,7 @@ import (
 )
 
 const menuShim = `#!/bin/sh
-# Kumo menu shim for ani-cli: records the entries and selects nothing.
+# Aniko menu shim for ani-cli: records the entries and selects nothing.
 prompt=""
 while [ $# -gt 0 ]; do
 	case "$1" in
@@ -48,8 +48,8 @@ case "$prompt" in
 	*uality*) kind=quality ;;
 	*) kind=other ;;
 esac
-if [ -n "$KUMO_DUMP_DIR" ]; then
-	cat >"$KUMO_DUMP_DIR/$kind.txt"
+if [ -n "$ANIKO_DUMP_DIR" ]; then
+	cat >"$ANIKO_DUMP_DIR/$kind.txt"
 else
 	cat >/dev/null
 fi
@@ -57,8 +57,8 @@ exit 1
 `
 
 const playerShim = `#!/bin/sh
-# Kumo player shim for ani-cli: records the arguments instead of playing.
-out="${KUMO_DUMP_DIR:-/tmp}/player.txt"
+# Aniko player shim for ani-cli: records the arguments instead of playing.
+out="${ANIKO_DUMP_DIR:-/tmp}/player.txt"
 : >"$out"
 for a in "$@"; do
 	printf '%s' "$a" | tr '\n' ' ' >>"$out"
@@ -85,7 +85,7 @@ type Driver struct {
 	remote Remote
 }
 
-// Remote runs ani-cli for a Kumo that can't: Android, where the script
+// Remote runs ani-cli for an Aniko that can't: Android, where the script
 // doesn't run, asks a computer that shares its library with it.
 type Remote interface {
 	// Name is the computer's name, "" when none can run it now.
@@ -151,7 +151,7 @@ func (d *Driver) init() error {
 				return
 			}
 		}
-		d.initErr = os.WriteFile(filepath.Join(d.shimDir, "kumo-mpv-capture"), []byte(playerShim), 0o700)
+		d.initErr = os.WriteFile(filepath.Join(d.shimDir, "aniko-mpv-capture"), []byte(playerShim), 0o700)
 	})
 	return d.initErr
 }
@@ -162,7 +162,7 @@ type Status struct {
 	Version   string `json:"version"`
 	YtDlp     bool   `json:"ytDlp"`
 	Ffmpeg    bool   `json:"ffmpeg"`
-	// Remote: the computer that runs it for this Kumo, when it isn't here.
+	// Remote: the computer that runs it for this Aniko, when it isn't here.
 	Remote string `json:"remote,omitempty"`
 }
 
@@ -184,7 +184,7 @@ func (d *Driver) Status(ctx context.Context) Status {
 		return st
 	}
 	// ani-cli looks for a player before anything else, and stops when it
-	// finds none (on a Mac without mpv or IINA): Kumo plays the streams
+	// finds none (on a Mac without mpv or IINA): Aniko plays the streams
 	// itself.
 	cmd.Env = append(os.Environ(), "ANI_CLI_PLAYER=true")
 	if out, err := cmd.Output(); err == nil {
@@ -247,8 +247,8 @@ func (d *Driver) exec(ctx context.Context, args ...string) (*run, error) {
 	cmd.WaitDelay = 3 * time.Second
 	env := []string{
 		"PATH=" + d.shimDir + string(os.PathListSeparator) + os.Getenv("PATH"),
-		"KUMO_DUMP_DIR=" + shellPath(dir),
-		"ANI_CLI_PLAYER=" + shellPath(filepath.Join(d.shimDir, "kumo-mpv-capture")),
+		"ANIKO_DUMP_DIR=" + shellPath(dir),
+		"ANI_CLI_PLAYER=" + shellPath(filepath.Join(d.shimDir, "aniko-mpv-capture")),
 		"ANI_CLI_HIST_DIR=" + shellPath(d.histDir),
 		"ANI_CLI_LOG=0",
 		"ANI_CLI_MENU=fzf",

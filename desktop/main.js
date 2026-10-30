@@ -1,6 +1,6 @@
-// Kumo desktop shell.
+// Aniko desktop shell.
 //
-// Starts the Kumo server (bound to 127.0.0.1) or attaches to one that is
+// Starts the Aniko server (bound to 127.0.0.1) or attaches to one that is
 // already running, then shows the UI in a native window. Every request the
 // window makes carries the per-run shell token, which is how the server
 // recognises its own desktop window when the browser Web UI is turned off.
@@ -23,10 +23,10 @@ const EXIT_INSTALLING = 76
 // On Windows this is the AppUserModelID, which must match "appId" in
 // electron-builder.yml: the installer's shortcuts carry it, and the taskbar
 // groups the window with them.
-const APP_ID = isWindows ? "app.kumo.desktop" : "kumo"
-app.setName("Kumo")
+const APP_ID = isWindows ? "app.kumo.desktop" : "aniko"
+app.setName("Aniko")
 app.setAppUserModelId?.(APP_ID)
-// The window only talks to Kumo's own server (and AniList's login page): run
+// The window only talks to Aniko's own server (and AniList's login page): run
 // Chromium's network service inside the app instead of a process of its
 // own, which saves about 80 MB.
 const features = ["NetworkServiceInProcess2"]
@@ -36,17 +36,34 @@ if (process.platform === "linux") {
     app.commandLine.appendSwitch("ignore-gpu-blocklist")
 }
 app.commandLine.appendSwitch("enable-features", features.join(","))
+// Aniko was called Kumo before 2.0.37: the folder Kumo kept its window's data
+// in (the pages' settings, logins) becomes Aniko's the first time. It
+// returns the folder to use: the old one while it can't be moved (Windows,
+// when a file in it is still open), tried again on the next start.
+function movedFrom(oldDir, dir) {
+    try {
+        if (!fs.existsSync(dir) && fs.existsSync(oldDir)) fs.renameSync(oldDir, dir)
+    } catch (err) {
+        console.error(`couldn't move ${oldDir} to ${dir}:`, err)
+        return oldDir
+    }
+    return dir
+}
 if (isWindows && process.env.LOCALAPPDATA) {
     // Electron would keep the window's browser data (caches, the AniList
-    // login window's cookies) in %APPDATA%\Kumo, which is the server's data
-    // folder on Windows: keep it apart, with Kumo's other local files.
-    app.setPath("userData", path.join(process.env.LOCALAPPDATA, "Kumo", "electron"))
-}
-if (isMac) {
-    // Electron would keep them in ~/Library/Application Support/Kumo, which
+    // login window's cookies) in %APPDATA%\Aniko, which is the server's data
+    // folder on Windows: keep it apart, with Aniko's other local files.
+    const local = movedFrom(path.join(process.env.LOCALAPPDATA, "Kumo"), path.join(process.env.LOCALAPPDATA, "Aniko"))
+    app.setPath("userData", path.join(local, "electron"))
+} else if (isMac) {
+    // Electron would keep them in ~/Library/Application Support/Aniko, which
     // is the server's data folder on macOS: keep them in a folder of their
-    // own in it.
-    app.setPath("userData", path.join(app.getPath("appData"), "Kumo", "electron"))
+    // own in it (Kumo's moves with the server's data).
+    const support = movedFrom(path.join(app.getPath("appData"), "Kumo"), path.join(app.getPath("appData"), "Aniko"))
+    app.setPath("userData", path.join(support, "electron"))
+} else {
+    // ~/.config/Aniko, after the app's name.
+    app.setPath("userData", movedFrom(path.join(app.getPath("appData"), "Kumo"), app.getPath("userData")))
 }
 
 const runtimeDir = serverRuntimeDir()
@@ -57,7 +74,7 @@ let tray = null
 
 // The desktop app's own preferences (Settings › Desktop app & programs),
 // kept next to its browser data.
-//   keepRunning     closing the window leaves Kumo running (tray icon, or the
+//   keepRunning     closing the window leaves Aniko running (tray icon, or the
 //                   Dock on a Mac): streaming to other devices, downloads and
 //                   the auto downloader keep going without the window's
 //                   memory. Off unless turned on (keepRunningChosen: it was
@@ -65,7 +82,7 @@ let tray = null
 //   freeWhenLocked  a few minutes after the computer is locked, the window
 //                   lets go of its page, and loads it again on unlocking.
 //   toldKeepRunning the notice about it was shown (the first time).
-//   window, mini    where Kumo's window and the small player were, and how
+//   window, mini    where Aniko's window and the small player were, and how
 //                   big (the window: whether maximized): they open there.
 //   zoom            the pages' zoom (Ctrl + and -), kept between runs.
 const prefs = { keepRunning: false, keepRunningChosen: false, freeWhenLocked: true, toldKeepRunning: false, window: null, mini: null, zoom: 1 }
@@ -89,11 +106,11 @@ function savePrefs() {
 
 // Starting with the computer (Settings › Desktop app & programs), off unless
 // turned on: the system's own login items on Windows and macOS, an autostart
-// entry on Linux. Started that way, Kumo opens in the background (tray, or
+// entry on Linux. Started that way, Aniko opens in the background (tray, or
 // the Dock on a Mac) when it keeps running without its window; otherwise
 // with its window, so it's never running unseen.
 const BACKGROUND = "--background"
-const autostartFile = () => path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"), "autostart", "kumo.desktop")
+const autostartFile = () => path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"), "autostart", "aniko.desktop")
 
 function startsAtLogin() {
     if (process.platform === "linux") return fs.existsSync(autostartFile())
@@ -111,9 +128,9 @@ function setStartAtLogin(on) {
                 return null
             }
             // The package's launcher, else this Electron with this app.
-            const exec = fs.existsSync("/usr/bin/kumo") ? "/usr/bin/kumo" : `"${process.execPath}" "${app.getAppPath()}"`
+            const exec = fs.existsSync("/usr/bin/aniko") ? "/usr/bin/aniko" : `"${process.execPath}" "${app.getAppPath()}"`
             fs.mkdirSync(path.dirname(file), { recursive: true })
-            fs.writeFileSync(file, ["[Desktop Entry]", "Type=Application", "Name=Kumo", "Comment=Kumo in the background", `Exec=${exec} ${BACKGROUND}`, "Icon=kumo-anime", "Terminal=false", "X-GNOME-Autostart-enabled=true", ""].join("\n"))
+            fs.writeFileSync(file, ["[Desktop Entry]", "Type=Application", "Name=Aniko", "Comment=Aniko in the background", `Exec=${exec} ${BACKGROUND}`, "Icon=aniko", "Terminal=false", "X-GNOME-Autostart-enabled=true", ""].join("\n"))
             return null
         } catch (err) {
             return String(err?.message || err)
@@ -121,7 +138,7 @@ function setStartAtLogin(on) {
     }
     app.setLoginItemSettings(isWindows ? { openAtLogin: on, args: [BACKGROUND] } : { openAtLogin: on })
     if (isMac && on && app.getLoginItemSettings().status === "requires-approval") {
-        return "macOS asks you to allow it: in System Settings › General › Login Items (Login Items & Extensions), turn on Kumo."
+        return "macOS asks you to allow it: in System Settings › General › Login Items (Login Items & Extensions), turn on Aniko."
     }
     return startsAtLogin() === on ? null : "The system didn't take the change."
 }
@@ -137,33 +154,33 @@ function startedAtLogin() {
 function serverRuntimeDir() {
     if (isWindows) {
         const local = process.env.LOCALAPPDATA
-        return local ? path.join(local, "Kumo", "run") : path.join(os.tmpdir(), "kumo")
+        return local ? path.join(local, "Aniko", "run") : path.join(os.tmpdir(), "aniko")
     }
     // macOS: $TMPDIR, the user's own temporary folder.
-    if (isMac) return path.join(os.tmpdir(), "kumo")
-    return path.join(process.env.XDG_RUNTIME_DIR || os.tmpdir(), "kumo")
+    if (isMac) return path.join(os.tmpdir(), "aniko")
+    return path.join(process.env.XDG_RUNTIME_DIR || os.tmpdir(), "aniko")
 }
 
 function serverCandidates() {
     if (isWindows) {
         return [
-            process.env.KUMO_SERVER,
-            path.join(process.resourcesPath, "kumo.exe"), // installed or portable app: resources\kumo.exe
-            path.join(__dirname, "..", "dist", "windows", "kumo.exe"), // development checkout
+            process.env.ANIKO_SERVER,
+            path.join(process.resourcesPath, "aniko.exe"), // installed or portable app: resources\aniko.exe
+            path.join(__dirname, "..", "dist", "windows", "aniko.exe"), // development checkout
         ]
     }
     if (isMac) {
         return [
-            process.env.KUMO_SERVER,
-            path.join(process.resourcesPath, "kumo"), // Kumo.app/Contents/Resources/kumo
-            path.join(__dirname, "..", "dist", "kumo"), // development checkout
+            process.env.ANIKO_SERVER,
+            path.join(process.resourcesPath, "aniko"), // Aniko.app/Contents/Resources/aniko
+            path.join(__dirname, "..", "dist", "aniko"), // development checkout
         ]
     }
     return [
-        process.env.KUMO_SERVER,
-        path.join(__dirname, "..", "kumo"), // /usr/lib/kumo/app -> /usr/lib/kumo/kumo
-        path.join(__dirname, "..", "dist", "kumo"), // development checkout
-        "/usr/lib/kumo/kumo",
+        process.env.ANIKO_SERVER,
+        path.join(__dirname, "..", "aniko"), // /usr/lib/aniko/app -> /usr/lib/aniko/aniko
+        path.join(__dirname, "..", "dist", "aniko"), // development checkout
+        "/usr/lib/aniko/aniko",
     ]
 }
 
@@ -223,7 +240,7 @@ async function existingServer() {
 }
 
 // The server's last lines (without their timestamps): what went wrong, for
-// the box that says Kumo couldn't start.
+// the box that says Aniko couldn't start.
 const serverLines = []
 function noteServerOutput(text) {
     for (const line of text.split(/\r?\n/)) {
@@ -238,10 +255,10 @@ function startServer() {
         const bin = findServerBinary()
         if (!bin) {
             const msg = isWindows
-                ? "Kumo's server (kumo.exe) is missing from its folder. Install Kumo again."
+                ? "Aniko's server (aniko.exe) is missing from its folder. Install Aniko again."
                 : isMac
-                  ? "Kumo's server is missing from the app. Download Kumo again."
-                  : "Kumo's server (kumo) is missing. Install the package again."
+                  ? "Aniko's server is missing from the app. Download Aniko again."
+                  : "Aniko's server (aniko) is missing. Install the package again."
             return reject(new Error(msg))
         }
         // windowsHide: on Windows the server, and the ffmpeg, ffprobe and bash
@@ -263,14 +280,14 @@ function startServer() {
             }
             if (/could not start the server/.test(text) && !resolved) {
                 resolved = true
-                // Its port taken: by another program (Kumo itself would have
+                // Its port taken: by another program (Aniko itself would have
                 // been found running).
                 const port = /:(\d+): bind/.exec(text)?.[1]
                 reject(
                     new Error(
                         /address already in use|only one usage of each socket address/i.test(text)
-                            ? `Another program is using Kumo's port${port ? ` (${port})` : ""}. Close it, then try again.`
-                            : "Kumo's server couldn't start.",
+                            ? `Another program is using Aniko's port${port ? ` (${port})` : ""}. Close it, then try again.`
+                            : "Aniko's server couldn't start.",
                     ),
                 )
             }
@@ -281,38 +298,38 @@ function startServer() {
             // The server stopped for an update: no error box. After an
             // update was installed, the whole app starts again, so that its
             // window loads the new main.js too. On Windows an installer is
-            // replacing Kumo, and starts it when it's done; on macOS the
+            // replacing Aniko, and starts it when it's done; on macOS the
             // server has put the new app in place, and a helper opens it once
             // this one has quit.
             if (code === EXIT_RESTART || code === EXIT_INSTALLING) {
                 serverProc = null
                 app.isQuitting = true
                 // Windows: the installer works unseen for a moment; said, so
-                // Kumo doesn't just vanish.
-                if (code === EXIT_INSTALLING && Notification.isSupported()) new Notification({ title: "Updating Kumo", body: "Kumo opens again in a moment." }).show()
+                // Aniko doesn't just vanish.
+                if (code === EXIT_INSTALLING && Notification.isSupported()) new Notification({ title: "Updating Aniko", body: "Aniko opens again in a moment." }).show()
                 // With its window: not as started with the computer.
                 if (code === EXIT_RESTART) app.relaunch({ args: process.argv.slice(1).filter(a => a !== BACKGROUND) })
                 app.exit(0)
                 return
             }
-            if (!resolved) reject(new Error("Kumo's server stopped while starting."))
+            if (!resolved) reject(new Error("Aniko's server stopped while starting."))
             serverProc = null
             if (resolved && !app.isQuitting) {
                 // Stopped, not crashed (the computer shutting down or signing
-                // out stops it first): Kumo quits with it, quietly.
+                // out stops it first): Aniko quits with it, quietly.
                 if (code === 0 || ["SIGTERM", "SIGINT", "SIGHUP"].includes(signal)) {
                     app.isQuitting = true
                     app.quit()
                     return
                 }
-                const msg = "Kumo's server stopped unexpectedly."
+                const msg = "Aniko's server stopped unexpectedly."
                 if (mainWindow) {
                     const answer = dialog.showMessageBoxSync(mainWindow, {
                         type: "error",
-                        title: "Kumo",
+                        title: "Aniko",
                         message: msg,
                         detail: serverLines.slice(-6).join("\n"),
-                        buttons: ["Restart Kumo", "Quit"],
+                        buttons: ["Restart Aniko", "Quit"],
                         defaultId: 0,
                         cancelId: 1,
                     })
@@ -323,7 +340,7 @@ function startServer() {
                 }
                 // Running without a window: no box that would hold up
                 // anything, just a notice.
-                if (Notification.isSupported()) new Notification({ title: "Kumo stopped", body: msg + " Open it again to restart it." }).show()
+                if (Notification.isSupported()) new Notification({ title: "Aniko stopped", body: msg + " Open it again to restart it." }).show()
                 app.isQuitting = true
                 app.quit()
             }
@@ -331,13 +348,13 @@ function startServer() {
         setTimeout(() => {
             if (!resolved) {
                 resolved = true
-                reject(new Error("Kumo's server took too long to start."))
+                reject(new Error("Aniko's server took too long to start."))
             }
         }, 30000)
     })
 }
 
-// Kumo's address now: its port can be changed in Settings, the server moves
+// Aniko's address now: its port can be changed in Settings, the server moves
 // to it at once and writes it in server.json.
 let serverRead = 0
 function serverUrl() {
@@ -352,14 +369,14 @@ function serverUrl() {
 function installShellHeader() {
     const filter = { urls: ["http://127.0.0.1/*", "http://127.0.0.1:*/*"] }
     session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, cb) => {
-        // Only to Kumo: not to another program listening on this computer.
+        // Only to Aniko: not to another program listening on this computer.
         const token = isInternal(details.url) ? readToken() : ""
         if (token) details.requestHeaders["X-Kumo-Shell"] = token
         cb({ requestHeaders: details.requestHeaders })
     })
 }
 
-// A page of Kumo's: at its address (the one it had when it started, or the
+// A page of Aniko's: at its address (the one it had when it started, or the
 // one it moved to).
 function isInternal(url) {
     try {
@@ -380,7 +397,7 @@ function appMenu() {
     const open = page => () => showWindowAt(page).catch(() => {})
     return Menu.buildFromTemplate([
         {
-            label: "Kumo",
+            label: "Aniko",
             submenu: [
                 { role: "about" },
                 { type: "separator" },
@@ -414,7 +431,7 @@ function appMenu() {
 }
 
 // The pages' zoom: Ctrl (Cmd) with + and - or the mouse wheel, 0 back to
-// normal; kept between runs, and the same in each page of Kumo's.
+// normal; kept between runs, and the same in each page of Aniko's.
 function zoomTo(f) {
     prefs.zoom = Math.round(Math.min(2, Math.max(0.5, f)) * 100) / 100
     savePrefs()
@@ -424,7 +441,7 @@ function zoomBy(d) {
     zoomTo(prefs.zoom + d)
 }
 
-// Where Kumo's window opens: where it was, if that's still on a screen;
+// Where Aniko's window opens: where it was, if that's still on a screen;
 // else in the middle of the main one, as big as fits (up to 1600×1000).
 function windowBounds() {
     const w = prefs.window
@@ -439,18 +456,18 @@ function windowBounds() {
     return { x: area.x + Math.round((area.width - width) / 2), y: area.y + Math.round((area.height - height) / 2), width, height }
 }
 
-// What the window shows while Kumo's server starts (a first start can take
+// What the window shows while Aniko's server starts (a first start can take
 // a few seconds), and if its page didn't load: in the app's colors.
 function waitingPage(text) {
     const logo =
         '<svg viewBox="0 0 64 64" width="56" height="56"><rect width="64" height="64" rx="15" fill="#e2e2e6"/><path d="M24.5 15.5V48.5M41 28 24.5 42M31.5 36.2 41.5 48.5" fill="none" stroke="#141416" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-    const html = `<!doctype html><meta charset="utf-8"><title>Kumo</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0b;color:#a1a1a8;font:14px system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none"><div style="display:grid;justify-items:center;gap:18px">${logo}<div>${text}</div></div></body>`
+    const html = `<!doctype html><meta charset="utf-8"><title>Aniko</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0b;color:#a1a1a8;font:14px system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none"><div style="display:grid;justify-items:center;gap:18px">${logo}<div>${text}</div></div></body>`
     return "data:text/html;charset=utf-8," + encodeURIComponent(html)
 }
 
 // The window's own icon. On Linux it's invisible: KDE and other desktops draw
-// it in the window's title bar, where Kumo shows none, while the taskbar and
-// the app menu take Kumo's icon from its desktop entry. On Windows the
+// it in the window's title bar, where Aniko shows none, while the taskbar and
+// the app menu take Aniko's icon from its desktop entry. On Windows the
 // window's icon is also the taskbar's.
 function windowIcon() {
     if (process.platform === "linux") return nativeImage.createFromBitmap(Buffer.alloc(32 * 32 * 4), { width: 32, height: 32 })
@@ -458,7 +475,7 @@ function windowIcon() {
     return iconPath ? nativeImage.createFromPath(iconPath) : undefined
 }
 
-// createWindow opens Kumo's window, at a page of it (page, "" for Home);
+// createWindow opens Aniko's window, at a page of it (page, "" for Home);
 // waiting: while the server starts, which shows it when it's ready (load).
 // (Not named path: that's the path module, used here.)
 function createWindow(page = "", waiting = false) {
@@ -467,7 +484,7 @@ function createWindow(page = "", waiting = false) {
         ...windowBounds(),
         minWidth: 960,
         minHeight: 620,
-        title: "Kumo",
+        title: "Aniko",
         backgroundColor: "#0a0a0b",
         autoHideMenuBar: true,
         show: false,
@@ -514,11 +531,11 @@ function createWindow(page = "", waiting = false) {
         if (cmd === "browser-backward") go(wc, -1)
         if (cmd === "browser-forward") go(wc, 1)
     })
-    // Kumo's page didn't load (the server busy, restarting): said, and
+    // Aniko's page didn't load (the server busy, restarting): said, and
     // tried again in a moment, instead of a blank window.
     wc.on("did-fail-load", (_e, code, _desc, url, mainFrame) => {
         if (!mainFrame || code === -3 || !isInternal(url)) return
-        wc.loadURL(waitingPage("Kumo isn't answering yet: trying again…")).catch(() => {})
+        wc.loadURL(waitingPage("Aniko isn't answering yet: trying again…")).catch(() => {})
         setTimeout(() => {
             if (mainWindow && !mainWindow.isDestroyed() && !parkedUrl) mainWindow.loadURL(url).catch(() => {})
         }, 2000)
@@ -527,7 +544,7 @@ function createWindow(page = "", waiting = false) {
     // opened again.
     wc.on("render-process-gone", (_e, details) => {
         if (details.reason === "clean-exit") return
-        console.error("Kumo's page stopped:", details.reason)
+        console.error("Aniko's page stopped:", details.reason)
         setTimeout(() => mainWindow?.webContents.reload(), 500)
     })
     // Where it is and how big, for the next time it opens.
@@ -544,14 +561,14 @@ function createWindow(page = "", waiting = false) {
     mainWindow.on("closed", () => {
         mainWindow = null
         parkedUrl = null
-        // Kumo quits with its window (not kept running): the small player
+        // Aniko quits with its window (not kept running): the small player
         // too, or nothing would be left to close it with.
         if (!prefs.keepRunning && !app.isQuitting) miniWindow?.close()
     })
     // Windows is shutting down or signing out, which stops the server too:
     // that isn't worth an error box (the event only exists on Windows).
     mainWindow.on("query-session-end", () => (app.isQuitting = true))
-    mainWindow.loadURL(waiting ? waitingPage("Starting Kumo…") : serverUrl() + page).catch(() => {})
+    mainWindow.loadURL(waiting ? waitingPage("Starting Aniko…") : serverUrl() + page).catch(() => {})
 }
 
 // go moves through the window's pages (-1 back, 1 forward), where there's one.
@@ -560,11 +577,11 @@ function go(wc, step) {
     if (step < 0 ? h.canGoBack() : h.canGoForward()) step < 0 ? h.goBack() : h.goForward()
 }
 
-// External links open in the system browser; Kumo's windows never navigate
-// away from Kumo.
+// External links open in the system browser; Aniko's windows never navigate
+// away from Aniko.
 function keepInside(contents) {
     // Right-click: cut, copy and paste in text fields, copy what's selected,
-    // and a link's own items. Kumo's own menus (a card's) come first: the
+    // and a link's own items. Aniko's own menus (a card's) come first: the
     // page handles those clicks itself.
     contents.on("context-menu", (_e, p) => {
         const items = []
@@ -595,14 +612,14 @@ function keepInside(contents) {
     })
 }
 
-// Picture in picture: Kumo's player in a small window on top of the others
+// Picture in picture: Aniko's player in a small window on top of the others
 // (its /mini page, the episode in its address), at the bottom right of the
-// screen Kumo's window is on, or where the last one was. Its button to go back hands the episode, where
-// it's at, to Kumo's window (pendingPlay until that window asks for it).
+// screen Aniko's window is on, or where the last one was. Its button to go back hands the episode, where
+// it's at, to Aniko's window (pendingPlay until that window asks for it).
 let miniWindow = null
 let pendingPlay = null
 
-ipcMain.handle("kumo:mini-open", (_e, page) => {
+ipcMain.handle("aniko:mini-open", (_e, page) => {
     const base = serverUrl()
     if (!base || typeof page !== "string" || !/^\/mini#/.test(page)) return false
     // One open already: a new one where it was (only its address's end would
@@ -629,7 +646,7 @@ ipcMain.handle("kumo:mini-open", (_e, page) => {
         y: bounds?.y ?? area.y + area.height - height - 24,
         minWidth: 320,
         minHeight: 180,
-        title: "Kumo",
+        title: "Aniko",
         frame: false,
         alwaysOnTop: true,
         fullscreenable: false,
@@ -659,13 +676,13 @@ ipcMain.handle("kumo:mini-open", (_e, page) => {
     win.loadURL(base + page).catch(() => {})
     return true
 })
-ipcMain.on("kumo:mini-close", () => miniWindow?.close())
-ipcMain.on("kumo:mini-expand", (_e, req) => {
+ipcMain.on("aniko:mini-close", () => miniWindow?.close())
+ipcMain.on("aniko:mini-expand", (_e, req) => {
     // An episode (see web/src/lib/pip.ts asRequest), small.
     if (!req || typeof req !== "object" || JSON.stringify(req).length > 4096) return
     miniWindow?.close()
     if (mainWindow && !mainWindow.webContents.isLoading()) {
-        mainWindow.webContents.send("kumo:play", req)
+        mainWindow.webContents.send("aniko:play", req)
         showWindow()
     } else {
         // Opened (or loading): it asks when it's ready.
@@ -673,7 +690,7 @@ ipcMain.on("kumo:mini-expand", (_e, req) => {
         showWindow()
     }
 })
-ipcMain.handle("kumo:take-play", () => {
+ipcMain.handle("aniko:take-play", () => {
     const req = pendingPlay
     pendingPlay = null
     return req
@@ -681,7 +698,7 @@ ipcMain.handle("kumo:take-play", () => {
 
 // AniList login: open the authorize page in a separate window and capture
 // the access token from the redirect (#access_token=…) or the PIN page.
-ipcMain.handle("kumo:anilist-login", async (_e, url) => {
+ipcMain.handle("aniko:anilist-login", async (_e, url) => {
     if (typeof url !== "string" || !url.startsWith("https://anilist.co/")) return null
     return new Promise(resolve => {
         const win = new BrowserWindow({
@@ -726,13 +743,13 @@ ipcMain.handle("kumo:anilist-login", async (_e, url) => {
     })
 })
 
-ipcMain.on("kumo:open-external", (_e, url) => {
+ipcMain.on("aniko:open-external", (_e, url) => {
     if (typeof url === "string" && /^https?:\/\//.test(url)) shell.openExternal(url)
 })
 
-ipcMain.handle("kumo:get-prefs", () => ({ keepRunning: prefs.keepRunning, freeWhenLocked: prefs.freeWhenLocked, startAtLogin: startsAtLogin() }))
+ipcMain.handle("aniko:get-prefs", () => ({ keepRunning: prefs.keepRunning, freeWhenLocked: prefs.freeWhenLocked, startAtLogin: startsAtLogin() }))
 // set-pref returns true, or { error } when it couldn't be done.
-ipcMain.handle("kumo:set-pref", (_e, name, value) => {
+ipcMain.handle("aniko:set-pref", (_e, name, value) => {
     if (typeof value !== "boolean") return { error: "not a setting" }
     if (name === "startAtLogin") {
         const error = setStartAtLogin(value)
@@ -746,11 +763,11 @@ ipcMain.handle("kumo:set-pref", (_e, name, value) => {
     return true
 })
 
-ipcMain.on("kumo:quit", () => app.quit())
+ipcMain.on("aniko:quit", () => app.quit())
 
 // ---------------------------------------------------------------------------
-// Updated while running: a package update (makepkg) replaces Kumo's files
-// but not the Kumo running in the background. Opened again, it restarts into
+// Updated while running: a package update (makepkg) replaces Aniko's files
+// but not the Aniko running in the background. Opened again, it restarts into
 // the version installed: the server stops asking to be started again
 // (exit code 75), and the app does, with its new files.
 
@@ -767,7 +784,7 @@ function installedVersion() {
     }
 }
 
-// serverCall makes a request to a running Kumo server as its desktop window.
+// serverCall makes a request to a running Aniko server as its desktop window.
 function serverCall(url, method, p) {
     return new Promise(resolve => {
         const req = http.request(url + p, { method, timeout: 3000, headers: { "X-Kumo-Shell": readToken() || "", "Content-Type": "application/json" } }, res => {
@@ -791,10 +808,10 @@ function serverCall(url, method, p) {
     })
 }
 
-// restartIfOutdated restarts the Kumo running at url when it's another
+// restartIfOutdated restarts the Aniko running at url when it's another
 // version than the one installed, and reports whether it did.
 async function restartIfOutdated(url) {
-    // Only a package (Arch) is updated under a running Kumo: Windows and
+    // Only a package (Arch) is updated under a running Aniko: Windows and
     // macOS updates restart it themselves. Not asked there, then (it runs
     // the server program, a moment on each click of the tray or the Dock).
     if (!url || process.platform !== "linux") return false
@@ -802,7 +819,7 @@ async function restartIfOutdated(url) {
     const running = (await serverCall(url, "GET", "/api/status"))?.version
     // 1.0.0: built by hand, its version unknown.
     if (!installed || !running || running === "1.0.0" || !olderVersion(running, installed)) return false
-    console.log(`Kumo ${running} is running, ${installed} is installed: restarting into it`)
+    console.log(`Aniko ${running} is running, ${installed} is installed: restarting into it`)
     return !!(await serverCall(url, "POST", "/api/update/restart"))
 }
 
@@ -820,11 +837,11 @@ function olderVersion(a, b) {
 
 let restarting = false
 
-// showWindow brings Kumo's window back, or opens a new one after it was
-// closed while Kumo kept running (the tray's and the Dock's handlers: what
+// showWindow brings Aniko's window back, or opens a new one after it was
+// closed while Aniko kept running (the tray's and the Dock's handlers: what
 // they pass isn't a page).
 function showWindow() {
-    return showWindowAt("").catch(err => console.error("couldn't show Kumo's window:", err))
+    return showWindowAt("").catch(err => console.error("couldn't show Aniko's window:", err))
 }
 
 // showWindowAt does, at a page of it when one is given ("/entry?id=1").
@@ -910,20 +927,20 @@ function backgroundAlert(a) {
     n.show()
 }
 
-// The tray icon, while Kumo keeps running with its window closed (Windows
+// The tray icon, while Aniko keeps running with its window closed (Windows
 // and Linux: on a Mac the Dock icon does it). Without a tray on the
-// desktop (GNOME without an extension), opening Kumo again shows its window.
+// desktop (GNOME without an extension), opening Aniko again shows its window.
 function updateTray() {
     if (isMac) return
     if (prefs.keepRunning && !tray) {
         const icon = nativeImage.createFromPath(path.join(__dirname, "icon.png"))
         tray = new Tray(icon.isEmpty() ? icon : icon.resize({ width: 32, height: 32, quality: "best" }))
-        tray.setToolTip("Kumo")
+        tray.setToolTip("Aniko")
         tray.setContextMenu(
             Menu.buildFromTemplate([
-                { label: "Open Kumo", click: showWindow },
+                { label: "Open Aniko", click: showWindow },
                 { type: "separator" },
-                { label: "Quit Kumo", click: () => app.quit() },
+                { label: "Quit Aniko", click: () => app.quit() },
             ]),
         )
         tray.on("click", showWindow)
@@ -933,23 +950,23 @@ function updateTray() {
     }
 }
 
-// The window was closed and Kumo keeps running: said once, in a box (a
+// The window was closed and Aniko keeps running: said once, in a box (a
 // notification may be turned off, or missed), with where to find it.
 function wentToBackground() {
     if (prefs.toldKeepRunning) return
     prefs.toldKeepRunning = true
     savePrefs()
     const where = isMac
-        ? "Click Kumo in the Dock to open it again, or quit it with Cmd+Q."
+        ? "Click Aniko in the Dock to open it again, or quit it with Cmd+Q."
         : isWindows
-          ? "Open or quit it from its icon at the right of the taskbar (under ^ when it's hidden there). Opening Kumo again also brings its window back."
-          : "Open or quit it from its tray icon (on GNOME, the AppIndicator extension shows it). Opening Kumo again also brings its window back."
+          ? "Open or quit it from its icon at the right of the taskbar (under ^ when it's hidden there). Opening Aniko again also brings its window back."
+          : "Open or quit it from its tray icon (on GNOME, the AppIndicator extension shows it). Opening Aniko again also brings its window back."
     const answer = dialog.showMessageBoxSync({
         type: "info",
-        title: "Kumo",
-        message: "Kumo keeps running",
+        title: "Aniko",
+        message: "Aniko keeps running",
         detail: `Streaming to your other devices, downloads and the auto downloader keep going while its window is closed. ${where}\n\nYou can change this in Settings › Desktop app & programs.`,
-        buttons: ["OK", "Quit Kumo"],
+        buttons: ["OK", "Quit Aniko"],
         defaultId: 0,
         cancelId: 0,
     })
@@ -987,12 +1004,14 @@ function unparkPage() {
     if (mainWindow && isInternal(url)) mainWindow.loadURL(url).catch(() => {})
 }
 
-// Desktop shortcuts are copies of kumo.desktop: those made before the icon
-// was renamed kumo-anime (with the new logo) ask for "kumo", which desktops
-// keep showing as the old logo. Point them at the new icon, in place, so
-// they keep their permissions and the desktop's trust.
+// Desktop shortcuts are copies of aniko.desktop: those made when Aniko was
+// Kumo start /usr/bin/kumo, which is gone. Point them at Aniko (its
+// program, name and icon), in place, so they keep their permissions and the
+// desktop's trust. Starting with the computer moves to Aniko's entry too.
 function updateDesktopShortcuts() {
     if (process.platform !== "linux") return
+    const oldAutostart = path.join(path.dirname(autostartFile()), "kumo.desktop")
+    if (fs.existsSync(oldAutostart) && !fs.existsSync(autostartFile()) && setStartAtLogin(true) === null) fs.rmSync(oldAutostart, { force: true })
     let dir, names
     try {
         dir = app.getPath("desktop")
@@ -1006,24 +1025,28 @@ function updateDesktopShortcuts() {
         try {
             if (!fs.lstatSync(file).isFile()) continue // never through a link
             const text = fs.readFileSync(file, "utf8")
-            const icon = /^Icon=kumo[ \t]*\r?$/m
-            if (!/^Exec=(\/usr\/bin\/)?kumo(\s|$)/m.test(text) || !icon.test(text)) continue
-            fs.writeFileSync(file, text.replace(icon, "Icon=kumo-anime"))
+            if (!/^Exec=(\/usr\/bin\/)?kumo(\s|$)/m.test(text)) continue
+            const next = text
+                .replace(/^Exec=(\/usr\/bin\/)?kumo(?=\s|$)/gm, "Exec=$1aniko")
+                .replace(/^Icon=kumo(-anime)?[ \t]*$/gm, "Icon=aniko")
+                .replace(/^Name=Kumo[ \t]*$/gm, "Name=Aniko")
+                .replace(/^StartupWMClass=Kumo[ \t]*$/gm, "StartupWMClass=Aniko")
+            fs.writeFileSync(file, next)
         } catch {
             // someone else's file, or one we can't write: leave it
         }
     }
 }
 
-// Kumo couldn't start: why, the server's last lines, and Try again.
+// Aniko couldn't start: why, the server's last lines, and Try again.
 function startupFailed(err) {
     serverProc?.kill()
     serverProc = null
     const detail = [String(err?.message || err), serverLines.length ? "\n" + serverLines.slice(-8).join("\n") : ""].join("\n").trim()
     const answer = dialog.showMessageBoxSync({
         type: "error",
-        title: "Kumo",
-        message: "Kumo couldn't start",
+        title: "Aniko",
+        message: "Aniko couldn't start",
         detail,
         buttons: ["Try again", "Copy details", "Quit"],
         defaultId: 0,
@@ -1036,9 +1059,9 @@ function startupFailed(err) {
 }
 
 async function boot() {
-    // Started with the computer: in the background, if Kumo runs without
+    // Started with the computer: in the background, if Aniko runs without
     // its window (the tray icon or the Dock opens it). Otherwise the window
-    // shows at once, saying Kumo is starting.
+    // shows at once, saying Aniko is starting.
     const withWindow = !(startedAtLogin() && prefs.keepRunning)
     if (withWindow) createWindow("", true)
     try {
@@ -1066,7 +1089,7 @@ async function boot() {
 }
 
 if (!app.requestSingleInstanceLock()) {
-    // Kumo is running already and shows its window. When it's an older
+    // Aniko is running already and shows its window. When it's an older
     // version (updated while it ran in the background), it's asked to
     // restart into this one: versions before this check only know that.
     existingServer()
@@ -1074,8 +1097,8 @@ if (!app.requestSingleInstanceLock()) {
         .catch(() => {})
         .finally(() => app.quit())
 } else {
-    // Opening Kumo again shows its window, also after it was closed while
-    // Kumo kept running.
+    // Opening Aniko again shows its window, also after it was closed while
+    // Aniko kept running.
     app.on("second-instance", (_e, argv) => {
         // Started with the computer while already running: nothing to show.
         if (!argv.includes(BACKGROUND)) showWindow()

@@ -49,7 +49,7 @@ type Client interface {
 
 var ErrNoClient = errors.New("no torrent client configured (Settings › Torrents)")
 
-// AuthError means the client is running but refuses Kumo's credentials.
+// AuthError means the client is running but refuses Aniko's credentials.
 // Starting the client again won't help; the settings need fixing.
 type AuthError struct{ Msg string }
 
@@ -83,7 +83,7 @@ type Qbittorrent struct {
 	http *http.Client
 	mu   sync.Mutex
 	// A failed login is remembered and not retried for a while: qBittorrent
-	// bans an IP after a few failed attempts, and Kumo polls every few
+	// bans an IP after a few failed attempts, and Aniko polls every few
 	// seconds. Settings changes create a new client, so fixing the password
 	// takes effect at once.
 	authErr error
@@ -125,7 +125,7 @@ func (q *Qbittorrent) login(ctx context.Context) error {
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	switch {
 	case resp.StatusCode == http.StatusForbidden:
-		q.authErr = &AuthError{"qBittorrent has temporarily blocked Kumo after too many failed logins. Fix the password in Settings › Torrents, then restart qBittorrent (File › Exit and open it again) to lift the block."}
+		q.authErr = &AuthError{"qBittorrent has temporarily blocked Aniko after too many failed logins. Fix the password in Settings › Torrents, then restart qBittorrent (File › Exit and open it again) to lift the block."}
 		q.retryAt = time.Now().Add(5 * time.Minute)
 		return q.authErr
 	case !strings.Contains(string(body), "Ok") && resp.StatusCode != http.StatusNoContent:
@@ -213,7 +213,7 @@ func (q *Qbittorrent) do(ctx context.Context, method, path string, form url.Valu
 		}
 		return nil
 	}
-	return &AuthError{"qBittorrent refused Kumo's session." + qbitAuthHint}
+	return &AuthError{"qBittorrent refused Aniko's session." + qbitAuthHint}
 }
 
 var errNotFound = errors.New("not found")

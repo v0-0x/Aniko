@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/simo1337s/animetest/server/internal/anicli"
+	"github.com/simo1337s/animetest/server/internal/anikohub"
 	"github.com/simo1337s/animetest/server/internal/anilist"
 	"github.com/simo1337s/animetest/server/internal/config"
 	"github.com/simo1337s/animetest/server/internal/db"
@@ -27,7 +28,6 @@ import (
 	"github.com/simo1337s/animetest/server/internal/extensions"
 	"github.com/simo1337s/animetest/server/internal/history"
 	"github.com/simo1337s/animetest/server/internal/images"
-	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
 	"github.com/simo1337s/animetest/server/internal/lifecycle"
 	"github.com/simo1337s/animetest/server/internal/manga"
@@ -71,20 +71,20 @@ type App struct {
 	Trash *library.Trash
 	// Notify tells about aired episodes and episodes ready in the library.
 	Notify *notify.Service
-	// Exits ends Kumo from inside, e.g. to restart it after an update;
-	// cmd/kumo waits for it, next to the signals.
+	// Exits ends Aniko from inside, e.g. to restart it after an update;
+	// cmd/aniko waits for it, next to the signals.
 	Exits *lifecycle.Exits
 
 	// ShellToken authenticates the desktop window (see api middleware).
 	ShellToken string
 	DataDir    string
 
-	// HubStore is set when Kumo runs as a Kumo Hub (kumo --hub, package
-	// kumohub): it plays nothing, shares its library with the Kumo apps on
+	// HubStore is set when Aniko runs as an Aniko Hub (aniko --hub, package
+	// anikohub): it plays nothing, shares its library with the Aniko apps on
 	// the network and keeps them in step; the heavy parts don't run.
-	HubStore *kumohub.Store
-	Streams  *kumohub.Streams
-	Sampler  *kumohub.Sampler
+	HubStore *anikohub.Store
+	Streams  *anikohub.Streams
+	Sampler  *anikohub.Sampler
 
 	prefetch *prefetcher
 
@@ -122,9 +122,9 @@ func (l *LogBuffer) Lines() []string {
 	return append([]string(nil), l.lines...)
 }
 
-// Options say how Kumo runs.
+// Options say how Aniko runs.
 type Options struct {
-	// Hub: as a Kumo Hub (see App.HubStore).
+	// Hub: as an Aniko Hub (see App.HubStore).
 	Hub bool
 }
 
@@ -144,7 +144,7 @@ func New(dataDir string, opts ...Options) (*App, error) {
 	log.SetOutput(logs)
 	log.SetFlags(log.LstdFlags)
 
-	d, err := db.Open(filepath.Join(dataDir, "kumo.db"))
+	d, err := db.Open(filepath.Join(dataDir, "aniko.db"))
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
@@ -185,17 +185,17 @@ func New(dataDir string, opts ...Options) (*App, error) {
 		return nil, fmt.Errorf("library sharing: %w", err)
 	}
 	if opt.Hub {
-		if a.HubStore, err = kumohub.New(d); err != nil {
+		if a.HubStore, err = anikohub.New(d); err != nil {
 			return nil, fmt.Errorf("hub: %w", err)
 		}
-		a.Streams = kumohub.NewStreams()
+		a.Streams = anikohub.NewStreams()
 		// It updates from its own releases (hub-v…).
 		a.Update.GOOS = update.HubSystem
 		if err := a.hubSettings(); err != nil {
 			return nil, err
 		}
 	}
-	// Libraries other Kumo apps share with this one show with its own.
+	// Libraries other Aniko apps share with this one show with its own.
 	lib.Remote = a.Share.RemoteFiles
 	a.ShellToken = randomToken()
 	a.wire()
@@ -206,7 +206,7 @@ func New(dataDir string, opts ...Options) (*App, error) {
 // folder, not in /tmp, which is in memory on most Linux systems.
 func hlsDir(dataDir string) string {
 	if dir, err := os.UserCacheDir(); err == nil {
-		return filepath.Join(dir, "kumo", "hls")
+		return filepath.Join(dir, "aniko", "hls")
 	}
 	return filepath.Join(dataDir, "hls")
 }
@@ -218,7 +218,7 @@ func randomToken() string {
 }
 
 // WriteShellToken stores the desktop-window token where only this user can
-// read it ($XDG_RUNTIME_DIR/kumo/shell-token).
+// read it ($XDG_RUNTIME_DIR/aniko/shell-token).
 func (a *App) WriteShellToken() string {
 	p := filepath.Join(config.RuntimeDir(), "shell-token")
 	_ = os.WriteFile(p, []byte(a.ShellToken), 0o600)
@@ -227,14 +227,14 @@ func (a *App) WriteShellToken() string {
 
 func (a *App) wire() {
 	// Anime with files get all their data, also those shared with this
-	// Kumo (prefetch.go).
+	// Aniko (prefetch.go).
 	a.Scanner.OnScanned = a.prefetchLibrary
 	a.Scanner.OnNewFiles = a.Notify.NewFiles
 	a.Downloads.Done = func(it downloads.Item) bool {
 		return a.Notify.Downloaded(it.MediaID, it.Episode, it.AnimeTitle, it.Output)
 	}
 	a.Share.OnFiles = a.prefetchLibrary
-	// Kumos on the same AniList account keep their watch histories in step,
+	// Anikos on the same AniList account keep their watch histories in step,
 	// as positions are saved. A hub keeps every account's instead (hub.go).
 	if a.HubStore != nil {
 		a.wireHub()
@@ -250,7 +250,7 @@ func (a *App) wire() {
 			a.Hub.Publish("collection-updated", nil)
 		}
 	}
-	// The auto downloader sends what it finds where this Kumo's downloads
+	// The auto downloader sends what it finds where this Aniko's downloads
 	// go (a TV's computer), like a torrent added by hand.
 	a.AutoDL.Send = func(ctx context.Context, mediaID int, uris []string) (bool, error) {
 		host, err := a.Share.SendDownload(ctx, share.DownloadTorrent, share.TorrentDownload{MediaID: mediaID, URIs: uris})
@@ -266,11 +266,11 @@ func (a *App) wire() {
 		}
 		return 0
 	}
-	// ani-cli for the Kumos this one shares with; and where it runs for this
+	// ani-cli for the Anikos this one shares with; and where it runs for this
 	// one when it isn't here (Android).
 	a.Share.AniCliReady = a.AniCli.LocalReady
 	a.AniCli.SetRemote(a.Share.AniCliRemote())
-	// The AniList login a host shares with this Kumo, or this one shares.
+	// The AniList login a host shares with this Aniko, or this one shares.
 	a.Share.AccountToken = func() string {
 		if !a.Platform.LoggedIn() {
 			return ""
@@ -458,7 +458,7 @@ func pickSource(srcs []stream.Source, quality string) stream.Source {
 	return srcs[0]
 }
 
-// AccountChanged tells the app the AniList login changed (another Kumo's
+// AccountChanged tells the app the AniList login changed (another Aniko's
 // account shared with this one): the list comes from the new one.
 func (a *App) AccountChanged() {
 	a.Hub.Publish(events.SettingsUpdated, nil)
@@ -539,11 +539,11 @@ func (a *App) Start() {
 
 func (a *App) Shutdown() {
 	if a.HubStore != nil {
-		a.HubStore.Log(kumohub.Event{Kind: "stop", By: "hub", Text: "stopped"})
+		a.HubStore.Log(anikohub.Event{Kind: "stop", By: "hub", Text: "stopped"})
 	}
 	a.cancel()
 	// The player first: it saves where it stopped, which sharing then sends
-	// to the other Kumos before it stops.
+	// to the other Anikos before it stops.
 	a.Player.Stop()
 	a.Share.Stop()
 	a.Awake.Close()

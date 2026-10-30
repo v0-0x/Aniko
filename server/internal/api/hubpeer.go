@@ -5,11 +5,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/simo1337s/animetest/server/internal/kumohub"
+	"github.com/simo1337s/animetest/server/internal/anikohub"
 	"github.com/simo1337s/animetest/server/internal/share"
 )
 
-// hubPeerRoutes are what a Kumo Hub answers the devices it shares with
+// hubPeerRoutes are what an Aniko Hub answers the devices it shares with
 // (share/hub.go): their account's settings, and the logins they give it.
 // Elsewhere they say it isn't a hub.
 func (s *Server) hubPeerRoutes() {
@@ -17,7 +17,7 @@ func (s *Server) hubPeerRoutes() {
 	hub := func(fn http.HandlerFunc) http.HandlerFunc {
 		return shared(func(w http.ResponseWriter, r *http.Request) {
 			if !s.app.Share.IsHub() {
-				writeJSON(w, http.StatusNotFound, map[string]any{"error": "this Kumo isn't a hub"})
+				writeJSON(w, http.StatusNotFound, map[string]any{"error": "this Aniko isn't a hub"})
 				return
 			}
 			fn(w, r)
@@ -27,7 +27,7 @@ func (s *Server) hubPeerRoutes() {
 		return s.app.Share.HubPrefs(peerOf(r))
 	})))
 	m.HandleFunc("POST /api/peer/hub/prefs", hub(h(func(r *http.Request) (any, error) {
-		var p kumohub.Prefs
+		var p anikohub.Prefs
 		if err := json.NewDecoder(io.LimitReader(r.Body, 128<<10)).Decode(&p); err != nil {
 			return nil, badRequest(err.Error())
 		}

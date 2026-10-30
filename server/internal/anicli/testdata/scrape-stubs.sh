@@ -1,4 +1,4 @@
-# Scraping stubs for ani-cli 5.x (hianime backend), used by Kumo's tests.
+# Scraping stubs for ani-cli 5.x (hianime backend), used by Aniko's tests.
 #
 # They replace the functions of ani-cli that use the network (hianime_search,
 # hianime_episodes, hianime_m3u8, update_script, time_until_next_ep), so the
@@ -6,25 +6,25 @@
 # hermetically. fake-ani-cli sources this file; the tests can also insert it
 # into a real ani-cli script just before its "# MAIN" line.
 #
-# The data comes from the catalog file named by $KUMO_FAKE_CATALOG (a small
+# The data comes from the catalog file named by $ANIKO_FAKE_CATALOG (a small
 # default one is used when it is unset), one entry per line:
 #
 #   id <TAB> title <TAB> number of episodes [<TAB> modes with sources]
 #
-# Every run's arguments are appended to $KUMO_FAKE_LOG (when set), one run per
+# Every run's arguments are appended to $ANIKO_FAKE_LOG (when set), one run per
 # line, tab separated.
 
-if [ -n "$KUMO_FAKE_LOG" ]; then
+if [ -n "$ANIKO_FAKE_LOG" ]; then
     {
         printf 'run'
         for _arg in "$@"; do printf '\t%s' "$_arg"; done
         printf '\n'
-    } >>"$KUMO_FAKE_LOG"
+    } >>"$ANIKO_FAKE_LOG"
 fi
 
 fake_catalog() {
-    if [ -n "$KUMO_FAKE_CATALOG" ]; then
-        cat "$KUMO_FAKE_CATALOG"
+    if [ -n "$ANIKO_FAKE_CATALOG" ]; then
+        cat "$ANIKO_FAKE_CATALOG"
     else
         printf '%s\t%s\t%s\n' \
             code-geass "Code Geass: Lelouch of the Rebellion" 25 \
@@ -34,7 +34,7 @@ fake_catalog() {
 }
 
 fake_log() {
-    [ -n "$KUMO_FAKE_LOG" ] && printf '%s\n' "$*" >>"$KUMO_FAKE_LOG"
+    [ -n "$ANIKO_FAKE_LOG" ] && printf '%s\n' "$*" >>"$ANIKO_FAKE_LOG"
     return 0
 }
 

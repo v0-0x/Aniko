@@ -1,12 +1,12 @@
-# Kumo build
-#   make            build web UI + server binary (./dist/kumo)
+# Aniko build
+#   make            build web UI + server binary (./dist/aniko)
 #   make desktop    also install the Electron shell's deps
 #   make test       run the Go tests
-#   make windows    cross-compile the Windows server (./dist/windows/kumo.exe);
+#   make windows    cross-compile the Windows server (./dist/windows/aniko.exe);
 #                   the Windows installer itself is built on Windows, see
 #                   packaging/windows/README.md
-#   make macos      cross-compile the macOS servers (./dist/macos/kumo-x64 and
-#                   kumo-arm64); the app itself is built on a Mac, see
+#   make macos      cross-compile the macOS servers (./dist/macos/aniko-x64 and
+#                   aniko-arm64); the app itself is built on a Mac, see
 #                   packaging/macos/README.md
 
 PREFIX ?= /usr
@@ -32,18 +32,18 @@ embed: web
 
 server: embed
 	mkdir -p dist
-	cd server && CGO_ENABLED=0 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/kumo ./cmd/kumo
+	cd server && CGO_ENABLED=0 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/aniko ./cmd/aniko
 
 windows: embed
 	mkdir -p dist/windows
-	cd server && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/windows/kumo.exe ./cmd/kumo
+	cd server && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/windows/aniko.exe ./cmd/aniko
 
 # One server for Intel Macs and one for Apple silicon: the universal app
 # (desktop/electron-builder.yml) merges them.
 macos: embed
 	mkdir -p dist/macos
-	cd server && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/macos/kumo-x64 ./cmd/kumo
-	cd server && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/macos/kumo-arm64 ./cmd/kumo
+	cd server && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/macos/aniko-x64 ./cmd/aniko
+	cd server && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) build $(GO_BUILDFLAGS) -ldflags "$(GO_LDFLAGS)" -o ../dist/macos/aniko-arm64 ./cmd/aniko
 
 desktop:
 	cd desktop && $(NPM) ci --no-audit --no-fund
@@ -52,7 +52,7 @@ test:
 	cd server && $(GO) test ./...
 
 run: server
-	./dist/kumo --web-ui
+	./dist/aniko --web-ui
 
 clean:
 	rm -rf dist web/dist server/internal/webui/dist/* desktop/node_modules

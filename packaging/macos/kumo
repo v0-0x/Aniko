@@ -1,0 +1,5 @@
+#!/bin/sh
+# Aniko was called Kumo before 2.0.37. Kumo's updater (2.0.36 and older)
+# checks that a new version's app has its server here, under the old name:
+# this stands in for it, and starts Aniko's.
+exec "$(dirname "$0")/aniko" "$@"

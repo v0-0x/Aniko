@@ -19,11 +19,11 @@ import (
 func slowAniCli(t *testing.T) (script, pidFile string) {
 	t.Helper()
 	pidFile = filepath.Join(t.TempDir(), "child.pid")
-	t.Setenv("KUMO_TEST_PIDFILE", pidFile)
+	t.Setenv("ANIKO_TEST_PIDFILE", pidFile)
 	script = filepath.Join(t.TempDir(), "ani-cli")
 	if err := os.WriteFile(script, []byte(`#!/bin/sh
 (sleep 20; echo late) &
-echo $! >"$KUMO_TEST_PIDFILE"
+echo $! >"$ANIKO_TEST_PIDFILE"
 wait
 `), 0o755); err != nil {
 		t.Fatal(err)

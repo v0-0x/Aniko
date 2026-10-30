@@ -37,7 +37,7 @@ func (f fakeLibrary) Get(path string) (*library.LocalFile, error) {
 
 func openDB(t *testing.T) *db.DB {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestIdentityStaysAndTokensCheck(t *testing.T) {
 	}
 	b, _ := LoadIdentity(openDB(t))
 	if b.ID == a.ID {
-		t.Fatal("two Kumos with one ID")
+		t.Fatal("two Anikos with one ID")
 	}
 
 	// a asks b: b checks it's a.
@@ -116,7 +116,7 @@ func TestIdentityStaysAndTokensCheck(t *testing.T) {
 	third, _ := LoadIdentity(openDB(t))
 	impostor := &signature{id: third, peerPub: aPub, guest: a.ID, host: b.ID, nonce: sig.nonce}
 	if forged, _ := impostor.reply(date); forged == got {
-		t.Error("another Kumo answered for b")
+		t.Error("another Aniko answered for b")
 	}
 
 	// Sent again: refused.
@@ -166,7 +166,7 @@ func TestIdentityStaysAndTokensCheck(t *testing.T) {
 		t.Error("a ticket for something else than a file passed")
 	}
 
-	// A third Kumo can't pass for a, nor a's token be used with another key.
+	// A third Aniko can't pass for a, nor a's token be used with another key.
 	req, _ = signed("GET", "http://x/api/peer/hello", "", now, false)
 	forged := received(req)
 	forged.Header.Set(headerKey, third.PublicKey())
@@ -177,17 +177,17 @@ func TestIdentityStaysAndTokensCheck(t *testing.T) {
 	forged.Header.Set(headerID, third.ID)
 	forged.Header.Set(headerKey, third.PublicKey())
 	if _, _, err := b.verify(forged, now); err == nil {
-		t.Error("a's token passed for another Kumo")
+		t.Error("a's token passed for another Aniko")
 	}
-	// Made for b, it means nothing to a third Kumo.
+	// Made for b, it means nothing to a third Aniko.
 	if _, _, err := third.verify(received(req), now); err == nil {
 		t.Error("a token for b passed with another host")
 	}
-	// An older Kumo's request: told so.
+	// An older Aniko's request: told so.
 	old := received(req)
 	old.Header.Del(headerTime)
 	if _, _, err := b.verify(old, now); !errors.Is(err, errOldPeer) {
-		t.Errorf("older Kumo: %v", err)
+		t.Errorf("older Aniko: %v", err)
 	}
 }
 
@@ -218,10 +218,10 @@ func TestBeaconsAndPeers(t *testing.T) {
 	d := openDB(t)
 	s := newService(t, d)
 	other, _ := LoadIdentity(openDB(t))
-	b := beacon{Kumo: protocol, ID: other.ID, Name: "Laptop", Port: 43211, Key: other.PublicKey(), Version: "1.0.90"}
+	b := beacon{Aniko: protocol, ID: other.ID, Name: "Laptop", Port: 43211, Key: other.PublicKey(), Version: "1.0.90"}
 
 	s.heard(b, net.ParseIP("8.8.8.8")) // from the internet
-	s.heard(beacon{Kumo: protocol, ID: other.ID, Name: "Fake", Port: 43211, Key: s.id.PublicKey()}, net.ParseIP("192.168.1.9"))
+	s.heard(beacon{Aniko: protocol, ID: other.ID, Name: "Fake", Port: 43211, Key: s.id.PublicKey()}, net.ParseIP("192.168.1.9"))
 	own := s.beacon()
 	s.heard(own, net.ParseIP("192.168.1.5"))
 	if st := s.Status(); len(st.Peers) != 0 {
@@ -250,7 +250,7 @@ func TestBeaconsAndPeers(t *testing.T) {
 	// Not useful, not around: not listed after a restart.
 	_ = s.SetAllowed(other.ID, false)
 	if st := newService(t, d).Status(); len(st.Peers) != 0 {
-		t.Errorf("a Kumo gone and not shared with is listed: %+v", st.Peers)
+		t.Errorf("an Aniko gone and not shared with is listed: %+v", st.Peers)
 	}
 }
 
@@ -289,11 +289,11 @@ func TestSharedFilesAreTheMatchedOnes(t *testing.T) {
 		t.Errorf("hello %+v", h)
 	}
 	if h := s.Hello(Caller{}); h.Shares || h.Files != "" {
-		t.Errorf("hello to a Kumo not allowed: %+v", h)
+		t.Errorf("hello to an Aniko not allowed: %+v", h)
 	}
 }
 
-// Two Kumos on this computer find each other by multicast, where the
+// Two Anikos on this computer find each other by multicast, where the
 // network allows it.
 func TestDiscovery(t *testing.T) {
 	a, b := newService(t, openDB(t)), newService(t, openDB(t))

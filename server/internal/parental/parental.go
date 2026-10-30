@@ -1,7 +1,7 @@
 // Package parental holds parental controls: what a device may watch, set
-// for it on the computer (or Kumo Hub) that shares with it, and enforced on
+// for it on the computer (or Aniko Hub) that shares with it, and enforced on
 // both: the host shares and streams nothing else to it, and the device's
-// own Kumo hides the rest and refuses to open or play it (filter.go).
+// own Aniko hides the rest and refuses to open or play it (filter.go).
 package parental
 
 import (

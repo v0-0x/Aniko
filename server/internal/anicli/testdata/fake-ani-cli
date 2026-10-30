@@ -1,6 +1,6 @@
 #!/bin/sh
-# A stand-in for ani-cli 5.x, used by Kumo's tests unless a real ani-cli is
-# given. It behaves like ani-cli where Kumo depends on it: a query is every
+# A stand-in for ani-cli 5.x, used by Aniko's tests unless a real ani-cli is
+# given. It behaves like ani-cli where Aniko depends on it: a query is every
 # argument that is not one of ani-cli's options; the fzf/rofi/dmenu menus are
 # skipped when the list has a single entry (one search result, or an anime
 # with one episode, is picked without asking); -S, -e, -q, --dub and

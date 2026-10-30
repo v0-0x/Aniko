@@ -1,4 +1,4 @@
-// Package config holds the user settings and resolves the XDG paths Kumo uses.
+// Package config holds the user settings and resolves the XDG paths Aniko uses.
 package config
 
 import (
@@ -14,14 +14,14 @@ import (
 )
 
 const (
-	AppName = "Kumo"
+	AppName = "Aniko"
 
 	DefaultPort           = 43211
 	DefaultAnilistClient  = "13985"
 	DefaultMarketplaceURL = "https://raw.githubusercontent.com/Bas1874/Seanime-Marketplace/refs/heads/main/Marketplace/Main.json"
 
-	// UpdateRepo is the GitHub repository Kumo looks for updates in
-	// ($KUMO_UPDATE_REPO overrides it), asked for by its number
+	// UpdateRepo is the GitHub repository Aniko looks for updates in
+	// ($ANIKO_UPDATE_REPO overrides it), asked for by its number
 	// (UpdateRepoID): it was renamed once, and an old name can be taken by
 	// anyone, who would then make the updates.
 	UpdateRepo   = "v0-0x/kumo-anime"
@@ -35,11 +35,11 @@ var (
 	// AppVersion is 2.0.<commits since 2.0.0's> in those builds (1.0.<number
 	// of commits> before it; see update.VersionOf).
 	AppVersion = "1.0.0"
-	// Commit is the git commit Kumo was built from; see BuildCommit.
+	// Commit is the git commit Aniko was built from; see BuildCommit.
 	Commit = ""
 )
 
-// BuildCommit is the commit Kumo was built from: Commit, or else the one Go
+// BuildCommit is the commit Aniko was built from: Commit, or else the one Go
 // stamps into builds made inside a git checkout, or "" when unknown (e.g.
 // built from a source zip).
 func BuildCommit() string {
@@ -92,7 +92,7 @@ type UpdateSettings struct {
 // UpdateChannels are the values UpdateSettings.Channel takes.
 var UpdateChannels = []string{"stable", "beta"}
 
-// NotifySettings: what Kumo tells about as it happens (package notify).
+// NotifySettings: what Aniko tells about as it happens (package notify).
 type NotifySettings struct {
 	// NewEpisodes: an episode of an anime being watched aired.
 	NewEpisodes bool `json:"newEpisodes"`
@@ -102,7 +102,7 @@ type NotifySettings struct {
 
 type LibrarySettings struct {
 	// Off: this computer has no library of its own; it plays the ones a
-	// Kumo Hub or other computers share with it. The folders below are kept
+	// Aniko Hub or other computers share with it. The folders below are kept
 	// for when it's turned back on.
 	Off              bool     `json:"off"`
 	Dir              string   `json:"dir"`
@@ -203,23 +203,23 @@ type AnilistSettings struct {
 	HideAdult bool `json:"hideAdult"`
 }
 
-// SharingSettings: library sharing with other Kumo apps on the home network
+// SharingSettings: library sharing with other Aniko apps on the home network
 // (package share). Which ones this one shares its library with is kept
-// with the Kumos it knows, not here.
+// with the Anikos it knows, not here.
 type SharingSettings struct {
 	Enabled bool `json:"enabled"`
-	// Name: what the others call this Kumo (empty: the computer's name).
+	// Name: what the others call this Aniko (empty: the computer's name).
 	Name string `json:"name"`
-	// DownloadTo: the Kumo this one's downloads and torrents go to (its ID;
+	// DownloadTo: the Aniko this one's downloads and torrents go to (its ID;
 	// empty: saved here). Set when one allows it (package share).
 	DownloadTo string `json:"downloadTo,omitempty"`
 	// KeepAwake: this computer doesn't go to sleep while other devices play
 	// its files (package awake).
 	KeepAwake bool `json:"keepAwake"`
-	// AutoSync: Continue watching is synced with the paired Kumos when they
+	// AutoSync: Continue watching is synced with the paired Anikos when they
 	// come back, without pressing Sync.
 	AutoSync bool `json:"autoSync"`
-	// SyncPrefs: with a Kumo Hub, the theme and the like (SharedPrefs) are
+	// SyncPrefs: with an Aniko Hub, the theme and the like (SharedPrefs) are
 	// the same on every device on this AniList account: changed here, they
 	// change there.
 	SyncPrefs bool `json:"syncPrefs"`
@@ -228,7 +228,7 @@ type SharingSettings struct {
 type ServerSettings struct {
 	Host string `json:"host"`
 	Port int    `json:"port"`
-	// When true Kumo listens on every interface so other devices on the home
+	// When true Aniko listens on every interface so other devices on the home
 	// network can use it. Requests from public (non-private) addresses are
 	// always refused.
 	AllowLAN bool `json:"allowLan"`
@@ -256,7 +256,7 @@ type UISettings struct {
 	ColorTheme      string `json:"colorTheme"`
 	Seasonal        string `json:"seasonal"`
 	SeasonalEffects bool   `json:"seasonalEffects"`
-	// Kumo's look from before 2.0 (its components, sidebar and holiday
+	// Aniko's look from before 2.0 (its components, sidebar and holiday
 	// themes), with the same color themes.
 	ClassicLook bool `json:"classicLook"`
 }
@@ -264,7 +264,7 @@ type UISettings struct {
 // ColorThemes and Holidays are the values UISettings takes (their colors are
 // in web/src/lib/themes.ts).
 var (
-	ColorThemes = []string{"kumo", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black"}
+	ColorThemes = []string{"aniko", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black"}
 	Holidays    = []string{"newyear", "valentine", "sakura", "summer", "halloween", "christmas"}
 )
 
@@ -340,7 +340,7 @@ func Defaults() Settings {
 			ShowEpisodeTitle: true,
 			HomeSections:     []string{"continue", "genres", "watching", "airing", "planning", "completed"},
 			TitleLanguage:    "english",
-			ColorTheme:       "kumo",
+			ColorTheme:       "aniko",
 			Seasonal:         "auto",
 			SeasonalEffects:  true,
 		},
@@ -382,7 +382,8 @@ func NewStore(d *db.DB) (*Store, error) {
 		return nil, err
 	}
 	if ok {
-		migrated := migrate(&merged)
+		migrated := movedPaths(&merged)
+		migrated = migrate(&merged) || migrated
 		s.current = sanitize(merged)
 		if migrated {
 			if err := d.SetKV(settingsKey, s.current); err != nil {
@@ -593,18 +594,19 @@ func ExpandHome(p string) string { return expandHome(p) }
 
 // Paths -----------------------------------------------------------------
 
-// DataDir is ~/.local/share/kumo on Linux, ~/Library/Application
-// Support/Kumo on macOS and %APPDATA%\Kumo on Windows, or $KUMO_DATA_DIR.
+// DataDir is ~/.local/share/aniko on Linux, ~/Library/Application
+// Support/Aniko on macOS and %APPDATA%\Aniko on Windows, or $ANIKO_DATA_DIR.
+// Kumo's folder (Aniko's old name) moves there the first time.
 func DataDir() string {
-	if d := os.Getenv("KUMO_DATA_DIR"); d != "" {
+	if d := Getenv("DATA_DIR"); d != "" {
 		return d
 	}
-	return defaultDataDir()
+	return MoveOld(oldDataDir(), defaultDataDir())
 }
 
 // RuntimeDir holds the server's address, the desktop window's token and
-// other temporary files: $XDG_RUNTIME_DIR/kumo on Linux, $TMPDIR/kumo on
-// macOS, %LOCALAPPDATA%\Kumo\run on Windows.
+// other temporary files: $XDG_RUNTIME_DIR/aniko on Linux, $TMPDIR/aniko on
+// macOS, %LOCALAPPDATA%\Aniko\run on Windows.
 func RuntimeDir() string {
 	dir := runtimeDir()
 	_ = os.MkdirAll(dir, 0o700)

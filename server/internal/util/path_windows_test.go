@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-// A program installed while Kumo runs (e.g. by Scoop) is found once it's on
-// the PATH Windows gives new programs, and Kumo's own PATH gets its folder.
+// A program installed while Aniko runs (e.g. by Scoop) is found once it's on
+// the PATH Windows gives new programs, and Aniko's own PATH gets its folder.
 func TestLookPathFindsProgramsInstalledMeanwhile(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "kumo-test-tool.exe"), nil, 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "aniko-test-tool.exe"), nil, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", os.Getenv("PATH")) // restored afterwards
@@ -26,13 +26,13 @@ func TestLookPathFindsProgramsInstalledMeanwhile(t *testing.T) {
 
 	newPathDirs = func() []string { return nil }
 	pathChecked = time.Time{}
-	if _, ok := LookPath("kumo-test-tool"); ok {
+	if _, ok := LookPath("aniko-test-tool"); ok {
 		t.Fatal("found before it's on the PATH")
 	}
 
 	newPathDirs = func() []string { return []string{dir, filepath.Join(dir, "missing")} }
 	pathChecked = time.Time{}
-	p, ok := LookPath("kumo-test-tool")
+	p, ok := LookPath("aniko-test-tool")
 	if !ok || !strings.EqualFold(filepath.Dir(p), dir) {
 		t.Fatalf("LookPath = %q %v, want it in %s", p, ok, dir)
 	}

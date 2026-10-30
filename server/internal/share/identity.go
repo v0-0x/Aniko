@@ -1,14 +1,14 @@
-// Package share shares the library with other Kumo apps on the home network,
+// Package share shares the library with other Aniko apps on the home network,
 // and plays the libraries they share.
 //
-// Every Kumo with sharing on announces itself on the network (a small UDP
+// Every Aniko with sharing on announces itself on the network (a small UDP
 // multicast message every few seconds, see discovery.go) and listens for the
 // others. Each has its own key pair (X25519), and its ID is a fingerprint of
-// its public key. Two Kumos derive the same secret from their keys (ECDH): a
+// its public key. Two Anikos derive the same secret from their keys (ECDH): a
 // guest signs each request to a host with it, which no other computer can
 // do (bound to the request, its time and a nonce: it can't be sent again),
 // and the host signs its answer the same way. A host gives its library only
-// to the Kumos turned on in its settings.
+// to the Anikos turned on in its settings.
 //
 // A shared file is named kumo://<host ID>/<path on the host>. The app's pages
 // and player pass it around like the path of a local file, and the server
@@ -40,7 +40,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/db"
 )
 
-// Identity is this Kumo's key pair.
+// Identity is this Aniko's key pair.
 type Identity struct {
 	ID   string
 	priv *ecdh.PrivateKey
@@ -53,7 +53,7 @@ type Identity struct {
 
 const identityKey = "share:identity"
 
-// LoadIdentity returns this Kumo's identity, made the first time.
+// LoadIdentity returns this Aniko's identity, made the first time.
 func LoadIdentity(d *db.DB) (*Identity, error) {
 	var saved struct {
 		Private string `json:"private"`
@@ -88,7 +88,7 @@ func (id *Identity) PublicKey() string {
 	return base64.StdEncoding.EncodeToString(id.priv.PublicKey().Bytes())
 }
 
-// fingerprint is the ID of the Kumo with this public key: 16 letters and
+// fingerprint is the ID of the Aniko with this public key: 16 letters and
 // digits.
 func fingerprint(pub []byte) string {
 	sum := sha256.Sum256(pub)
@@ -107,7 +107,7 @@ func parsePublicKey(id, b64 string) ([]byte, error) {
 	return pub, nil
 }
 
-// secret is what this Kumo and the one with that public key have in common,
+// secret is what this Aniko and the one with that public key have in common,
 // for a purpose: only those two can make it.
 func (id *Identity) secret(peerPub []byte, purpose string) ([]byte, error) {
 	pk, err := ecdh.X25519().NewPublicKey(peerPub)
@@ -137,7 +137,7 @@ func (id *Identity) sealFor(guestPub []byte, guest, host string, plain []byte) (
 	return base64.StdEncoding.EncodeToString(aead.Seal(nonce, nonce, plain, nil)), nil
 }
 
-// openFrom decrypts what the host with that public key sealed for this Kumo.
+// openFrom decrypts what the host with that public key sealed for this Aniko.
 func (id *Identity) openFrom(hostPub []byte, guest, host, sealed string) ([]byte, error) {
 	aead, err := id.cipher(hostPub, guest, host)
 	if err != nil {
@@ -192,12 +192,12 @@ const (
 )
 
 var (
-	errOldPeer = errors.New("that Kumo is older than this one: update it")
+	errOldPeer = errors.New("that Aniko is older than this one: update it")
 	errClock   = errors.New("the clocks of the two devices are too far apart")
 	errReplay  = errors.New("a request sent again")
 )
 
-// IsPeerRequest reports a request from another Kumo (which Verify checks).
+// IsPeerRequest reports a request from another Aniko (which Verify checks).
 func IsPeerRequest(r *http.Request) bool { return r.Header.Get(headerID) != "" }
 
 // mac proves a request, or the answer to it, between a guest and a host:
@@ -284,8 +284,8 @@ func receivedBody(r *http.Request) (string, error) {
 }
 
 // sign signs a request to the host with that public key: it proves it comes
-// from this Kumo and is this request, made at that time (by the host's
-// clock, as far as this Kumo knows it), and only once. A ticket is a GET of
+// from this Aniko and is this request, made at that time (by the host's
+// clock, as far as this Aniko knows it), and only once. A ticket is a GET of
 // a file mpv may repeat for a while (ticketFor), with no nonce.
 func (id *Identity) sign(req *http.Request, host string, hostPub []byte, name string, port, user int, at time.Time, ticket bool) (*signature, error) {
 	body, err := sentBody(req)
@@ -333,7 +333,7 @@ func isTicket(r *http.Request) bool {
 	return r.Method == http.MethodGet && r.URL.Path == "/api/peer/local/file"
 }
 
-// verify checks that a request comes from the Kumo it says, as it was made,
+// verify checks that a request comes from the Aniko it says, as it was made,
 // now and for the first time. The signature (to prove the answer) is there
 // once the token is right, also when the request is refused for its time.
 func (id *Identity) verify(r *http.Request, now time.Time) (*caller, *signature, error) {
@@ -408,7 +408,7 @@ func (id *Identity) firstUse(nonce string, until, now time.Time) bool {
 }
 
 // cleanName keeps a peer's name printable and short.
-// cleanPlatform keeps a platform name another Kumo sent if it looks like one
+// cleanPlatform keeps a platform name another Aniko sent if it looks like one
 // (runtime.GOOS: "linux", "android"…).
 func cleanPlatform(s string) string {
 	if len(s) == 0 || len(s) > 16 {
@@ -435,7 +435,7 @@ func cleanName(s string) string {
 	return s
 }
 
-// cleanRole is what another Kumo says it is: RoleHub, or nothing.
+// cleanRole is what another Aniko says it is: RoleHub, or nothing.
 func cleanRole(s string) string {
 	if s == RoleHub {
 		return s

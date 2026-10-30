@@ -454,7 +454,7 @@ func (h *PluginHost) bindings(r *Runtime, vm *goja.Runtime) *goja.Object {
 		}
 		return toJS(vm, v)
 	}
-	unsupported := func(name string) error { return fmt.Errorf("%s is not available in Kumo", name) }
+	unsupported := func(name string) error { return fmt.Errorf("%s is not available in Aniko", name) }
 	needScope := func(api, scope string) {
 		if !h.scopes[scope] {
 			panic(vm.NewGoError(fmt.Errorf("%s requires the %q permission", api, scope)))
@@ -848,7 +848,7 @@ var pluginPrelude = strings.TrimSpace(`
   g.$ui = { register: function(fn){ uiCallbacks.push(fn); } };
   g.$shared = { define: function(name, factory){ shared[name] = factory; }, use: function(name){ return shared[name] ? shared[name]() : undefined; } };
   // Plugins expect these two as plain strings.
-  var appBase = { getVersion: '3.10.3', getVersionName: 'Kumo', invalidateClientQuery: function(){},
+  var appBase = { getVersion: '3.10.3', getVersionName: 'Aniko', invalidateClientQuery: function(){},
     getClientIds: function(){ return []; }, getClientPlatform: function(){ return 'denshi'; } };
   g.$app = new Proxy(appBase, { get: function(t, k){
     if (k in t) return t[k];

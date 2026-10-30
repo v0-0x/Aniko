@@ -1,22 +1,22 @@
-# Builds, tests and packages Kumo for Windows on a real Windows machine, then
+# Builds, tests and packages Aniko for Windows on a real Windows machine, then
 # publishes the installer and the portable zip as the GitHub Release
-# "Kumo <version> for Windows", tagged windows-v<version> on the commit it
+# "Aniko <version> for Windows", tagged windows-v<version> on the commit it
 # built.
 #
 # The version is 2.0.<commits since 2.0.0's> (the first two numbers come
-# from desktop/package.json, where kumoVersionBase is 2.0.0's number of
+# from desktop/package.json, where anikoVersionBase is 2.0.0's number of
 # commits; 1.0.<number of commits> before it): each commit has its own,
 # later commits higher ones.
-# Installed copies of Kumo look for the release with the highest version and
+# Installed copies of Aniko look for the release with the highest version and
 # offer it on the Home page (server/internal/update), so the version is also
-# built into kumo.exe, with the commit.
+# built into aniko.exe, with the commit.
 #
 # Runs on every push to the repository's default branch (except pushes that
 # only change docs or the Arch packaging), so Windows copies get every
 # change, and by hand from the Actions tab. Running it again on the same
 # commit updates that commit's release.
 #
-# Channels: each build is a beta, the pre-release "Kumo <version> beta for
+# Channels: each build is a beta, the pre-release "Aniko <version> beta for
 # Windows", which only copies with Settings › Updates & about › Beta updates
 # on are offered, unless the pushed commit's message has [stable] in it or
 # the workflow is run by hand with channel "stable": then it's a release for
@@ -111,16 +111,16 @@ jobs:
           if (-not ($base -match '^(\d+)\.(\d+)\.')) { throw "desktop/package.json has no version like 1.0.0 (it says '$base')" }
           $count = git rev-list --count HEAD
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          # The commits since the one kumoVersionBase counts (2.0.0's).
-          $from = if ($pkg.kumoVersionBase) { [int]$pkg.kumoVersionBase } else { 0 }
+          # The commits since the one anikoVersionBase counts (2.0.0's).
+          $from = if ($pkg.anikoVersionBase) { [int]$pkg.anikoVersionBase } else { 0 }
           $patch = [int]"$count".Trim() - $from
-          if ($patch -lt 0) { throw "This commit is before kumoVersionBase ($from) in desktop/package.json" }
+          if ($patch -lt 0) { throw "This commit is before anikoVersionBase ($from) in desktop/package.json" }
           $version = "$($Matches[1]).$($Matches[2]).$patch"
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=windows-v$version" >> $env:GITHUB_OUTPUT
-          "installer=Kumo-Setup-$version-windows-x64.exe" >> $env:GITHUB_OUTPUT
-          "portable=Kumo-$version-windows-x64-portable.zip" >> $env:GITHUB_OUTPUT
-          "Building Kumo $version for Windows"
+          "installer=Aniko-Setup-$version-windows-x64.exe" >> $env:GITHUB_OUTPUT
+          "portable=Aniko-$version-windows-x64-portable.zip" >> $env:GITHUB_OUTPUT
+          "Building Aniko $version for Windows"
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -163,7 +163,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ffmpeg -hide_banner -version
 
-      # The setup that installs the programs Kumo uses (Scoop, Git, ani-cli,
+      # The setup that installs the programs Aniko uses (Scoop, Git, ani-cli,
       # ffmpeg...) only runs on users' computers, in Windows PowerShell 5.1:
       # check here that it parses there.
       - name: Check the programs setup script
@@ -188,9 +188,9 @@ jobs:
         working-directory: server
         run: go test -count 1 -timeout 8m ./...
 
-      # The version and the commit go into kumo.exe (config.AppVersion and
+      # The version and the commit go into aniko.exe (config.AppVersion and
       # config.Commit): the updater compares them with the newest release's.
-      - name: Build kumo.exe
+      - name: Build aniko.exe
         working-directory: server
         env:
           GOOS: windows
@@ -199,13 +199,13 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force ../dist/windows | Out-Null
           $config = "github.com/simo1337s/animetest/server/internal/config"
-          go build -trimpath -ldflags "-s -w -X $config.AppVersion=$env:VERSION -X $config.Commit=$env:GITHUB_SHA" -o ../dist/windows/kumo.exe ./cmd/kumo
+          go build -trimpath -ldflags "-s -w -X $config.AppVersion=$env:VERSION -X $config.Commit=$env:GITHUB_SHA" -o ../dist/windows/aniko.exe ./cmd/aniko
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $reported = & ../dist/windows/kumo.exe --version
+          $reported = & ../dist/windows/aniko.exe --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          "kumo.exe --version: $reported"
-          if ($reported -ne "Kumo $env:VERSION") {
-            throw "kumo.exe says '$reported' instead of 'Kumo $env:VERSION': the version didn't make it into the build."
+          "aniko.exe --version: $reported"
+          if ($reported -ne "Aniko $env:VERSION") {
+            throw "aniko.exe says '$reported' instead of 'Aniko $env:VERSION': the version didn't make it into the build."
           }
 
       # electron-builder names the files and versions the app after
@@ -257,21 +257,21 @@ jobs:
           $repo = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY"
           # A beta is a pre-release, and never the repository's latest.
           $beta = $env:CHANNEL -eq "beta"
-          $title = if ($beta) { "Kumo $env:VERSION beta for Windows" } else { "Kumo $env:VERSION for Windows" }
+          $title = if ($beta) { "Aniko $env:VERSION beta for Windows" } else { "Aniko $env:VERSION for Windows" }
           $flags = @("--prerelease=$($beta.ToString().ToLower())", "--latest=$((-not $beta).ToString().ToLower())")
           $notes = @'
-          **Kumo {version} for Windows 10 and 11 (64-bit).** These files are for Windows only: on Arch Linux, build and install Kumo from source with `packaging/arch`, as [the README]({readme}) explains.
+          **Aniko {version} for Windows 10 and 11 (64-bit).** These files are for Windows only: on Arch Linux, build and install Aniko from source with `packaging/arch`, as [the README]({readme}) explains.
 
           | File | What it is |
           |---|---|
-          | `{installer}` | **Installer** (recommended). Installs Kumo for your Windows user, without admin rights, in a folder you can change. Adds Start menu and desktop shortcuts; uninstall it from Settings > Apps. |
-          | `{portable}` | **Portable** build. Unzip it anywhere and run `Kumo.exe`; nothing gets installed. Your data is still kept in `%APPDATA%\Kumo`. |
+          | `{installer}` | **Installer** (recommended). Installs Aniko for your Windows user, without admin rights, in a folder you can change. Adds Start menu and desktop shortcuts; uninstall it from Settings > Apps. |
+          | `{portable}` | **Portable** build. Unzip it anywhere and run `Aniko.exe`; nothing gets installed. Your data is still kept in `%APPDATA%\Aniko`. |
 
           The files aren't code-signed, so Windows SmartScreen may warn "Windows protected your PC" the first time: click **More info**, then **Run anyway**.
 
-          Kumo finds newer releases by itself: the installed app updates from its Home page (**Update**); for the portable build, download the newest zip.
+          Aniko finds newer releases by itself: the installed app updates from its Home page (**Update**); for the portable build, download the newest zip.
 
-          Some features use other programs: ffmpeg (needed by the in-app player for most files), mpv, yt-dlp, ani-cli and qBittorrent. What to install for what, and where Kumo keeps its data: [packaging/windows/README.md]({guide}).
+          Some features use other programs: ffmpeg (needed by the in-app player for most files), mpv, yt-dlp, ani-cli and qBittorrent. What to install for what, and where Aniko keeps its data: [packaging/windows/README.md]({guide}).
 
           Built from {sha} by [workflow run {run}]({runurl}).
           '@
@@ -279,10 +279,14 @@ jobs:
           $notes = $notes.Replace("{guide}", "$repo/blob/$env:GITHUB_SHA/packaging/windows/README.md")
           $notes = $notes.Replace("{readme}", "$repo/blob/$env:GITHUB_SHA/README.md#install-arch-linux")
           $notes = $notes.Replace("{sha}", $env:GITHUB_SHA).Replace("{run}", $env:GITHUB_RUN_NUMBER).Replace("{runurl}", "$repo/actions/runs/$env:GITHUB_RUN_ID")
-          if ($beta) { $notes = "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note.`n`n" + $notes }
+          if ($beta) { $notes = "> **Beta.** This version is a pre-release: Aniko offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note.`n`n" + $notes }
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
           Set-Content -Path $notesFile -Value $notes -Encoding utf8
-          $files = @("dist/windows/release/$env:INSTALLER", "dist/windows/release/$env:PORTABLE")
+          # Aniko was called Kumo before 2.0.37: Kumo's updater (2.0.36 and
+          # older) looks for the installer by its old name, so a copy has it.
+          $old = "dist/windows/release/Kumo-Setup-$env:VERSION-windows-x64.exe"
+          Copy-Item "dist/windows/release/$env:INSTALLER" $old
+          $files = @("dist/windows/release/$env:INSTALLER", "dist/windows/release/$env:PORTABLE", $old)
 
           gh release view $env:TAG --json tagName *> $null
           if ($LASTEXITCODE -eq 0) {

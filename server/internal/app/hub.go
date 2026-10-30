@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/simo1337s/animetest/server/internal/anikohub"
 	"github.com/simo1337s/animetest/server/internal/anilist"
 	"github.com/simo1337s/animetest/server/internal/config"
-	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
 	"github.com/simo1337s/animetest/server/internal/stream"
 )
 
-// A Kumo Hub (kumo --hub) plays nothing: it shares its library with the Kumo
-// apps on the network and keeps them in step (share/hub.go, kumohub). What
+// An Aniko Hub (aniko --hub) plays nothing: it shares its library with the Aniko
+// apps on the network and keeps them in step (share/hub.go, anikohub). What
 // it doesn't need doesn't run: the player, Discord, extensions, the Discover
 // prefetching, the episode alerts. Its library's anime are fetched in full,
 // artwork and episode details included (prefetch.go), for its dashboard.
@@ -69,7 +69,7 @@ func (a *App) wireHub() {
 	a.Share.UseAccount, a.Share.DropAccount = nil, nil
 	// No library is shared with a hub.
 	a.Share.OnFiles = nil
-	a.Sampler = kumohub.NewSampler()
+	a.Sampler = anikohub.NewSampler()
 }
 
 // startHub runs a hub's few background jobs.
@@ -80,7 +80,7 @@ func (a *App) startHub() {
 	a.Scanner.StartWatcher()
 	go a.Torrents.RunCounter(a.ctx)
 	go a.runPrefetch(a.ctx)
-	a.HubStore.Log(kumohub.Event{Kind: "start", By: "hub", Text: "started (Kumo Hub " + config.AppVersion + ")"})
+	a.HubStore.Log(anikohub.Event{Kind: "start", By: "hub", Text: "started (Aniko Hub " + config.AppVersion + ")"})
 	a.emptyHubTrash()
 	go a.pruneAudit()
 	go func() {
@@ -95,7 +95,7 @@ func (a *App) startHub() {
 		// What earlier runs didn't get to (a scan prefetches on its own).
 		a.prefetchLibrary()
 	}()
-	log.Printf("running as a Kumo Hub: %d AniList account(s) given to it", len(a.HubStore.Accounts()))
+	log.Printf("running as an Aniko Hub: %d AniList account(s) given to it", len(a.HubStore.Accounts()))
 }
 
 // --------------------------------------------------------- shared settings

@@ -164,7 +164,7 @@ func (m *Media) AllTitles() []string {
 	return out
 }
 
-// The language of the anime titles Kumo shows (Settings › Appearance):
+// The language of the anime titles Aniko shows (Settings › Appearance):
 // English, where AniList has an English title, or Japanese in Latin letters
 // (romaji). AniList's own "preferred" title is romaji unless the account says
 // otherwise, and without an account.

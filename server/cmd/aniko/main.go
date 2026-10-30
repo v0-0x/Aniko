@@ -1,4 +1,4 @@
-// Command kumo is the Kumo anime server. It serves the API and the web UI on
+// Command aniko is the Aniko anime server. It serves the API and the web UI on
 // 127.0.0.1 (and optionally your LAN) and is started by the desktop app.
 package main
 
@@ -15,41 +15,46 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/simo1337s/animetest/server/internal/anikohub"
 	"github.com/simo1337s/animetest/server/internal/api"
 	"github.com/simo1337s/animetest/server/internal/app"
 	"github.com/simo1337s/animetest/server/internal/config"
 	"github.com/simo1337s/animetest/server/internal/db"
-	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/lifecycle"
 	"github.com/simo1337s/animetest/server/internal/util"
 	"github.com/simo1337s/animetest/server/internal/webui"
 )
 
 func main() {
-	// The hub's own program (packaging/hub) is a Kumo Hub without being
-	// asked, with its data apart from a Kumo's on the same computer.
-	asHub := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") == "kumo-hub"
-	defaultData := config.DataDir()
-	if asHub && os.Getenv("KUMO_DATA_DIR") == "" {
-		defaultData = filepath.Join(filepath.Dir(defaultData), "kumo-hub")
+	// The hub's own program (packaging/hub) is an Aniko Hub without being
+	// asked, with its data apart from an Aniko's on the same computer
+	// (kumo-hub: one installed before the rename, which updated itself).
+	name := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
+	asHub := name == "aniko-hub" || name == "kumo-hub"
+	var defaultData string
+	if asHub && config.Getenv("DATA_DIR") == "" {
+		defaultData = config.HubDataDir()
+	} else {
+		defaultData = config.DataDir()
 	}
 	var (
-		dataDir = flag.String("data-dir", defaultData, "where Kumo stores its database")
+		dataDir = flag.String("data-dir", defaultData, "where Aniko stores its database")
 		port    = flag.Int("port", 0, "override the port (default from settings, 43211)")
 		webUI   = flag.Bool("web-ui", false, "force-enable the browser web UI for this run")
 		desktop = flag.Bool("desktop", false, "started by the desktop app")
 		version = flag.Bool("version", false, "print the version")
-		// A Kumo Hub: shares its library with the Kumo apps on the network and
+		// An Aniko Hub: shares its library with the Aniko apps on the network and
 		// keeps them in step; plays nothing (a Raspberry Pi, say).
-		hub           = flag.Bool("hub", asHub, "run as a Kumo Hub (no player; a dashboard at http://<this computer>:<port>)")
-		setupCode     = flag.Bool("setup-code", false, "print a Kumo Hub's setup code (to set its dashboard's password) and stop")
-		resetPassword = flag.Bool("reset-password", false, "remove a Kumo Hub's dashboard password (set a new one with its setup code) and stop")
+		hub           = flag.Bool("hub", asHub, "run as an Aniko Hub (no player; a dashboard at http://<this computer>:<port>)")
+		setupCode     = flag.Bool("setup-code", false, "print an Aniko Hub's setup code (to set its dashboard's password) and stop")
+		resetPassword = flag.Bool("reset-password", false, "remove an Aniko Hub's dashboard password (set a new one with its setup code) and stop")
 		setChannel    = flag.String("set-channel", "", "save which updates to take, stable or beta (a hub installed from a beta follows the betas), and stop")
 		// Windows has no signals to ask a program to stop: the desktop app
 		// closes the server's input instead.
 		exitWithStdin = flag.Bool("exit-with-stdin", false, "stop when standard input closes")
 	)
 	flag.Parse()
+	config.MoveOldFiles(*dataDir)
 	if *version {
 		fmt.Println(config.AppName, config.AppVersion)
 		return
@@ -66,10 +71,10 @@ func main() {
 		saveChannel(*dataDir, *setChannel)
 		return
 	}
-	// Whatever Kumo starts (ffmpeg, ani-cli, mpv) ends with it, even when
+	// Whatever Aniko starts (ffmpeg, ani-cli, mpv) ends with it, even when
 	// it's killed.
 	if err := util.BindChildren(); err != nil {
-		log.Printf("child processes won't end with Kumo: %v", err)
+		log.Printf("child processes won't end with Aniko: %v", err)
 	}
 	if err := os.MkdirAll(*dataDir, 0o700); err != nil {
 		log.Fatal(err)
@@ -84,9 +89,10 @@ func main() {
 	// (in a cookie): other apps on the device reach 127.0.0.1 too, so they
 	// mustn't count as this device's user.
 	appWindow := false
-	if t := os.Getenv("KUMO_SHELL_TOKEN"); len(t) >= 32 {
+	if t := config.Getenv("SHELL_TOKEN"); len(t) >= 32 {
 		a.ShellToken, appWindow = t, true
 	}
+	_ = os.Unsetenv("ANIKO_SHELL_TOKEN")
 	_ = os.Unsetenv("KUMO_SHELL_TOKEN")
 	if *port > 0 {
 		cfg := a.Settings.Get()
@@ -102,7 +108,7 @@ func main() {
 	srv.ForceWebUI = *webUI || *hub || (!*desktop && !appWindow)
 	srv.AppOnly = appWindow
 	if err := srv.Start(); err != nil {
-		log.Fatalf("could not start the server: %v (is Kumo already running?)", err)
+		log.Fatalf("could not start the server: %v (is Aniko already running?)", err)
 	}
 	a.Start()
 	cfg := a.Settings.Get()
@@ -119,9 +125,9 @@ func main() {
 	}
 	log.Printf("%s %s ready — data: %s — shell token: %s", config.AppName, config.AppVersion, *dataDir, tokenPath)
 	if a.HubStore != nil {
-		log.Printf("Kumo Hub dashboard: http://%s:%d", hubHost(), cfg.Server.Port)
+		log.Printf("Aniko Hub dashboard: http://%s:%d", hubHost(), cfg.Server.Port)
 		if cfg.Server.Password == "" {
-			log.Printf("Kumo Hub setup code: %s (to set the dashboard's password)", a.HubStore.SetupCode())
+			log.Printf("Aniko Hub setup code: %s (to set the dashboard's password)", a.HubStore.SetupCode())
 		}
 	} else if srv.ForceWebUI || cfg.Server.WebUI {
 		log.Printf("Web UI: http://127.0.0.1:%d", cfg.Server.Port)
@@ -135,7 +141,7 @@ func main() {
 			sig <- syscall.SIGTERM
 		}()
 	}
-	// A signal, or a request from inside Kumo (the updater restarting it
+	// A signal, or a request from inside Aniko (the updater restarting it
 	// into a new version): both shut down the same way.
 	var exit lifecycle.Exit
 	select {
@@ -150,12 +156,12 @@ func main() {
 	end(exit, *desktop)
 }
 
-// end finishes the process the way exit asks, once Kumo has shut down.
+// end finishes the process the way exit asks, once Aniko has shut down.
 func end(exit lifecycle.Exit, desktop bool) {
 	restart := exit.Restart
 	if exit.Before != nil {
 		if err := exit.Before(); err != nil {
-			log.Printf("%v; starting Kumo again", err)
+			log.Printf("%v; starting Aniko again", err)
 			restart = true
 		}
 	}
@@ -170,7 +176,7 @@ func end(exit lifecycle.Exit, desktop bool) {
 	// runs itself again, in place, where the system can.
 	if !desktop && canReexec {
 		err := reexec()
-		log.Printf("could not start Kumo again: %v", err)
+		log.Printf("could not start Aniko again: %v", err)
 	}
 	os.Exit(lifecycle.CodeRestart)
 }
@@ -194,7 +200,7 @@ func openSettings(dataDir string) (*db.DB, *config.Store) {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		log.Fatal(err)
 	}
-	d, err := db.Open(filepath.Join(dataDir, "kumo.db"))
+	d, err := db.Open(filepath.Join(dataDir, "aniko.db"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -213,7 +219,7 @@ func printSetupCode(dataDir string) {
 		fmt.Println("The hub's password is set already: sign in to its dashboard with it.")
 		return
 	}
-	h, err := kumohub.New(d)
+	h, err := anikohub.New(d)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -245,7 +251,7 @@ func resetHubPassword(dataDir string) {
 	if _, err := settings.Save(cfg); err != nil {
 		log.Fatal(err)
 	}
-	h, err := kumohub.New(d)
+	h, err := anikohub.New(d)
 	if err != nil {
 		log.Fatal(err)
 	}

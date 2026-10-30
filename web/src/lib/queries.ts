@@ -80,7 +80,7 @@ export function useSaveUI() {
     }
 }
 
-// The list as AniList has it (at most a minute old), asked again when Kumo's
+// The list as AniList has it (at most a minute old), asked again when Aniko's
 // window comes back to the front: what was watched on another device, on
 // the same account, shows up in Continue watching.
 export function useCollection() {
@@ -230,7 +230,7 @@ export function useDiscover() {
     })
 }
 
-// Library sharing: the Kumo apps on the network (asked again while shown).
+// Library sharing: the Aniko apps on the network (asked again while shown).
 export function useSharing(enabled = true) {
     return useQuery({ queryKey: ["sharing", "status"], queryFn: () => api.get<SharingStatus>("/api/sharing"), enabled, refetchInterval: 4000 })
 }
@@ -251,7 +251,7 @@ export function useGenres(all: readonly string[]) {
     return all.filter(g => !b.has(g.toLowerCase()))
 }
 
-// The libraries other Kumo apps share with this one.
+// The libraries other Aniko apps share with this one.
 export function useSharedLibraries() {
     return useQuery({ queryKey: ["sharing", "libraries"], queryFn: () => api.get<SharedLibrary[]>("/api/sharing/libraries"), refetchInterval: 30_000 })
 }
@@ -381,13 +381,13 @@ export function useMangaChapters(mediaId: number, provider: string) {
     })
 }
 
-// Kumo's own updates. The "update-status" event keeps ["update"] current
+// Aniko's own updates. The "update-status" event keeps ["update"] current
 // (lib/events.ts), also while one is being installed.
 export function useUpdateStatus() {
     return useQuery({ queryKey: ["update"], queryFn: () => api.get<UpdateStatus>("/api/update"), staleTime: 5 * 60_000 })
 }
 
-// Kumo opened (started, its window opened again, back in front, the TV app
+// Aniko opened (started, its window opened again, back in front, the TV app
 // reopened): a check for updates, unless one ran in the last 10 minutes.
 // Unlike Check for updates, an update put off with Later stays put off.
 export function useCheckOnOpen(enabled: boolean) {
@@ -400,7 +400,7 @@ export function useCheckOnOpen(enabled: boolean) {
             running = true
             try {
                 const u = await api.get<UpdateStatus>("/api/update")
-                // Never checked yet: Kumo has just started and checks by
+                // Never checked yet: Aniko has just started and checks by
                 // itself in a moment.
                 if (u.checking || !u.checkedAt || Date.now() / 1000 - u.checkedAt < 600) return
                 qc.setQueryData(["update"], await api.post<UpdateStatus>("/api/update/check"))

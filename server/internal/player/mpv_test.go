@@ -12,7 +12,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/config"
 )
 
-const fakeMpvEnv = "KUMO_PLAYER_TEST_FAKE_MPV"
+const fakeMpvEnv = "ANIKO_PLAYER_TEST_FAKE_MPV"
 
 func TestMain(m *testing.M) {
 	if mode := os.Getenv(fakeMpvEnv); mode != "" {

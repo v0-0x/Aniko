@@ -1,4 +1,4 @@
-// Shapes returned by the Kumo API (mirrors the Go structs).
+// Shapes returned by the Aniko API (mirrors the Go structs).
 
 export type FuzzyDate = { year?: number | null; month?: number | null; day?: number | null }
 
@@ -92,7 +92,7 @@ export type LocalFile = {
     locked: boolean
     ignored: boolean
     matchScore: number
-    // Shared by another Kumo app on the network (path kumo://<host>/…).
+    // Shared by another Aniko app on the network (path kumo://<host>/…).
     host?: string
     hostName?: string
 }
@@ -130,7 +130,7 @@ export type EntryView = {
     others: EpisodeView[] | null
     nextEpisode: EpisodeView | null
     localCount: number
-    sharedCount: number // files other Kumo apps share
+    sharedCount: number // files other Aniko apps share
     images: { banner: string; poster: string; fanart: string; clearlogo: string }
     mappings: { malId: number; anidbId: number; tvdbId: number }
     metadataNote?: string
@@ -221,14 +221,14 @@ export type Settings = {
     manga: { enabled: boolean; defaultProvider: string; readingMode: "long-strip" | "paged" | "double"; direction: string }
     anilist: { clientId: string; hideAdult: boolean }
     server: { host: string; port: number; allowLan: boolean; password: string; webUi: boolean }
-    // downloadTo: the Kumo this one's downloads go to (its ID; "" here).
+    // downloadTo: the Aniko this one's downloads go to (its ID; "" here).
     // keepAwake: don't let this computer sleep while another device plays its
     // files. autoSync: sync watch history when a paired device comes back.
     // syncPrefs: the theme and player settings kept in step with the other
-    // devices on the same AniList account, through a Kumo Hub.
+    // devices on the same AniList account, through an Aniko Hub.
     sharing: { enabled: boolean; name: string; downloadTo?: string; keepAwake?: boolean; autoSync?: boolean; syncPrefs?: boolean }
     notify?: { newEpisodes: boolean; downloads: boolean }
-    // Which releases Kumo updates to: stable ones, or betas too.
+    // Which releases Aniko updates to: stable ones, or betas too.
     updates?: { channel: "stable" | "beta" }
     ui: {
         accentColor: string
@@ -244,7 +244,7 @@ export type Settings = {
         colorTheme?: string
         seasonal?: string
         seasonalEffects?: boolean
-        // Kumo's look from before 2.0.
+        // Aniko's look from before 2.0.
         classicLook?: boolean
     }
     discord: { richPresence: boolean; clientId: string }
@@ -269,9 +269,9 @@ export type Status = {
     loggedIn: boolean
     anilistAuthUrl: string
     features: { mpv: boolean; ffmpeg: boolean; ffprobe: boolean; aniCli: boolean; aniCliHost?: string; ytDlp: boolean; xdgOpen: boolean }
-    // owner: a browser on the network signed in to a Kumo Hub's dashboard.
+    // owner: a browser on the network signed in to an Aniko Hub's dashboard.
     client: "desktop" | "local" | "lan" | "owner"
-    // A Kumo Hub (kumo --hub): it shows its dashboard, not the app. setup:
+    // An Aniko Hub (aniko --hub): it shows its dashboard, not the app. setup:
     // its password isn't set yet (set with its setup code).
     hub?: { setup: boolean }
     hostname: string
@@ -279,18 +279,18 @@ export type Status = {
     scanning: boolean
     dataDir: string
     listenAddr: string
-    lanUrls?: string[] | null // where devices on the home network open Kumo
-    paired?: string[] | null // the Kumos this one is paired with (library sharing): Home's Sync
+    lanUrls?: string[] | null // where devices on the home network open Aniko
+    paired?: string[] | null // the Anikos this one is paired with (library sharing): Home's Sync
     // The computers sharing their library with this one that don't answer
     // (asleep or off), and whether they can be woken up from here.
     asleep?: { id: string; name: string; canWake: boolean; waking: boolean }[] | null
-    // Home's questions about the other Kumo apps (only for this computer):
+    // Home's questions about the other Aniko apps (only for this computer):
     // share with a new one ("new"), or update one of the two ("older": its
-    // Kumo is older than this one, "newer": this one is).
+    // Aniko is older than this one, "newer": this one is).
     devicePrompts?: DevicePrompt[] | null
     keptAwake?: boolean // another device is playing this computer's files, so it stays awake
     webUiForced: boolean
-    setupRunning?: boolean // Windows: the window installing Kumo's programs is open
+    setupRunning?: boolean // Windows: the window installing Aniko's programs is open
     settings: Settings
 }
 
@@ -586,7 +586,7 @@ export type FolderInfo = {
     problem?: string // why it has nothing to match (still downloading, unreadable…)
 }
 
-// Kumo's own updates (GET /api/update, and the "update-status" event).
+// Aniko's own updates (GET /api/update, and the "update-status" event).
 // beta: a pre-release (or, on Linux, the default branch's head).
 export type UpdateVersion = { version: string; commit: string; date?: string; url?: string; beta?: boolean }
 
@@ -613,7 +613,7 @@ export type UpdateStatus = {
     installFile?: string // Android: the downloaded APK the app installs
 }
 
-// Library sharing with other Kumo apps on the network.
+// Library sharing with other Aniko apps on the network.
 export type SharingPeer = {
     id: string
     name: string
@@ -621,26 +621,26 @@ export type SharingPeer = {
     online: boolean
     lastSeen: number
     version: string
-    allowed: boolean // this Kumo shares its library with it
-    shares: boolean // it shares its library with this Kumo
+    allowed: boolean // this Aniko shares its library with it
+    shares: boolean // it shares its library with this Aniko
     files: number
     manual: boolean
     error?: string
-    // Granted to it (with allowed): this Kumo's AniList account, downloading here.
+    // Granted to it (with allowed): this Aniko's AniList account, downloading here.
     account: boolean
     downloads: boolean
-    // Granted by it (it shares): its AniList account (and whether this Kumo
+    // Granted by it (it shares): its AniList account (and whether this Aniko
     // uses it), downloading there.
     sharesAccount: boolean
     usingAccount: boolean
     takesDownloads: boolean
-    // It shares with this Kumo and has said how to wake it up (Wake-on-LAN);
+    // It shares with this Aniko and has said how to wake it up (Wake-on-LAN);
     // waking: a wake-up was just sent.
     canWake?: boolean
     waking?: boolean
     platform?: string // what it runs on ("android": a TV)
     declined?: boolean // asked on Home whether to share with it: "not now"
-    role?: "hub" // a Kumo Hub (no player: it shares and keeps devices in step)
+    role?: "hub" // an Aniko Hub (no player: it shares and keeps devices in step)
     parental?: boolean // parental controls are set for it here
 }
 
@@ -703,18 +703,18 @@ export type Activity = {
 
 export type ActivityPage = { items: Activity[]; hasMore: boolean }
 
-// A Kumo Hub's dashboard (GET /api/hub/overview; server: api/hub.go).
+// An Aniko Hub's dashboard (GET /api/hub/overview; server: api/hub.go).
 export type HubSystem = {
     model: string // "Raspberry Pi 4 Model B Rev 1.4"
     hostname: string
     arch: string
     cores: number
     cpu: number // all cores, 0-100
-    kumoCpu: number // the hub's own share
+    anikoCpu: number // the hub's own share
     load: number
     memTotal: number
     memUsed: number
-    kumoMem: number
+    anikoMem: number
     temp: number // °C, 0 unknown
     throttled: boolean // the Pi slows itself down (heat, power)
     uptime: number // seconds
@@ -755,7 +755,7 @@ export type HubDevice = SharingPeer & {
 
 export type HubAccount = { user: number; name: string; avatar: string; givenBy: string; addedAt: number; devices: number; history: number }
 
-// The hub's audit log (server/internal/kumohub/audit.go). Who: a device by
+// The hub's audit log (server/internal/anikohub/audit.go). Who: a device by
 // name, or by "dashboard" (its owner, at ip) or "hub"; an ip alone is
 // someone not signed in.
 export type HubEvent = {

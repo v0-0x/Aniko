@@ -316,7 +316,7 @@ func (s *Scanner) removedFiles(byPath map[string]*LocalFile, found map[string]fs
 	for _, r := range walked {
 		if foundIn[r] == 0 && knownIn[r] > 0 {
 			log.Printf("scan: %s is empty but %d files were indexed there — is the drive mounted? Keeping them.", r, knownIn[r])
-			s.hub.Error("Library folder " + r + " looks empty — is the drive connected? Kumo kept its " + itoa(knownIn[r]) + " files.")
+			s.hub.Error("Library folder " + r + " looks empty — is the drive connected? Aniko kept its " + itoa(knownIn[r]) + " files.")
 			continue
 		}
 		trusted = append(trusted, r)
@@ -348,12 +348,12 @@ func (s *Scanner) removedFiles(byPath map[string]*LocalFile, found map[string]fs
 }
 
 // ErrLibraryOff: this computer's library is off (Settings › Local library).
-var ErrLibraryOff = errors.New("this computer's library is off: it plays the ones your Kumo Hub and other computers share with it (Settings › Local library)")
+var ErrLibraryOff = errors.New("this computer's library is off: it plays the ones your Aniko Hub and other computers share with it (Settings › Local library)")
 
 // Forget drops from the index the files of folders that left the library
 // (taken out of it, or the library turned off); they stay on the disk. A
 // file also in a folder still in the library stays. Unlike a scan, this
-// doesn't wait for the folder's drive: a library moved to a Kumo Hub with
+// doesn't wait for the folder's drive: a library moved to an Aniko Hub with
 // its drive is gone from here for good. It waits for a running scan.
 func (s *Scanner) Forget(folders []string) {
 	if len(folders) == 0 {
@@ -386,7 +386,7 @@ func (s *Scanner) Forget(folders []string) {
 
 // ForgetGone drops from the index every file that isn't on the disk, its
 // drive gone or not: for a computer whose library is off, where nothing
-// should be kept for a drive coming back (one that moved to a Kumo Hub,
+// should be kept for a drive coming back (one that moved to an Aniko Hub,
 // say). Files still there (a download kept here) stay.
 func (s *Scanner) ForgetGone() {
 	s.mu.Lock()
@@ -466,13 +466,13 @@ func (s *Scanner) StartWatcher() {
 		}
 	}
 	// macOS watches a folder by opening every file in it, and those count
-	// against the files Kumo may have open, its network connections too: a
+	// against the files Aniko may have open, its network connections too: a
 	// library bigger than that is checked for changes every few minutes
 	// instead.
 	polling := false
 	if budget := watchBudget(); budget > 0 {
 		if n, over := overBudget(dirs, budget); over {
-			log.Printf("library watcher: the library has %d+ files, more than macOS lets Kumo watch (%d): it checks for new episodes every %v instead", n, budget, pollEvery)
+			log.Printf("library watcher: the library has %d+ files, more than macOS lets Aniko watch (%d): it checks for new episodes every %v instead", n, budget, pollEvery)
 			dirs, polling = nil, true
 		}
 	}

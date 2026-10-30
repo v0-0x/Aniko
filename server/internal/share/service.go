@@ -25,30 +25,30 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/simo1337s/animetest/server/internal/anikohub"
 	"github.com/simo1337s/animetest/server/internal/config"
 	"github.com/simo1337s/animetest/server/internal/db"
 	"github.com/simo1337s/animetest/server/internal/events"
 	"github.com/simo1337s/animetest/server/internal/history"
-	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
 	"github.com/simo1337s/animetest/server/internal/parental"
 )
 
 const (
 	beaconEvery = 5 * time.Second
-	// A Kumo not heard from for this long is offline.
+	// An Aniko not heard from for this long is offline.
 	onlineFor = 16 * time.Second
 	// How often a guest asks a host whether its library changed.
 	askEvery = 30 * time.Second
-	// A Kumo that proved who it is this lately keeps its address: beacons
+	// An Aniko that proved who it is this lately keeps its address: beacons
 	// don't move it (see heard).
 	verifiedFor = time.Minute
 	// How often Settings (open) has the others asked again (they answer
 	// from their library's version, read at most every few seconds).
 	refreshEvery = 3 * time.Second
-	// How many Kumos only heard of (not paired, not added by hand) are kept.
+	// How many Anikos only heard of (not paired, not added by hand) are kept.
 	maxStrangers = 64
-	// The largest request body read from a Kumo that isn't paired.
+	// The largest request body read from an Aniko that isn't paired.
 	maxUnpairedBody = 1 << 20
 	// Failed requests in a row after which a host's library is gone.
 	maxFails = 3
@@ -61,7 +61,7 @@ type Library interface {
 }
 
 // History is the watch history (where each episode was stopped), which
-// Kumos on the same AniList account keep in step (see syncHistory).
+// Anikos on the same AniList account keep in step (see syncHistory).
 type History interface {
 	Since(t int64, limit int) []*history.Entry
 	After(seq int64, limit int) []*history.Entry
@@ -79,31 +79,31 @@ type Service struct {
 	media    *http.Client // forwarded video: no time limit
 	slow     *http.Client // requests a host takes long to answer (ani-cli)
 
-	// OnFiles runs when the files shared with this Kumo change (in the
+	// OnFiles runs when the files shared with this Aniko change (in the
 	// background).
 	OnFiles func()
-	// User is the AniList account this Kumo is logged into (0: none), and
-	// History its watch history: kept in step with the Kumos it shares
+	// User is the AniList account this Aniko is logged into (0: none), and
+	// History its watch history: kept in step with the Anikos it shares
 	// with on the same account. Both nil: not kept in step.
 	User    func() int
 	History History
-	// OnWatchedElsewhere runs when another Kumo on the account says an
+	// OnWatchedElsewhere runs when another Aniko on the account says an
 	// episode was finished there: AniList has the new progress.
 	OnWatchedElsewhere func()
-	// AniCliReady reports whether ani-cli runs here, for the Kumos this one
+	// AniCliReady reports whether ani-cli runs here, for the Anikos this one
 	// shares with (anicli.go).
 	AniCliReady func() bool
 
-	// The AniList login, for sharing it with a Kumo (as a host) and using a
+	// The AniList login, for sharing it with an Aniko (as a host) and using a
 	// host's (as a guest, see account.go): its token ("" logged out), and
 	// logging in and out. Nil: not shared.
 	AccountToken func() string
 	UseAccount   func(ctx context.Context, token string) error
 	DropAccount  func()
 
-	// Hub: this Kumo is a Kumo Hub (hub.go), keeping every account's watch
+	// Hub: this Aniko is an Aniko Hub (hub.go), keeping every account's watch
 	// history, logins and settings; and how it checks a login it's given.
-	Hub          *kumohub.Store
+	Hub          *anikohub.Store
 	CheckAccount CheckAccount
 	// OwnPrefs and ApplyPrefs: this device's shared settings, kept in step
 	// with its account's on a hub (hub.go). Nil: not kept in step.
@@ -126,7 +126,7 @@ type Service struct {
 	pending   map[[2]int]history.Entry
 	pushTimer *time.Timer
 
-	// Parental controls (parental.go): the rules hosts set for this Kumo,
+	// Parental controls (parental.go): the rules hosts set for this Aniko,
 	// what it watched waiting to be told them, and, on a host, where what
 	// its devices watched is kept.
 	received     map[string]receivedRules
@@ -154,19 +154,19 @@ type run struct {
 type peer struct {
 	id, name, version string
 	platform          string // what it runs on ("android": a TV), as it says
-	role              string // RoleHub: a Kumo Hub, as it says
+	role              string // RoleHub: an Aniko Hub, as it says
 	pub               []byte
 	addr              net.IP
 	port              int
 	seen              time.Time // last heard from (beacon, request or answer)
 	lastSeen          time.Time // before this run: when it was last around
 	manual            string    // the address it was added with by hand
-	allowed           bool      // this Kumo shares its library with it
-	// And with it (allowed), this Kumo's AniList login, and downloading
-	// onto this Kumo.
+	allowed           bool      // this Aniko shares its library with it
+	// And with it (allowed), this Aniko's AniList login, and downloading
+	// onto this Aniko.
 	account, downloads bool
 
-	// As a host: whether it shares its library with this Kumo, and its files.
+	// As a host: whether it shares its library with this Aniko, and its files.
 	shares   bool
 	files    []*library.LocalFile
 	filesVer string
@@ -174,22 +174,22 @@ type peer struct {
 	asking   bool
 	fails    int
 	// historySeq: the last of its history entries (in the order it stored
-	// them) this Kumo has; pushedSeq: the last of this Kumo's it sent it.
+	// them) this Aniko has; pushedSeq: the last of this Aniko's it sent it.
 	historySeq, pushedSeq int64
 	// user: the AniList account it's logged into, as it told (it shares
-	// with this Kumo).
+	// with this Aniko).
 	user int
-	// hostAccount: it shares its AniList login with this Kumo (a tag of it,
-	// "" when not); hostDownloads: this Kumo may download onto it.
+	// hostAccount: it shares its AniList login with this Aniko (a tag of it,
+	// "" when not); hostDownloads: this Aniko may download onto it.
 	hostAccount   string
 	hostDownloads bool
-	// hostAniCli: it runs ani-cli for this Kumo.
+	// hostAniCli: it runs ani-cli for this Aniko.
 	hostAniCli bool
 	// verified: when it last proved who it is (a request or an answer
 	// signed); offset: how far its clock is ahead of this one's.
 	verified time.Time
 	offset   time.Duration
-	// callerUser: the AniList account it said it's on, asking this Kumo.
+	// callerUser: the AniList account it said it's on, asking this Aniko.
 	callerUser int
 	// wakeMACs: its network cards (it shares), what wakes it (wake.go);
 	// wakeUntil: it's being woken up until then.
@@ -197,14 +197,14 @@ type peer struct {
 	wakeUntil time.Time
 	// autoSynced: when the watch history was last synced with it by itself.
 	autoSynced time.Time
-	// declined: asked whether to share this Kumo's library with it, the
+	// declined: asked whether to share this Aniko's library with it, the
 	// answer was "not now" (Home doesn't ask again).
 	declined bool
 	// rules: its parental controls, set here (nil: none).
 	rules *parental.Rules
 }
 
-// paired: this Kumo shares its library with it, or it with this one.
+// paired: this Aniko shares its library with it, or it with this one.
 func (p *peer) paired() bool { return p.allowed || p.shares }
 
 // displayName is its name, or what it is when it has none.
@@ -212,14 +212,14 @@ func (p *peer) displayName() string {
 	if p.name != "" {
 		return p.name
 	}
-	return "Another Kumo"
+	return "Another Aniko"
 }
 
-// online: heard from lately. A host that shares with this Kumo is asked
+// online: heard from lately. A host that shares with this Aniko is asked
 // every askEvery, and its answer counts until the next one is due: also when
 // its beacons don't come through (the Wi-Fi of some TVs drops them), it
 // doesn't look gone half of the time. The same the other way: a device this
-// Kumo shares with asks it as often (a hub's devices, which it never asks).
+// Aniko shares with asks it as often (a hub's devices, which it never asks).
 func (p *peer) online(now time.Time) bool {
 	d := now.Sub(p.seen)
 	return d < onlineFor || ((p.shares && p.fails == 0) || p.allowed) && d < askEvery+onlineFor
@@ -236,7 +236,7 @@ func (p *peer) baseURL() string {
 	return "http://" + net.JoinHostPort(p.addr.String(), strconv.Itoa(p.port))
 }
 
-// New loads this Kumo's identity and the Kumos it knows.
+// New loads this Aniko's identity and the Anikos it knows.
 func New(d *db.DB, settings *config.Store, lib Library, hub *events.Hub) (*Service, error) {
 	id, err := LoadIdentity(d)
 	if err != nil {
@@ -259,10 +259,10 @@ func New(d *db.DB, settings *config.Store, lib Library, hub *events.Hub) (*Servi
 	return s, nil
 }
 
-// ID is this Kumo's ID.
+// ID is this Aniko's ID.
 func (s *Service) ID() string { return s.id.ID }
 
-// Name is what the others call this Kumo.
+// Name is what the others call this Aniko.
 func (s *Service) Name() string {
 	if n := cleanName(s.settings.Get().Sharing.Name); n != "" {
 		return n
@@ -274,13 +274,13 @@ func (s *Service) Name() string {
 // Hostname is the computer's name, without its domain (the device's, as
 // the Android app gives it).
 func Hostname() string {
-	if n := cleanName(os.Getenv("KUMO_DEVICE_NAME")); n != "" {
+	if n := cleanName(config.Getenv("DEVICE_NAME")); n != "" {
 		return n
 	}
 	h, _ := os.Hostname()
 	h, _, _ = strings.Cut(h, ".")
 	if h == "" {
-		return "Kumo"
+		return "Aniko"
 	}
 	return h
 }
@@ -299,10 +299,10 @@ type savedPeer struct {
 	Allowed bool   `json:"allowed,omitempty"`
 	Shares  bool   `json:"shares,omitempty"`
 	Seen    int64  `json:"seen"`
-	// Granted to it (allowed): this Kumo's AniList login, downloading here.
+	// Granted to it (allowed): this Aniko's AniList login, downloading here.
 	Account   bool `json:"account,omitempty"`
 	Downloads bool `json:"downloads,omitempty"`
-	// It takes this Kumo's downloads (it shares, see downloads.go).
+	// It takes this Aniko's downloads (it shares, see downloads.go).
 	TakesDownloads bool `json:"takesDownloads,omitempty"`
 	// Its AniList account, as it told; where the watch histories are at.
 	User       int   `json:"user,omitempty"`
@@ -339,7 +339,7 @@ func (s *Service) load() {
 	}
 }
 
-// save keeps the Kumos worth knowing next time: those this one shares with,
+// save keeps the Anikos worth knowing next time: those this one shares with,
 // those that share with it, and those added by hand. Must be called with
 // s.mu held.
 func (s *Service) save() {
@@ -379,7 +379,7 @@ func (s *Service) Start() {
 	})
 }
 
-// Stop ends sharing (Kumo is quitting).
+// Stop ends sharing (Aniko is quitting).
 func (s *Service) Stop() {
 	s.flushPush()
 	s.apply(config.Settings{})
@@ -409,8 +409,8 @@ func (s *Service) apply(cfg config.Settings) {
 	r := &run{cancel: cancel, wake: make(chan struct{}, 1), done: make(chan struct{})}
 	disc, err := listen()
 	if err != nil {
-		// Kumos added by address still work.
-		log.Printf("sharing: can't listen for other Kumo apps on the network: %v", err)
+		// Anikos added by address still work.
+		log.Printf("sharing: can't listen for other Aniko apps on the network: %v", err)
 	} else {
 		r.disc = disc
 		go disc.read(s.heard)
@@ -461,7 +461,7 @@ func (s *Service) loop(ctx context.Context, r *run) {
 
 func (s *Service) beacon() beacon {
 	cfg := s.settings.Get()
-	return beacon{Kumo: protocol, ID: s.id.ID, Name: s.Name(), Port: cfg.Server.Port, Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS, Role: s.role()}
+	return beacon{Aniko: protocol, ID: s.id.ID, Name: s.Name(), Port: cfg.Server.Port, Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS, Role: s.role()}
 }
 
 func (s *Service) announce(r *run) {
@@ -482,7 +482,7 @@ func (s *Service) wake() {
 	}
 }
 
-// heard handles a beacon from another Kumo.
+// heard handles a beacon from another Aniko.
 func (s *Service) heard(b beacon, from net.IP) {
 	if b.ID == s.id.ID || !isLocalNetwork(from) || b.Port <= 0 || b.Port > 65535 {
 		return
@@ -543,17 +543,17 @@ func (s *Service) heard(b beacon, from net.IP) {
 // ---------------------------------------------------------------------------
 // The host's side: who asks
 
-// Caller is another Kumo that made a request, checked.
+// Caller is another Aniko that made a request, checked.
 type Caller struct {
 	ID, Name string
-	// Allowed: this Kumo shares its library with it.
+	// Allowed: this Aniko shares its library with it.
 	Allowed bool
 	// SameUser: it's logged into the same AniList account as this one.
 	SameUser bool
-	// Account: this Kumo shares its AniList login with it; Downloads: it
-	// may download onto this Kumo. Both only with Allowed.
+	// Account: this Aniko shares its AniList login with it; Downloads: it
+	// may download onto this Aniko. Both only with Allowed.
 	Account, Downloads bool
-	// Paired: Allowed, or it shares its library with this Kumo.
+	// Paired: Allowed, or it shares its library with this Aniko.
 	Paired bool
 	// User: the AniList account it says it's on (0: none).
 	User int
@@ -561,8 +561,8 @@ type Caller struct {
 	Rules *parental.Rules
 }
 
-// Verify checks a request from another Kumo, and notes it as seen. The
-// answer (w) gets what proves it comes from this Kumo.
+// Verify checks a request from another Aniko, and notes it as seen. The
+// answer (w) gets what proves it comes from this Aniko.
 func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error) {
 	if !s.settings.Get().Sharing.Enabled {
 		return Caller{}, errors.New("library sharing is off")
@@ -571,7 +571,7 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 	if !isLocalNetwork(ip) {
 		return Caller{}, errors.New("not from the local network")
 	}
-	// A large body is read (to check it) only from a Kumo paired with this
+	// A large body is read (to check it) only from an Aniko paired with this
 	// one: anyone else could have it read megabytes for nothing.
 	if r.ContentLength > maxUnpairedBody || r.ContentLength < 0 && r.Body != nil && r.Body != http.NoBody {
 		s.mu.Lock()
@@ -650,7 +650,7 @@ func (s *Service) user() int {
 	return s.User()
 }
 
-// HistorySince is this Kumo's watch history after t, for another Kumo on
+// HistorySince is this Aniko's watch history after t, for another Aniko on
 // the same account (checked by the caller).
 func (s *Service) HistorySince(c Caller, t int64) []*history.Entry {
 	h := s.historyFor(c)
@@ -664,8 +664,8 @@ func (s *Service) HistorySince(c Caller, t int64) []*history.Entry {
 	return out
 }
 
-// HistoryAfter is this Kumo's watch history stored after seq (see
-// history.Store.After), for another Kumo on the same account.
+// HistoryAfter is this Aniko's watch history stored after seq (see
+// history.Store.After), for another Aniko on the same account.
 func (s *Service) HistoryAfter(c Caller, seq int64) []*history.Entry {
 	h := s.historyFor(c)
 	if h == nil {
@@ -678,7 +678,7 @@ func (s *Service) HistoryAfter(c Caller, seq int64) []*history.Entry {
 	return out
 }
 
-// HistoryLatest is the latest of this Kumo's watch history (Sync).
+// HistoryLatest is the latest of this Aniko's watch history (Sync).
 func (s *Service) HistoryLatest(c Caller) []*history.Entry {
 	h := s.historyFor(c)
 	if h == nil {
@@ -706,7 +706,7 @@ type Hello struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Key     string `json:"key"`
-	Version string `json:"version"` // Kumo's
+	Version string `json:"version"` // Aniko's
 	// Platform: what it runs on (runtime.GOOS: "android" on a TV).
 	Platform string `json:"platform,omitempty"`
 	Shares   bool   `json:"shares"`
@@ -724,7 +724,7 @@ type Hello struct {
 	AniCli bool `json:"aniCli,omitempty"`
 	// Wake: its network cards, to wake it when it's asleep (wake.go).
 	Wake []string `json:"wake,omitempty"`
-	// Role: RoleHub on a Kumo Hub (hub.go); PrefsAt: when the guest's
+	// Role: RoleHub on an Aniko Hub (hub.go); PrefsAt: when the guest's
 	// account's settings last changed on it (ms).
 	Role    string `json:"role,omitempty"`
 	PrefsAt int64  `json:"prefsAt,omitempty"`
@@ -760,13 +760,13 @@ func (s *Service) Hello(c Caller) Hello {
 	return h
 }
 
-// Whoami is what anyone on the network may ask: who this Kumo is (what its
+// Whoami is what anyone on the network may ask: who this Aniko is (what its
 // beacons say).
 func (s *Service) Whoami() Hello {
 	return Hello{ID: s.id.ID, Name: s.Name(), Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS, Role: s.role()}
 }
 
-// SharedFiles are the library's files this Kumo shares: those matched to an
+// SharedFiles are the library's files this Aniko shares: those matched to an
 // anime.
 func (s *Service) SharedFiles() ([]*library.LocalFile, error) {
 	all, err := s.library.All()
@@ -783,7 +783,7 @@ func (s *Service) SharedFiles() ([]*library.LocalFile, error) {
 }
 
 // sharedVersion is filesVersion of SharedFiles, read again at most every
-// few seconds: each Kumo it shares with asks for it.
+// few seconds: each Aniko it shares with asks for it.
 func (s *Service) sharedVersion() string {
 	s.versionMu.Lock()
 	defer s.versionMu.Unlock()
@@ -795,7 +795,7 @@ func (s *Service) sharedVersion() string {
 	return s.version
 }
 
-// Shares reports a file this Kumo shares (see SharedFiles).
+// Shares reports a file this Aniko shares (see SharedFiles).
 func (s *Service) Shares(path string) bool {
 	if path == "" || IsRemote(path) {
 		return false
@@ -845,7 +845,7 @@ func (s *Service) askHosts(ctx context.Context) {
 	}
 }
 
-// ask asks a host whether it shares its library with this Kumo, and for its
+// ask asks a host whether it shares its library with this Aniko, and for its
 // files when they changed.
 func (s *Service) ask(ctx context.Context, p *peer) {
 	h, err := s.hello(ctx, p)
@@ -895,7 +895,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	back := p.fails > 0 || !p.online(time.Now())
 	visible = back || p.shares != h.Shares || (p.name != h.Name && h.Name != "") || p.waking(time.Now())
 	p.fails, p.seen, p.wakeUntil = 0, time.Now(), time.Time{}
-	// Its cards, to wake it later (an older Kumo doesn't say).
+	// Its cards, to wake it later (an older Aniko doesn't say).
 	if cards := cleanMACs(h.Wake); h.Shares && len(cards) > 0 && strings.Join(cards, ",") != strings.Join(p.wakeMACs, ",") {
 		p.wakeMACs = cards
 		s.save()
@@ -933,7 +933,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 		tag, takes = h.Account, h.Downloads
 	}
 	// Another account there now: its history is asked for from the start
-	// (where this Kumo was is the other account's).
+	// (where this Aniko was is the other account's).
 	if p.user != was && p.user > 0 && was > 0 {
 		p.historySeq, p.pushedSeq = 0, 0
 		s.save()
@@ -966,7 +966,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	}
 }
 
-// HistoryChanged sends a position this Kumo saved to the Kumos that share
+// HistoryChanged sends a position this Aniko saved to the Anikos that share
 // with it on the same AniList account (the one whose files are played,
 // most of all), as it happens: their Continue watching goes on from it.
 // Gathered for 2 seconds; at once when the episode is over.
@@ -1031,7 +1031,7 @@ func (s *Service) pushHistory() {
 	wg.Wait()
 }
 
-// flushPush sends the positions waiting to go (pushHistory) now: Kumo is
+// flushPush sends the positions waiting to go (pushHistory) now: Aniko is
 // closing, and the last one saved would be lost otherwise.
 func (s *Service) flushPush() {
 	s.pushMu.Lock()
@@ -1045,9 +1045,9 @@ func (s *Service) flushPush() {
 	}
 }
 
-// pushMissed sends a host on the same account what this Kumo stored since
+// pushMissed sends a host on the same account what this Aniko stored since
 // the last it sent it: what didn't reach it as it was saved (it was away),
-// or came from another Kumo.
+// or came from another Aniko.
 func (s *Service) pushMissed(ctx context.Context, p *peer) {
 	if s.History == nil {
 		return
@@ -1069,7 +1069,7 @@ func (s *Service) pushMissed(ctx context.Context, p *peer) {
 	s.mu.Unlock()
 }
 
-// sendHistory sends positions (JSON) to a Kumo on the same account.
+// sendHistory sends positions (JSON) to an Aniko on the same account.
 func (s *Service) sendHistory(ctx context.Context, p *peer, body []byte) error {
 	req, err := s.request(ctx, p, http.MethodPost, "/api/peer/history", bytes.NewReader(body))
 	if err != nil {
@@ -1084,7 +1084,7 @@ func (s *Service) sendHistory(ctx context.Context, p *peer, body []byte) error {
 	return answerError(resp)
 }
 
-// answerError is what a Kumo's answer (not OK) says went wrong, in words.
+// answerError is what an Aniko's answer (not OK) says went wrong, in words.
 func answerError(resp *http.Response) error {
 	if resp.StatusCode == http.StatusOK {
 		return nil
@@ -1099,7 +1099,7 @@ func answerError(resp *http.Response) error {
 	return errors.New(e.Error)
 }
 
-// Paired names the Kumos this one is paired with (it shares its library
+// Paired names the Anikos this one is paired with (it shares its library
 // with them, or they with it), with sharing on.
 func (s *Service) Paired() []string {
 	if !s.settings.Get().Sharing.Enabled {
@@ -1119,8 +1119,8 @@ func (s *Service) Paired() []string {
 
 // SyncResult is what SyncNow did.
 type SyncResult struct {
-	// Devices: the Kumos synced with. Unreachable: those that couldn't be
-	// (why, after the name). Skipped: paired Kumos not synced with (why).
+	// Devices: the Anikos synced with. Unreachable: those that couldn't be
+	// (why, after the name). Skipped: paired Anikos not synced with (why).
 	Devices     []string `json:"devices"`
 	Unreachable []string `json:"unreachable"`
 	Skipped     []string `json:"skipped"`
@@ -1128,7 +1128,7 @@ type SyncResult struct {
 	Updated int `json:"updated"`
 }
 
-// SyncNow brings this Kumo's watch history in step with the Kumos it's
+// SyncNow brings this Aniko's watch history in step with the Anikos it's
 // paired with on the same AniList account, both ways, now: each takes what
 // the other has newer (the latest stored on each), and Continue watching
 // goes on from where an episode was stopped on any of them. As it goes, a
@@ -1199,7 +1199,7 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 	return res, nil
 }
 
-// syncable: whether this Kumo's watch history can be synced with a paired
+// syncable: whether this Aniko's watch history can be synced with a paired
 // one (this one on AniList account me): why not (skip), or why it can't be
 // reached. Must be called with mu held.
 func syncable(p *peer, me int) (skip, away string) {
@@ -1209,7 +1209,7 @@ func syncable(p *peer, me int) (skip, away string) {
 	}
 	switch {
 	case user == 0:
-		return "it hasn't said its AniList account yet: open Kumo there", ""
+		return "it hasn't said its AniList account yet: open Aniko there", ""
 	case user != me:
 		return "another AniList account", ""
 	case p.addr == nil || p.port <= 0:
@@ -1218,7 +1218,7 @@ func syncable(p *peer, me int) (skip, away string) {
 	return "", ""
 }
 
-// syncWith takes a paired Kumo's latest positions and sends it this one's
+// syncWith takes a paired Aniko's latest positions and sends it this one's
 // (body), and returns how many changed here.
 func (s *Service) syncWith(ctx context.Context, p *peer, body []byte) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
@@ -1233,10 +1233,10 @@ func (s *Service) syncWith(ctx context.Context, p *peer, body []byte) (int, erro
 	return s.merge(theirs), nil
 }
 
-// How often at most a paired Kumo is synced with by itself (autoSync).
+// How often at most a paired Aniko is synced with by itself (autoSync).
 const autoSyncEvery = 2 * time.Minute
 
-// autoSync syncs the watch history with a paired Kumo that came back (it
+// autoSync syncs the watch history with a paired Aniko that came back (it
 // answered again, or asked), as Sync would, unless that's turned off or it
 // was done a moment ago: Continue watching goes on from where it was left on
 // it, without pressing Sync.
@@ -1276,7 +1276,7 @@ func (s *Service) autoSync(p *peer) {
 	}()
 }
 
-// Gone marks another Kumo as not heard from for a while (tests: as if it
+// Gone marks another Aniko as not heard from for a while (tests: as if it
 // had been away).
 func (s *Service) Gone(id string) {
 	s.mu.Lock()
@@ -1286,7 +1286,7 @@ func (s *Service) Gone(id string) {
 	}
 }
 
-// AutoSyncAll syncs with every paired Kumo by itself (autoSync), as when
+// AutoSyncAll syncs with every paired Aniko by itself (autoSync), as when
 // the app is opened again.
 func (s *Service) AutoSyncAll() {
 	s.mu.Lock()
@@ -1302,14 +1302,14 @@ func (s *Service) AutoSyncAll() {
 	}
 }
 
-// plainError says what went wrong talking to another Kumo, in a few words.
+// plainError says what went wrong talking to another Aniko, in a few words.
 func plainError(err error) string {
 	var ne net.Error
 	switch {
 	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &ne) && ne.Timeout()):
 		return "it didn't answer in time"
 	case errors.Is(err, syscall.ECONNREFUSED):
-		return "Kumo isn't running there"
+		return "Aniko isn't running there"
 	case errors.Is(err, syscall.EHOSTUNREACH) || errors.Is(err, syscall.ENETUNREACH):
 		return "it isn't on the network"
 	}
@@ -1328,7 +1328,7 @@ func plainError(err error) string {
 	return err.Error()
 }
 
-// TakeHistory merges positions another Kumo on the same account sent
+// TakeHistory merges positions another Aniko on the same account sent
 // (checked by the caller), the newer ones. A hub keeps them in the caller's
 // account's history, and sends them on to its other devices.
 func (s *Service) TakeHistory(c Caller, entries []history.Entry) {
@@ -1355,7 +1355,7 @@ func (s *Service) TakeHistory(c Caller, entries []history.Entry) {
 	}
 }
 
-// merge takes positions from another Kumo, and says how many changed here.
+// merge takes positions from another Aniko, and says how many changed here.
 func (s *Service) merge(entries []*history.Entry) int {
 	in := make([]history.Entry, 0, len(entries))
 	for _, e := range entries {
@@ -1375,7 +1375,7 @@ func (s *Service) merge(entries []*history.Entry) int {
 // and when it was watched. Continue watching then goes on from there,
 // to the second; the list itself (progress) is AniList's. It asks for what
 // the host stored after the last it took, whatever their times (one from
-// another Kumo comes late with an older time).
+// another Aniko comes late with an older time).
 func (s *Service) syncHistory(ctx context.Context, p *peer) {
 	if s.History == nil {
 		return
@@ -1436,7 +1436,7 @@ type signed struct {
 	offset time.Duration
 }
 
-// sign signs a request for a host, by its clock as far as this Kumo knows it.
+// sign signs a request for a host, by its clock as far as this Aniko knows it.
 func (s *Service) sign(req *http.Request, p *peer) (*http.Request, error) {
 	s.mu.Lock()
 	host, pub, off := p.id, p.pub, p.offset
@@ -1472,7 +1472,7 @@ func (s *Service) do(c *http.Client, req *http.Request) (*http.Response, error) 
 		want, err := sr.sig.reply(date)
 		if err != nil || resp.Header.Get(HeaderReply) == "" || !hmac.Equal([]byte(want), []byte(resp.Header.Get(HeaderReply))) {
 			resp.Body.Close()
-			return nil, fmt.Errorf("the answer can't be checked as %s's (is the latest Kumo running there, with library sharing on?)", s.nameOf(sr.p))
+			return nil, fmt.Errorf("the answer can't be checked as %s's (is the latest Aniko running there, with library sharing on?)", s.nameOf(sr.p))
 		}
 		// The host dates its answer as it gets the request (Verify), however
 		// long the answer then takes (a file read from a sleeping disk):
@@ -1501,7 +1501,7 @@ func (s *Service) do(c *http.Client, req *http.Request) (*http.Response, error) 
 	}
 }
 
-// Sign signs a request to the Kumo with that ID and public key (as its
+// Sign signs a request to the Aniko with that ID and public key (as its
 // whoami tells them).
 func (s *Service) Sign(req *http.Request, hostID, hostKey string) error {
 	pub, err := parsePublicKey(hostID, hostKey)
@@ -1538,9 +1538,9 @@ func (s *Service) hello(ctx context.Context, p *peer) (*Hello, error) {
 	if err := s.getJSON(ctx, p, "/api/peer/hello", &h); err != nil {
 		return nil, err
 	}
-	// Another Kumo at that address now (a new IP address from the router).
+	// Another Aniko at that address now (a new IP address from the router).
 	if h.ID != p.id {
-		return nil, fmt.Errorf("another Kumo (%s) answers there", h.Name)
+		return nil, fmt.Errorf("another Aniko (%s) answers there", h.Name)
 	}
 	return &h, nil
 }
@@ -1580,7 +1580,7 @@ const scheme = "kumo://"
 // RemotePath is the path of a host's file.
 func RemotePath(host, path string) string { return scheme + host + "/" + path }
 
-// IsRemote reports a path of another Kumo's file.
+// IsRemote reports a path of another Aniko's file.
 func IsRemote(path string) bool { return strings.HasPrefix(path, scheme) }
 
 // ParsePath splits a shared file's path into its host and its path there.
@@ -1599,7 +1599,7 @@ func ParsePath(path string) (host, onHost string, ok bool) {
 // ---------------------------------------------------------------------------
 // What the app shows
 
-// PeerView is another Kumo on the network, for Settings.
+// PeerView is another Aniko on the network, for Settings.
 type PeerView struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -1609,18 +1609,18 @@ type PeerView struct {
 	Version  string `json:"version"`
 	// Platform: what it runs on ("android": a TV; "" when it didn't say).
 	Platform string `json:"platform,omitempty"`
-	// Allowed: this Kumo shares its library with it.
+	// Allowed: this Aniko shares its library with it.
 	Allowed bool `json:"allowed"`
-	// Shares: it shares its library with this Kumo (Files of them).
+	// Shares: it shares its library with this Aniko (Files of them).
 	Shares bool   `json:"shares"`
 	Files  int    `json:"files"`
 	Manual bool   `json:"manual"`
 	Error  string `json:"error,omitempty"`
-	// Granted to it (with Allowed): this Kumo's AniList login, downloading
-	// onto this Kumo.
+	// Granted to it (with Allowed): this Aniko's AniList login, downloading
+	// onto this Aniko.
 	Account   bool `json:"account"`
 	Downloads bool `json:"downloads"`
-	// Granted by it (it shares): its AniList login, and whether this Kumo
+	// Granted by it (it shares): its AniList login, and whether this Aniko
 	// is using it; downloading onto it.
 	SharesAccount  bool `json:"sharesAccount"`
 	UsingAccount   bool `json:"usingAccount"`
@@ -1630,7 +1630,7 @@ type PeerView struct {
 	Waking  bool `json:"waking"`
 	// Declined: asked whether to share with it, the answer was "not now".
 	Declined bool `json:"declined"`
-	// Role: "hub" for a Kumo Hub (kumo --hub), "" for a Kumo app.
+	// Role: "hub" for an Aniko Hub (aniko --hub), "" for an Aniko app.
 	Role string `json:"role,omitempty"`
 	// Parental: parental controls are set for it here (parental.go).
 	Parental bool `json:"parental,omitempty"`
@@ -1649,7 +1649,7 @@ func (s *Service) view(p *peer, now time.Time) PeerView {
 		v.Address = net.JoinHostPort(p.addr.String(), strconv.Itoa(p.port))
 	}
 	if v.Name == "" {
-		v.Name = "Kumo " + p.id[:6]
+		v.Name = "Aniko " + p.id[:6]
 	}
 	// Two named alike (two Fire TVs): told apart. Must be called with mu held.
 	for _, o := range s.peers {
@@ -1670,10 +1670,10 @@ type Status struct {
 	ID      string     `json:"id"`
 	Name    string     `json:"name"`
 	Peers   []PeerView `json:"peers"`
-	// Listening: other Kumos can find this one (the network port could be
+	// Listening: other Anikos can find this one (the network port could be
 	// opened).
 	Listening bool `json:"listening"`
-	// Addresses: where the others reach this Kumo (to add it by hand).
+	// Addresses: where the others reach this Aniko (to add it by hand).
 	Addresses []string `json:"addresses"`
 }
 
@@ -1716,8 +1716,8 @@ func addresses(port int) []string {
 	return out
 }
 
-// Grants is what this Kumo shares with another one: its library, and with
-// it its AniList login and downloading onto this Kumo. Nil: unchanged.
+// Grants is what this Aniko shares with another one: its library, and with
+// it its AniList login and downloading onto this Aniko. Nil: unchanged.
 type Grants struct {
 	Allowed   *bool `json:"allowed"`
 	Account   *bool `json:"account"`
@@ -1726,12 +1726,12 @@ type Grants struct {
 	Declined *bool `json:"declined"`
 }
 
-// SetAllowed shares this Kumo's library with another one, or stops.
+// SetAllowed shares this Aniko's library with another one, or stops.
 func (s *Service) SetAllowed(id string, allowed bool) error {
 	return s.SetGrants(id, Grants{Allowed: &allowed})
 }
 
-// SetGrants changes what this Kumo shares with another one.
+// SetGrants changes what this Aniko shares with another one.
 func (s *Service) SetGrants(id string, g Grants) error {
 	s.mu.Lock()
 	p, ok := s.peers[id]
@@ -1761,7 +1761,7 @@ func (s *Service) SetGrants(id string, g Grants) error {
 	}
 	s.mu.Unlock()
 	if !ok {
-		return errors.New("no Kumo app with that ID")
+		return errors.New("no Aniko app with that ID")
 	}
 	s.hub.Publish("sharing-updated", nil)
 	// Tell it to ask again now (it does every 30s anyway).
@@ -1790,7 +1790,7 @@ func (s *Service) Refresh() {
 	s.wake()
 }
 
-// resolveManual finds a Kumo added by name (not an address) again.
+// resolveManual finds an Aniko added by name (not an address) again.
 func (s *Service) resolveManual(p *peer) {
 	s.mu.Lock()
 	manual := p.manual
@@ -1816,7 +1816,7 @@ func (s *Service) resolveManual(p *peer) {
 	s.wake()
 }
 
-// makeRoom keeps the Kumos this one only heard of to a few: anyone on the
+// makeRoom keeps the Anikos this one only heard of to a few: anyone on the
 // network can make up new ones. Must be called with mu held.
 func (s *Service) makeRoom() {
 	var strangers []*peer
@@ -1837,7 +1837,7 @@ func (s *Service) makeRoom() {
 	delete(s.peers, oldest.id)
 }
 
-// Forget removes a Kumo from the list (one added by hand, or gone).
+// Forget removes an Aniko from the list (one added by hand, or gone).
 func (s *Service) Forget(id string) {
 	s.mu.Lock()
 	p, ok := s.peers[id]
@@ -1869,7 +1869,7 @@ func (s *Service) Forget(id string) {
 	s.hub.Publish("sharing-updated", nil)
 }
 
-// Connect adds a Kumo by its address, for networks where they can't find
+// Connect adds an Aniko by its address, for networks where they can't find
 // each other by themselves (it needs sharing on too).
 func (s *Service) Connect(ctx context.Context, address string) (PeerView, error) {
 	address = strings.TrimSpace(address)
@@ -1898,15 +1898,15 @@ func (s *Service) Connect(ctx context.Context, address string) (PeerView, error)
 	}
 	resp, err := s.api.Do(req)
 	if err != nil {
-		return PeerView{}, fmt.Errorf("no answer from %s: is Kumo open there, with library sharing on?", address)
+		return PeerView{}, fmt.Errorf("no answer from %s: is Aniko open there, with library sharing on?", address)
 	}
 	defer resp.Body.Close()
 	var h Hello
 	if resp.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&h) != nil {
-		return PeerView{}, fmt.Errorf("%s isn't a Kumo app with library sharing on", address)
+		return PeerView{}, fmt.Errorf("%s isn't an Aniko app with library sharing on", address)
 	}
 	if h.ID == s.id.ID {
-		return PeerView{}, errors.New("that's this Kumo")
+		return PeerView{}, errors.New("that's this Aniko")
 	}
 	pub, err := parsePublicKey(h.ID, h.Key)
 	if err != nil {
@@ -1938,7 +1938,7 @@ type SharedLibrary struct {
 	Files []*library.LocalFile `json:"files"`
 }
 
-// Libraries are the libraries shared with this Kumo.
+// Libraries are the libraries shared with this Aniko.
 func (s *Service) Libraries() []SharedLibrary {
 	now := time.Now()
 	using := s.AccountHost()
@@ -1956,7 +1956,7 @@ func (s *Service) Libraries() []SharedLibrary {
 	return out
 }
 
-// RemoteFiles are all the files shared with this Kumo.
+// RemoteFiles are all the files shared with this Aniko.
 func (s *Service) RemoteFiles() []*library.LocalFile {
 	s.mu.Lock()
 	defer s.mu.Unlock()

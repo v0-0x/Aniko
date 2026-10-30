@@ -15,10 +15,10 @@ import (
 	"github.com/simo1337s/animetest/server/internal/anicli"
 )
 
-// A Kumo where ani-cli doesn't run (Android: it's a shell script) streams
+// An Aniko where ani-cli doesn't run (Android: it's a shell script) streams
 // through a computer that shares its library with it and has ani-cli: that
 // one searches, lists the episodes and finds the stream (POST
-// /api/peer/anicli/{op}), and this Kumo plays it. Matching an anime, its
+// /api/peer/anicli/{op}), and this Aniko plays it. Matching an anime, its
 // history and the sub/dub choice stay here.
 
 // AniCliRequest is what a guest asks a host's ani-cli.
@@ -52,7 +52,7 @@ func (s *Service) AniCliRemote() anicli.Remote { return aniCliRemote{s} }
 
 type aniCliRemote struct{ s *Service }
 
-// aniCliHost is the host that runs ani-cli for this Kumo: one that shares
+// aniCliHost is the host that runs ani-cli for this Aniko: one that shares
 // with it, is around and has ani-cli. Where downloads go first.
 func (s *Service) aniCliHost() *peer {
 	s.mu.Lock()
@@ -81,13 +81,13 @@ func (r aniCliRemote) Name() string {
 }
 
 // waitHost is the host that runs ani-cli, asking the hosts again when none
-// is known (this Kumo just started, or hasn't heard from them lately) and
+// is known (this Aniko just started, or hasn't heard from them lately) and
 // waiting a little for their answers.
 func (s *Service) waitHost(ctx context.Context) *peer {
 	if p := s.aniCliHost(); p != nil {
 		return p
 	}
-	// Only a Kumo something shares with can be answered.
+	// Only an Aniko something shares with can be answered.
 	s.mu.Lock()
 	hosts := false
 	for _, p := range s.peers {
@@ -122,7 +122,7 @@ func (r aniCliRemote) call(ctx context.Context, op string, req AniCliRequest) (*
 			return nil, ctx.Err()
 		}
 		if runtime.GOOS == "android" {
-			return nil, errors.New("ani-cli doesn't run on Android, and no computer sharing its library with this one runs it now (is it on, with Kumo running?)")
+			return nil, errors.New("ani-cli doesn't run on Android, and no computer sharing its library with this one runs it now (is it on, with Aniko running?)")
 		}
 		return nil, anicli.ErrNotInstalled
 	}
@@ -193,7 +193,7 @@ func (r aniCliRemote) Resolve(ctx context.Context, query string, index int, epis
 	return a.Stream, nil
 }
 
-// AnswerAniCli runs a guest's request with this Kumo's ani-cli.
+// AnswerAniCli runs a guest's request with this Aniko's ani-cli.
 func AnswerAniCli(ctx context.Context, d *anicli.Driver, op string, req AniCliRequest) (*AniCliAnswer, error) {
 	if !d.LocalReady() {
 		return nil, anicli.ErrNotInstalled

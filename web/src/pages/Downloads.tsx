@@ -13,7 +13,7 @@ const RUNNING = ["queued", "resolving", "downloading"]
 export default function DownloadsPage() {
     const { data, isLoading, error, refetch, isFetching } = useDownloads()
     const { data: status } = useStatus()
-    // This device's downloads go to another Kumo (a TV's to its computer):
+    // This device's downloads go to another Aniko (a TV's to its computer):
     // that one's list is shown, as it's where they are.
     const toHost = !!status?.settings.sharing.downloadTo
     const host = useQuery({

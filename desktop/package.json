@@ -1,11 +1,11 @@
 {
-  "name": "kumo",
-  "productName": "Kumo",
+  "name": "aniko",
+  "productName": "Aniko",
   "version": "2.0.0",
-  "kumoVersionBase": 147,
-  "description": "Kumo desktop window (starts the local Kumo server)",
+  "anikoVersionBase": 147,
+  "description": "Aniko desktop window (starts the local Aniko server)",
   "main": "main.js",
-  "desktopName": "kumo.desktop",
+  "desktopName": "aniko.desktop",
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {

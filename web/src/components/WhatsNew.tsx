@@ -8,7 +8,7 @@ import { createStore, playerStore, useStore } from "@/lib/store"
 
 // The newest entry of RELEASES this device has shown (it's shown once, on
 // Home, after an update).
-const SEEN_KEY = "kumo-whats-new"
+const SEEN_KEY = "aniko-whats-new"
 
 function readSeen(): number | null {
     try {
@@ -39,7 +39,7 @@ export function WhatsNew() {
     const [since, setSince] = useState(0)
 
     // After an update, on Home, not over a video. A device seeing it the
-    // first time shows the newest entry if Kumo was in use already (an
+    // first time shows the newest entry if Aniko was in use already (an
     // update), and nothing on a new install.
     useEffect(() => {
         if (!status || open || playing || location.pathname !== "/") return
@@ -62,7 +62,7 @@ export function WhatsNew() {
         markSeen()
         whatsNewStore.set(null)
     }
-    // Kumo Hub's entries only where there's a hub: among the Kumos this one
+    // Aniko Hub's entries only where there's a hub: among the Anikos this one
     // knows (Settings › Other devices).
     const { data: sharing, isLoading: sharingLoading } = useSharing(!!open)
     const hub = !!sharing?.peers?.some(p => p.role === "hub")
@@ -73,7 +73,7 @@ export function WhatsNew() {
     })
     if (!open || sharingLoading || releases.length === 0) return null
     return (
-        <Dialog open onOpenChange={v => !v && close()} title="What's new in Kumo" className="w-[min(94vw,640px)]" footer={<Button variant="primary" onClick={close}>Got it</Button>}>
+        <Dialog open onOpenChange={v => !v && close()} title="What's new in Aniko" className="w-[min(94vw,640px)]" footer={<Button variant="primary" onClick={close}>Got it</Button>}>
             <div className="flex flex-col gap-6">
                 {releases.map(r => (
                     <section key={r.id}>

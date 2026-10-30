@@ -16,15 +16,15 @@ import (
 )
 
 // Runs the real ani-cli script (with its scraping functions stubbed) through
-// the shim driver. Set KUMO_FAKE_ANICLI to the stubbed script to enable.
+// the shim driver. Set ANIKO_FAKE_ANICLI to the stubbed script to enable.
 func TestDriverWithStubbedAniCli(t *testing.T) {
-	fake := os.Getenv("KUMO_FAKE_ANICLI")
+	fake := os.Getenv("ANIKO_FAKE_ANICLI")
 	if fake == "" {
-		t.Skip("KUMO_FAKE_ANICLI not set")
+		t.Skip("ANIKO_FAKE_ANICLI not set")
 	}
 	tmp := t.TempDir()
 	t.Setenv("XDG_RUNTIME_DIR", tmp)
-	t.Setenv("KUMO_DATA_DIR", tmp)
+	t.Setenv("ANIKO_DATA_DIR", tmp)
 	d, err := db.Open(filepath.Join(tmp, "t.db"))
 	if err != nil {
 		t.Fatal(err)
@@ -66,7 +66,7 @@ func TestDriverWithStubbedAniCli(t *testing.T) {
 
 // harness runs a Driver against a stand-in ani-cli (testdata/fake-ani-cli)
 // whose search results come from a catalog the test controls. Set
-// KUMO_REAL_ANICLI to a real ani-cli 5.x script to run the same tests against
+// ANIKO_REAL_ANICLI to a real ani-cli 5.x script to run the same tests against
 // it instead: its scraping functions are replaced by testdata/scrape-stubs.sh,
 // so the menus and argument parsing are the real ones but nothing touches
 // the network.
@@ -91,12 +91,12 @@ func newHarnessWith(t *testing.T, script string, catalog ...string) *harness {
 	tmp := t.TempDir()
 	t.Setenv("XDG_RUNTIME_DIR", tmp)
 	t.Setenv("LOCALAPPDATA", tmp) // the runtime dir on Windows
-	t.Setenv("KUMO_DATA_DIR", tmp)
+	t.Setenv("ANIKO_DATA_DIR", tmp)
 	h := &harness{dir: tmp, catalog: filepath.Join(tmp, "catalog.tsv"), log: filepath.Join(tmp, "runs.log")}
-	t.Setenv("KUMO_FAKE_CATALOG", shellPath(h.catalog))
-	t.Setenv("KUMO_FAKE_LOG", shellPath(h.log))
+	t.Setenv("ANIKO_FAKE_CATALOG", shellPath(h.catalog))
+	t.Setenv("ANIKO_FAKE_LOG", shellPath(h.log))
 	h.setCatalog(t, catalog...)
-	d, err := db.Open(filepath.Join(tmp, "kumo.db"))
+	d, err := db.Open(filepath.Join(tmp, "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +124,7 @@ func installAniCli(t *testing.T) string {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "ani-cli")
-	if real := os.Getenv("KUMO_REAL_ANICLI"); real != "" {
+	if real := os.Getenv("ANIKO_REAL_ANICLI"); real != "" {
 		src, err := os.ReadFile(real)
 		if err != nil {
 			t.Fatal(err)
@@ -407,7 +407,7 @@ func TestMenuShim(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		cmd.Env = append(os.Environ(), "KUMO_DUMP_DIR="+shellPath(dump))
+		cmd.Env = append(os.Environ(), "ANIKO_DUMP_DIR="+shellPath(dump))
 		cmd.Stdin = strings.NewReader("next\nreplay\nquit\n")
 		if out, err := cmd.Output(); err == nil || len(out) > 0 {
 			t.Errorf("%s %q: selected %q (%v)", c.menu, c.prompt, out, err)

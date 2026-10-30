@@ -28,10 +28,10 @@ func TestLogFile(t *testing.T) {
 		}
 		fmt.Fprintf(l, "2026/10/30 10:00:00 line %d %s %s\n", i, msg, pad)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "kumo.log.2")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "aniko.log.2")); err != nil {
 		t.Fatalf("not rotated: %v", err)
 	}
-	for _, name := range []string{"kumo.log", "kumo.log.1"} {
+	for _, name := range []string{"aniko.log", "aniko.log.1"} {
 		if st, _ := os.Stat(filepath.Join(dir, name)); st.Size() > logFileMax {
 			t.Errorf("%s is %d bytes, over %d", name, st.Size(), logFileMax)
 		}

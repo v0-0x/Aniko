@@ -8,7 +8,7 @@ import { toast } from "@/lib/toast"
 import type { DevicePrompt } from "@/lib/types"
 
 // The version notes put away ("id@version"): shown again for the next one.
-const HIDDEN_KEY = "kumo.devicePromptsHidden"
+const HIDDEN_KEY = "aniko.devicePromptsHidden"
 
 function readHidden(): string[] {
     try {
@@ -19,7 +19,7 @@ function readHidden(): string[] {
     }
 }
 
-// Home, on the computer: a Kumo new on the network (a TV, say), to share
+// Home, on the computer: an Aniko new on the network (a TV, say), to share
 // this computer's library with; and a paired one on another version than
 // this one, to update.
 export function DevicePrompts() {
@@ -69,14 +69,14 @@ export function DevicePrompts() {
                         </span>
                         <div className="min-w-0 flex-1">
                             <p className="font-medium">
-                                {isNew ? `Share this library with ${p.name}?` : p.kind === "older" ? `${p.name} runs an older Kumo` : `${p.name} runs a newer Kumo`}
+                                {isNew ? `Share this library with ${p.name}?` : p.kind === "older" ? `${p.name} runs an older Aniko` : `${p.name} runs a newer Aniko`}
                             </p>
                             <p className="mt-0.5 text-sm text-muted">
                                 {isNew
-                                    ? `Kumo${tvApp ? "'s TV app" : ""} on ${p.name} is on this network. Once shared, it can play this computer's anime.`
+                                    ? `Aniko${tvApp ? "'s TV app" : ""} on ${p.name} is on this network. Once shared, it can play this computer's anime.`
                                     : p.kind === "older"
-                                      ? `Kumo ${p.version} there, ${status.version} here: update it on ${p.name} (from its Home page) so everything works together.`
-                                      : `Kumo ${p.version} there, ${status.version} here: update this one (Settings › Updates & about) so everything works together.`}
+                                      ? `Aniko ${p.version} there, ${status.version} here: update it on ${p.name} (from its Home page) so everything works together.`
+                                      : `Aniko ${p.version} there, ${status.version} here: update this one (Settings › Updates & about) so everything works together.`}
                             </p>
                         </div>
                         {isNew ? (

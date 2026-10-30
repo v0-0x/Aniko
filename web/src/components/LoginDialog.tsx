@@ -58,7 +58,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 {/* A TV has no easy way to copy a token: the computer can share its login. */}
                 {androidApp && (
                     <p className="rounded-lg border border-brand/30 bg-brand-soft p-4 text-sm text-fg/90">
-                        Easiest on a TV: on your computer's Kumo, open Settings › Other devices and turn on “Share my AniList account” next to this device. It logs in here by
+                        Easiest on a TV: on your computer's Aniko, open Settings › Other devices and turn on “Share my AniList account” next to this device. It logs in here by
                         itself.
                     </p>
                 )}
@@ -72,8 +72,8 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                         <div className="rounded-lg bg-white/[0.03] p-5">
                             <p className="text-sm text-muted">
                                 {desktop()
-                                    ? "A login window will open. After you authorize Kumo, the token is captured automatically."
-                                    : "Authorize Kumo on AniList, then copy the token shown on the page and paste it below."}
+                                    ? "A login window will open. After you authorize Aniko, the token is captured automatically."
+                                    : "Authorize Aniko on AniList, then copy the token shown on the page and paste it below."}
                             </p>
                             <Button variant="primary" className="mt-4 w-full" icon={<ExternalLink className="size-4" />} onClick={openAnilist}>
                                 Open AniList

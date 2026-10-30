@@ -1,6 +1,6 @@
 //go:build !windows
 
-package kumohub
+package anikohub
 
 import "syscall"
 

@@ -19,7 +19,7 @@ func (s *Server) backupRoutes() {
 	m := s.mux
 	m.HandleFunc("GET /api/backup", func(w http.ResponseWriter, r *http.Request) {
 		if !isTrusted(r) {
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Kumo runs on can make a backup"})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Aniko runs on can make a backup"})
 			return
 		}
 		logins := r.URL.Query().Get("logins") == "1"
@@ -29,16 +29,16 @@ func (s *Server) backupRoutes() {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		name := fmt.Sprintf("kumo-backup-%s-%s.json", safeName.ReplaceAllString(computer, "-"), time.Now().Format("2006-01-02"))
+		name := fmt.Sprintf("aniko-backup-%s-%s.json", safeName.ReplaceAllString(computer, "-"), time.Now().Format("2006-01-02"))
 		w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
 		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, f)
 	})
-	// A backup put back: merged with what's here, then Kumo starts again
+	// A backup put back: merged with what's here, then Aniko starts again
 	// (everything reads its data afresh).
 	m.HandleFunc("POST /api/backup/restore", func(w http.ResponseWriter, r *http.Request) {
 		if !isTrusted(r) {
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Kumo runs on can restore a backup"})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Aniko runs on can restore a backup"})
 			return
 		}
 		f, err := backup.Read(r.Body)

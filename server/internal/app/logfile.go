@@ -12,7 +12,7 @@ import (
 
 // LogFile is the server's log on disk (a hub's, for its dashboard's audit
 // log): every line, in files of logFileMax, the newest logFiles kept
-// (kumo.log, then kumo.log.1, the one before, …).
+// (aniko.log, then aniko.log.1, the one before, …).
 type LogFile struct {
 	mu   sync.Mutex
 	dir  string
@@ -23,7 +23,7 @@ type LogFile struct {
 const (
 	logFileMax = 2 << 20
 	logFiles   = 10
-	logName    = "kumo.log"
+	logName    = "aniko.log"
 )
 
 // OpenLogFile opens (or starts) the log in dir.
@@ -63,7 +63,7 @@ func (l *LogFile) Write(p []byte) (int, error) {
 	return n, err
 }
 
-// rotate starts a new file: kumo.log becomes kumo.log.1, and so on; the
+// rotate starts a new file: aniko.log becomes aniko.log.1, and so on; the
 // oldest goes.
 func (l *LogFile) rotate() {
 	_ = l.f.Close()

@@ -1,5 +1,5 @@
 // Package db wraps the SQLite database that holds every piece of persistent
-// state Kumo keeps on disk (settings, library files, watch history, caches,
+// state Aniko keeps on disk (settings, library files, watch history, caches,
 // installed extensions, downloads...).
 package db
 
@@ -152,9 +152,9 @@ func Open(path string) (*DB, error) {
 	return &DB{DB: conn}, nil
 }
 
-// columns are added to tables made by an older Kumo.
+// columns are added to tables made by an older Aniko.
 var columns = []struct{ table, name, def string }{
-	// The order this Kumo stored each position in (see history.Store): the
+	// The order this Aniko stored each position in (see history.Store): the
 	// others on the same account ask for what came after what they have.
 	{"watch_history", "seq", "INTEGER NOT NULL DEFAULT 0"},
 }

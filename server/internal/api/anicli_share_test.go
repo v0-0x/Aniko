@@ -35,12 +35,12 @@ func fakeAniCli(t *testing.T, catalog ...string) string {
 	if err := os.WriteFile(cat, []byte(strings.Join(catalog, "\n")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("KUMO_FAKE_CATALOG", cat)
-	t.Setenv("KUMO_FAKE_LOG", filepath.Join(dir, "runs.log"))
+	t.Setenv("ANIKO_FAKE_CATALOG", cat)
+	t.Setenv("ANIKO_FAKE_LOG", filepath.Join(dir, "runs.log"))
 	return filepath.Join(dir, "ani-cli")
 }
 
-// A Kumo without ani-cli (a TV) streams through a computer that shares its
+// An Aniko without ani-cli (a TV) streams through a computer that shares its
 // library with it and has ani-cli.
 func TestAniCliThroughHost(t *testing.T) {
 	if runtime.GOOS == "windows" {
@@ -75,7 +75,7 @@ func TestAniCliThroughHost(t *testing.T) {
 
 	// Not shared with: the host doesn't run ani-cli for it.
 	if _, err := guest.app.AniCli.Search(ctx, "Frieren", "sub"); err == nil {
-		t.Fatal("ani-cli ran for a Kumo the host doesn't share with")
+		t.Fatal("ani-cli ran for an Aniko the host doesn't share with")
 	}
 
 	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {

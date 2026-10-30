@@ -1,4 +1,4 @@
-// TV mode: Kumo on a TV (the Android app on a Fire TV), driven by the remote.
+// TV mode: Aniko on a TV (the Android app on a Fire TV), driven by the remote.
 //
 // The remote's D-pad sends arrow keys: they move the focus to the nearest
 // thing that can be pressed in that direction (spatial navigation), and OK
@@ -26,7 +26,7 @@ declare global {
 
 export const android: AndroidBridge | undefined = typeof window === "undefined" ? undefined : window.KumoAndroid
 
-// Kumo's Android app (a TV's, or a phone's): no mpv there.
+// Aniko's Android app (a TV's, or a phone's): no mpv there.
 export const androidApp = typeof navigator !== "undefined" && /\bKumoAndroid\b/.test(navigator.userAgent)
 
 // The Android app says it in its user agent; ?tv=1 tries TV mode anywhere.
@@ -36,8 +36,8 @@ export const tv =
         (() => {
             try {
                 const q = new URLSearchParams(location.search).get("tv")
-                if (q !== null) sessionStorage.setItem("kumo-tv", q === "1" ? "1" : "")
-                return sessionStorage.getItem("kumo-tv") === "1"
+                if (q !== null) sessionStorage.setItem("aniko-tv", q === "1" ? "1" : "")
+                return sessionStorage.getItem("aniko-tv") === "1"
             } catch {
                 return false
             }
@@ -53,7 +53,7 @@ export const TV_WIDTHS = [
     { value: 1100, label: "Larger" },
     { value: 960, label: "Largest" },
 ]
-const TV_WIDTH_KEY = "kumo-tv-width"
+const TV_WIDTH_KEY = "aniko-tv-width"
 
 export function tvWidth(): number {
     try {
@@ -371,7 +371,7 @@ let started = false
 
 // initTV turns TV mode on (once). In the Android app on a phone, only its
 // Back and media keys: Back goes back through the pages there too, instead
-// of sending Kumo to the background.
+// of sending Aniko to the background.
 export function initTV(goBack: () => boolean) {
     if ((!tv && !androidApp) || started) return
     started = true

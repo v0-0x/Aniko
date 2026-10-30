@@ -98,14 +98,14 @@ const NAV: { title: string; items: NavItem[] }[] = [
             { id: "account", label: "Account", icon: <UserRound />, description: "Your AniList account", keywords: "login log in anilist sign" },
             { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors, holidays, the classic look and what's shown", keywords: "ui theme color dark classic look titles spoilers card size" },
             { id: "notifications", label: "Notifications", icon: <Bell />, description: "Alerts for new episodes and finished downloads", keywords: "alerts notify" },
-            { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Kumo's version, updates and beta updates", keywords: "version beta about what's new" },
+            { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Aniko's version, updates and beta updates", keywords: "version beta about what's new" },
         ],
     },
     {
         title: "Watching",
         items: [
             { id: "playback", label: "Playback", icon: <Clapperboard />, description: "How episodes play, progress, audio and subtitles", keywords: "player video subtitles audio dub sub skip" },
-            { id: "mpv", label: "mpv player", icon: <MonitorPlay />, description: "The desktop media player Kumo can play in", keywords: "external player" },
+            { id: "mpv", label: "mpv player", icon: <MonitorPlay />, description: "The desktop media player Aniko can play in", keywords: "external player" },
             { id: "transcode", label: "Video conversion", icon: <Cpu />, description: "So the in-app player plays every format", keywords: "transcoding direct play ffmpeg hardware gpu hevc" },
             { id: "discord", label: "Discord", icon: <Gamepad2 />, description: "Show what you're watching on Discord", keywords: "rich presence status" },
         ],
@@ -123,21 +123,21 @@ const NAV: { title: string; items: NavItem[] }[] = [
     {
         title: "Devices & network",
         items: [
-            { id: "devices", label: "Other devices", icon: <MonitorSmartphone />, description: "Kumo on your other computers and TVs: sharing, waking, syncing", keywords: "share sharing tv fire library wake sync" },
-            { id: "network", label: "Network & web UI", icon: <Wifi />, description: "Using Kumo from a browser or other devices at home", keywords: "lan port password browser web" },
+            { id: "devices", label: "Other devices", icon: <MonitorSmartphone />, description: "Aniko on your other computers and TVs: sharing, waking, syncing", keywords: "share sharing tv fire library wake sync" },
+            { id: "network", label: "Network & web UI", icon: <Wifi />, description: "Using Aniko from a browser or other devices at home", keywords: "lan port password browser web" },
         ],
     },
     {
         title: "This computer",
         items: [
-            { id: "desktop", label: "Desktop app & programs", icon: <AppWindow />, description: "The window, the tray, starting at login, and the programs Kumo uses", keywords: "tray background startup login ffmpeg yt-dlp mpv install" },
-            { id: "backup", label: "Backup & data", icon: <DatabaseBackup />, description: "Back up and restore, and where Kumo keeps its data", keywords: "restore export import folder" },
+            { id: "desktop", label: "Desktop app & programs", icon: <AppWindow />, description: "The window, the tray, starting at login, and the programs Aniko uses", keywords: "tray background startup login ffmpeg yt-dlp mpv install" },
+            { id: "backup", label: "Backup & data", icon: <DatabaseBackup />, description: "Back up and restore, and where Aniko keeps its data", keywords: "restore export import folder" },
             { id: "logs", label: "Logs & cache", icon: <FileClock />, description: "Server logs and cached data", keywords: "debug clear" },
         ],
     },
 ]
 
-// Not in Kumo's Android app (a TV's): it has no mpv, Discord, ffmpeg or
+// Not in Aniko's Android app (a TV's): it has no mpv, Discord, ffmpeg or
 // desktop window.
 const NOT_ON_ANDROID: SectionId[] = ["mpv", "transcode", "discord", "desktop"]
 const SHOWN_NAV = androidApp ? NAV.map(g => ({ ...g, items: g.items.filter(i => !NOT_ON_ANDROID.includes(i.id)) })) : NAV
@@ -305,14 +305,14 @@ export default function SettingsPage() {
                     ))}
                 </nav>
                 <p className="mt-6 hidden px-2.5 text-xs text-subtle md:block">
-                    Kumo {status.version} · {platformName(status.platform)} · {status.client === "desktop" ? "Desktop" : status.client === "lan" ? "LAN" : "Web UI"}
+                    Aniko {status.version} · {platformName(status.platform)} · {status.client === "desktop" ? "Desktop" : status.client === "lan" ? "LAN" : "Web UI"}
                 </p>
             </aside>
 
             <section className="min-w-0 flex-1 lg:max-w-4xl">
                 {status.client === "lan" && (
                     <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-muted lg:mt-[3.75rem]">
-                        You're using Kumo from another device: dimmed settings (folders, programs, network, logins) can only be changed on the computer it runs on.
+                        You're using Aniko from another device: dimmed settings (folders, programs, network, logins) can only be changed on the computer it runs on.
                     </p>
                 )}
                 {searching ? (
@@ -558,13 +558,13 @@ function Collapsible({ title, children }: { title: string; children: React.React
     return search ? <SearchContext.Provider value={{ ...search, all }}>{body}</SearchContext.Provider> : body
 }
 
-// Settings only the computer Kumo runs on may change (from a device on the
+// Settings only the computer Aniko runs on may change (from a device on the
 // network the server keeps them as they are): shown, not editable there.
 function Locked({ children }: { children: React.ReactNode }) {
     const { data: status } = useStatus()
     if (status?.client !== "lan") return <>{children}</>
     return (
-        <fieldset disabled title="Only the computer Kumo runs on can change this" className="m-0 min-w-0 border-0 p-0 opacity-55">
+        <fieldset disabled title="Only the computer Aniko runs on can change this" className="m-0 min-w-0 border-0 p-0 opacity-55">
             {children}
         </fieldset>
     )
@@ -615,14 +615,14 @@ function Detect({ ok, label }: { ok?: boolean; label: string }) {
     return ok ? <Badge tone="green">{label} found</Badge> : <Badge tone="red">{label} not found</Badge>
 }
 
-// Where other devices open Kumo, once LAN access is saved.
+// Where other devices open Aniko, once LAN access is saved.
 function LanAddresses({ status }: { status?: Status }) {
     const urls = status?.lanUrls ?? []
     if (!status?.settings.server.allowLan) return <p className="px-4 py-3.5 text-sm text-muted">Save, and the address to open on your other devices shows up here.</p>
     if (!urls.length)
         return (
             <p className="px-4 py-3.5 text-sm text-amber-200/80">
-                Kumo can't find this computer's address on your network. Is it connected to your router (by cable or Wi-Fi)?
+                Aniko can't find this computer's address on your network. Is it connected to your router (by cable or Wi-Fi)?
             </p>
         )
     return (
@@ -677,7 +677,7 @@ function AccountSection({ draft, set }: SectionProps) {
                         </div>
                     )}
                     {status?.user && lan ? (
-                        <p className="max-w-56 text-right text-xs text-subtle">The computer Kumo runs on is logged in: log out there.</p>
+                        <p className="max-w-56 text-right text-xs text-subtle">The computer Aniko runs on is logged in: log out there.</p>
                     ) : status?.user ? (
                         <Button
                             variant="danger"
@@ -701,7 +701,7 @@ function AccountSection({ draft, set }: SectionProps) {
                 </div>
                 </Shown>
                 <Locked>
-                    <Stack label="AniList client ID" help="Kumo opens anilist.co/api/v2/oauth/authorize?client_id=…&response_type=token">
+                    <Stack label="AniList client ID" help="Aniko opens anilist.co/api/v2/oauth/authorize?client_id=…&response_type=token">
                         <Input value={draft.anilist.clientId} onChange={e => set("anilist", { clientId: e.target.value })} />
                     </Stack>
                 </Locked>
@@ -717,7 +717,7 @@ function NetworkSection({ draft, set }: SectionProps) {
     const lan = status?.client === "lan"
     return (
         <>
-            <Group title="Web UI & network" description="Kumo only ever talks to this computer and — if you allow it — your home network. Connections from the internet are always refused.">
+            <Group title="Web UI & network" description="Aniko only ever talks to this computer and — if you allow it — your home network. Connections from the internet are always refused.">
                 {/* The Android app is its own window, on its own port. */}
                 {!androidApp && (
                     <Row
@@ -725,13 +725,13 @@ function NetworkSection({ draft, set }: SectionProps) {
                         help={
                             status?.webUiForced
                                 ? "Running without the desktop app, so the browser UI is always on."
-                                : `Use Kumo from any browser at http://127.0.0.1:${draft.server.port}`
+                                : `Use Aniko from any browser at http://127.0.0.1:${draft.server.port}`
                         }
                     >
                         <Switch checked={draft.server.webUi || !!status?.webUiForced} disabled={!isDesktop || status?.webUiForced} onChange={v => set("server", { webUi: v })} />
                     </Row>
                 )}
-                <Row label="Allow devices on my network" help="Phones, tablets, TVs and other computers on your home network can open Kumo in a browser.">
+                <Row label="Allow devices on my network" help="Phones, tablets, TVs and other computers on your home network can open Aniko in a browser.">
                     <Switch checked={draft.server.allowLan} disabled={lan} onChange={v => set("server", { allowLan: v, webUi: v ? true : draft.server.webUi })} />
                 </Row>
                 {draft.server.allowLan && <LanAddresses status={status} />}
@@ -741,7 +741,7 @@ function NetworkSection({ draft, set }: SectionProps) {
                     </Stack>
                 )}
                 {!androidApp && (
-                    <Row label="Port" help="Restart-free: Kumo moves to the new port when you save.">
+                    <Row label="Port" help="Restart-free: Aniko moves to the new port when you save.">
                         <Input type="number" className="w-28" disabled={lan} value={draft.server.port} onChange={e => set("server", { port: Number(e.target.value) })} />
                     </Row>
                 )}
@@ -824,15 +824,15 @@ function DesktopGroup() {
                 label="Keep running when the window is closed"
                 help={
                     mac
-                        ? "Off: closing the window quits Kumo. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; click Kumo in the Dock to open it again, quit with Cmd+Q or the button below."
-                        : `Off: closing the window quits Kumo. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; open or quit Kumo from its tray icon${win ? " (at the right of the taskbar, under ^ when hidden)" : ""}, or open it again from ${win ? "the Start menu" : "your app menu"} and quit with the button below.`
+                        ? "Off: closing the window quits Aniko. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; click Aniko in the Dock to open it again, quit with Cmd+Q or the button below."
+                        : `Off: closing the window quits Aniko. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; open or quit Aniko from its tray icon${win ? " (at the right of the taskbar, under ^ when hidden)" : ""}, or open it again from ${win ? "the Start menu" : "your app menu"} and quit with the button below.`
                 }
             >
                 <Switch checked={prefs.keepRunning} onChange={v => change("keepRunning", v)} />
             </Row>
             {prefs.startAtLogin !== undefined && (
                 <Row
-                    label="Start Kumo when you log in"
+                    label="Start Aniko when you log in"
                     help={
                         prefs.keepRunning
                             ? `In the background, ${mac ? "in the Dock" : "with its tray icon"}: ready for your other devices, downloads and the auto downloader without opening its window.`
@@ -852,7 +852,7 @@ function DesktopGroup() {
                 </Row>
             )}
             {bridge.quit && (
-                <Row label="Quit Kumo" help="Closes the window and stops the server: streaming to other devices, downloads and library sharing stop until Kumo is opened again.">
+                <Row label="Quit Aniko" help="Closes the window and stops the server: streaming to other devices, downloads and library sharing stop until Aniko is opened again.">
                     <Button size="sm" variant="ghost" onClick={() => bridge.quit!()}>
                         Quit
                     </Button>
@@ -872,7 +872,7 @@ function InstallProgramsButton() {
     )
 }
 
-// What Kumo found of the programs it uses and, on Windows and macOS, the
+// What Aniko found of the programs it uses and, on Windows and macOS, the
 // setup that installs them.
 function ProgramsGroup() {
     const { data: status } = useStatus()
@@ -886,7 +886,7 @@ function ProgramsGroup() {
         { tool: "yt-dlp", ok: f?.ytDlp, use: "Faster, more reliable episode downloads" },
     ]
     return (
-        <Group title="Programs" description="Kumo uses these programs for some of what it does.">
+        <Group title="Programs" description="Aniko uses these programs for some of what it does.">
             {programs.map(p => (
                 <Row
                     key={p.tool}
@@ -909,8 +909,8 @@ function ProgramsGroup() {
                     label="Install missing programs"
                     help={
                         status?.platform === "darwin"
-                            ? "Downloads ffmpeg, yt-dlp and ani-cli for this Mac (Apple silicon or Intel) into Kumo's folder, in a Terminal window: no Homebrew or password needed. mpv, the external player, comes from Homebrew on Apple silicon Macs that have it. Programs you already have are skipped."
-                            : "Installs Git, ani-cli, ffmpeg, mpv, yt-dlp and the rest of what Kumo uses with Scoop, for your Windows user (no administrator rights), in a PowerShell window. Programs you already have are skipped. It also offers to sign you in to GitHub, for Kumo's updates."
+                            ? "Downloads ffmpeg, yt-dlp and ani-cli for this Mac (Apple silicon or Intel) into Aniko's folder, in a Terminal window: no Homebrew or password needed. mpv, the external player, comes from Homebrew on Apple silicon Macs that have it. Programs you already have are skipped."
+                            : "Installs Git, ani-cli, ffmpeg, mpv, yt-dlp and the rest of what Aniko uses with Scoop, for your Windows user (no administrator rights), in a PowerShell window. Programs you already have are skipped. It also offers to sign you in to GitHub, for Aniko's updates."
                     }
                 >
                     <InstallProgramsButton />
@@ -920,24 +920,24 @@ function ProgramsGroup() {
     )
 }
 
-// Backup: the data of this Kumo as one file (settings, watch history, list,
+// Backup: the data of this Aniko as one file (settings, watch history, list,
 // choices, matches made by hand, auto downloader rules, extensions), and
-// back. A restore merges, then Kumo starts again.
+// back. A restore merges, then Aniko starts again.
 function BackupGroup() {
     const [logins, setLogins] = useState(false)
     const [restoring, setRestoring] = useState(false)
     const restore = async (file: File) => {
         let text: string
-        let info: { kumo?: number; version?: string; createdAt?: number; computer?: string; logins?: boolean; history?: unknown[] }
+        let info: { aniko?: number; version?: string; createdAt?: number; computer?: string; logins?: boolean; history?: unknown[] }
         try {
             text = await file.text()
             info = JSON.parse(text)
         } catch {
-            toast.error("That isn't a Kumo backup")
+            toast.error("That isn't an Aniko backup")
             return
         }
-        if (!info?.kumo) {
-            toast.error("That isn't a Kumo backup")
+        if (!info?.aniko) {
+            toast.error("That isn't an Aniko backup")
             return
         }
         const when = info.createdAt ? new Date(info.createdAt * 1000).toLocaleString() : "an unknown date"
@@ -945,7 +945,7 @@ function BackupGroup() {
             !confirm(
                 `Restore the backup of ${info.computer || "a computer"} from ${when}?\n\n` +
                     "It's merged with what's here: positions and list entries newer here stay, and so do this computer's network and sharing settings. " +
-                    "What's here now is saved first, in Kumo's data folder. Kumo starts again after.",
+                    "What's here now is saved first, in Aniko's data folder. Aniko starts again after.",
             )
         )
             return
@@ -955,7 +955,7 @@ function BackupGroup() {
             const sum = await res.json().catch(() => null)
             if (!res.ok) throw new Error(sum?.error || res.statusText)
             const parts = [sum.history && `${sum.history} positions`, sum.list && `${sum.list} list entries`, sum.extensions && `${sum.extensions} extensions`, sum.rules && `${sum.rules} auto downloader rules`].filter(Boolean)
-            toast.success(`Restored${parts.length ? `: ${parts.join(", ")}` : ""}. Kumo is starting again…`, { duration: 15_000 })
+            toast.success(`Restored${parts.length ? `: ${parts.join(", ")}` : ""}. Aniko is starting again…`, { duration: 15_000 })
             // Back once it answers again, with everything read afresh.
             await waitForRestart()
             location.reload()
@@ -974,7 +974,7 @@ function BackupGroup() {
                     <Button size="sm">Download backup</Button>
                 </a>
             </Row>
-            <Row label="Restore a backup" help="Merged with what's here; Kumo starts again after.">
+            <Row label="Restore a backup" help="Merged with what's here; Aniko starts again after.">
                 <label>
                     <input type="file" accept=".json,application/json" className="sr-only" disabled={restoring} onChange={e => e.target.files?.[0] && restore(e.target.files[0])} />
                     <span className={cn("inline-flex h-8 cursor-pointer items-center rounded-lg bg-white/[0.07] px-3 text-[13px] font-medium hover:bg-white/[0.12]", restoring && "pointer-events-none opacity-60")}>
@@ -986,7 +986,7 @@ function BackupGroup() {
     )
 }
 
-// waitForRestart waits for Kumo to go and answer again (a minute at most).
+// waitForRestart waits for Aniko to go and answer again (a minute at most).
 async function waitForRestart() {
     const answers = () =>
         fetch("/api/status", { cache: "no-store", credentials: "same-origin" })
@@ -1003,14 +1003,14 @@ async function waitForRestart() {
 }
 
 // Alerts: an episode of what's being watched aired, one is ready in the
-// library. A toast, or a notification of the system when Kumo isn't in front
+// library. A toast, or a notification of the system when Aniko isn't in front
 // (the desktop app's, also with its window closed; a browser's once allowed).
 function AlertsGroup({ draft, set }: SectionProps) {
     const notify = draft.notify ?? { newEpisodes: true, downloads: true }
     const [permission, setPermission] = useState(systemNotifications)
     const desktopApp = !!desktop()
     return (
-        <Group title="Alerts" description="Muted with the bell next to Settings, like Kumo's other messages.">
+        <Group title="Alerts" description="Muted with the bell next to Settings, like Aniko's other messages.">
             <Row label="New episodes" help="When an episode of an anime you're watching comes out.">
                 <Switch checked={notify.newEpisodes} onChange={v => set("notify", { ...notify, newEpisodes: v })} />
             </Row>
@@ -1018,13 +1018,13 @@ function AlertsGroup({ draft, set }: SectionProps) {
                 <Switch checked={notify.downloads} onChange={v => set("notify", { ...notify, downloads: v })} />
             </Row>
             {!desktopApp && !androidApp && permission === "default" && (
-                <Row label="Notifications of this browser" help="So alerts show while Kumo's tab isn't in front.">
+                <Row label="Notifications of this browser" help="So alerts show while Aniko's tab isn't in front.">
                     <Button size="sm" onClick={() => Notification.requestPermission().then(() => setPermission(systemNotifications()))}>
                         Allow
                     </Button>
                 </Row>
             )}
-            {!desktopApp && !androidApp && permission === "denied" && <p className="px-4 py-3 text-xs text-subtle">This browser blocks Kumo's notifications: alerts show in Kumo only (allow them in the site's settings).</p>}
+            {!desktopApp && !androidApp && permission === "denied" && <p className="px-4 py-3 text-xs text-subtle">This browser blocks Aniko's notifications: alerts show in Aniko only (allow them in the site's settings).</p>}
         </Group>
     )
 }
@@ -1100,13 +1100,13 @@ function UISection({ draft, set }: SectionProps) {
     return (
         <>
             <Group title="Theme">
-                <Row label="Classic look" help="Kumo as it looked before 2.0: its sidebar, cards, menus and holiday themes. The colors below work in both.">
+                <Row label="Classic look" help="Aniko as it looked before 2.0: its sidebar, cards, menus and holiday themes. The colors below work in both.">
                     <Switch checked={!!draft.ui.classicLook} onChange={v => set("ui", { classicLook: v })} />
                 </Row>
                 <Stack label="Colors">
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                         {COLOR_THEMES.map(t => {
-                            const on = (draft.ui.colorTheme ?? "kumo") === t.id
+                            const on = (draft.ui.colorTheme ?? "aniko") === t.id
                             return (
                                 <button
                                     key={t.id}
@@ -1220,7 +1220,7 @@ function UISection({ draft, set }: SectionProps) {
     )
 }
 
-// Library sharing with the Kumo apps on the other computers at home. Turning
+// Library sharing with the Aniko apps on the other computers at home. Turning
 // it on or off and the name are saved with the rest; who gets this
 // computer's library changes at once.
 function SharingGroup({ draft, set }: SectionProps) {
@@ -1253,24 +1253,24 @@ function SharingGroup({ draft, set }: SectionProps) {
     return (
         <Group
             title="Library sharing"
-            description="Watch the libraries of Kumo on your other computers at home, and share yours with them. Each computer decides who gets its library. Watching updates the AniList account (or local list) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second: to the computer whose files you watch as you watch, and back."
+            description="Watch the libraries of Aniko on your other computers at home, and share yours with them. Each computer decides who gets its library. Watching updates the AniList account (or local list) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second: to the computer whose files you watch as you watch, and back."
         >
             <ParentalHere />
-            <Row label="Library sharing" help="Find the Kumo apps on this network, and let them find this one. Turn it on on both computers.">
+            <Row label="Library sharing" help="Find the Aniko apps on this network, and let them find this one. Turn it on on both computers.">
                 <Switch checked={draft.sharing.enabled} disabled={!trusted} onChange={v => set("sharing", { enabled: v })} />
             </Row>
             {draft.sharing.enabled && (
-                <Stack label="Name on the network" help="What the other Kumo apps call this one.">
+                <Stack label="Name on the network" help="What the other Aniko apps call this one.">
                     <Input value={draft.sharing.name} disabled={!trusted} placeholder={sharing?.name || "This computer's name"} onChange={e => set("sharing", { name: e.target.value })} />
                 </Stack>
             )}
             {draft.sharing.enabled && (
-                <Row label="Sync watch history by itself" help="When a device this one is paired with comes back on the network, or Kumo's TV app is opened again, Continue watching and the positions are brought up to date. Sync on Home still does it at once.">
+                <Row label="Sync watch history by itself" help="When a device this one is paired with comes back on the network, or Aniko's TV app is opened again, Continue watching and the positions are brought up to date. Sync on Home still does it at once.">
                     <Switch checked={draft.sharing.autoSync ?? true} disabled={!trusted} onChange={v => set("sharing", { autoSync: v })} />
                 </Row>
             )}
             {draft.sharing.enabled && peers.some(p => p.role === "hub") && (
-                <Row label="Same theme on all my devices" help="Through the Kumo Hub: the colors, the look and the player settings stay the same on the devices on your AniList account. Changed on one, they change on the others.">
+                <Row label="Same theme on all my devices" help="Through the Aniko Hub: the colors, the look and the player settings stay the same on the devices on your AniList account. Changed on one, they change on the others.">
                     <Switch checked={draft.sharing.syncPrefs ?? true} disabled={!trusted} onChange={v => set("sharing", { syncPrefs: v })} />
                 </Row>
             )}
@@ -1278,7 +1278,7 @@ function SharingGroup({ draft, set }: SectionProps) {
             {saved?.enabled && sharing && (
                 <>
                     <div className="px-4 pt-3.5 pb-1">
-                        <p className="text-sm font-medium">Kumo apps on this network</p>
+                        <p className="text-sm font-medium">Aniko apps on this network</p>
                         <p className="mt-0.5 text-xs text-subtle">
                             Turn on <b>Share my library</b> for those that may watch this computer's anime.
                             {sharing.addresses.length > 0 && <> This computer is at {sharing.addresses.join(", ")}.</>}
@@ -1286,7 +1286,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                     </div>
                     {peers.length === 0 && (
                         <p className="px-4 py-3 text-sm text-muted">
-                            {sharing.listening ? "Looking for Kumo apps… Turn on library sharing on the other computer too." : "This computer can't listen for the others (another program uses the network port): add them by address below."}
+                            {sharing.listening ? "Looking for Aniko apps… Turn on library sharing on the other computer too." : "This computer can't listen for the others (another program uses the network port): add them by address below."}
                         </p>
                     )}
                     {peers.map(p => (
@@ -1296,12 +1296,12 @@ function SharingGroup({ draft, set }: SectionProps) {
                                 <p className="flex items-center gap-2 text-sm font-medium">
                                     <span className={cn("size-2 shrink-0 rounded-full", p.online ? "bg-emerald-400" : "bg-white/20")} />
                                     <span className="truncate">{p.name}</span>
-                                    {p.role === "hub" && <Badge tone="brand">Kumo Hub</Badge>}
+                                    {p.role === "hub" && <Badge tone="brand">Aniko Hub</Badge>}
                                 </p>
                                 <p className="mt-0.5 text-xs text-subtle">
                                     {[
                                         p.address,
-                                        p.version && `Kumo ${p.version}${p.platform === "android" ? " for Android" : ""}`,
+                                        p.version && `Aniko ${p.version}${p.platform === "android" ? " for Android" : ""}`,
                                         !p.online && p.lastSeen > 0 && `seen ${relativeTime(p.lastSeen)}`,
                                         p.shares && `shares its library with you${p.files ? ` (${p.files} ${p.files === 1 ? "file" : "files"})` : ""}`,
                                         p.error,
@@ -1474,7 +1474,7 @@ function ParentalHere() {
     )
 }
 
-// A Kumo Hub around: its owner shares its library with this device (on its
+// An Aniko Hub around: its owner shares its library with this device (on its
 // dashboard), and this device can give it its AniList login, settings and
 // watch history, for the account's other devices.
 function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolean; loggedIn: boolean }) {
@@ -1539,7 +1539,7 @@ function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolea
     )
 }
 
-// The other Kumo runs another version than this one: some things (Sync,
+// The other Aniko runs another version than this one: some things (Sync,
 // waking it up) need both up to date.
 function VersionNote({ peer, mine }: { peer: SharingPeer; mine?: string }) {
     const c = compareVersions(peer.version, mine)
@@ -1547,8 +1547,8 @@ function VersionNote({ peer, mine }: { peer: SharingPeer; mine?: string }) {
     return (
         <p className="mt-1 text-xs text-amber-200/80">
             {c < 0
-                ? `Older than this one (Kumo ${mine}): update Kumo on ${peer.name} so everything works together. Its Home page has the update button.`
-                : `Newer than this one (Kumo ${mine}): update Kumo here so everything works together (Settings › Updates & about).`}
+                ? `Older than this one (Aniko ${mine}): update Aniko on ${peer.name} so everything works together. Its Home page has the update button.`
+                : `Newer than this one (Aniko ${mine}): update Aniko here so everything works together (Settings › Updates & about).`}
         </p>
     )
 }
@@ -1602,8 +1602,8 @@ function LibrarySection({ draft, set }: SectionProps) {
                         label="A library on this computer"
                         help={
                             off
-                                ? "Off: this computer plays the libraries your Kumo Hub and other computers share with it (Settings › Other devices). Its folders are kept for when you turn it back on."
-                                : "Turn it off to use only your Kumo Hub's library (or another computer's). Kumo forgets this computer's files; nothing is deleted from the disk."
+                                ? "Off: this computer plays the libraries your Aniko Hub and other computers share with it (Settings › Other devices). Its folders are kept for when you turn it back on."
+                                : "Turn it off to use only your Aniko Hub's library (or another computer's). Aniko forgets this computer's files; nothing is deleted from the disk."
                         }
                     >
                         <Switch label="A library on this computer" checked={!off} onChange={v => set("library", { off: !v })} />
@@ -1723,7 +1723,7 @@ function PlaybackSection({ draft, set }: SectionProps) {
                     <input type="range" min={0.5} max={1} step={0.01} value={p.completionThreshold} onChange={e => set("playback", { completionThreshold: Number(e.target.value) })} className="accent-[var(--brand)]" />
                 </Stack>
             </Group>
-            <Group title="Audio & subtitles" description="Kumo remembers the audio and subtitle track you pick for each anime and uses it for the next episodes.">
+            <Group title="Audio & subtitles" description="Aniko remembers the audio and subtitle track you pick for each anime and uses it for the next episodes.">
                 <Row label="Remember my track choice per anime">
                     <Switch checked={p.rememberTracks} onChange={v => set("playback", { rememberTracks: v })} />
                 </Row>
@@ -1769,7 +1769,7 @@ function TranscodeSection({ draft, set }: SectionProps) {
     const t = draft.transcode
     return (
         <>
-            <Group title="In-app player" description="Browsers can't decode every format (HEVC, AC3/DTS audio, MKV with multiple tracks…). Kumo repackages or converts those with ffmpeg on the fly so every file plays.">
+            <Group title="In-app player" description="Browsers can't decode every format (HEVC, AC3/DTS audio, MKV with multiple tracks…). Aniko repackages or converts those with ffmpeg on the fly so every file plays.">
                 <Row label="Status">
                     <div className="flex gap-2">
                         <Detect ok={status?.features.ffmpeg} label="ffmpeg" />
@@ -1880,7 +1880,7 @@ function ClientFields({ value, onChange, showTags }: { value: Settings["qbittorr
             <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium">Tags</span>
                 <Input value={value.tags} onChange={e => onChange({ tags: e.target.value })} />
-                <span className="text-xs text-subtle">Comma separated tags to apply to downloaded torrents. e.g. kumo,anime</span>
+                <span className="text-xs text-subtle">Comma separated tags to apply to downloaded torrents. e.g. aniko,anime</span>
             </label>
             {showTags && (
                 <label className="flex flex-col gap-1.5">
@@ -1912,8 +1912,8 @@ function TorrentClientSection({ draft, set }: SectionProps) {
     }
     return (
         <>
-            <Group title="Torrent client" description="The program that downloads torrents. Kumo talks to its web interface.">
-                <Row label="Use" help="Where Kumo sends torrents." keywords="default client qbittorrent transmission">
+            <Group title="Torrent client" description="The program that downloads torrents. Aniko talks to its web interface.">
+                <Row label="Use" help="Where Aniko sends torrents." keywords="default client qbittorrent transmission">
                     <Select
                         className="w-44"
                         value={draft.torrent.defaultClient}
@@ -1994,7 +1994,7 @@ function StreamingSection({ draft, set }: SectionProps) {
                     />
                 </Row>
             </Group>
-            <Group title="ani-cli" description="Kumo drives your installed ani-cli to find sub and dub streams and downloads, so updating ani-cli keeps everything working.">
+            <Group title="ani-cli" description="Aniko drives your installed ani-cli to find sub and dub streams and downloads, so updating ani-cli keeps everything working.">
                 <Row label="Status">
                     <div className="flex flex-wrap justify-end gap-2">
                         {ani?.installed ? <Badge tone="green">ani-cli {ani.version}</Badge> : <Badge tone="red">ani-cli not found</Badge>}
@@ -2012,8 +2012,8 @@ function StreamingSection({ draft, set }: SectionProps) {
                         label="Install ani-cli"
                         help={
                             status?.platform === "darwin"
-                                ? "With the other programs Kumo uses, downloaded into Kumo's folder: Settings › Desktop app & programs."
-                                : "With Git, whose bash runs it, and the other programs Kumo uses: Settings › Desktop app & programs."
+                                ? "With the other programs Aniko uses, downloaded into Aniko's folder: Settings › Desktop app & programs."
+                                : "With Git, whose bash runs it, and the other programs Aniko uses: Settings › Desktop app & programs."
                         }
                     >
                         <InstallProgramsButton />
@@ -2170,7 +2170,7 @@ function LogsSection() {
     )
 }
 
-// The version, and Kumo's own updates: the Home page offers and installs
+// The version, and Aniko's own updates: the Home page offers and installs
 // them, this says where things stand.
 function AboutSection() {
     const { data: status } = useStatus()
@@ -2189,11 +2189,11 @@ function AboutSection() {
     else if (u.available) state = { tone: "brand", label: `${latest} available`, help: lan || u.canApply ? undefined : u.applyNote }
     else if (u.latest) state = { tone: "green", label: "Up to date", help: u.note }
     else if (u.error) state = { tone: "amber", label: "Couldn't check" }
-    else state = { tone: "gray", label: "Not checked yet", help: "Kumo checks shortly after it starts, then every 6 hours." }
+    else state = { tone: "gray", label: "Not checked yet", help: "Aniko checks shortly after it starts, then every 6 hours." }
     if (u?.state === "failed" && !busy) state.help = [u.message, state.help].filter(Boolean).join(" ")
     return (
         <>
-            <Group title="Kumo">
+            <Group title="Aniko">
                 <Row label="Version" help={`${platformName(status?.platform)} · ${status?.client === "desktop" ? "Desktop" : status?.client === "lan" ? "LAN" : "Web UI"}`}>
                     <span className="flex items-center gap-2 text-sm">
                         {status?.version}
@@ -2212,7 +2212,7 @@ function AboutSection() {
             </Group>
             {/* Installing it, from here too (as on Home). */}
             {!lan && <UpdateBanner inSettings />}
-            <Group title="Updates" description="Kumo looks for a newer version on GitHub and offers it here and on the Home page.">
+            <Group title="Updates" description="Aniko looks for a newer version on GitHub and offers it here and on the Home page.">
                 <Row
                     label="Beta updates"
                     help={
@@ -2240,7 +2240,7 @@ function AboutSection() {
                         </a>
                     </Row>
                 )}
-                <Row label="Last check" help={u?.checking ? "Checking now…" : u?.checkedAt ? `${relativeTime(u.checkedAt)}. Kumo checks each time it opens, and every 6 hours.` : "Never"}>
+                <Row label="Last check" help={u?.checking ? "Checking now…" : u?.checkedAt ? `${relativeTime(u.checkedAt)}. Aniko checks each time it opens, and every 6 hours.` : "Never"}>
                     {!lan && (
                         <Button size="sm" icon={<RefreshCw className="size-4" />} loading={check.isPending || u?.checking} onClick={() => check.mutate()}>
                             Check for updates

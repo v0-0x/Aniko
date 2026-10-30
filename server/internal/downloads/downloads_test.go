@@ -22,7 +22,7 @@ const testURL = "http://127.0.0.1:9/ep.m3u8" // never fetched: every downloader 
 func newTestManager(t *testing.T, mutate func(*config.Settings)) (*Manager, string) {
 	t.Helper()
 	dir := t.TempDir()
-	d, err := db.Open(filepath.Join(dir, "kumo.db"))
+	d, err := db.Open(filepath.Join(dir, "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +275,7 @@ while [ $# -gt 0 ]; do
 	shift
 done
 yes 'WARNING: [generic] Falling back on generic information extractor' | head -n 30000 >&2
-echo 'KUMO| 42.0%|1.50MiB/s|00:07'
+echo 'ANIKO| 42.0%|1.50MiB/s|00:07'
 printf 'partial' > "$out.part"
 printf 'fragment' > "$out.part-Frag1"
 `
@@ -348,7 +348,7 @@ while :; do sleep 0.05; done
 				c.AniCli.Downloader, c.Transcode.FfmpegPath = tc.name, script
 			})
 			it := enqueue(t, m, "Halt")
-			waitFile(t, filepath.Join(lib, "Halt", ".kumo-download-"+it.ID, "Halt - 01 [SUB]"+tc.partial))
+			waitFile(t, filepath.Join(lib, "Halt", ".aniko-download-"+it.ID, "Halt - 01 [SUB]"+tc.partial))
 			m.Cancel(it.ID)
 			waitIdleWithin(t, m, 5*time.Second)
 			if got := find(m, it.ID); got.Status != StatusCanceled {

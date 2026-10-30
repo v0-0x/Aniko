@@ -1,9 +1,9 @@
-# Builds, tests and packages Kumo for macOS on a real Mac, then publishes the
-# disk image and the zip of the app as the GitHub Release "Kumo <version> for
+# Builds, tests and packages Aniko for macOS on a real Mac, then publishes the
+# disk image and the zip of the app as the GitHub Release "Aniko <version> for
 # macOS", tagged macos-v<version> on the commit it built.
 #
 # The app is universal: one download for Apple silicon and Intel Macs. The
-# server is built for both (dist/macos/kumo-arm64 and kumo-x64) and
+# server is built for both (dist/macos/aniko-arm64 and aniko-x64) and
 # electron-builder merges them into the app's one program
 # (desktop/electron-builder.yml).
 #
@@ -14,7 +14,7 @@
 #
 # Runs on every push to the repository's default branch (except pushes that
 # only change docs, the Arch or the Windows packaging), and by hand from the
-# Actions tab. Each one is a beta (a pre-release, "Kumo <version> beta for
+# Actions tab. Each one is a beta (a pre-release, "Aniko <version> beta for
 # macOS") unless the pushed commit's message says [stable] or it's run by
 # hand as stable (see windows.yml). The newest 10 stable releases and the
 # newest 10 betas are kept: older ones are deleted, tags included.
@@ -96,21 +96,21 @@ jobs:
             echo "::error::desktop/package.json has no version like 1.0.0 (it says '$base')"
             exit 1
           fi
-          # The commits since the one kumoVersionBase counts (2.0.0's).
-          from=$(node -p 'require("./desktop/package.json").kumoVersionBase || 0')
+          # The commits since the one anikoVersionBase counts (2.0.0's).
+          from=$(node -p 'require("./desktop/package.json").anikoVersionBase || 0')
           patch=$(( $(git rev-list --count HEAD) - from ))
           if (( patch < 0 )); then
-            echo "::error::This commit is before kumoVersionBase ($from) in desktop/package.json"
+            echo "::error::This commit is before anikoVersionBase ($from) in desktop/package.json"
             exit 1
           fi
           version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$patch"
           {
             echo "version=$version"
             echo "tag=macos-v$version"
-            echo "dmg=Kumo-$version-macos-universal.dmg"
-            echo "zip=Kumo-$version-macos-universal.zip"
+            echo "dmg=Aniko-$version-macos-universal.dmg"
+            echo "zip=Aniko-$version-macos-universal.zip"
           } >> "$GITHUB_OUTPUT"
-          echo "Building Kumo $version for macOS"
+          echo "Building Aniko $version for macOS"
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -154,7 +154,7 @@ jobs:
           command -v ffmpeg || brew install ffmpeg
           ffmpeg -hide_banner -version | head -1
 
-      # The setup that installs the programs Kumo uses runs on users' Macs,
+      # The setup that installs the programs Aniko uses runs on users' Macs,
       # in Terminal (Settings > App > Programs): check that it parses in the
       # bash macOS has, then run it here like a user would (without
       # Homebrew) and check that what it downloaded runs. A failure only
@@ -190,20 +190,20 @@ jobs:
           mkdir -p ../dist/macos
           config=github.com/simo1337s/animetest/server/internal/config
           for arch in arm64 amd64; do
-            out=../dist/macos/kumo-$arch
-            [ "$arch" = amd64 ] && out=../dist/macos/kumo-x64
-            GOOS=darwin GOARCH=$arch go build -trimpath -ldflags "-s -w -X $config.AppVersion=$VERSION -X $config.Commit=$GITHUB_SHA" -o "$out" ./cmd/kumo
+            out=../dist/macos/aniko-$arch
+            [ "$arch" = amd64 ] && out=../dist/macos/aniko-x64
+            GOOS=darwin GOARCH=$arch go build -trimpath -ldflags "-s -w -X $config.AppVersion=$VERSION -X $config.Commit=$GITHUB_SHA" -o "$out" ./cmd/aniko
           done
-          file ../dist/macos/kumo-*
-          reported=$(../dist/macos/kumo-arm64 --version)
-          echo "kumo-arm64 --version: $reported"
-          if [ "$reported" != "Kumo $VERSION" ]; then
-            echo "::error::kumo-arm64 says '$reported' instead of 'Kumo $VERSION': the version didn't make it into the build."
+          file ../dist/macos/aniko-*
+          reported=$(../dist/macos/aniko-arm64 --version)
+          echo "aniko-arm64 --version: $reported"
+          if [ "$reported" != "Aniko $VERSION" ]; then
+            echo "::error::aniko-arm64 says '$reported' instead of 'Aniko $VERSION': the version didn't make it into the build."
             exit 1
           fi
           # The Intel server runs through Rosetta, when the runner has it.
           if arch -x86_64 /usr/bin/true 2>/dev/null; then
-            echo "kumo-x64 --version: $(arch -x86_64 ../dist/macos/kumo-x64 --version)"
+            echo "aniko-x64 --version: $(arch -x86_64 ../dist/macos/aniko-x64 --version)"
           fi
 
       # electron-builder names the files and versions the app after
@@ -224,11 +224,11 @@ jobs:
           DMG: ${{ steps.version.outputs.dmg }}
           ZIP: ${{ steps.version.outputs.zip }}
         run: |
-          app=dist/macos/release/mac-universal/Kumo.app
+          app=dist/macos/release/mac-universal/Aniko.app
           ls -la dist/macos/release
           test -f "dist/macos/release/$DMG"
           test -f "dist/macos/release/$ZIP"
-          for exe in "$app/Contents/MacOS/Kumo" "$app/Contents/Resources/kumo"; do
+          for exe in "$app/Contents/MacOS/Aniko" "$app/Contents/Resources/aniko"; do
             archs=$(lipo -archs "$exe")
             echo "$exe: $archs"
             if [[ $archs != *x86_64* || $archs != *arm64* ]]; then
@@ -239,13 +239,13 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$app"
           /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :LSMinimumSystemVersion" "$app/Contents/Info.plist"
 
-      # An update unpacks the zip with Kumo's own code: it must give back an
+      # An update unpacks the zip with Aniko's own code: it must give back an
       # app whose signature holds and whose server runs.
       - name: Check the zip the way an update unpacks it
         working-directory: server
         env:
-          KUMO_MAC_APP_ZIP: ${{ github.workspace }}/dist/macos/release/${{ steps.version.outputs.zip }}
-          KUMO_MAC_APP_VERSION: ${{ steps.version.outputs.version }}
+          ANIKO_MAC_APP_ZIP: ${{ github.workspace }}/dist/macos/release/${{ steps.version.outputs.zip }}
+          ANIKO_MAC_APP_VERSION: ${{ steps.version.outputs.version }}
         run: go test -count 1 -run TestReleasedMacApp -v ./internal/update
 
       # Opens the app like a user would and waits for its server to answer,
@@ -253,11 +253,11 @@ jobs:
       - name: Start the app
         timeout-minutes: 5
         run: |
-          app="$PWD/dist/macos/release/mac-universal/Kumo.app"
-          export KUMO_DATA_DIR="$RUNNER_TEMP/kumo-data"
-          "$app/Contents/MacOS/Kumo" > "$RUNNER_TEMP/kumo-app.log" 2>&1 &
+          app="$PWD/dist/macos/release/mac-universal/Aniko.app"
+          export ANIKO_DATA_DIR="$RUNNER_TEMP/aniko-data"
+          "$app/Contents/MacOS/Aniko" > "$RUNNER_TEMP/aniko-app.log" 2>&1 &
           pid=$!
-          info="${TMPDIR%/}/kumo/server.json"
+          info="${TMPDIR%/}/aniko/server.json"
           port=""
           for i in $(seq 1 90); do
             if [ -f "$info" ]; then
@@ -265,8 +265,8 @@ jobs:
               if [ -n "$port" ] && curl -s -o /dev/null "http://127.0.0.1:$port/api/status"; then break; fi
             fi
             if ! kill -0 "$pid" 2>/dev/null; then
-              echo "::error::Kumo quit on its own"
-              cat "$RUNNER_TEMP/kumo-app.log"
+              echo "::error::Aniko quit on its own"
+              cat "$RUNNER_TEMP/aniko-app.log"
               exit 1
             fi
             sleep 1
@@ -274,13 +274,13 @@ jobs:
           code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$port/api/status" || true)
           echo "The server answers on port $port with HTTP $code"
           sleep 8 # the window loads the UI
-          screencapture -x "$RUNNER_TEMP/kumo-window.png" || echo "no screenshot"
+          screencapture -x "$RUNNER_TEMP/aniko-window.png" || echo "no screenshot"
           kill "$pid" || true
           for i in $(seq 1 15); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
           echo "--- app log"
-          cat "$RUNNER_TEMP/kumo-app.log"
+          cat "$RUNNER_TEMP/aniko-app.log"
           if [ -z "$port" ] || [ "$code" = "000" ] || [ "$code" -ge 500 ]; then
-            echo "::error::Kumo's server didn't answer"
+            echo "::error::Aniko's server didn't answer"
             exit 1
           fi
 
@@ -290,7 +290,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: macos-window
-          path: ${{ runner.temp }}/kumo-window.png
+          path: ${{ runner.temp }}/aniko-window.png
           if-no-files-found: ignore
 
       # archive: false uploads the files as they are (no zip around them),
@@ -329,28 +329,32 @@ jobs:
           repo="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
           notes="$RUNNER_TEMP/release-notes.md"
           cat > "$notes" <<EOF
-          **Kumo $VERSION for macOS 13 Ventura or newer, on Apple silicon and Intel Macs** (one app for both). On Windows and Arch Linux, see [the README]($repo/blob/$GITHUB_SHA/README.md).
+          **Aniko $VERSION for macOS 13 Ventura or newer, on Apple silicon and Intel Macs** (one app for both). On Windows and Arch Linux, see [the README]($repo/blob/$GITHUB_SHA/README.md).
 
           | File | What it is |
           |---|---|
-          | \`$DMG\` | **Disk image** (recommended). Open it and drag Kumo to Applications. |
-          | \`$ZIP\` | The same app in a zip (Kumo's updates download it). |
+          | \`$DMG\` | **Disk image** (recommended). Open it and drag Aniko to Applications. |
+          | \`$ZIP\` | The same app in a zip (Aniko's updates download it). |
 
-          Kumo isn't notarized by Apple, so the first time macOS says it can't check it: open Kumo once, then go to **System Settings › Privacy & Security** and click **Open Anyway** (on macOS 14 and older, Control-click Kumo in Applications and choose **Open**). Or, in Terminal: \`xattr -dr com.apple.quarantine /Applications/Kumo.app\`
+          Aniko isn't notarized by Apple, so the first time macOS says it can't check it: open Aniko once, then go to **System Settings › Privacy & Security** and click **Open Anyway** (on macOS 14 and older, Control-click Aniko in Applications and choose **Open**). Or, in Terminal: \`xattr -dr com.apple.quarantine /Applications/Aniko.app\`
 
-          Kumo finds newer releases by itself and updates from its Home page (**Update**), once it's in your Applications folder.
+          Aniko finds newer releases by itself and updates from its Home page (**Update**), once it's in your Applications folder.
 
-          Some features use other programs: ffmpeg (needed by the in-app player for most files), yt-dlp, ani-cli and mpv. Kumo downloads them for your Mac from **Settings › Desktop app & programs**, with no Homebrew or password needed; see [packaging/macos/README.md]($repo/blob/$GITHUB_SHA/packaging/macos/README.md).
+          Some features use other programs: ffmpeg (needed by the in-app player for most files), yt-dlp, ani-cli and mpv. Aniko downloads them for your Mac from **Settings › Desktop app & programs**, with no Homebrew or password needed; see [packaging/macos/README.md]($repo/blob/$GITHUB_SHA/packaging/macos/README.md).
 
           Built from $GITHUB_SHA by [workflow run $GITHUB_RUN_NUMBER]($repo/actions/runs/$GITHUB_RUN_ID).
           EOF
           if [ "$CHANNEL" = beta ]; then
-            pre=true title="Kumo $VERSION beta for macOS"
-            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
+            pre=true title="Aniko $VERSION beta for macOS"
+            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Aniko offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
           else
-            pre=false title="Kumo $VERSION for macOS"
+            pre=false title="Aniko $VERSION for macOS"
           fi
-          files=("dist/macos/release/$DMG" "dist/macos/release/$ZIP")
+          # Aniko was called Kumo before 2.0.37: Kumo's updater (2.0.36 and
+          # older) looks for the zip by its old name, so a copy has it (the
+          # app in it has what that updater checks: Contents/Resources/kumo).
+          cp "dist/macos/release/$ZIP" "dist/macos/release/Kumo-$VERSION-macos-universal.zip"
+          files=("dist/macos/release/$DMG" "dist/macos/release/$ZIP" "dist/macos/release/Kumo-$VERSION-macos-universal.zip")
           if gh release view "$TAG" --json tagName > /dev/null 2>&1; then
             echo "Updating the release $TAG"
             gh release edit "$TAG" --title "$title" --notes-file "$notes" --prerelease="$pre" --latest=false

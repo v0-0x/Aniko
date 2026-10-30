@@ -1,17 +1,17 @@
-// Package update finds newer versions of Kumo on GitHub and installs them.
+// Package update finds newer versions of Aniko on GitHub and installs them.
 //
-// Kumo ships three ways, and updates each its own way:
+// Aniko ships three ways, and updates each its own way:
 //   - Arch Linux builds it from source with packaging/arch/PKGBUILD, so the
 //     newest version is a commit: the newest stable release's, or on the
 //     beta channel the head of the repository's default branch. The update
 //     downloads that source, builds it with makepkg and installs the
 //     package with pacman (through pkexec, which asks for the password).
-//   - Windows installs the GitHub Release "Kumo <v> for Windows" (tag
+//   - Windows installs the GitHub Release "Aniko <v> for Windows" (tag
 //     windows-v<v>). The update downloads the newest one's installer and
-//     runs it once Kumo has quit; the installer starts the new version.
-//   - macOS has the app from the GitHub Release "Kumo <v> for macOS" (tag
+//     runs it once Aniko has quit; the installer starts the new version.
+//   - macOS has the app from the GitHub Release "Aniko <v> for macOS" (tag
 //     macos-v<v>). The update downloads the newest one's zip of the app,
-//     unpacks it next to the app and, once Kumo has quit, puts it in the
+//     unpacks it next to the app and, once Aniko has quit, puts it in the
 //     app's place and opens it (apply_mac.go).
 //
 // Each change is published as a beta first (a GitHub pre-release), and the
@@ -43,7 +43,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/util"
 )
 
-// Version is a build of Kumo.
+// Version is a build of Aniko.
 type Version struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
@@ -59,7 +59,7 @@ const (
 	StateDownloading = "downloading"
 	StateBuilding    = "building"
 	StateInstalling  = "installing"
-	StateReady       = "ready" // installed: Kumo restarts into it
+	StateReady       = "ready" // installed: Aniko restarts into it
 	StateFailed      = "failed"
 )
 
@@ -88,7 +88,7 @@ type Status struct {
 	Message  string   `json:"message,omitempty"`
 	Log      []string `json:"log"` // the last output lines
 	// ManualCommand is a command to run in a terminal: to install the
-	// update when Kumo can't ask for the password, or what the build needs.
+	// update when Aniko can't ask for the password, or what the build needs.
 	ManualCommand string `json:"manualCommand,omitempty"`
 	// InstallFile: on Android, the downloaded APK the app asks Android to
 	// install (it's the app that can).
@@ -98,15 +98,15 @@ type Status struct {
 const (
 	defaultAPI = "https://api.github.com"
 	// packagedExe is where packaging/arch/PKGBUILD installs the server.
-	packagedExe = "/usr/lib/kumo/kumo"
+	packagedExe = "/usr/lib/aniko/aniko"
 	// VersionBase is the number of commits of the commit that's 2.0.0
-	// (desktop/package.json's kumoVersionBase): a build's version is
+	// (desktop/package.json's anikoVersionBase): a build's version is
 	// 2.0.<commits since then>, as the PKGBUILD and the release workflows
 	// make it, and was 1.0.<commits> before.
 	VersionBase = 147
 	maxChanges  = 30
 	maxLogLines = 20
-	// failureFile keeps why an update failed after Kumo had quit for it
+	// failureFile keeps why an update failed after Aniko had quit for it
 	// (in CacheDir), for the next run to show.
 	failureFile = "last-failure.txt"
 )
@@ -122,33 +122,33 @@ type Checker struct {
 	RepoID string
 	Client *http.Client
 	Hub    *events.Hub
-	// Exits ends Kumo when an update needs it to restart or to quit.
+	// Exits ends Aniko when an update needs it to restart or to quit.
 	Exits *lifecycle.Exits
 	// The running build.
 	Version string
 	Commit  string
-	// GOOS decides how Kumo updates: "windows" and "darwin" from
+	// GOOS decides how Aniko updates: "windows" and "darwin" from
 	// releases, otherwise from source (a stable release's, or the default
 	// branch's head).
 	GOOS string
 	// Channel returns "beta" for betas too, anything else (or nil) for
 	// stable releases only.
 	Channel func() string
-	// Executable is Kumo's server program, symlinks resolved.
+	// Executable is Aniko's server program, symlinks resolved.
 	Executable func() (string, error)
 	// PackagedExe is where the Arch package installs the server: only that
 	// copy updates itself on Linux.
 	PackagedExe string
-	// CacheDir holds the downloads and the build (<user cache>/kumo/update).
+	// CacheDir holds the downloads and the build (<user cache>/aniko/update).
 	CacheDir string
 	// Token returns a GitHub token, or "" (see githubToken).
 	Token func(ctx context.Context) string
 	// StartInstaller starts the Windows installer, on its own, outside
-	// Kumo's job object (see startInstaller).
+	// Aniko's job object (see startInstaller).
 	StartInstaller func(path string, args ...string) error
 	// macOS: StartHelper starts the program that opens the new app once
 	// the desktop app (the process ParentPID) has quit, and Writable says
-	// whether Kumo may put files in a folder.
+	// whether Aniko may put files in a folder.
 	StartHelper func(name string, args ...string) error
 	ParentPID   func() int
 	Writable    func(dir string) bool
@@ -169,11 +169,11 @@ type Checker struct {
 	wg     sync.WaitGroup
 }
 
-// New makes the checker for this copy of Kumo. It does nothing until Start
+// New makes the checker for this copy of Aniko. It does nothing until Start
 // or a call.
 func New(hub *events.Hub, exits *lifecycle.Exits) *Checker {
 	repo, id := config.UpdateRepo, config.UpdateRepoID
-	if r := strings.TrimSpace(os.Getenv("KUMO_UPDATE_REPO")); r != "" {
+	if r := strings.TrimSpace(config.Getenv("UPDATE_REPO")); r != "" {
 		repo, id = r, ""
 	}
 	cache, err := os.UserCacheDir()
@@ -192,7 +192,7 @@ func New(hub *events.Hub, exits *lifecycle.Exits) *Checker {
 		GOOS:           runtime.GOOS,
 		Executable:     executable,
 		PackagedExe:    packagedExe,
-		CacheDir:       filepath.Join(cache, "kumo", "update"),
+		CacheDir:       filepath.Join(cache, "aniko", "update"),
 		Token:          githubToken,
 		StartInstaller: startInstaller,
 		StartHelper:    util.Detach,
@@ -222,8 +222,8 @@ var defaultClient = &http.Client{
 	},
 }
 
-// executable is the server's program, symlinks resolved (/usr/bin/kumo-server
-// is a link to /usr/lib/kumo/kumo).
+// executable is the server's program, symlinks resolved (/usr/bin/aniko-server
+// is a link to /usr/lib/aniko/aniko).
 func executable() (string, error) {
 	exe, err := os.Executable()
 	if err != nil {
@@ -238,7 +238,7 @@ func executable() (string, error) {
 }
 
 // Start runs the checks in the background until Stop. It also shows why an
-// update failed after Kumo had quit for it.
+// update failed after Aniko had quit for it.
 func (c *Checker) Start() {
 	if b, err := os.ReadFile(filepath.Join(c.CacheDir, failureFile)); err == nil {
 		c.mu.Lock()
@@ -274,7 +274,7 @@ func (c *Checker) loop() {
 
 // cleanup removes what the last update left (the source, the build, the
 // installer, the new app), unless an update is using it: being installed,
-// Kumo quitting for it, or its package waiting to be installed by hand.
+// Aniko quitting for it, or its package waiting to be installed by hand.
 func (c *Checker) cleanup() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -327,43 +327,43 @@ func (c *Checker) statusLocked() Status {
 	s.Log = append([]string{}, s.Log...)
 	s.CanApply, s.ApplyNote = c.applyable()
 	if s.CanApply && fromReleases(c.GOOS) && s.Available && c.asset == nil {
-		s.CanApply, s.ApplyNote = false, "The newest release has no "+releaseFile(c.GOOS)+": download Kumo from its page."
+		s.CanApply, s.ApplyNote = false, "The newest release has no "+releaseFile(c.GOOS)+": download Aniko from its page."
 	}
 	return s
 }
 
-// applyable says whether this copy of Kumo can install updates itself, and
+// applyable says whether this copy of Aniko can install updates itself, and
 // how it does, or why it can't.
 func (c *Checker) applyable() (bool, string) {
 	exe, err := c.Executable()
 	switch c.GOOS {
 	case "linux":
 		if err != nil || exe != c.PackagedExe {
-			return false, "This copy of Kumo isn't the Arch package: update it with git pull and make (or build the PKGBUILD again)."
+			return false, "This copy of Aniko isn't the Arch package: update it with git pull and make (or build the PKGBUILD again)."
 		}
 		for _, tool := range []string{"makepkg", "pacman"} {
 			if _, ok := util.LookPath(tool); !ok {
 				return false, "Updating needs " + tool + ", which isn't installed: sudo pacman -S --needed base-devel go nodejs npm"
 			}
 		}
-		return true, "Kumo downloads the new version, builds it with makepkg and installs it with pacman, which asks for your password."
+		return true, "Aniko downloads the new version, builds it with makepkg and installs it with pacman, which asks for your password."
 	case "windows":
-		// <install dir>\resources\kumo.exe, next to <install dir>\Uninstall Kumo.exe.
-		if err != nil || !isFile(filepath.Join(filepath.Dir(filepath.Dir(exe)), "Uninstall Kumo.exe")) {
-			return false, "This is a portable copy of Kumo: to update it, download the new portable zip."
+		// <install dir>\resources\aniko.exe, next to <install dir>\Uninstall Aniko.exe.
+		if err != nil || !isFile(filepath.Join(filepath.Dir(filepath.Dir(exe)), "Uninstall Aniko.exe")) {
+			return false, "This is a portable copy of Aniko: to update it, download the new portable zip."
 		}
-		return true, "Kumo downloads the installer and runs it: Kumo closes, the new version installs and Kumo opens again."
+		return true, "Aniko downloads the installer and runs it: Aniko closes, the new version installs and Aniko opens again."
 	case "darwin":
 		return c.macApplyable(exe, err)
 	case "android":
-		return true, "Kumo downloads the new version and Android asks you to install it."
+		return true, "Aniko downloads the new version and Android asks you to install it."
 	case HubSystem:
 		if err != nil || !c.Writable(filepath.Dir(exe)) {
 			return false, "The hub's program can't be replaced where it is: install the hub again with its install script."
 		}
 		return true, "The hub downloads the new version, swaps it in and starts again (a few seconds)."
 	}
-	return false, "Kumo can't update itself on this system."
+	return false, "Aniko can't update itself on this system."
 }
 
 func isFile(p string) bool {
@@ -441,7 +441,7 @@ func (c *Checker) Check(ctx context.Context) Status {
 	close(done)
 	c.st.Checking = false
 	if errors.Is(err, context.Canceled) {
-		// Kumo is shutting down: that says nothing about updates.
+		// Aniko is shutting down: that says nothing about updates.
 		c.publishLocked()
 		return c.statusLocked()
 	}
@@ -469,22 +469,22 @@ func (c *Checker) describe(err error) (string, string) {
 		if c.GOOS == "windows" {
 			hint = "If the repository is private, sign in to GitHub: Settings › Desktop app & programs › Install missing programs signs you in, or run gh auth login."
 		}
-		return fmt.Sprintf("Kumo can't read github.com/%s (HTTP %d).", c.Repo, ae.status), hint
+		return fmt.Sprintf("Aniko can't read github.com/%s (HTTP %d).", c.Repo, ae.status), hint
 	case errors.As(err, &ae) && ae.rateLimited:
-		return "GitHub's limit on requests was reached: Kumo checks again later.", "Signing in to GitHub (gh auth login) raises the limit."
+		return "GitHub's limit on requests was reached: Aniko checks again later.", "Signing in to GitHub (gh auth login) raises the limit."
 	case errors.Is(err, context.DeadlineExceeded):
 		return "GitHub didn't answer in time.", ""
 	}
 	var dnsErr *net.DNSError
 	if errors.As(err, &dnsErr) {
-		return "Kumo can't reach GitHub: is this computer online?", ""
+		return "Aniko can't reach GitHub: is this computer online?", ""
 	}
 	// Anything else: said plainly, what happened under it as a detail.
-	return "Kumo couldn't check for updates just now. It tries again later.", "Details: " + err.Error()
+	return "Aniko couldn't check for updates just now. It tries again later.", "Details: " + err.Error()
 }
 
 func (c *Checker) check(ctx context.Context) (result, error) {
-	g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(ctx), userAgent: "Kumo/" + c.Version}
+	g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(ctx), userAgent: "Aniko/" + c.Version}
 	if fromReleases(c.GOOS) {
 		return c.checkReleases(ctx, g)
 	}
@@ -516,7 +516,7 @@ func (c *Checker) checkStable(ctx context.Context, g *github) (result, error) {
 		}
 	}
 	if best == nil {
-		return result{note: "There's no stable release of Kumo yet."}, nil
+		return result{note: "There's no stable release of Aniko yet."}, nil
 	}
 	commit, err := g.commit(ctx, best.TagName)
 	if err != nil {
@@ -557,7 +557,7 @@ func (c *Checker) against(ctx context.Context, g *github, latest *Version, what 
 	res := result{latest: latest}
 	if c.Commit == "" {
 		res.available = true
-		res.note = "Kumo can't tell which version this copy is (it was built without its git commit), so it offers the newest one."
+		res.note = "Aniko can't tell which version this copy is (it was built without its git commit), so it offers the newest one."
 		return res, nil
 	}
 	// Against the head's commit, not the branch: the version, the changes
@@ -567,7 +567,7 @@ func (c *Checker) against(ctx context.Context, g *github, latest *Version, what 
 	var ae *apiError
 	if errors.As(err, &ae) && (ae.status == http.StatusNotFound || ae.status == http.StatusUnprocessableEntity) {
 		res.available = true
-		res.note = "This copy was built from a commit GitHub doesn't have (" + short(c.Commit) + "), so Kumo can't tell what changed."
+		res.note = "This copy was built from a commit GitHub doesn't have (" + short(c.Commit) + "), so Aniko can't tell what changed."
 		return res, nil
 	}
 	if err != nil {
@@ -604,7 +604,7 @@ func fromReleases(goos string) bool {
 	return goos == "windows" || goos == "darwin" || goos == "android" || goos == HubSystem
 }
 
-// HubSystem is what a Kumo Hub updates as (Checker.GOOS): its own releases,
+// HubSystem is what an Aniko Hub updates as (Checker.GOOS): its own releases,
 // hub-v<version>, one archive per processor (see applyHub).
 const HubSystem = "hub"
 
@@ -625,13 +625,13 @@ func releasePrefix(goos string) string {
 func releaseAsset(goos, version string) string {
 	switch goos {
 	case "darwin":
-		return "Kumo-" + version + "-macos-universal.zip"
+		return "Aniko-" + version + "-macos-universal.zip"
 	case "android":
-		return "Kumo-" + version + "-android.apk"
+		return "Aniko-" + version + "-android.apk"
 	case HubSystem:
 		return HubArchive(version, runtime.GOARCH)
 	}
-	return "Kumo-Setup-" + version + "-windows-x64.exe"
+	return "Aniko-Setup-" + version + "-windows-x64.exe"
 }
 
 // releaseFile says what that file is, for messages.
@@ -658,11 +658,11 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 	prefix := releasePrefix(c.GOOS)
 	best := pickRelease(releases, prefix, c.beta())
 	if best == nil {
-		system := map[string]string{"darwin": "macOS", "android": "Android", HubSystem: "the Kumo Hub"}[c.GOOS]
+		system := map[string]string{"darwin": "macOS", "android": "Android", HubSystem: "the Aniko Hub"}[c.GOOS]
 		if system == "" {
 			system = "Windows"
 		}
-		return result{note: "There's no Kumo release for " + system + " yet."}, nil
+		return result{note: "There's no Aniko release for " + system + " yet."}, nil
 	}
 	version := strings.TrimPrefix(best.TagName, prefix)
 	latest := &Version{Version: version, Date: best.PublishedAt, URL: best.HTMLURL, Beta: best.Prerelease}
@@ -772,13 +772,13 @@ var (
 )
 
 // Apply starts installing the newest version, in the background: the
-// status follows it. On Linux it ends "ready" (restart Kumo to use it); on
-// Windows Kumo quits for the installer, which starts the new version, and on
+// status follows it. On Linux it ends "ready" (restart Aniko to use it); on
+// Windows Aniko quits for the installer, which starts the new version, and on
 // macOS to swap in the new app, which then opens.
 func (c *Checker) Apply() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	// Installing: on Windows and macOS, Kumo is quitting for the new
+	// Installing: on Windows and macOS, Aniko is quitting for the new
 	// version.
 	// Android: the APK is there, Android asks again (the last time was
 	// cancelled).
@@ -803,13 +803,13 @@ func (c *Checker) Apply() error {
 		inst = &a
 	}
 	c.applying = true
-	c.st.State, c.st.Progress, c.st.Message = StateDownloading, -1, "Downloading Kumo "+display(target)+"…"
+	c.st.State, c.st.Progress, c.st.Message = StateDownloading, -1, "Downloading Aniko "+display(target)+"…"
 	c.st.Log, c.st.ManualCommand, c.st.InstallFile = nil, "", ""
 	c.publishLocked()
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
-		g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(c.ctx), userAgent: "Kumo/" + c.Version}
+		g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(c.ctx), userAgent: "Aniko/" + c.Version}
 		var err error
 		switch c.GOOS {
 		case "windows":
@@ -892,7 +892,7 @@ func (c *Checker) output(line string) {
 	c.publishSoonLocked()
 }
 
-// saveFailure keeps why an update failed after Kumo had shut down for it,
+// saveFailure keeps why an update failed after Aniko had shut down for it,
 // for the next run to show (see Start).
 func (c *Checker) saveFailure(msg string) {
 	if err := os.MkdirAll(c.CacheDir, 0o700); err == nil {

@@ -120,7 +120,7 @@ function useThemes() {
         saveUI,
         navigate: useNavigate(),
         holiday: useStore(holidayStore),
-        theme: ui?.colorTheme ?? "kumo",
+        theme: ui?.colorTheme ?? "aniko",
         seasonal: ui?.seasonal ?? "auto",
         effects: ui?.seasonalEffects ?? true,
         classicLook: !!ui?.classicLook,

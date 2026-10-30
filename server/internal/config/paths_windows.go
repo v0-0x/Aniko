@@ -13,18 +13,18 @@ const videosFolder = "Videos"
 
 func defaultDataDir() string {
 	if d, err := os.UserConfigDir(); err == nil { // %APPDATA%
-		return filepath.Join(d, "Kumo")
+		return filepath.Join(d, "Aniko")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, "AppData", "Roaming", "Kumo")
+	return filepath.Join(home, "AppData", "Roaming", "Aniko")
 }
 
 // runtimeDir is also where the desktop app (desktop/main.js) looks.
 func runtimeDir() string {
 	if d := os.Getenv("LOCALAPPDATA"); d != "" {
-		return filepath.Join(d, "Kumo", "run")
+		return filepath.Join(d, "Aniko", "run")
 	}
-	return filepath.Join(os.TempDir(), "kumo")
+	return filepath.Join(os.TempDir(), "aniko")
 }
 
 // programFile returns the first of the paths below the Program Files

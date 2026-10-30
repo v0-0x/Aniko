@@ -5,13 +5,13 @@ import (
 	"strings"
 )
 
-// Lookup finds anime (and manga) by AniList ID, from what Kumo keeps of
+// Lookup finds anime (and manga) by AniList ID, from what Aniko keeps of
 // AniList (asking it for the ones it doesn't have). Not found: missing.
 type Lookup func(ctx context.Context, ids []int) map[int]Media
 
-// Filter takes out of Kumo's JSON answers what the rules block, wherever
+// Filter takes out of Aniko's JSON answers what the rules block, wherever
 // they list anime: AniList's own objects (an "id" with "isAdult" or
-// "genres"), and Kumo's that name one by "mediaId" (local files, watch
+// "genres"), and Aniko's that name one by "mediaId" (local files, watch
 // history, list entries, shared files…). Blocked items are dropped from
 // the lists they're in; an answer that is itself about a blocked anime (its
 // page) is blocked whole.
@@ -69,7 +69,7 @@ func (f Filter) walk(v any, known map[int]Media) any {
 	return v
 }
 
-// The keys under which Kumo's and AniList's objects carry an anime.
+// The keys under which Aniko's and AniList's objects carry an anime.
 var mediaKeys = []string{"media", "node", "mediaRecommendation"}
 
 // blocked says why o is blocked: it is an anime, or it is about one.

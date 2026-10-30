@@ -174,7 +174,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const [time, setTime] = useState(0) // absolute time
     const [duration, setDuration] = useState(0)
     const [buffered, setBuffered] = useState(0)
-    const [volume, setVolume] = useState(() => Number(readLocal("kumo-volume") ?? 1))
+    const [volume, setVolume] = useState(() => Number(readLocal("aniko-volume") ?? 1))
     const [muted, setMuted] = useState(false)
     const [rate, setRate] = useState(1)
     const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement)
@@ -578,7 +578,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         const decoded = () => ("getVideoPlaybackQuality" in v ? v.getVideoPlaybackQuality().totalVideoFrames : 1)
         const shown = () => (rvfc ? frames : decoded()) > 0
         let from = -1
-        // Counted again from a seek; not while Kumo is in the background
+        // Counted again from a seek; not while Aniko is in the background
         // (nothing is drawn then).
         const onSeek = () => void (from = -1)
         v.addEventListener("seeking", onSeek)
@@ -674,7 +674,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         const v = videoRef.current
         if (!v) return
         if (!trackRef.current) {
-            trackRef.current = v.addTextTrack("subtitles", "Kumo", "und")
+            trackRef.current = v.addTextTrack("subtitles", "Aniko", "und")
         }
         const tr = trackRef.current
         // Hidden while they change: a cue removed while it shows can stay
@@ -1217,7 +1217,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         v.volume = volume
         v.muted = muted
         try {
-            localStorage.setItem("kumo-volume", String(volume))
+            localStorage.setItem("aniko-volume", String(volume))
         } catch {
             /* ignore */
         }
@@ -1453,7 +1453,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 </div>
             )}
 
-            {/* top bar. The small window's: what plays, back to Kumo and close;
+            {/* top bar. The small window's: what plays, back to Aniko and close;
                 dragging it moves the window. */}
             {mini && (
                 <div
@@ -1463,7 +1463,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     )}
                 >
                     <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-white">{title}</p>
-                    <button onClick={expand} title="Back to Kumo (p)" aria-label="Back to Kumo" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">
+                    <button onClick={expand} title="Back to Aniko (p)" aria-label="Back to Aniko" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">
                         <Maximize2 className="size-4" />
                     </button>
                     <button onClick={close} title="Close" aria-label="Close" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">

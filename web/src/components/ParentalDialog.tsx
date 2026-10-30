@@ -8,8 +8,8 @@ import { cn, cover, GENRES, img, relativeTime, title } from "@/lib/utils"
 import { MediaPicker } from "./MediaPicker"
 import { Badge, Button, Dialog, EmptyState, Input, Progress, Switch, Tabs } from "./ui"
 
-// A device's parental controls, set on the computer (or Kumo Hub) that
-// shares with it: what it may watch, and what it watched. Its Kumo keeps
+// A device's parental controls, set on the computer (or Aniko Hub) that
+// shares with it: what it may watch, and what it watched. Its Aniko keeps
 // them, also away from home, until they're lifted here (or with the PIN on
 // the device).
 
@@ -73,7 +73,7 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
             open={open}
             onOpenChange={onOpenChange}
             title={`Parental controls · ${device.name}`}
-            description={`What it may watch. Its Kumo hides the rest and won't open or play it, also away from home; ${host} shares nothing blocked with it.`}
+            description={`What it may watch. Its Aniko hides the rest and won't open or play it, also away from home; ${host} shares nothing blocked with it.`}
             className="w-[min(94vw,640px)]"
             footer={
                 tab === "rules" ? (

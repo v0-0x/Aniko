@@ -11,7 +11,7 @@ import { HolidayBackdrop, HolidayGarland } from "./components/HolidayDecor"
 import { HolidayEffects } from "./components/HolidayEffects"
 import { useHolidayNotice } from "./components/HolidayBadge"
 import { WhatsNew } from "./components/WhatsNew"
-import { KumoLogo, Sidebar } from "./components/Sidebar"
+import { AnikoLogo, Sidebar } from "./components/Sidebar"
 import { PhoneNav } from "./components/PhoneNav"
 import { Button, Input, Spinner, TooltipProvider } from "./components/ui"
 import { api, onPasswordRequired } from "./lib/api"
@@ -49,7 +49,7 @@ const MangaReaderPage = lazy(() => import("./pages/MangaReader"))
 const WebviewPage = lazy(() => import("./pages/Webview"))
 const ProfilePage = lazy(() => import("./pages/Profile"))
 
-// A Kumo Hub (kumo --hub) shows its dashboard instead of the app.
+// An Aniko Hub (aniko --hub) shows its dashboard instead of the app.
 const HubApp = lazy(() => import("./pages/hub/HubApp"))
 
 export default function App() {
@@ -71,10 +71,10 @@ export default function App() {
     // Until the server says what it is (a moment): not the app's pages
     // asking it for things.
     if (!status && (!isError || isFetching)) return <div className="h-full bg-frame" />
-    return <KumoApp />
+    return <AnikoApp />
 }
 
-function KumoApp() {
+function AnikoApp() {
     const qc = useQueryClient()
     const navigate = useNavigate()
     const location = useLocation()
@@ -84,7 +84,7 @@ function KumoApp() {
     const mini = location.pathname === "/mini"
 
     // Not in the small picture-in-picture window: alerts and toasts belong
-    // in Kumo's window, not over the video.
+    // in Aniko's window, not over the video.
     useEffect(() => (mini ? undefined : connectEvents(qc)), [qc, mini])
     // Back finds a page as it was left (scrolled, focused); a new one starts
     // at its top. Before the page is drawn: its scroll isn't the last one's.
@@ -118,7 +118,7 @@ function KumoApp() {
     // Apply UI preferences. Settings previews the colors and holiday theme
     // before they're saved; when that preview ends (Discard, leaving the
     // page) the saved ones come back. The date is looked at again each hour:
-    // a holiday theme comes on (and goes) while Kumo runs.
+    // a holiday theme comes on (and goes) while Aniko runs.
     const ui = status?.settings.ui
     const preview = useStore(themePreviewStore)
     const [hour, setHour] = useState(() => Math.floor(Date.now() / 3_600_000))
@@ -139,7 +139,7 @@ function KumoApp() {
     // From the saved settings: not a holiday being tried in Settings.
     const saved = useMemo(() => resolveTheme(ui), [ui, hour])
     useHolidayNotice(ui && !mini ? saved.holiday : null, ui?.seasonal ?? "auto")
-    // Updates are looked for each time Kumo opens (on this computer only).
+    // Updates are looked for each time Aniko opens (on this computer only).
     useCheckOnOpen(!!status && status.client !== "lan" && !mini)
     const playing = useStore(playerStore, p => !!p)
     // Before 2.0's look: its plain panel, no holiday decorations.
@@ -243,7 +243,7 @@ function MiniPlayer() {
         return !!r
     })
     useEffect(() => {
-        document.title = "Kumo"
+        document.title = "Aniko"
     }, [])
     return (
         <TooltipProvider>
@@ -279,8 +279,8 @@ function PasswordGate({ hub }: { hub?: boolean }) {
     return (
         <div className="grid h-full place-items-center bg-bg p-6">
             <div className="card w-full max-w-sm p-8 text-center rise-in">
-                <KumoLogo className="mx-auto size-11" />
-                <h1 className="mt-4 text-xl font-semibold">{hub ? "Kumo Hub" : "Kumo"}</h1>
+                <AnikoLogo className="mx-auto size-11" />
+                <h1 className="mt-4 text-xl font-semibold">{hub ? "Aniko Hub" : "Aniko"}</h1>
                 <p className="mt-1 text-sm text-muted">{hub ? "Sign in to the hub's dashboard with its password." : "This server is password protected."}</p>
                 <div className="mt-6 flex flex-col gap-3">
                     <Input type="password" autoFocus icon={<Lock className="size-4" />} placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} />

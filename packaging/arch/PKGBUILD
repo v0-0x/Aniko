@@ -1,4 +1,4 @@
-# Kumo — anime app for Arch Linux.
+# Aniko — anime app for Arch Linux.
 #
 # Build & install from a checkout of this repository:
 #     cd packaging/arch && makepkg -si      (after a git pull: makepkg -sif)
@@ -6,7 +6,19 @@
 # The package is built straight from the checkout two levels up, so local
 # changes are picked up without committing them.
 
-pkgname=kumo
+# Aniko was called Kumo before 2.0.37. Kumo's own updater (2.0.36 and older)
+# builds this with KUMO_COMMIT set and installs the package named kumo-*:
+# built that way, the package keeps the old name (with Aniko in it), and
+# Aniko's updater swaps it for the aniko package later. Otherwise the aniko
+# package takes kumo's place (pacman asks to remove kumo).
+if [[ -n ${KUMO_COMMIT:-} && -z ${ANIKO_COMMIT:-} ]]; then
+    pkgname=kumo
+else
+    pkgname=aniko
+    provides=('kumo')
+    conflicts=('kumo')
+    replaces=('kumo')
+fi
 pkgver=2.0.0
 pkgrel=1
 pkgdesc="Anime library: AniList sync, auto matching, mpv & in-app player, ani-cli sub/dub streaming, torrents, extensions"
@@ -23,13 +35,13 @@ optdepends=(
     'discord: rich presence'
 )
 options=('!lto' '!debug' '!strip' '!buildflags') # pure Go (CGO off): makepkg's C/LD flags don't apply
-install=kumo.install
+install=aniko.install
 
 _root="$(realpath "${startdir}/../..")"
 
 # The version and commit go into the server, which compares them with
-# GitHub's to offer updates (Home page). Kumo's updater builds a downloaded
-# source, which has no .git: it passes them in KUMO_COMMIT and KUMO_VERSION.
+# GitHub's to offer updates (Home page). Aniko's updater builds a downloaded
+# source, which has no .git: it passes them in ANIKO_COMMIT and ANIKO_VERSION.
 # In a git checkout they come from git (version 2.0.<commits since 2.0.0's>,
 # see desktop/package.json); otherwise, e.g. in an extracted source zip, the
 # defaults stay. pkgver stays as it is on purpose: a pkgver() function would
@@ -39,7 +51,7 @@ build() {
     cd "${_root}"
     export GOFLAGS="-trimpath -mod=readonly -modcacherw"
     export CGO_ENABLED=0
-    local commit="${KUMO_COMMIT:-}" version="${KUMO_VERSION:-}" count
+    local commit="${ANIKO_COMMIT:-${KUMO_COMMIT:-}}" version="${ANIKO_VERSION:-${KUMO_VERSION:-}}" count
     if [[ ! -e "${_root}/.git" ]]; then
         # Not a checkout: Go mustn't stamp a git repository it's inside of
         # (e.g. a home folder kept in git).
@@ -48,10 +60,10 @@ build() {
         [[ -n ${commit} ]] || commit="$(git -C "${_root}" rev-parse HEAD 2>/dev/null)" || commit=""
         if [[ -z ${version} ]] && count="$(git -C "${_root}" rev-list --count HEAD 2>/dev/null)"; then
             # Major.minor from desktop/package.json, and the commits since
-            # the one its kumoVersionBase counts (2.0.0's).
+            # the one its anikoVersionBase counts (2.0.0's).
             local pkg="${_root}/desktop/package.json" mm from
             mm="$(sed -n 's/^ *"version": *"\([0-9]*\.[0-9]*\)\..*/\1/p' "${pkg}")"
-            from="$(sed -n 's/^ *"kumoVersionBase": *\([0-9]*\).*/\1/p' "${pkg}")"
+            from="$(sed -n 's/^ *"anikoVersionBase": *\([0-9]*\).*/\1/p' "${pkg}")"
             version="${mm:-1.0}.$((count - ${from:-0}))"
         fi
     fi
@@ -62,8 +74,8 @@ build() {
     make server GO_LDFLAGS="${ldflags}"
 }
 
-# The quick tests (Kumo's own updater skips them: --nocheck): the file name
-# parser, ani-cli's driver, extensions, sharing between Kumos, the watch
+# The quick tests (Aniko's own updater skips them: --nocheck): the file name
+# parser, ani-cli's driver, extensions, sharing between Anikos, the watch
 # history they exchange, and the updater.
 check() {
     cd "${_root}/server"
@@ -72,28 +84,30 @@ check() {
 
 package() {
     cd "${_root}"
-    install -Dm755 dist/kumo "${pkgdir}/usr/lib/kumo/kumo"
-    install -Dm644 desktop/main.js "${pkgdir}/usr/lib/kumo/app/main.js"
-    install -Dm644 desktop/preload.js "${pkgdir}/usr/lib/kumo/app/preload.js"
-    install -Dm644 desktop/package.json "${pkgdir}/usr/lib/kumo/app/package.json"
-    install -Dm644 packaging/icons/kumo-512.png "${pkgdir}/usr/lib/kumo/app/icon.png"
+    install -Dm755 dist/aniko "${pkgdir}/usr/lib/aniko/aniko"
+    install -Dm644 desktop/main.js "${pkgdir}/usr/lib/aniko/app/main.js"
+    install -Dm644 desktop/preload.js "${pkgdir}/usr/lib/aniko/app/preload.js"
+    install -Dm644 desktop/package.json "${pkgdir}/usr/lib/aniko/app/package.json"
+    install -Dm644 packaging/icons/aniko-512.png "${pkgdir}/usr/lib/aniko/app/icon.png"
 
-    install -Dm755 packaging/kumo.sh "${pkgdir}/usr/bin/kumo"
+    install -Dm755 packaging/aniko.sh "${pkgdir}/usr/bin/aniko"
     install -d "${pkgdir}/usr/bin"
-    ln -s /usr/lib/kumo/kumo "${pkgdir}/usr/bin/kumo-server"
+    ln -s /usr/lib/aniko/aniko "${pkgdir}/usr/bin/aniko-server"
+    # The old names, for what was set up before the rename: the menu entry
+    # and autostart a desktop made (the app moves them to aniko when it
+    # opens) and a running Kumo restarting into the update.
+    ln -s aniko "${pkgdir}/usr/bin/kumo"
+    ln -s aniko "${pkgdir}/usr/lib/kumo"
 
-    install -Dm644 packaging/kumo.desktop "${pkgdir}/usr/share/applications/kumo.desktop"
-    # The icon, by two names: kumo-anime, the menu entry's since the new logo
-    # (desktops cache icons by name, and kept showing the old one), and
-    # kumo, which desktop shortcuts made before ask for (the app moves them
-    # to kumo-anime when it starts).
-    local s n
-    for n in kumo-anime kumo; do
-        for s in 16 32 48 64 128 256 512; do
-            install -Dm644 "packaging/icons/kumo-${s}.png" "${pkgdir}/usr/share/icons/hicolor/${s}x${s}/apps/${n}.png"
-        done
-        install -Dm644 packaging/icons/kumo.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/${n}.svg"
+    install -Dm644 packaging/aniko.desktop "${pkgdir}/usr/share/applications/aniko.desktop"
+    local s
+    for s in 16 32 48 64 128 256 512; do
+        install -Dm644 "packaging/icons/aniko-${s}.png" "${pkgdir}/usr/share/icons/hicolor/${s}x${s}/apps/aniko.png"
     done
-    install -Dm644 packaging/kumo-server.service "${pkgdir}/usr/lib/systemd/user/kumo-server.service"
+    install -Dm644 packaging/icons/aniko.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/aniko.svg"
+    install -Dm644 packaging/aniko-server.service "${pkgdir}/usr/lib/systemd/user/aniko-server.service"
+    # Its name before the rename, for a kumo-server turned on back then (a
+    # link: systemd takes it as another name for aniko-server).
+    ln -s aniko-server.service "${pkgdir}/usr/lib/systemd/user/kumo-server.service"
     install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }

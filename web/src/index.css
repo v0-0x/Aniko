@@ -278,27 +278,27 @@ html[data-look="classic"][data-holiday] #main-scroll {
     background-image: radial-gradient(1100px 260px at 50% -120px, color-mix(in oklab, var(--brand) 11%, transparent), transparent);
 }
 /* Christmas lights twinkling, summer lanterns swaying (HolidayDecor). */
-.kumo-twinkle {
-    animation: kumo-twinkle 2.4s ease-in-out infinite;
+.aniko-twinkle {
+    animation: aniko-twinkle 2.4s ease-in-out infinite;
 }
-.kumo-twinkle-bulb {
-    animation: kumo-twinkle-bulb 2.4s ease-in-out infinite;
+.aniko-twinkle-bulb {
+    animation: aniko-twinkle-bulb 2.4s ease-in-out infinite;
 }
-@keyframes kumo-twinkle {
+@keyframes aniko-twinkle {
     50% {
         opacity: 0.25;
     }
 }
-@keyframes kumo-twinkle-bulb {
+@keyframes aniko-twinkle-bulb {
     50% {
         filter: brightness(0.65);
     }
 }
-.kumo-sway {
-    animation: kumo-sway 3.6s ease-in-out infinite alternate;
+.aniko-sway {
+    animation: aniko-sway 3.6s ease-in-out infinite alternate;
     transform-origin: 0 0;
 }
-@keyframes kumo-sway {
+@keyframes aniko-sway {
     from {
         transform: rotate(-4deg);
     }

@@ -41,7 +41,7 @@ func fakeAniSkip(t *testing.T, results ...fakeResult) (*db.DB, *[]string) {
 	oldAPI, oldHTTP := aniskipAPI, util.HTTP
 	aniskipAPI, util.HTTP = srv.URL, srv.Client() // util.HTTP refuses local addresses
 	t.Cleanup(func() { aniskipAPI, util.HTTP = oldAPI, oldHTTP })
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

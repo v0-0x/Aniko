@@ -15,8 +15,8 @@ type cmdInhibitor struct {
 	mu   sync.Mutex
 	args []string
 	cmd  *exec.Cmd
-	// stdin: its input is a pipe from Kumo, open while it runs (closed when
-	// Kumo ends, however it ends).
+	// stdin: its input is a pipe from Aniko, open while it runs (closed when
+	// Aniko ends, however it ends).
 	stdin bool
 	pipe  *os.File
 }

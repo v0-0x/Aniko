@@ -1,10 +1,10 @@
-# Builds Kumo Hub, Kumo's server alone made for a Raspberry Pi (or any
-# Linux computer) that shares its library with the Kumo apps on the network
-# and keeps them in step (kumo --hub, see server/internal/kumohub), and
-# publishes it as the GitHub Release "Kumo Hub <version>", tagged
+# Builds Aniko Hub, Aniko's server alone made for a Raspberry Pi (or any
+# Linux computer) that shares its library with the Aniko apps on the network
+# and keeps them in step (aniko --hub, see server/internal/anikohub), and
+# publishes it as the GitHub Release "Aniko Hub <version>", tagged
 # hub-v<version> on the commit it built: one archive per processor,
-# kumo-hub-<version>-linux-<arm64|arm|amd64>.tar.gz, each a folder with the
-# kumo-hub program, its service and install script (packaging/hub).
+# aniko-hub-<version>-linux-<arm64|arm|amd64>.tar.gz, each a folder with the
+# aniko-hub program, its service and install script (packaging/hub).
 #
 # The program is static (pure Go, SQLite included), so one build runs on any
 # Linux with that processor: arm64 for a 64-bit Raspberry Pi OS (or any
@@ -53,7 +53,7 @@ concurrency:
 
 jobs:
   hub:
-    name: Build and package (Kumo Hub, Linux)
+    name: Build and package (Aniko Hub, Linux)
     if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -90,10 +90,10 @@ jobs:
             exit 1
           fi
           count=$(git rev-list --count HEAD)
-          from=$(node -p 'require("./desktop/package.json").kumoVersionBase || 0')
+          from=$(node -p 'require("./desktop/package.json").anikoVersionBase || 0')
           patch=$(( count - from ))
           if (( patch < 0 )); then
-            echo "::error::This commit is before kumoVersionBase ($from) in desktop/package.json"
+            echo "::error::This commit is before anikoVersionBase ($from) in desktop/package.json"
             exit 1
           fi
           version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$patch"
@@ -101,7 +101,7 @@ jobs:
             echo "version=$version"
             echo "tag=hub-v$version"
           } >> "$GITHUB_OUTPUT"
-          echo "Building Kumo Hub $version"
+          echo "Building Aniko Hub $version"
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -135,7 +135,7 @@ jobs:
 
       - name: Test the hub
         working-directory: server
-        run: go test ./internal/kumohub/ ./internal/share/ ./internal/update/ ./internal/stream/ ./internal/api/
+        run: go test ./internal/anikohub/ ./internal/share/ ./internal/update/ ./internal/stream/ ./internal/api/
 
       # Without cgo: the program stands alone (no C library needed).
       - name: Build the hub for each processor
@@ -148,18 +148,25 @@ jobs:
           mkdir -p "$out"
           build() {
             local arch=$1 goarm=${2:-}
-            local dir="$out/kumo-hub-$VERSION-linux-$arch"
+            local dir="$out/aniko-hub-$VERSION-linux-$arch"
             mkdir -p "$dir"
             CGO_ENABLED=0 GOOS=linux GOARCH=$arch GOARM=$goarm \
-              go build -trimpath -ldflags "-s -w -X $config.AppVersion=$VERSION -X $config.Commit=$GITHUB_SHA" -o "$dir/kumo-hub" ./cmd/kumo
-            cp ../packaging/hub/install.sh ../packaging/hub/kumo-hub.service ../packaging/hub/README.md "$dir/"
-            chmod 755 "$dir/kumo-hub" "$dir/install.sh"
-            tar -czf "$out/kumo-hub-$VERSION-linux-$arch.tar.gz" -C "$out" "kumo-hub-$VERSION-linux-$arch"
+              go build -trimpath -ldflags "-s -w -X $config.AppVersion=$VERSION -X $config.Commit=$GITHUB_SHA" -o "$dir/aniko-hub" ./cmd/aniko
+            cp ../packaging/hub/install.sh ../packaging/hub/aniko-hub.service ../packaging/hub/README.md "$dir/"
+            chmod 755 "$dir/aniko-hub" "$dir/install.sh"
+            tar -czf "$out/aniko-hub-$VERSION-linux-$arch.tar.gz" -C "$out" "aniko-hub-$VERSION-linux-$arch"
+            # Aniko Hub was Kumo Hub before 2.0.37: Kumo Hub's updater (2.0.36
+            # and older) takes kumo-hub-<version>-linux-<arch>.tar.gz and the
+            # kumo-hub program in it, the same hub under its old name.
+            local old="$out/old/kumo-hub-$VERSION-linux-$arch"
+            mkdir -p "$old"
+            cp "$dir/aniko-hub" "$old/kumo-hub"
+            tar -czf "$out/kumo-hub-$VERSION-linux-$arch.tar.gz" -C "$out/old" "kumo-hub-$VERSION-linux-$arch"
           }
           build arm64
           build arm 7
           build amd64
-          file "$out"/*/kumo-hub
+          file "$out"/*/aniko-hub
           ls -la "$out"
 
       # The amd64 one runs here: it starts as a hub, answers, and stops.
@@ -167,11 +174,11 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          dir="dist/hub/kumo-hub-$VERSION-linux-amd64"
-          "$dir/kumo-hub" --version | grep -qF "$VERSION"
+          dir="dist/hub/aniko-hub-$VERSION-linux-amd64"
+          "$dir/aniko-hub" --version | grep -qF "$VERSION"
           home="$RUNNER_TEMP/hubhome"
           mkdir -p "$home"
-          HOME="$home" "$dir/kumo-hub" --port 43299 > "$RUNNER_TEMP/hub.log" 2>&1 &
+          HOME="$home" "$dir/aniko-hub" --port 43299 > "$RUNNER_TEMP/hub.log" 2>&1 &
           pid=$!
           for _ in $(seq 30); do
             curl -fsS http://127.0.0.1:43299/api/status > "$RUNNER_TEMP/status.json" 2> /dev/null && break
@@ -181,12 +188,12 @@ jobs:
           grep -q '"hub"' "$RUNNER_TEMP/status.json" || { echo "::error::the hub didn't answer as a hub"; cat "$RUNNER_TEMP/status.json"; exit 1; }
           kill "$pid"
           wait "$pid" || true
-          HOME="$home" "$dir/kumo-hub" --setup-code | grep -qE '^[0-9]{4}-[0-9]{4}$'
+          HOME="$home" "$dir/aniko-hub" --setup-code | grep -qE '^[0-9]{4}-[0-9]{4}$'
 
       - name: Upload the archives (workflow artifact)
         uses: actions/upload-artifact@v7
         with:
-          name: kumo-hub-${{ steps.version.outputs.version }}
+          name: aniko-hub-${{ steps.version.outputs.version }}
           path: dist/hub/*.tar.gz
           overwrite: true
           if-no-files-found: error
@@ -208,7 +215,7 @@ jobs:
           beta=""
           [ "$CHANNEL" = beta ] && beta=" --beta"
           cat > "$notes" <<EOF
-          **Kumo Hub $VERSION**: Kumo without a player, for a Raspberry Pi (Pi 4 or 5) or any Linux computer that stays on. It shares its library with the Kumo apps on your network (computers, TVs, phones), keeps the same AniList account's progress, list and theme in step on all of them as it changes, and takes their downloads if you let it. Its dashboard, in a browser, shows what it's streaming to whom, the devices and the Pi's CPU, memory, temperature and disks.
+          **Aniko Hub $VERSION**: Aniko without a player, for a Raspberry Pi (Pi 4 or 5) or any Linux computer that stays on. It shares its library with the Aniko apps on your network (computers, TVs, phones), keeps the same AniList account's progress, list and theme in step on all of them as it changes, and takes their downloads if you let it. Its dashboard, in a browser, shows what it's streaming to whom, the devices and the Pi's CPU, memory, temperature and disks.
 
           **Install** (on the Pi, as your usual user, with Raspberry Pi OS 64-bit best):
 
@@ -216,23 +223,23 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/packaging/hub/install.sh | bash -s --$beta
           \`\`\`
 
-          It installs the hub for your Pi's processor and ffmpeg, starts it as a service, and prints the dashboard's address (\`http://<your Pi>.local:43211\`) and a setup code to set its password. Then, on each device with Kumo, turn on **Settings › Other devices**: the hub shows up there.
+          It installs the hub for your Pi's processor and ffmpeg, starts it as a service, and prints the dashboard's address (\`http://<your Pi>.local:43211\`) and a setup code to set its password. Then, on each device with Aniko, turn on **Settings › Other devices**: the hub shows up there.
 
           | File | For |
           |---|---|
-          | \`kumo-hub-$VERSION-linux-arm64.tar.gz\` | 64-bit Raspberry Pi OS (Pi 3, 4, 5), any 64-bit ARM Linux |
-          | \`kumo-hub-$VERSION-linux-arm.tar.gz\` | 32-bit Raspberry Pi OS (Pi 2 and newer) |
-          | \`kumo-hub-$VERSION-linux-amd64.tar.gz\` | A Linux PC (x86-64) |
+          | \`aniko-hub-$VERSION-linux-arm64.tar.gz\` | 64-bit Raspberry Pi OS (Pi 3, 4, 5), any 64-bit ARM Linux |
+          | \`aniko-hub-$VERSION-linux-arm.tar.gz\` | 32-bit Raspberry Pi OS (Pi 2 and newer) |
+          | \`aniko-hub-$VERSION-linux-amd64.tar.gz\` | A Linux PC (x86-64) |
 
           Or unpack one and run its \`./install.sh\`. The hub updates itself from its dashboard. More: [packaging/hub/README.md]($repo/blob/$GITHUB_SHA/packaging/hub/README.md).
 
           Built from $GITHUB_SHA by [workflow run $GITHUB_RUN_NUMBER]($repo/actions/runs/$GITHUB_RUN_ID).
           EOF
           if [ "$CHANNEL" = beta ]; then
-            pre=true title="Kumo Hub $VERSION beta"
+            pre=true title="Aniko Hub $VERSION beta"
             { printf '%s\n\n' "> **Beta.** This version is a pre-release: hubs are offered it only with **Beta updates** on (the install command above turns it on). It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
           else
-            pre=false title="Kumo Hub $VERSION"
+            pre=false title="Aniko Hub $VERSION"
           fi
           files=(dist/hub/*.tar.gz)
           if gh release view "$TAG" --json tagName > /dev/null 2>&1; then

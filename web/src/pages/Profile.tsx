@@ -427,7 +427,7 @@ export function plainText(s: string) {
 }
 
 // The anime being watched, most recently updated first (the logged-in
-// user's own list, as Kumo has it).
+// user's own list, as Aniko has it).
 function WatchingNow() {
     const { data } = useCollection()
     const items = (data?.lists ?? [])
@@ -589,7 +589,7 @@ function Favourites({ profile }: { profile: Profile }) {
                                     <span className="line-clamp-2 text-center text-[13px]">{c.name.full}</span>
                                 </>
                             )
-                            // Characters have no page in Kumo: AniList's (not on a TV).
+                            // Characters have no page in Aniko: AniList's (not on a TV).
                             return tv ? (
                                 <div key={c.id} className="flex flex-col items-center gap-2">
                                     {body}

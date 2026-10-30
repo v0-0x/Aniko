@@ -10,7 +10,7 @@ import (
 // The sub/dub saved by earlier versions whenever an episode played is
 // forgotten once (the default applies again); choices made since stay.
 func TestUnchosenModesForgottenOnce(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

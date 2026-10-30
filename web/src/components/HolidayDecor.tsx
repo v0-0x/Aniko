@@ -100,9 +100,9 @@ function Lights({ width, animate }: { width: number; animate: boolean }) {
             <path d={wire} fill="none" stroke="#1f2a1f" strokeWidth="1.6" />
             {bulbs.map((b, i) => (
                 <g key={i} transform={`translate(${b.x} ${b.y})`}>
-                    <circle r="11" cy="7" fill={`url(#bulb-${b.c.slice(1)})`} className={animate ? "kumo-twinkle" : undefined} style={{ animationDelay: `${b.d}s` }} />
+                    <circle r="11" cy="7" fill={`url(#bulb-${b.c.slice(1)})`} className={animate ? "aniko-twinkle" : undefined} style={{ animationDelay: `${b.d}s` }} />
                     <rect x="-1.8" y="-1" width="3.6" height="3.4" rx="0.8" fill="#3f3f46" />
-                    <ellipse cy="6.8" rx="2.9" ry="4.4" fill={b.c} className={animate ? "kumo-twinkle-bulb" : undefined} style={{ animationDelay: `${b.d}s` }} />
+                    <ellipse cy="6.8" rx="2.9" ry="4.4" fill={b.c} className={animate ? "aniko-twinkle-bulb" : undefined} style={{ animationDelay: `${b.d}s` }} />
                     <ellipse cx="-1" cy="5.2" rx="0.7" ry="1.5" fill="#fff" opacity="0.55" />
                 </g>
             ))}
@@ -144,7 +144,7 @@ function Lanterns({ width, animate }: { width: number; animate: boolean }) {
             {lanterns.map((l, i) => (
                 // Swaying from its hook.
                 <g key={i} transform={`translate(${l.x} ${l.y}) scale(0.78)`}>
-                    <g className={animate ? "kumo-sway" : undefined} style={{ animationDelay: `${-l.d}s` }}>
+                    <g className={animate ? "aniko-sway" : undefined} style={{ animationDelay: `${-l.d}s` }}>
                         <circle cy="24" r="26" fill="url(#lantern-glow)" />
                         <line y1="0" y2="6" stroke="#52525b" strokeWidth="1.2" />
                         <rect x="-6" y="5" width="12" height="4" rx="1" fill="#27272a" />

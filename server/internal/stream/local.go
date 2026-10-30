@@ -34,7 +34,7 @@ type Local struct {
 	files    *library.Store
 	db       *db.DB
 	// MaxTranscodes: how many videos may be converted at once (0: any). A
-	// Kumo Hub's small computer converts one or two at most.
+	// Aniko Hub's small computer converts one or two at most.
 	MaxTranscodes int
 	transcoding   atomic.Int32
 }

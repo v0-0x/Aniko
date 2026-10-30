@@ -31,7 +31,7 @@ func TestSplitCommand(t *testing.T) {
 		args []string
 	}{
 		{"  " + exe + "  ", exe, nil},
-		{exe + " --profile=kumo  -x", exe, []string{"--profile=kumo", "-x"}},
+		{exe + " --profile=aniko  -x", exe, []string{"--profile=aniko", "-x"}},
 		{shell + " " + strings.Join(shellArgs, " "), shell, shellArgs},
 	} {
 		prog, args, err := splitCommand(tc.in)
@@ -39,7 +39,7 @@ func TestSplitCommand(t *testing.T) {
 			t.Errorf("%q: %q %q %v", tc.in, prog, args, err)
 		}
 	}
-	for _, in := range []string{"", "   ", "\t\n", filepath.Join(dir, "missing") + " --x", "kumo-no-such-program-xyz"} {
+	for _, in := range []string{"", "   ", "\t\n", filepath.Join(dir, "missing") + " --x", "aniko-no-such-program-xyz"} {
 		if _, _, err := splitCommand(in); err == nil {
 			t.Errorf("%q: no error", in)
 		}

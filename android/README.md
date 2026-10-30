@@ -1,13 +1,13 @@
-# Kumo for Android
+# Aniko for Android
 
 Made for TVs (a Fire TV Stick, Android TV), mainly to watch the libraries
 the computers at home share; it works on phones and tablets too.
 
-The app runs Kumo's server, the same as on a computer, built for Android
-(`libkumo.so`, which Android extracts somewhere it may run it), and shows its
+The app runs Aniko's server, the same as on a computer, built for Android
+(`libaniko.so`, which Android extracts somewhere it may run it), and shows its
 web UI full screen. On a TV the web UI is in TV mode (`web/src/lib/tv.ts`):
 the remote's arrows move the focus, OK presses, Back closes what's open or
-goes back (at Home, Kumo goes to the background: its server stays, so the
+goes back (at Home, Aniko goes to the background: its server stays, so the
 computers still reach it), ☰ lists what a right-click would, and the media
 keys drive the player (Play, Pause, Play/Pause, rewind, fast-forward, Next
 for the next episode).
@@ -15,7 +15,7 @@ for the next episode).
 - `app/src/main/java/app/kumo/MainActivity.java`: the screen, the remote's
   keys, and what the page asks of the app (`window.KumoAndroid`: keeping the
   screen on while a video plays, installing an update).
-- `KumoServer.java`: starts the server (data in the app's files) and waits for
+- `AnikoServer.java`: starts the server (data in the app's files) and waits for
   it to answer. The server stops by itself when the app is gone (its standard
   input closes, `--exit-with-stdin`), saving where a video was; the app
   starts it again (and reloads the page) if it stops, and opens the page
@@ -35,26 +35,26 @@ rm -rf server/internal/webui/dist && cp -R web/dist server/internal/webui/dist
 cd server
 tc=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
 CGO_ENABLED=1 GOOS=android GOARCH=arm GOARM=7 CC=$tc/armv7a-linux-androideabi21-clang \
-  go build -ldflags "-s -w" -o ../android/app/src/main/jniLibs/armeabi-v7a/libkumo.so ./cmd/kumo
+  go build -ldflags "-s -w" -o ../android/app/src/main/jniLibs/armeabi-v7a/libaniko.so ./cmd/aniko
 CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC=$tc/aarch64-linux-android21-clang \
-  go build -ldflags "-s -w" -o ../android/app/src/main/jniLibs/arm64-v8a/libkumo.so ./cmd/kumo
+  go build -ldflags "-s -w" -o ../android/app/src/main/jniLibs/arm64-v8a/libaniko.so ./cmd/aniko
 cd ../android && gradle assembleRelease
 ```
 
 ## Signing
 
-Android installs an update over Kumo only when it's signed with the key of
+Android installs an update over Aniko only when it's signed with the key of
 the installed app, or a key that one passed on to (key rotation, Android 9
 and newer). The first key, `packaging/android/kumo.jks` (password
 `kumo-android`, alias `kumo`), is public, so the releases are signed with a
 key of yours, in the repository's secrets, with the proof the first key
-made that yours replaces it: the installed Kumo updates as before, and then
+made that yours replaces it: the installed Aniko updates as before, and then
 refuses an APK only the first key signed.
 
 Make that key once, on your computer, with
 [`packaging/android/new-signing-key.sh`](../packaging/android/new-signing-key.sh):
 it makes it in `~/.local/share/kumo-android-key` (keep a backup: without it,
-an installed Kumo can't update and must be reinstalled) and puts it in the
+an installed Aniko can't update and must be reinstalled) and puts it in the
 secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
 `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` with the GitHub CLI (or says
 what to paste where). The release workflow publishes nothing without them.

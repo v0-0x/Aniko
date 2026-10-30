@@ -12,8 +12,8 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
-// Kumos find each other with a small message (a beacon) sent every few
-// seconds to a multicast group on every network interface. A Kumo that
+// Anikos find each other with a small message (a beacon) sent every few
+// seconds to a multicast group on every network interface. An Aniko that
 // hears a new one answers it directly, so that one hears of it at once too,
 // and both are found even where only one way works.
 const discoveryPort = 43212
@@ -22,7 +22,7 @@ var group = net.IPv4(239, 255, 75, 77)
 
 // beacon is the message: who sends it, and where its server is.
 type beacon struct {
-	Kumo    int    `json:"kumo"` // protocol version
+	Aniko   int    `json:"kumo"` // protocol version (its key from before the rename, which older versions read)
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Port    int    `json:"port"`
@@ -32,10 +32,10 @@ type beacon struct {
 	Platform string `json:"platform,omitempty"`
 	// Reply: an answer to a beacon, not to be answered.
 	Reply bool `json:"reply,omitempty"`
-	// Ask: what this Kumo shares with the one it's sent to changed: ask
+	// Ask: what this Aniko shares with the one it's sent to changed: ask
 	// again now.
 	Ask bool `json:"ask,omitempty"`
-	// Role: RoleHub on a Kumo Hub.
+	// Role: RoleHub on an Aniko Hub.
 	Role string `json:"role,omitempty"`
 }
 
@@ -57,7 +57,7 @@ func listen() (*discovery, error) {
 	}
 	d := &discovery{conn: conn, pc: ipv4.NewPacketConn(conn), joined: map[string]bool{}}
 	_ = d.pc.SetMulticastTTL(1)         // this network only
-	_ = d.pc.SetMulticastLoopback(true) // another Kumo on this computer
+	_ = d.pc.SetMulticastLoopback(true) // another Aniko on this computer
 	d.join()
 	return d, nil
 }
@@ -131,7 +131,7 @@ func (d *discovery) announce(b beacon) {
 	}
 }
 
-// reply sends the beacon to one Kumo.
+// reply sends the beacon to one Aniko.
 func (d *discovery) reply(b beacon, to net.IP) {
 	b.Reply = true
 	data, _ := json.Marshal(b)
@@ -150,7 +150,7 @@ func (d *discovery) read(handle func(b beacon, from net.IP)) {
 			continue
 		}
 		var b beacon
-		if json.Unmarshal(buf[:n], &b) != nil || b.Kumo != protocol {
+		if json.Unmarshal(buf[:n], &b) != nil || b.Aniko != protocol {
 			continue
 		}
 		if ua, ok := src.(*net.UDPAddr); ok {
@@ -162,7 +162,7 @@ func (d *discovery) read(handle func(b beacon, from net.IP)) {
 func (d *discovery) close() { _ = d.conn.Close() }
 
 // isLocalNetwork reports addresses of the home network (or this computer):
-// the only ones Kumo talks to for sharing.
+// the only ones Aniko talks to for sharing.
 func isLocalNetwork(ip net.IP) bool {
 	if ip == nil {
 		return false

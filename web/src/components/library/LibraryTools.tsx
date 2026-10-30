@@ -12,7 +12,7 @@ import { cn, formatBytes, title } from "@/lib/utils"
 
 // The library's files, to put right by hand: those not matched to an
 // anime, every file (episode numbers, kinds, matches) and the ignored
-// ones. In Library tools, and on a Kumo Hub's dashboard (links: off, it
+// ones. In Library tools, and on an Aniko Hub's dashboard (links: off, it
 // has no anime pages).
 
 export function Unmatched() {

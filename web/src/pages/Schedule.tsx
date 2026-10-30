@@ -9,7 +9,7 @@ import { cn, cover, formatLabel, LIST_STATUS, readLocal, timeUntil, title, write
 
 export default function SchedulePage() {
     const { data, isLoading, error, refetch, isFetching } = useSchedule(8)
-    const [filter, setFilter] = useState<"mine" | "all">(() => (readLocal("kumo-schedule-filter") as "mine" | "all") || "mine")
+    const [filter, setFilter] = useState<"mine" | "all">(() => (readLocal("aniko-schedule-filter") as "mine" | "all") || "mine")
 
     const days = useMemo(() => {
         const items = (data ?? []).filter(i => filter === "all" || i.listStatus)
@@ -38,7 +38,7 @@ export default function SchedulePage() {
                     value={filter}
                     onChange={v => {
                         setFilter(v)
-                        writeLocal("kumo-schedule-filter", v)
+                        writeLocal("aniko-schedule-filter", v)
                     }}
                     tabs={[
                         { value: "mine", label: "My list" },
@@ -63,7 +63,7 @@ export default function SchedulePage() {
                             <Button
                                 onClick={() => {
                                     setFilter("all")
-                                    writeLocal("kumo-schedule-filter", "all")
+                                    writeLocal("aniko-schedule-filter", "all")
                                 }}
                             >
                                 See everything airing

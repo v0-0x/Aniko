@@ -76,11 +76,11 @@ func TestWakeSendsThePacket(t *testing.T) {
 	s.mu.Lock()
 	p.wakeMACs = nil
 	s.mu.Unlock()
-	if err := s.Wake(p.id); err == nil || !strings.Contains(err.Error(), "update Kumo there") {
+	if err := s.Wake(p.id); err == nil || !strings.Contains(err.Error(), "update Aniko there") {
 		t.Errorf("woke a host that never said how: %v", err)
 	}
 	if err := s.Wake("nobody"); err == nil {
-		t.Error("woke a Kumo that doesn't share")
+		t.Error("woke an Aniko that doesn't share")
 	}
 }
 

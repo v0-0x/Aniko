@@ -23,11 +23,11 @@ const (
 	processSuspendResume   = 0x0800
 )
 
-// BindChildren puts Kumo in a job object that ends every process in it when
-// it closes, which it does when Kumo exits, also when it's killed (the
+// BindChildren puts Aniko in a job object that ends every process in it when
+// it closes, which it does when Aniko exits, also when it's killed (the
 // desktop app can't do anything else on Windows) or crashes: the ffmpeg,
 // ani-cli and mpv processes it started end with it. The handle stays open
-// for as long as Kumo runs. Detached programs (a torrent client, Explorer)
+// for as long as Aniko runs. Detached programs (a torrent client, Explorer)
 // break away from the job.
 func BindChildren() error {
 	job, err := windows.CreateJobObject(nil, nil)
@@ -55,7 +55,7 @@ func detachAttrs(cmd *exec.Cmd) {
 }
 
 // startDetached starts a detached command, and returns the one started.
-// Breaking away from Kumo's job fails when a job Kumo runs in doesn't allow
+// Breaking away from Aniko's job fails when a job Aniko runs in doesn't allow
 // it: then it starts in the job.
 func startDetached(cmd *exec.Cmd) (*exec.Cmd, error) {
 	err := cmd.Start()

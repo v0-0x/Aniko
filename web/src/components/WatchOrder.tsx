@@ -11,7 +11,7 @@ import { cn, cover, formatLabel, title } from "@/lib/utils"
 
 // A franchise's watch order (experimental): the story's, from AniList's
 // prequel and sequel links, and the release order. The story order can be
-// changed; the change is kept on this Kumo (server/internal/watchorder).
+// changed; the change is kept on this Aniko (server/internal/watchorder).
 
 type View = "story" | "release"
 
@@ -283,7 +283,7 @@ function Editor({ order, current, status, onDone }: { order: Order; current: num
                 </Button>
                 {order.edited && (
                     <Button size="sm" variant="ghost" icon={<Undo2 className="size-4" />} disabled={saving} onClick={() => done(api.del(`/api/watch-order/${order.key}`))}>
-                        Back to Kumo's order
+                        Back to Aniko's order
                     </Button>
                 )}
             </div>

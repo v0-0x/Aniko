@@ -7,9 +7,9 @@ var (
 	toolsDir string
 )
 
-// SetToolsDir sets the folder where Kumo puts programs itself (the macOS
+// SetToolsDir sets the folder where Aniko puts programs itself (the macOS
 // programs setup: ffmpeg, yt-dlp, ani-cli). On macOS it goes first on the
-// PATH, for Kumo's lookups and the programs it starts; it needn't exist
+// PATH, for Aniko's lookups and the programs it starts; it needn't exist
 // yet.
 func SetToolsDir(dir string) {
 	toolsMu.Lock()

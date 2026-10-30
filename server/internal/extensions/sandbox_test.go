@@ -25,7 +25,7 @@ import (
 
 func newTestManager(t *testing.T) *Manager {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ function init() {
   $ui.register(function(ctx) {
     report.uiHost = typeof __host;
     report.leakedGlobals = Object.getOwnPropertyNames(globalThis).filter(function(k) {
-      return /host|kumo/i.test(k);
+      return /host|aniko/i.test(k);
     }).join(',');
     // ctx.manga needs no scope (as plugins expect).
     ctx.manga.getCollection().then(function(c) { $store.set('manga', c); },

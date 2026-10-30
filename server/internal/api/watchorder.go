@@ -37,7 +37,7 @@ func (s *Server) watchOrder(r *http.Request) (any, error) {
 // maxEdit caps what an edit may list.
 const maxEdit = 1000
 
-// Your story order for a franchise (its key), kept on this Kumo.
+// Your story order for a franchise (its key), kept on this Aniko.
 func (s *Server) putWatchOrder(r *http.Request) (any, error) {
 	key, err := strconv.Atoi(r.PathValue("key"))
 	if err != nil || key <= 0 {
@@ -59,7 +59,7 @@ func (s *Server) putWatchOrder(r *http.Request) (any, error) {
 	return nil, s.app.DB.SetKV(watchorder.EditKey(key), e)
 }
 
-// Back to Kumo's order.
+// Back to Aniko's order.
 func (s *Server) deleteWatchOrder(r *http.Request) (any, error) {
 	key, err := strconv.Atoi(r.PathValue("key"))
 	if err != nil || key <= 0 {

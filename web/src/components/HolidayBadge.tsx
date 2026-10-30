@@ -4,7 +4,7 @@ import type { Holiday } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 
-// The holiday's little drawing: on Kumo's logo in the sidebar, and in the
+// The holiday's little drawing: on Aniko's logo in the sidebar, and in the
 // Themes menu (ThemesMenu).
 export function HolidayIcon({ id, className }: { id: string; className?: string }) {
     const common = { viewBox: "0 0 32 32", className, "aria-hidden": true } as const
@@ -79,7 +79,7 @@ export function HolidayOnLogo({ holiday }: { holiday: Holiday | null }) {
     return <HolidayIcon id={holiday.id} className={cn("pointer-events-none absolute drop-shadow", ON_LOGO[holiday.id])} />
 }
 
-const SEEN_KEY = "kumo-holiday-seen"
+const SEEN_KEY = "aniko-holiday-seen"
 
 // A holiday theme that came on by itself (by the date) is said once a year,
 // with a button to turn them off.
@@ -96,7 +96,7 @@ export function useHolidayNotice(holiday: Holiday | null, seasonal: string) {
         } catch {
             return // nowhere to remember it: not said each time
         }
-        toast(`Kumo's ${holiday.name} theme is on`, {
+        toast(`Aniko's ${holiday.name} theme is on`, {
             description: `Its colors and ${holiday.effectName.toLowerCase()}, ${holiday.when.replace(/^In /, "in ").replace(/^January/, "on January")}. Change it from Themes in the sidebar.`,
             duration: 12000,
             // Only that: the settings as they are then (not when it showed).

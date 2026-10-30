@@ -13,8 +13,8 @@ const (
 	createBreakawayFromJob = 0x01000000
 )
 
-// startInstaller starts the installer on its own, outside Kumo's job object
-// (util.BindChildren): everything in that job ends when Kumo exits, which
+// startInstaller starts the installer on its own, outside Aniko's job object
+// (util.BindChildren): everything in that job ends when Aniko exits, which
 // would stop the installer in the middle of installing. util.Detach starts
 // a program in the job when it can't break away; an installer must not be,
 // so then this fails, and the user runs it.

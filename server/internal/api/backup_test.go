@@ -10,7 +10,7 @@ import (
 	"github.com/simo1337s/animetest/server/internal/history"
 )
 
-// Only this computer makes or restores a backup; restoring asks Kumo to
+// Only this computer makes or restores a backup; restoring asks Aniko to
 // start again.
 func TestBackupRoutes(t *testing.T) {
 	s := newTestServer(t)
@@ -25,7 +25,7 @@ func TestBackupRoutes(t *testing.T) {
 		t.Fatalf("backup from the network: %d", w.Code)
 	}
 	w := do(s, "GET", "/api/backup", here, "", nil)
-	if w.Code != http.StatusOK || !strings.HasPrefix(w.Header().Get("Content-Disposition"), `attachment; filename="kumo-backup-`) {
+	if w.Code != http.StatusOK || !strings.HasPrefix(w.Header().Get("Content-Disposition"), `attachment; filename="aniko-backup-`) {
 		t.Fatalf("backup: %d %v", w.Code, w.Header())
 	}
 	file := w.Body.String()
@@ -54,6 +54,6 @@ func TestBackupRoutes(t *testing.T) {
 			t.Error("not a restart")
 		}
 	case <-time.After(3 * time.Second):
-		t.Error("Kumo wasn't asked to start again")
+		t.Error("Aniko wasn't asked to start again")
 	}
 }

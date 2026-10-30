@@ -1,16 +1,16 @@
-# Builds Kumo for Android (made for TVs: a Fire TV Stick, mainly for the
+# Builds Aniko for Android (made for TVs: a Fire TV Stick, mainly for the
 # libraries the computers at home share) and publishes the APK as the GitHub
-# Release "Kumo <version> for Android", tagged android-v<version> on the
+# Release "Aniko <version> for Android", tagged android-v<version> on the
 # commit it built.
 #
-# The app (android/) runs Kumo's server, built here for Android with the NDK
+# The app (android/) runs Aniko's server, built here for Android with the NDK
 # (32-bit ARM, which most Fire TV sticks run, and 64-bit), and shows its web
 # UI. The version is 2.0.<commits since 2.0.0's>, like the other releases'
 # (its version code is the number of commits, always higher):
 # installed copies look for the android-v release with the highest version
 # and update from their Home page (server/internal/update).
 #
-# The APK is signed with Kumo's key, in the repository's secrets
+# The APK is signed with Aniko's key, in the repository's secrets
 # ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and
 # ANDROID_KEY_PASSWORD (packaging/android/new-signing-key.sh makes it and puts
 # it there), with the proof that it replaces the first key,
@@ -96,12 +96,12 @@ jobs:
             exit 1
           fi
           count=$(git rev-list --count HEAD)
-          # The commits since the one kumoVersionBase counts (2.0.0's); the
+          # The commits since the one anikoVersionBase counts (2.0.0's); the
           # app's code stays the count, always higher than the last one.
-          from=$(node -p 'require("./desktop/package.json").kumoVersionBase || 0')
+          from=$(node -p 'require("./desktop/package.json").anikoVersionBase || 0')
           patch=$(( count - from ))
           if (( patch < 0 )); then
-            echo "::error::This commit is before kumoVersionBase ($from) in desktop/package.json"
+            echo "::error::This commit is before anikoVersionBase ($from) in desktop/package.json"
             exit 1
           fi
           version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$patch"
@@ -109,9 +109,9 @@ jobs:
             echo "version=$version"
             echo "code=$count"
             echo "tag=android-v$version"
-            echo "apk=Kumo-$version-android.apk"
+            echo "apk=Aniko-$version-android.apk"
           } >> "$GITHUB_OUTPUT"
-          echo "Building Kumo $version for Android"
+          echo "Building Aniko $version for Android"
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -144,7 +144,7 @@ jobs:
       # With the NDK (cgo): Go needs it for 32-bit ARM, and it makes the
       # server use Android's own DNS and SQLite built with Android's C
       # library (see server/internal/db/driver_android.go). The app ships it
-      # as its "native library" libkumo.so, for each kind of device.
+      # as its "native library" libaniko.so, for each kind of device.
       - name: Build the server for Android
         working-directory: server
         env:
@@ -171,11 +171,11 @@ jobs:
             local abi=$1 goarch=$2 cc=$3 goarm=${4:-}
             mkdir -p "$libs/$abi"
             CGO_ENABLED=1 GOOS=android GOARCH=$goarch GOARM=$goarm CC="$tc/$cc" \
-              go build -trimpath -ldflags "-s -w -X $config.AppVersion=$VERSION -X $config.Commit=$GITHUB_SHA" -o "$libs/$abi/libkumo.so" ./cmd/kumo
+              go build -trimpath -ldflags "-s -w -X $config.AppVersion=$VERSION -X $config.Commit=$GITHUB_SHA" -o "$libs/$abi/libaniko.so" ./cmd/aniko
           }
           build armeabi-v7a arm armv7a-linux-androideabi21-clang 7
           build arm64-v8a arm64 aarch64-linux-android21-clang
-          file "$libs"/*/libkumo.so
+          file "$libs"/*/libaniko.so
           ls -la "$libs"/*/
 
       - name: Set up Gradle and the Android SDK
@@ -188,11 +188,11 @@ jobs:
           "$sdkmanager" "platforms;android-35" "build-tools;34.0.0" > /dev/null
 
       # Signed with the first key (build.gradle); "Sign the APK" signs it
-      # again, with Kumo's.
+      # again, with Aniko's.
       - name: Build the APK
         env:
-          KUMO_VERSION: ${{ steps.version.outputs.version }}
-          KUMO_VERSION_CODE: ${{ steps.version.outputs.code }}
+          ANIKO_VERSION: ${{ steps.version.outputs.version }}
+          ANIKO_VERSION_CODE: ${{ steps.version.outputs.code }}
           APK: ${{ steps.version.outputs.apk }}
         run: |
           export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
@@ -200,9 +200,9 @@ jobs:
           mkdir -p dist/android
           cp android/app/build/outputs/apk/release/app-release.apk "dist/android/$APK"
 
-      # Kumo's key (the secrets) signs the APK for Android 9 and newer, with
+      # Aniko's key (the secrets) signs the APK for Android 9 and newer, with
       # the proof (a "lineage") made with the first key, which is public,
-      # that the new key replaces it: a Kumo installed with the first key
+      # that the new key replaces it: an Aniko installed with the first key
       # updates to it, and from then on refuses an APK only the first key
       # signs (it may not roll back), nor does it share anything with apps
       # the first key signs. Older Android versions check the first key, as
@@ -245,9 +245,9 @@ jobs:
             return 0
           }
 
-          # A throwaway key (made like Kumo's): the signing and its checks work.
-          # (KUMO_NO_GH: never into the secrets.)
-          XDG_DATA_HOME="$RUNNER_TEMP/throwaway" KUMO_NO_GH=1 bash packaging/android/new-signing-key.sh > /dev/null
+          # A throwaway key (made like Aniko's): the signing and its checks work.
+          # (ANIKO_NO_GH: never into the secrets.)
+          XDG_DATA_HOME="$RUNNER_TEMP/throwaway" ANIKO_NO_GH=1 bash packaging/android/new-signing-key.sh > /dev/null
           tk="$RUNNER_TEMP/throwaway/kumo-android-key"
           export TEST_PASS; TEST_PASS=$(cat "$tk/password")
           sign "$tk/kumo-release.p12" kumo TEST_PASS TEST_PASS "$RUNNER_TEMP/throwaway.apk"
@@ -255,13 +255,13 @@ jobs:
 
           if [ -z "$KEYSTORE_BASE64" ]; then
             if [ "$PUBLISH" = true ]; then
-              echo "::error::Kumo's Android key isn't in the repository's secrets: run packaging/android/new-signing-key.sh (android/README.md). Releases aren't signed with the first key alone any more: it's public."
+              echo "::error::Aniko's Android key isn't in the repository's secrets: run packaging/android/new-signing-key.sh (android/README.md). Releases aren't signed with the first key alone any more: it's public."
               exit 1
             fi
             echo "::warning::No key in the secrets: this build, not published, stays signed with the first (public) key."
             exit 0
           fi
-          ks="$RUNNER_TEMP/kumo-release.keystore"
+          ks="$RUNNER_TEMP/aniko-release.keystore"
           echo "$KEYSTORE_BASE64" | base64 -d > "$ks"
           export STORE_PASS KEY_PASS
           [ -n "$KEY_PASS" ] || KEY_PASS=$STORE_PASS
@@ -276,9 +276,9 @@ jobs:
           APK: ${{ steps.version.outputs.apk }}
         run: |
           apk="dist/android/$APK"
-          unzip -lv "$apk" | grep -E "lib/(armeabi-v7a|arm64-v8a)/libkumo.so"
+          unzip -lv "$apk" | grep -E "lib/(armeabi-v7a|arm64-v8a)/libaniko.so"
           for abi in armeabi-v7a arm64-v8a; do
-            unzip -lv "$apk" "lib/$abi/libkumo.so" | grep -q " Defl:N \| Stored " || { echo "::error::lib/$abi/libkumo.so is missing"; exit 1; }
+            unzip -lv "$apk" "lib/$abi/libaniko.so" | grep -q " Defl:N \| Stored " || { echo "::error::lib/$abi/libaniko.so is missing"; exit 1; }
           done
           bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$bt/apksigner" verify --print-certs "$apk"
@@ -310,25 +310,28 @@ jobs:
           url="$repo/releases/download/$TAG/$APK"
           notes="$RUNNER_TEMP/release-notes.md"
           cat > "$notes" <<EOF
-          **Kumo $VERSION for Android**, made for TVs (Fire TV Stick, Android TV) and working on phones and tablets too: it plays the libraries the computers at home share, driven by the remote.
+          **Aniko $VERSION for Android**, made for TVs (Fire TV Stick, Android TV) and working on phones and tablets too: it plays the libraries the computers at home share, driven by the remote.
 
           **On a Fire TV:** install the **Downloader** app, allow it in **Settings › My Fire TV › Developer options › Install unknown apps**, and open this address in it:
 
           \`$url\`
 
-          Then open Kumo, and on a computer with Kumo turn on **Settings › Other devices**: the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses it) and **Let it download here** (its downloads and torrents go to that computer).
+          Then open Aniko, and on a computer with Aniko turn on **Settings › Other devices**: the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses it) and **Let it download here** (its downloads and torrents go to that computer).
 
-          Kumo finds newer releases by itself and updates from its Home page (**Update**); Android asks before installing.
+          Aniko finds newer releases by itself and updates from its Home page (**Update**); Android asks before installing.
 
           Built from $GITHUB_SHA by [workflow run $GITHUB_RUN_NUMBER]($repo/actions/runs/$GITHUB_RUN_ID).
           EOF
           if [ "$CHANNEL" = beta ]; then
-            pre=true title="Kumo $VERSION beta for Android"
-            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Kumo offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
+            pre=true title="Aniko $VERSION beta for Android"
+            { printf '%s\n\n' "> **Beta.** This version is a pre-release: Aniko offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note."; cat "$notes"; } > "$notes.new" && mv "$notes.new" "$notes"
           else
-            pre=false title="Kumo $VERSION for Android"
+            pre=false title="Aniko $VERSION for Android"
           fi
-          files=("dist/android/$APK")
+          # Aniko was called Kumo before 2.0.37: Kumo's updater (2.0.36 and
+          # older) looks for the APK by its old name, so a copy has it.
+          cp "dist/android/$APK" "dist/android/Kumo-$VERSION-android.apk"
+          files=("dist/android/$APK" "dist/android/Kumo-$VERSION-android.apk")
           if gh release view "$TAG" --json tagName > /dev/null 2>&1; then
             echo "Updating the release $TAG"
             gh release edit "$TAG" --title "$title" --notes-file "$notes" --prerelease="$pre" --latest=false

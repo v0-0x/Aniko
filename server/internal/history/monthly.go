@@ -2,7 +2,7 @@ package history
 
 import "time"
 
-// Month is what was watched in Kumo in a month: the episodes finished
+// Month is what was watched in Aniko in a month: the episodes finished
 // (watched past finished of their length), and the minutes watched (what was
 // seen of each). An episode counts in the month it was last watched in (the
 // history keeps one position per episode).

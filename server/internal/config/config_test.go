@@ -8,7 +8,7 @@ import (
 )
 
 func TestMigrateDefaultPlayer(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestMigrateDefaultPlayer(t *testing.T) {
 
 func TestMigrateMangaReadingMode(t *testing.T) {
 	for mode, want := range map[string]string{"long-strip": "double", "paged": "paged", "double": "double"} {
-		d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+		d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +82,7 @@ func TestMigrateMangaReadingMode(t *testing.T) {
 }
 
 func TestMigrateMangaDirection(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestMigrateMangaDirection(t *testing.T) {
 
 func TestMigrateSkipEndings(t *testing.T) {
 	for _, intro := range []bool{true, false} {
-		d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+		d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -143,7 +143,7 @@ func TestMigrateSkipEndings(t *testing.T) {
 }
 
 func TestThemeSettings(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestThemeSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	ui := s.Get().UI
-	if ui.ColorTheme != "kumo" || ui.Seasonal != "auto" || !ui.SeasonalEffects || ui.AccentColor != "#22c3a6" || ui.ClassicLook {
+	if ui.ColorTheme != "aniko" || ui.Seasonal != "auto" || !ui.SeasonalEffects || ui.AccentColor != "#22c3a6" || ui.ClassicLook {
 		t.Fatalf("old settings: %+v", ui)
 	}
 	// The classic look is kept.
@@ -169,8 +169,8 @@ func TestThemeSettings(t *testing.T) {
 	for _, c := range []struct{ theme, seasonal, wantTheme, wantSeasonal string }{
 		{"midnight", "off", "midnight", "off"},
 		{"black", "christmas", "black", "christmas"},
-		{"nope", "easter", "kumo", "auto"},
-		{"", "", "kumo", "auto"},
+		{"nope", "easter", "aniko", "auto"},
+		{"", "", "aniko", "auto"},
 	} {
 		next := s.Get()
 		next.UI.ColorTheme, next.UI.Seasonal, next.UI.SeasonalEffects = c.theme, c.seasonal, false

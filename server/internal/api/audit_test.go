@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/simo1337s/animetest/server/internal/anikohub"
 	"github.com/simo1337s/animetest/server/internal/anilist"
-	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
 )
 
@@ -29,11 +29,11 @@ func signedInHub(t *testing.T) (*Server, func(*http.Request)) {
 	return s, func(r *http.Request) { r.AddCookie(cookie) }
 }
 
-func auditOf(t *testing.T, s *Server, query string, signedIn func(*http.Request)) []kumohub.Event {
+func auditOf(t *testing.T, s *Server, query string, signedIn func(*http.Request)) []anikohub.Event {
 	t.Helper()
 	w := do(s, "GET", "/api/hub/audit"+query, "192.168.1.20:5000", "", signedIn)
 	var res struct {
-		Events []kumohub.Event `json:"events"`
+		Events []anikohub.Event `json:"events"`
 	}
 	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &res) != nil {
 		t.Fatalf("audit%s: %d %s", query, w.Code, w.Body.String())
@@ -118,7 +118,7 @@ func TestHubDeleteAndDownloadAgain(t *testing.T) {
 	}
 	// (The downloads may have failed already, here without ani-cli, and be
 	// noted after it.)
-	var again *kumohub.Event
+	var again *anikohub.Event
 	for _, e := range auditOf(t, s, "?group=downloads", signedIn) {
 		if e.Kind == "again" {
 			again = &e

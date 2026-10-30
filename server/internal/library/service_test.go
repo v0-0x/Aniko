@@ -15,7 +15,7 @@ import (
 
 func newTestService(t *testing.T) *Service {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "kumo.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestHideContinueConcurrent(t *testing.T) {
 	}
 }
 
-// Files other Kumo apps share fill in the episodes this computer doesn't
+// Files other Aniko apps share fill in the episodes this computer doesn't
 // have; its own always win.
 func TestSharedFilesFillIn(t *testing.T) {
 	s := newTestService(t)
