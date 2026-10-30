@@ -30,6 +30,7 @@ import type {
     TorrentResult,
     UpdateStatus,
     Profile,
+    WatchOrder,
 } from "./types"
 
 export function useStatus() {
@@ -318,6 +319,10 @@ export function useStreamModes(provider: string, mediaId: number, enabled = true
         retry: false,
         staleTime: 30 * 60_000,
     })
+}
+
+export function useWatchOrder(id: number) {
+    return useQuery({ queryKey: ["watch-order", id], queryFn: () => api.get<WatchOrder>(`/api/anime/${id}/watch-order`), enabled: id > 0, staleTime: 10 * 60_000 })
 }
 
 export function useDownloads() {

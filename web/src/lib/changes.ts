@@ -6,6 +6,16 @@ export type Release = { id: number; title: string; changes: Change[] }
 
 export const RELEASES: Release[] = [
     {
+        id: 19,
+        title: "Watch order (experimental)",
+        changes: [
+            {
+                title: "Story and release order",
+                text: "An anime's page now shows its franchise in order, under the episodes and in Details: the story's (from AniList's prequel and sequel links, release dates where they say nothing) and the release order, with recaps marked skippable and spin-offs apart. Edit the story order to your own; it's kept on this device.",
+            },
+        ],
+    },
+    {
         id: 18,
         title: "Your whole library on Home",
         changes: [

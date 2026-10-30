@@ -28,6 +28,7 @@ import { Carousel, MediaCard } from "@/components/MediaCard"
 import { PluginActions, PluginSlot, usePluginDropdownActions } from "@/components/plugins/PluginSlot"
 import { sendPluginEvent } from "@/components/plugins/PluginRenderer"
 import { Badge, Button, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger, EmptyState, Skeleton, Tabs, Tooltip } from "@/components/ui"
+import { WatchOrder } from "@/components/WatchOrder"
 import { api } from "@/lib/api"
 import { formatRanges, missingEpisodes } from "@/lib/missing"
 import { usePlay } from "@/lib/play"
@@ -263,28 +264,31 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
     // Files on this computer, or shared with it by another Kumo.
     if (entry.localCount + (entry.sharedCount ?? 0) === 0) {
         return (
-            <EmptyState
-                icon={<HardDrive className="size-6" />}
-                title="No local files yet"
-                action={
-                    <div className="flex flex-wrap justify-center gap-2">
-                        {status?.settings.onlineStream.enabled !== false && (
-                            <Button variant="primary" icon={<Tv className="size-4" />} onClick={onStream}>
-                                Watch online
+            <div className="flex flex-col gap-10">
+                <EmptyState
+                    icon={<HardDrive className="size-6" />}
+                    title="No local files yet"
+                    action={
+                        <div className="flex flex-wrap justify-center gap-2">
+                            {status?.settings.onlineStream.enabled !== false && (
+                                <Button variant="primary" icon={<Tv className="size-4" />} onClick={onStream}>
+                                    Watch online
+                                </Button>
+                            )}
+                            <Button icon={<Magnet className="size-4" />} onClick={() => onTorrents()}>
+                                Find torrents
                             </Button>
-                        )}
-                        <Button icon={<Magnet className="size-4" />} onClick={() => onTorrents()}>
-                            Find torrents
-                        </Button>
-                        <Button icon={<FolderInput className="size-4" />} onClick={() => setAdding(true)}>
-                            Already have it? Add from library
-                        </Button>
-                        <AddFromLibraryDialog open={adding} onOpenChange={setAdding} media={media} />
-                    </div>
-                }
-            >
-                Download episodes with ani-cli or a torrent and they will show up here automatically. If they're already in your library but weren't recognized, add them here.
-            </EmptyState>
+                            <Button icon={<FolderInput className="size-4" />} onClick={() => setAdding(true)}>
+                                Already have it? Add from library
+                            </Button>
+                            <AddFromLibraryDialog open={adding} onOpenChange={setAdding} media={media} />
+                        </div>
+                    }
+                >
+                    Download episodes with ani-cli or a torrent and they will show up here automatically. If they're already in your library but weren't recognized, add them here.
+                </EmptyState>
+                <WatchOrder mediaId={media.id} />
+            </div>
         )
     }
 
@@ -381,6 +385,7 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                 </div>
             )}
             {entry.metadataNote && <p className="text-xs text-subtle">{entry.metadataNote}</p>}
+            <WatchOrder mediaId={media.id} />
         </div>
     )
 }
@@ -446,6 +451,7 @@ function DetailsTab({ entry }: { entry: EntryView }) {
                 />
                 <InfoCard label="Popularity" value={media.popularity ? media.popularity.toLocaleString() : "—"} icon={<Users className="size-4" />} />
             </div>
+            <WatchOrder mediaId={media.id} />
             {rankings.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {rankings.map((r, i) => (

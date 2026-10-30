@@ -805,3 +805,25 @@ export type DeviceParental = {
 
 // This device's own (GET /api/parental).
 export type ParentalState = { active: boolean; rules: ParentalRules | null; from: { id: string; name: string; hasPin: boolean }[] }
+
+// The watch order of an anime's franchise (/api/anime/{id}/watch-order).
+export type WatchOrderEntry = {
+    media: Media
+    kind: "main" | "side" | "recap"
+    // Story order: no prequel/sequel link places it; its release date does.
+    byDate?: boolean
+    // Story order: AniList's links contradict each other here.
+    conflict?: boolean
+    hidden?: boolean
+    // Extras: SPIN_OFF or ALTERNATIVE.
+    relation?: string
+}
+
+export type WatchOrder = {
+    key: number
+    story: WatchOrderEntry[]
+    release: WatchOrderEntry[]
+    extras: WatchOrderEntry[]
+    partial?: boolean
+    edited?: boolean
+}

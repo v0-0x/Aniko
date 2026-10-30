@@ -83,11 +83,13 @@ var tables = []struct {
 }
 
 // KV keys kept: the anime put away from Continue watching, the
-// permissions given to extensions; the AniList login with the logins.
+// permissions given to extensions, your watch orders; the AniList login
+// with the logins.
 const (
-	hiddenKey = "continue-hidden"
-	grantKey  = "ext_grant:"
-	tokenKey  = "anilist_token"
+	hiddenKey     = "continue-hidden"
+	grantKey      = "ext_grant:"
+	watchOrderKey = "watch-order:"
+	tokenKey      = "anilist_token"
 )
 
 // Make makes a backup of d.
@@ -112,7 +114,7 @@ func Make(d *db.DB, settings config.Settings, logins bool, version, computer str
 			rows.Close()
 			return nil, err
 		}
-		if k == hiddenKey || strings.HasPrefix(k, grantKey) || logins && k == tokenKey {
+		if k == hiddenKey || strings.HasPrefix(k, grantKey) || strings.HasPrefix(k, watchOrderKey) || logins && k == tokenKey {
 			f.KV[k] = json.RawMessage(v)
 		}
 	}
