@@ -92,11 +92,13 @@ type App struct {
 	cancel context.CancelFunc
 }
 
-// LogBuffer keeps the last server log lines for the Logs page.
+// LogBuffer keeps the last server log lines for the Logs page (and, on a
+// hub, all of them in File, for its audit log).
 type LogBuffer struct {
 	mu    sync.Mutex
 	lines []string
 	out   *os.File
+	File  *LogFile
 }
 
 func (l *LogBuffer) Write(p []byte) (int, error) {
@@ -108,6 +110,9 @@ func (l *LogBuffer) Write(p []byte) (int, error) {
 		l.lines = l.lines[len(l.lines)-1000:]
 	}
 	l.mu.Unlock()
+	if l.File != nil {
+		_, _ = l.File.Write(p)
+	}
 	return l.out.Write(p)
 }
 
@@ -129,6 +134,13 @@ func New(dataDir string, opts ...Options) (*App, error) {
 		opt = opts[0]
 	}
 	logs := &LogBuffer{out: os.Stderr}
+	if opt.Hub {
+		if f, err := OpenLogFile(filepath.Join(dataDir, "logs")); err == nil {
+			logs.File = f
+		} else {
+			fmt.Fprintf(os.Stderr, "the log won't be kept on disk: %v\n", err)
+		}
+	}
 	log.SetOutput(logs)
 	log.SetFlags(log.LstdFlags)
 
@@ -526,6 +538,9 @@ func (a *App) Start() {
 }
 
 func (a *App) Shutdown() {
+	if a.HubStore != nil {
+		a.HubStore.Log(kumohub.Event{Kind: "stop", By: "hub", Text: "stopped"})
+	}
 	a.cancel()
 	// The player first: it saves where it stopped, which sharing then sends
 	// to the other Kumos before it stops.
@@ -538,6 +553,9 @@ func (a *App) Shutdown() {
 	a.Discord.Clear()
 	a.Extensions.Shutdown()
 	_ = a.DB.Close()
+	if a.Logs.File != nil {
+		_ = a.Logs.File.Close()
+	}
 }
 
 func (a *App) Context() context.Context { return a.ctx }

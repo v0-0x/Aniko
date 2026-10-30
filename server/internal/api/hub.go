@@ -31,6 +31,7 @@ func (s *Server) hubRoutes() {
 	}
 	m.HandleFunc("POST /api/hub/setup", s.hubSetup)
 	m.HandleFunc("GET /api/hub/overview", owner(s.hubOverview))
+	s.auditAPI(owner)
 	// A device: share the library with it (or stop), the AniList login it's
 	// given (and which), downloading onto the hub.
 	m.HandleFunc("POST /api/hub/devices/{id}", owner(func(r *http.Request) (any, error) {
@@ -60,7 +61,8 @@ func (s *Server) hubRoutes() {
 		if err := s.app.HubStore.RemoveAccount(user); err != nil {
 			return nil, err
 		}
-		s.app.HubStore.Log(kumohub.Event{Kind: "account", User: user, Text: "the AniList login was removed from the hub"})
+		by, ip := auditBy(r)
+		s.app.HubStore.Log(kumohub.Event{Kind: "account", By: by, IP: ip, User: user, Text: "removed an AniList login from the hub"})
 		s.app.Hub.Publish("hub-updated", nil)
 		return nil, nil
 	}))
@@ -92,6 +94,10 @@ func (s *Server) hubRoutes() {
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	})
 	m.HandleFunc("POST /api/hub/signout", func(w http.ResponseWriter, r *http.Request) {
+		if s.app.HubStore != nil && isTrusted(r) {
+			by, ip := auditBy(r)
+			s.app.HubStore.Log(kumohub.Event{Kind: "signout", By: by, IP: ip, Text: "signed out"})
+		}
 		http.SetCookie(w, &http.Cookie{Name: "kumo_session", Value: "", Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	})
@@ -124,6 +130,7 @@ func (s *Server) hubSetup(w http.ResponseWriter, r *http.Request) {
 	}
 	if !constEq(normalCode(body.Code), normalCode(s.app.HubStore.SetupCode())) {
 		s.logins.failed(ip, time.Now())
+		s.signedIn(r, false, "tried a wrong setup code")
 		time.Sleep(time.Second)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "that isn't the setup code"})
 		return
@@ -138,6 +145,7 @@ func (s *Server) hubSetup(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
+	s.signedIn(r, true, "set the dashboard's password (the first time, with the setup code)")
 	s.signIn(w)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

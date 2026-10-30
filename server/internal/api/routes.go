@@ -565,18 +565,21 @@ func (s *Server) serverLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	ip := clientIP(r).String()
 	if wait := s.logins.wait(ip, time.Now()); wait > 0 {
+		s.signedIn(r, false, "was kept out: too many wrong passwords")
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many wrong passwords: try again in %d minute(s)", int(wait.Minutes())+1)})
 		return
 	}
 	cfg := s.app.Settings.Get()
 	if cfg.Server.Password == "" || constEq(body.Password, cfg.Server.Password) {
 		s.logins.passed(ip)
+		s.signedIn(r, true, "signed in to the dashboard")
 		http.SetCookie(w, &http.Cookie{Name: "kumo_session", Value: s.sessionToken(), Path: "/", HttpOnly: true,
 			SameSite: http.SameSiteStrictMode, Expires: time.Now().Add(365 * 24 * time.Hour)})
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
 	s.logins.failed(ip, time.Now())
+	s.signedIn(r, false, "tried a wrong password")
 	time.Sleep(time.Second) // slow down guessing
 	writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "wrong password"})
 }

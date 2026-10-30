@@ -4,8 +4,8 @@
 // watch history of every AniList account its devices use (each device's
 // positions reach the others on the same account as they're saved), the
 // AniList logins it's given (handed to the devices allowed them), each
-// account's settings (theme and the like), and what happened, for its
-// dashboard.
+// account's settings (theme and the like), and everything that happened,
+// for its dashboard's audit log.
 package kumohub
 
 import (
@@ -13,7 +13,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
-	"strings"
 	"sync"
 	"time"
 
@@ -51,14 +50,22 @@ var schema = []string{
 		data TEXT NOT NULL,
 		updated_at INTEGER NOT NULL
 	)`,
+	// The audit log (audit.go): everything that happened on the hub.
+	`CREATE TABLE IF NOT EXISTS hub_audit (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		at INTEGER NOT NULL,
+		kind TEXT NOT NULL,
+		search TEXT NOT NULL,
+		data TEXT NOT NULL
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_hub_audit_kind ON hub_audit(kind, id)`,
 }
 
 // Store keeps what the hub knows.
 type Store struct {
 	db *db.DB
 
-	mu       sync.Mutex
-	activity []Event
+	mu sync.Mutex
 	// seq: the order entries are stored in (all accounts), see After.
 	seq int64
 }
@@ -338,48 +345,6 @@ type hubError string
 func (e hubError) Error() string { return string(e) }
 
 const errTooLarge = hubError("too large")
-
-// --------------------------------------------------------------- activity
-
-// Event is something that happened, for the dashboard's activity.
-type Event struct {
-	At     int64  `json:"at"` // milliseconds
-	Kind   string `json:"kind"`
-	Device string `json:"device,omitempty"`
-	User   int    `json:"user,omitempty"`
-	Text   string `json:"text"`
-	// An episode it's about (its title is the dashboard's to find).
-	MediaID int    `json:"mediaId,omitempty"`
-	Episode int    `json:"episode,omitempty"`
-	Title   string `json:"title,omitempty"`
-}
-
-const keepEvents = 200
-
-// Log notes an event (the last keepEvents are kept, in memory).
-func (s *Store) Log(e Event) {
-	if e.At == 0 {
-		e.At = time.Now().UnixMilli()
-	}
-	e.Text = strings.TrimSpace(e.Text)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.activity = append(s.activity, e)
-	if len(s.activity) > keepEvents {
-		s.activity = s.activity[len(s.activity)-keepEvents:]
-	}
-}
-
-// Activity is what happened lately, the latest first.
-func (s *Store) Activity() []Event {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := make([]Event, len(s.activity))
-	for i, e := range s.activity {
-		out[len(out)-1-i] = e
-	}
-	return out
-}
 
 // ------------------------------------------------------------------ owner
 

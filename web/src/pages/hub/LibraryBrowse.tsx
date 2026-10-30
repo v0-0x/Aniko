@@ -132,20 +132,23 @@ export function LibraryBrowse() {
 }
 
 // An anime as the hub has it: its details, and the episodes on its disks,
-// which can be deleted: they go to the hub's trash (Put the library right ›
-// Deleted), from which they can be put back for 30 days.
+// which can be deleted: for good (no trash), noted in the audit log, from
+// where they can be downloaded again.
 function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFile[]; onClose: () => void }) {
     const { data, isLoading } = useQuery({ queryKey: ["entry", media.id], queryFn: () => api.get<EntryView>(`/api/anime/${media.id}`) })
     const qc = useQueryClient()
     const [asking, setAsking] = useState<string | null>(null) // "all", or a file's path
     const [busy, setBusy] = useState(false)
-    const toTrash = async (paths: string[]) => {
+    const remove = async (paths: string[]) => {
         setBusy(true)
         try {
-            const res = await api.post<{ moved: number; failed: Record<string, string> | null }>("/api/library/trash", { paths })
+            const res = await api.post<{ deleted: number; freed: number; failed: Record<string, string> | null }>("/api/library/delete", { paths })
             const failed = Object.values(res.failed ?? {})
-            if (res.moved) toast.success(`${res.moved === 1 ? "Moved" : `${res.moved} files moved`} to the hub's trash. Put back from Put the library right › Deleted.`)
-            if (failed.length) toast.error(`${failed.length} couldn't be moved: ${failed[0]}`)
+            if (res.deleted)
+                toast.success(
+                    `${res.deleted === 1 ? "Deleted" : `${res.deleted} files deleted`} (${formatBytes(res.freed)} freed). To get ${res.deleted === 1 ? "it" : "them"} back, download again from the Audit log.`,
+                )
+            if (failed.length) toast.error(`${failed.length} couldn't be deleted: ${failed[0]}`)
             setAsking(null)
             await Promise.all([
                 qc.invalidateQueries({ queryKey: ["library"] }),
@@ -153,7 +156,7 @@ function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFil
                 qc.invalidateQueries({ queryKey: ["entry", media.id] }),
                 qc.invalidateQueries({ queryKey: ["hub", "overview"] }),
             ])
-            if (res.moved >= files.length) onClose()
+            if (res.deleted >= files.length) onClose()
         } catch (e) {
             toast.error((e as Error).message)
         } finally {
@@ -194,10 +197,11 @@ function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFil
                     {asking === "all" && (
                         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.07] px-3 py-2.5 text-sm">
                             <span className="min-w-0 flex-1">
-                                Move its {files.length} {files.length === 1 ? "file" : "files"} ({formatBytes(size)}) to the hub's trash? You can put them back for 30 days.
+                                Delete its {files.length} {files.length === 1 ? "file" : "files"} ({formatBytes(size)}) from the hub? They're gone at once; the Audit log can download the episodes
+                                again.
                             </span>
-                            <Button size="sm" variant="danger" loading={busy} onClick={() => toTrash(files.map(f => f.path))}>
-                                Move to the trash
+                            <Button size="sm" variant="danger" loading={busy} onClick={() => remove(files.map(f => f.path))}>
+                                Delete
                             </Button>
                             <Button size="sm" variant="ghost" disabled={busy} onClick={() => setAsking(null)}>
                                 Cancel
@@ -216,7 +220,7 @@ function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFil
                                     busy={busy}
                                     onAsk={() => setAsking(e.file!.path)}
                                     onCancel={() => setAsking(null)}
-                                    onDelete={() => toTrash([e.file!.path])}
+                                    onDelete={() => remove([e.file!.path])}
                                 />
                             ))}
                         </ul>
@@ -247,7 +251,7 @@ function Episode({ e, asking, busy, onAsk, onCancel, onDelete }: { e: EpisodeVie
             </div>
             {asking ? (
                 <div className="flex shrink-0 items-center gap-1.5">
-                    <span className="text-xs text-muted">Move to the trash?</span>
+                    <span className="text-xs text-muted">Delete it?</span>
                     <Button size="xs" variant="danger" loading={busy} onClick={onDelete}>
                         Yes
                     </Button>

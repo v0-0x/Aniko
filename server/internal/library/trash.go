@@ -102,28 +102,36 @@ func (t *Trash) Put(paths []string) (moved []string, failed map[string]string) {
 	return moved, failed
 }
 
-func (t *Trash) put(path string) (*TrashItem, error) {
+// check: path is a library file that can go: a file (not a link), and not
+// the same file as another of the library's reached another way (a library
+// folder linked into another, a hard link), which would go with it.
+func (t *Trash) check(path string) (*LocalFile, os.FileInfo, error) {
 	f, err := t.files.Get(path)
 	if err != nil || f == nil {
-		return nil, ErrNotLibraryFile
+		return nil, nil, ErrNotLibraryFile
 	}
 	st, err := os.Lstat(path)
 	if err != nil {
-		return nil, fmt.Errorf("it isn't there any more")
+		return nil, nil, fmt.Errorf("it isn't there any more")
 	}
 	if !st.Mode().IsRegular() {
-		return nil, fmt.Errorf("not a file")
+		return nil, nil, fmt.Errorf("not a file")
 	}
-	// The same file reached another way (a library folder linked into
-	// another, a hard link) is no other copy: moving it would take the one
-	// kept, or free nothing.
 	if f.MediaID > 0 {
 		others, _ := t.files.ByMedia(f.MediaID)
 		for _, o := range others {
 			if o.Path != path && o.Episode == f.Episode && SameFile(o.Path, path) {
-				return nil, fmt.Errorf("it's the same file as %s, reached another way: putting it away would take that one too", o.Name)
+				return nil, nil, fmt.Errorf("it's the same file as %s, reached another way: removing it would take that one too", o.Name)
 			}
 		}
+	}
+	return f, st, nil
+}
+
+func (t *Trash) put(path string) (*TrashItem, error) {
+	f, st, err := t.check(path)
+	if err != nil {
+		return nil, err
 	}
 	id := randomID()
 	it := &TrashItem{ID: id, Path: path, Name: filepath.Base(path), Size: st.Size(), MediaID: f.MediaID, Episode: f.Episode, DeletedAt: time.Now().Unix(), File: f}
@@ -148,19 +156,34 @@ func (t *Trash) put(path string) (*TrashItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("couldn't move it: %w", err)
 	}
-	// Its subtitle files ("Show - 01.en.ass" for "Show - 01.mkv"), not
-	// another video's whose name starts the same ("Show - 01.v2.en.ass" is
-	// "Show - 01.v2.mkv"'s).
-	base := strings.TrimSuffix(it.Name, filepath.Ext(it.Name))
+	for _, from := range subtitlesOf(path) {
+		to := filepath.Join(dir, id+"-"+filepath.Base(from))
+		if os.Rename(from, to) == nil {
+			if it.Extra == nil {
+				it.Extra = map[string]string{}
+			}
+			it.Extra[from] = to
+		}
+	}
+	return it, nil
+}
+
+// subtitlesOf: a video's subtitle files ("Show - 01.en.ass" for "Show -
+// 01.mkv"), not another video's whose name starts the same ("Show -
+// 01.v2.en.ass" is "Show - 01.v2.mkv"'s).
+func subtitlesOf(path string) []string {
+	name := filepath.Base(path)
+	base := strings.TrimSuffix(name, filepath.Ext(name))
 	entries, _ := os.ReadDir(filepath.Dir(path))
 	var longer []string
 	for _, e := range entries {
-		if n := e.Name(); !e.IsDir() && n != it.Name && IsVideo(n) {
+		if n := e.Name(); !e.IsDir() && n != name && IsVideo(n) {
 			if b := strings.TrimSuffix(n, filepath.Ext(n)); strings.HasPrefix(b, base+".") {
 				longer = append(longer, b)
 			}
 		}
 	}
+	var out []string
 	for _, e := range entries {
 		n := e.Name()
 		if e.IsDir() || !SubtitleExtensions[strings.ToLower(filepath.Ext(n))] || !strings.HasPrefix(n, base+".") {
@@ -172,18 +195,64 @@ func (t *Trash) put(path string) (*TrashItem, error) {
 				theirs = true
 			}
 		}
-		if theirs {
-			continue
-		}
-		from, to := filepath.Join(filepath.Dir(path), n), filepath.Join(dir, id+"-"+n)
-		if os.Rename(from, to) == nil {
-			if it.Extra == nil {
-				it.Extra = map[string]string{}
-			}
-			it.Extra[from] = to
+		if !theirs {
+			out = append(out, filepath.Join(filepath.Dir(path), n))
 		}
 	}
-	return it, nil
+	return out
+}
+
+// Removed is a library file deleted for good, with its subtitle files.
+type Removed struct {
+	Path      string   `json:"path"`
+	Name      string   `json:"name"`
+	Size      int64    `json:"size"`
+	MediaID   int      `json:"mediaId"`
+	Episode   int      `json:"episode"`
+	Kind      string   `json:"kind"` // main | special | nc
+	Subtitles []string `json:"subtitles,omitempty"`
+}
+
+// Delete deletes library files for good, with their subtitle files (a
+// hub's dashboard: no trash; its audit log can download them again).
+// failed says why for those that couldn't be.
+func (t *Trash) Delete(paths []string) (removed []Removed, failed map[string]string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	failed = map[string]string{}
+	var gone []string
+	for _, p := range paths {
+		p = filepath.Clean(p)
+		f, st, err := t.check(p)
+		if err != nil {
+			failed[p] = err.Error()
+			continue
+		}
+		subs := subtitlesOf(p)
+		if err := os.Remove(p); err != nil {
+			failed[p] = "couldn't delete it: " + err.Error()
+			continue
+		}
+		for _, sub := range subs {
+			_ = os.Remove(sub)
+		}
+		removed = append(removed, Removed{Path: p, Name: filepath.Base(p), Size: st.Size(), MediaID: f.MediaID, Episode: f.Episode, Kind: f.Kind, Subtitles: subs})
+		gone = append(gone, p)
+	}
+	if len(gone) > 0 {
+		_ = t.files.Delete(gone...)
+	}
+	return removed, failed
+}
+
+// Removed lists what's in the trash as removed: what emptying it all
+// deletes.
+func (it TrashItem) Removed() Removed {
+	r := Removed{Path: it.Path, Name: it.Name, Size: it.Size, MediaID: it.MediaID, Episode: it.Episode}
+	if it.File != nil {
+		r.Kind = it.File.Kind
+	}
+	return r
 }
 
 func exists(path string) bool {

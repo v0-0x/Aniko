@@ -229,3 +229,49 @@ func TestTrashEmptyDriveGone(t *testing.T) {
 		t.Fatalf("freed %d err %v items %d", freed, err, len(tr.Items()))
 	}
 }
+
+// Deleted for good (a hub): the file and its subtitles gone from the disk
+// and the library, nothing in the trash; another video's subtitles and
+// what isn't a library file stay.
+func TestDelete(t *testing.T) {
+	tr, files, root := trashFixture(t)
+	ep := filepath.Join(root, "Show", "Show - 01.mkv")
+	addFile(t, files, ep, LocalFile{MediaID: 7, Episode: 1})
+	v2 := filepath.Join(root, "Show", "Show - 01.v2.mkv")
+	addFile(t, files, v2, LocalFile{MediaID: 7, Episode: 1})
+	sub := filepath.Join(root, "Show", "Show - 01.en.ass")
+	theirs := filepath.Join(root, "Show", "Show - 01.v2.en.ass")
+	for _, p := range []string{sub, theirs} {
+		if err := os.WriteFile(p, []byte("subs"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	removed, failed := tr.Delete([]string{ep, "/etc/passwd"})
+	if len(removed) != 1 || failed["/etc/passwd"] == "" {
+		t.Fatalf("removed %v, failed %v", removed, failed)
+	}
+	r := removed[0]
+	if r.Path != ep || r.MediaID != 7 || r.Episode != 1 || r.Kind != "main" || r.Size == 0 || len(r.Subtitles) != 1 || r.Subtitles[0] != sub {
+		t.Errorf("removed %+v", r)
+	}
+	for _, p := range []string{ep, sub} {
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
+			t.Errorf("%s is still there", p)
+		}
+	}
+	for _, p := range []string{v2, theirs} {
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("%s went too: %v", p, err)
+		}
+	}
+	if f, _ := files.Get(ep); f != nil {
+		t.Error("still in the library")
+	}
+	if len(tr.Items()) != 0 {
+		t.Error("something went to the trash")
+	}
+	if _, err := os.Stat(filepath.Join(root, trashDir)); !os.IsNotExist(err) {
+		t.Error("a trash folder was made")
+	}
+}

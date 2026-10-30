@@ -115,15 +115,15 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
                         )}
                     </Panel>
 
-                    <Panel title="Lately" action={<More onClick={() => go("activity")}>All activity</More>}>
+                    <Panel title="Lately" action={<More onClick={() => go("activity")}>Audit log</More>}>
                         {!o.activity?.length ? (
                             <p className="px-4 py-8 text-center text-sm text-muted">Nothing yet.</p>
                         ) : (
                             <ul className="divide-y divide-line">
-                                {o.activity.slice(0, 6).map((e, i) => (
-                                    <li key={i} className="flex items-baseline gap-3 px-4 py-2.5 text-sm">
+                                {o.activity.slice(0, 6).map(e => (
+                                    <li key={e.id} className="flex items-baseline gap-3 px-4 py-2.5 text-sm">
                                         <span className="min-w-0 flex-1 truncate">
-                                            {e.device && <span className="font-medium">{e.device} </span>}
+                                            {(e.device || e.by) && <span className="font-medium">{e.device || (e.by === "dashboard" ? "You" : "The hub")} </span>}
                                             <span className="text-muted">{e.text}</span>
                                             {e.title && <span> {e.title}</span>}
                                             {e.episode ? <span className="text-muted"> · Episode {e.episode}</span> : null}

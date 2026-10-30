@@ -83,6 +83,8 @@ type Manager struct {
 	// Done tells about a finished download, instead of the usual toast when
 	// it returns true (package notify).
 	Done func(Item) bool
+	// Ended: a download finished or failed (a hub's audit log).
+	Ended func(Item)
 
 	// saveMu orders the writes of an item (database row and UI event) with
 	// its deletion, so a late update can't bring a removed item back.
@@ -407,6 +409,9 @@ func (m *Manager) execute(r *run) {
 		}
 	case StatusFailed:
 		m.hub.Error(fmt.Sprintf("Download failed (%s ep %d): %s", done.AnimeTitle, done.Episode, done.Error))
+	}
+	if m.Ended != nil {
+		m.Ended(done)
 	}
 }
 

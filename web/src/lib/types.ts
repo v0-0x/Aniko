@@ -753,7 +753,29 @@ export type HubDevice = SharingPeer & {
 
 export type HubAccount = { user: number; name: string; avatar: string; givenBy: string; addedAt: number; devices: number; history: number }
 
-export type HubEvent = { at: number; kind: string; device?: string; user?: number; text: string; mediaId?: number; episode?: number; title?: string }
+// The hub's audit log (server/internal/kumohub/audit.go). Who: a device by
+// name, or by "dashboard" (its owner, at ip) or "hub"; an ip alone is
+// someone not signed in.
+export type HubEvent = {
+    id: number
+    at: number
+    kind: string
+    device?: string
+    by?: "dashboard" | "hub"
+    ip?: string
+    user?: number
+    text: string
+    failed?: boolean
+    // More about it, on a line of its own (why it didn't work).
+    detail?: string
+    mediaId?: number
+    episode?: number
+    title?: string
+    files?: { name: string; path: string; size: number; episode?: number }[]
+    size?: number
+    // Deleted episodes: how Download again gets them.
+    again?: { mediaId: number; episodes: number[]; dub?: boolean; provider?: string; quality?: string; queued?: number }
+}
 
 export type HubOverview = {
     name: string

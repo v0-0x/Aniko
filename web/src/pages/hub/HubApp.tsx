@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { Activity, Gauge, KeyRound, Library, LogOut, Settings as SettingsIcon, Users, Wifi } from "lucide-react"
+import { Gauge, KeyRound, Library, LogOut, ScrollText, Settings as SettingsIcon, Users, Wifi } from "lucide-react"
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { Toaster } from "sonner"
 import { KumoLogo } from "@/components/Sidebar"
@@ -18,7 +18,7 @@ import Overview from "./Overview"
 const Devices = lazy(() => import("./Devices"))
 const LibraryPage = lazy(() => import("./Library"))
 const Accounts = lazy(() => import("./Accounts"))
-const ActivityPage = lazy(() => import("./Activity"))
+const AuditLogPage = lazy(() => import("./AuditLog"))
 const HubSettings = lazy(() => import("./HubSettings"))
 
 export type HubTab = "overview" | "devices" | "library" | "accounts" | "activity" | "settings"
@@ -113,7 +113,7 @@ function Dashboard({ status }: { status: Status }) {
                                 { value: "devices", label: "Devices", icon: <Wifi />, count: waiting ? `${waiting} new` : o ? o.devices.filter(d => d.allowed).length : undefined },
                                 { value: "library", label: "Library", icon: <Library /> },
                                 { value: "accounts", label: "AniList", icon: <Users />, count: o?.accounts.length },
-                                { value: "activity", label: "Activity", icon: <Activity /> },
+                                { value: "activity", label: "Audit log", icon: <ScrollText /> },
                                 { value: "settings", label: "Settings", icon: <SettingsIcon /> },
                             ]}
                         />
@@ -141,7 +141,7 @@ function Dashboard({ status }: { status: Status }) {
                                 {tab === "devices" && <Devices o={o} />}
                                 {tab === "library" && <LibraryPage o={o} status={status} />}
                                 {tab === "accounts" && <Accounts o={o} />}
-                                {tab === "activity" && <ActivityPage o={o} />}
+                                {tab === "activity" && <AuditLogPage o={o} />}
                                 {tab === "settings" && <HubSettings o={o} status={status} />}
                             </div>
                         </Suspense>

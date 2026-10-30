@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Download, Folder, FolderPlus, RefreshCw, Trash2 } from "lucide-react"
 import { useRef, useState } from "react"
 import { DirPicker } from "@/components/DirPicker"
-import { type TrashItem, TrashList } from "@/components/library/Cleanup"
 import { AllFiles, Ignored, Unmatched } from "@/components/library/LibraryTools"
 import { Badge, Button, IconButton, Progress, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
@@ -42,8 +41,7 @@ export default function Library({ o, status }: { o: HubOverview; status: Status 
     const done = (downloads.data ?? []).filter(d => d.status === "completed" || d.status === "failed").slice(0, 8)
     const lib = o.library
     const { data: coll } = useCollection()
-    const [tab, setTab] = useState<"unmatched" | "files" | "ignored" | "deleted">(lib.unmatched > 0 ? "unmatched" : "files")
-    const trash = useQuery({ queryKey: ["library", "trash"], queryFn: () => api.get<{ items: TrashItem[] | null; bytes: number }>("/api/library/trash") })
+    const [tab, setTab] = useState<"unmatched" | "files" | "ignored">(lib.unmatched > 0 ? "unmatched" : "files")
     const manage = useRef<HTMLDivElement>(null)
     const open = (t: typeof tab) => {
         setTab(t)
@@ -170,25 +168,11 @@ export default function Library({ o, status }: { o: HubOverview; status: Status 
                                 { value: "unmatched", label: "Not matched", count: lib.unmatched },
                                 { value: "files", label: "All files" },
                                 { value: "ignored", label: "Ignored", count: coll?.ignoredCount ?? 0 },
-                                { value: "deleted", label: "Deleted", count: trash.data?.items?.length ?? 0 },
                             ]}
                         />
                         {tab === "unmatched" && <Unmatched />}
                         {tab === "files" && <AllFiles links={false} />}
                         {tab === "ignored" && <Ignored />}
-                        {tab === "deleted" && (
-                            <TrashList
-                                title="The hub's trash"
-                                items={trash.data?.items ?? []}
-                                bytes={trash.data?.bytes ?? 0}
-                                readOnly={false}
-                                onChange={() => {
-                                    qc.invalidateQueries({ queryKey: ["library"] })
-                                    qc.invalidateQueries({ queryKey: ["collection"] })
-                                    qc.invalidateQueries({ queryKey: ["hub", "overview"] })
-                                }}
-                            />
-                        )}
                     </div>
                 </Panel>
             </div>

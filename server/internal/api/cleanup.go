@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/simo1337s/animetest/server/internal/kumohub"
 	"github.com/simo1337s/animetest/server/internal/library"
 	"github.com/simo1337s/animetest/server/internal/util"
 )
@@ -167,18 +168,12 @@ func (s *Server) cleanup(r *http.Request) (any, error) {
 func (s *Server) cleanupRoutes() {
 	m := s.mux
 	m.HandleFunc("GET /api/library/cleanup", h(s.cleanup))
-	// The trash alone (the hub's dashboard: Put the library right › Deleted).
-	m.HandleFunc("GET /api/library/trash", h(func(r *http.Request) (any, error) {
-		items := s.app.Trash.Items()
-		var bytes int64
-		for _, it := range items {
-			bytes += it.Size
-		}
-		return map[string]any{"items": items, "bytes": bytes}, nil
-	}))
 	m.HandleFunc("POST /api/library/trash", h(libraryEdited(func(r *http.Request) (any, error) {
 		if !isTrusted(r) {
 			return nil, forbidden("only this computer can remove its files")
+		}
+		if s.app.HubStore != nil {
+			return nil, badRequest("the hub has no trash: it deletes files (Library › Anime), and its audit log can download them again")
 		}
 		var body struct {
 			Paths []string `json:"paths"`
@@ -224,5 +219,37 @@ func (s *Server) cleanupRoutes() {
 		}
 		freed, err := s.app.Trash.Empty(body.IDs)
 		return map[string]any{"freed": freed}, err
+	})))
+	// A hub's dashboard deletes for good (no trash): its audit log keeps
+	// what went, to download it again.
+	m.HandleFunc("POST /api/library/delete", h(libraryEdited(func(r *http.Request) (any, error) {
+		if s.app.HubStore == nil {
+			return nil, notFound("only a Kumo Hub deletes files: here, Library tools › Clean up puts them in the trash")
+		}
+		if !isTrusted(r) {
+			return nil, forbidden("sign in to the hub first")
+		}
+		var body struct {
+			Paths []string `json:"paths"`
+		}
+		if err := decode(r, &body); err != nil {
+			return nil, err
+		}
+		if len(body.Paths) == 0 {
+			return nil, badRequest("no files")
+		}
+		removed, failed := s.app.Trash.Delete(body.Paths)
+		var ids []int64
+		if len(removed) > 0 {
+			by, ip := auditBy(r)
+			ids = s.app.LogDeleted(kumohub.Event{By: by, IP: ip, Text: "deleted"}, removed)
+			s.app.Hub.Publish("library-updated", nil)
+			s.app.Hub.Publish("hub-updated", nil)
+		}
+		var freed int64
+		for _, r := range removed {
+			freed += r.Size
+		}
+		return map[string]any{"deleted": len(removed), "freed": freed, "failed": failed, "events": ids}, nil
 	})))
 }

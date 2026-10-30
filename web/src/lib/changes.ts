@@ -7,13 +7,32 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 22,
+        hub: true,
+        title: "Kumo Hub: an audit log",
+        changes: [
+            {
+                title: "Everything that happens on the hub",
+                text: "The dashboard's Activity is now the Audit log, kept 90 days: what the devices watch and send the hub, every change made on the dashboard and from where, sign-ins and wrong passwords, downloads finishing or failing, deleted files. Filter it, search it.",
+            },
+            {
+                title: "Download again",
+                text: "Deleted episodes are listed there with a Download again button (sub or dub), which downloads them onto the hub again. The hub keeps no trash any more.",
+            },
+            {
+                title: "The server's log",
+                text: "Every line the hub's server writes, kept on its disk: search it, show only the problems, or save it as a file.",
+            },
+        ],
+    },
+    {
         id: 21,
         hub: true,
         title: "Kumo Hub: delete from its library",
         changes: [
             {
                 title: "Delete anime and episodes on the hub",
-                text: "The hub's dashboard, under Library › Anime: open an anime to delete it from the hub, or single episodes. They go to the hub's trash first (Put the library right › Deleted), where they can be put back for 30 days.",
+                text: "The hub's dashboard, under Library › Anime: open an anime to delete it from the hub, or single episodes. They're deleted at once; the hub's audit log can download them again.",
             },
         ],
     },

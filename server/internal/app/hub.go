@@ -51,6 +51,7 @@ func (a *App) hubSettings() error {
 
 func (a *App) wireHub() {
 	a.Share.Hub = a.HubStore
+	a.Downloads.Ended = a.auditDownload
 	// Whose a login given to the hub is: AniList says.
 	a.Share.CheckAccount = func(ctx context.Context, token string) (int, string, string, error) {
 		c := anilist.NewClient()
@@ -79,8 +80,9 @@ func (a *App) startHub() {
 	a.Scanner.StartWatcher()
 	go a.Torrents.RunCounter(a.ctx)
 	go a.runPrefetch(a.ctx)
-	// Files deleted from the dashboard go to the trash: it empties itself.
-	go a.purgeTrash()
+	a.HubStore.Log(kumohub.Event{Kind: "start", By: "hub", Text: "started (Kumo Hub " + config.AppVersion + ")"})
+	a.emptyHubTrash()
+	go a.pruneAudit()
 	go func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()

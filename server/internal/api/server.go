@@ -373,6 +373,13 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			s.parentalServe(rules, w, r, next)
 			return
 		}
+		// A hub notes every change made from its dashboard (or on it) in
+		// its audit log.
+		if s.app.HubStore != nil && (kind == clientOwner || kind == clientLocal || kind == clientShell) && strings.HasPrefix(r.URL.Path, "/api/") &&
+			r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
+			s.audited(w, r, next)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
