@@ -131,6 +131,12 @@ export function connectEvents(qc: QueryClient) {
         // the update's.
         es.onopen = () => {
             qc.invalidateQueries({ queryKey: ["update"] })
+            // The library too: the files other devices share (a hub's) can
+            // come in before this page listens, and their "library-updated"
+            // is lost; it then showed only part of the hub's library.
+            qc.invalidateQueries({ queryKey: ["collection"] })
+            qc.invalidateQueries({ queryKey: ["library"] })
+            qc.invalidateQueries({ queryKey: ["sharing", "libraries"] })
             fetch("/api/status", { credentials: "same-origin" })
                 .then(r => (r.ok ? r.json() : null))
                 .then(st => {

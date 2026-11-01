@@ -89,6 +89,9 @@ export function useCollection() {
         queryFn: () => api.get<CollectionView>("/api/anime/collection?fresh=1"),
         staleTime: 60_000,
         refetchOnWindowFocus: true,
+        // Anime in the library left out for now (AniList didn't say what
+        // they are, the app just opened): asked again until they're in.
+        refetchInterval: q => (q.state.data?.incomplete ? 10_000 : false),
     })
 }
 

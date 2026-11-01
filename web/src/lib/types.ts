@@ -167,6 +167,9 @@ export type CollectionView = {
     unmatchedCount: number
     ignoredCount: number
     localOnly: CollectionItem[] | null
+    // Anime in the library left out for now (AniList didn't say what they
+    // are yet): the collection is asked for again.
+    incomplete?: number
     genres: string[] | null
 }
 

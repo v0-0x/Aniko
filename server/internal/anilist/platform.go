@@ -498,11 +498,26 @@ func (p *Platform) MediaBatch(ctx context.Context, ids []int) (map[int]*Media, e
 		if len(chunk) > 50 {
 			chunk = chunk[:50]
 		}
-		missing = missing[len(chunk):]
 		page, err := p.client.Search(ctx, SearchParams{IDs: chunk, PerPage: 50, Sort: []string{"ID"}})
 		if err != nil {
+			// AniList didn't answer (its limit on requests, no network
+			// yet): what was known before, however old, rather than
+			// leaving those anime out (the library showed only some).
+			var unknown int
+			for _, id := range missing {
+				var m Media
+				if p.db.GetStaleCache(liteKey(id), &m) {
+					out[id] = &m
+				} else {
+					unknown++
+				}
+			}
+			if unknown == 0 {
+				return out, nil
+			}
 			return out, err
 		}
+		missing = missing[len(chunk):]
 		for _, m := range page.Media {
 			out[m.ID] = m
 			p.db.SetCache(liteKey(m.ID), m.Lite(), 24*time.Hour)

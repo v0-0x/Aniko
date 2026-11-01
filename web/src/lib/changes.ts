@@ -7,6 +7,16 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 27,
+        title: "The whole library, every time",
+        changes: [
+            {
+                title: "No more missing anime when the app opens",
+                text: "Sometimes the library showed only part of the hub's anime until the app was opened again: those not on your AniList list were left out when AniList didn't answer at once. Aniko now uses what it knew of them before, asks again until every one is in, and gets the hub's library again when it reconnects.",
+            },
+        ],
+    },
+    {
         id: 26,
         title: "The TV's grey picture",
         changes: [

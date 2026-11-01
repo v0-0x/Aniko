@@ -1003,3 +1003,24 @@ func TestScheduleDoesNotCachePartialResults(t *testing.T) {
 		t.Fatalf("got %d results, %v; want 2 (the partial schedule must not be cached)", len(res), err)
 	}
 }
+
+// AniList not answering (its limit on requests, no network yet): the anime
+// known before, however long ago, are still named, rather than left out of
+// the library; one never known makes it an error.
+func TestMediaBatchFallsBackToLastKnown(t *testing.T) {
+	p := newTestPlatform(t, func(w http.ResponseWriter, req gqlRequest) {
+		reply(w, http.StatusInternalServerError, map[string]any{"errors": []any{map[string]any{"message": "down", "status": 500}}})
+	})
+	p.db.SetCache(liteKey(1), &Media{ID: 1}, time.Hour)
+	if _, err := p.db.Write(`UPDATE cache SET expires_at = 1 WHERE key = ?`, liteKey(1)); err != nil {
+		t.Fatal(err)
+	}
+	got, err := p.MediaBatch(context.Background(), []int{1})
+	if err != nil || got[1] == nil || got[1].ID != 1 {
+		t.Fatalf("known before: %v, %v", got, err)
+	}
+	got, err = p.MediaBatch(context.Background(), []int{1, 2})
+	if err == nil || got[1] == nil || got[2] != nil {
+		t.Fatalf("one never known: %v, %v", got, err)
+	}
+}

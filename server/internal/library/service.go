@@ -251,6 +251,10 @@ type CollectionView struct {
 	IgnoredCount     int               `json:"ignoredCount"`
 	LocalOnly        []*CollectionItem `json:"localOnly"` // matched files not in the list
 	Genres           []string          `json:"genres"`
+	// Incomplete: anime in the library left out for now, AniList not
+	// having said what they are (no network yet, its limit on requests);
+	// the app asks again in a moment.
+	Incomplete int `json:"incomplete,omitempty"`
 }
 
 var statusNames = map[string]string{
@@ -345,6 +349,8 @@ func (s *Service) Collection(ctx context.Context, refresh bool) (*CollectionView
 		for _, id := range missing {
 			if m, ok := medias[id]; ok {
 				view.LocalOnly = append(view.LocalOnly, makeItem(nil, m))
+			} else {
+				view.Incomplete++
 			}
 		}
 		sort.Slice(view.LocalOnly, func(i, j int) bool {
