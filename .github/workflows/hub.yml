@@ -215,6 +215,8 @@ jobs:
           beta=""
           [ "$CHANNEL" = beta ] && beta=" --beta"
           cat > "$notes" <<EOF
+          **Aniko Hub's last version.** Its update is [mediaserver](https://github.com/v0-0x/mediaserver), one server for the Aniko and KumoBox apps: the dashboard's **Settings › Updates** installs it in the hub's place, keeping its library, AniList logins, devices and password.
+
           **Aniko Hub $VERSION**: Aniko without a player, for a Raspberry Pi (Pi 4 or 5) or any Linux computer that stays on. It shares its library with the Aniko apps on your network (computers, TVs, phones), keeps the same AniList account's progress, list and theme in step on all of them as it changes, and takes their downloads if you let it. Its dashboard, in a browser, shows what it's streaming to whom, the devices and the Pi's CPU, memory, temperature and disks.
 
           **Install** (on the Pi, as your usual user, with Raspberry Pi OS 64-bit best):

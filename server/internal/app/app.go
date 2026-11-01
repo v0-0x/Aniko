@@ -192,8 +192,11 @@ func New(dataDir string, opts ...Options) (*App, error) {
 			return nil, fmt.Errorf("hub: %w", err)
 		}
 		a.Streams = anikohub.NewStreams()
-		// It updates from its own releases (hub-v…).
+		// Its update is mediaserver, which takes its place (server-v…).
 		a.Update.GOOS = update.HubSystem
+		if config.Getenv("UPDATE_REPO") == "" {
+			a.Update.Repo, a.Update.RepoID = update.ServerRepo, update.ServerRepoID
+		}
 		if err := a.hubSettings(); err != nil {
 			return nil, err
 		}

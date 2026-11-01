@@ -11,16 +11,17 @@ import (
 	"github.com/v0-0x/Aniko/server/internal/lifecycle"
 )
 
-// HubArchive names an Aniko Hub release's archive for a processor (Go's
+// HubArchive names a mediaserver release's archive for a processor (Go's
 // GOARCH: arm64 for a 64-bit Raspberry Pi OS, arm for a 32-bit one): a
-// folder with the aniko-hub program, its service and its install script.
+// folder with the mediaserver program, its service and its install script.
 func HubArchive(version, arch string) string {
-	return "aniko-hub-" + version + "-linux-" + arch + ".tar.gz"
+	return "mediaserver-" + version + "-linux-" + arch + ".tar.gz"
 }
 
-// applyHub installs an Aniko Hub's new version: the archive's program takes
-// the running one's place, and the hub starts again (its service, or
-// itself in place).
+// applyHub installs mediaserver in an Aniko Hub's place: the archive's
+// program takes the running one's place (under its name, which the hub's
+// service starts), and it starts again as mediaserver, which moves the
+// hub's data into its own folder and keeps it.
 func (c *Checker) applyHub(ctx context.Context, g *github, target Version, archive *asset) error {
 	if archive == nil {
 		return errors.New("the newest release has no archive for this computer")
@@ -38,7 +39,7 @@ func (c *Checker) applyHub(ctx context.Context, g *github, target Version, archi
 	}
 	path := filepath.Join(dir, filepath.Base(archive.Name))
 	err = c.download(ctx, g, g.root()+"/releases/assets/"+strconv.FormatInt(archive.ID, 10), "application/octet-stream", path, archive.Size, func(done, total int64) {
-		c.progress(StateDownloading, percent(done, total), "Downloading Aniko Hub "+display(target)+"…")
+		c.progress(StateDownloading, percent(done, total), "Downloading mediaserver "+display(target)+"…")
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't download the update: %w", err)
@@ -51,9 +52,9 @@ func (c *Checker) applyHub(ctx context.Context, g *github, target Version, archi
 	if err != nil {
 		return fmt.Errorf("couldn't unpack the update: %w", err)
 	}
-	next := filepath.Join(top, "aniko-hub")
+	next := filepath.Join(top, "mediaserver")
 	if st, err := os.Stat(next); err != nil || !st.Mode().IsRegular() {
-		return errors.New("the update has no aniko-hub program")
+		return errors.New("the update has no mediaserver program")
 	}
 	// Next to the running one, then over it (a rename: the running program
 	// goes on until it restarts).
@@ -67,13 +68,13 @@ func (c *Checker) applyHub(ctx context.Context, g *github, target Version, archi
 	}
 	c.mu.Lock()
 	c.st.State, c.st.Progress = StateInstalling, -1
-	c.st.Message = "Aniko Hub " + display(target) + " is installed: starting it…"
+	c.st.Message = "mediaserver " + display(target) + " is installed: starting it…"
 	c.publishLocked()
 	c.mu.Unlock()
 	if c.Exits == nil || !c.Exits.Request(lifecycle.Exit{Restart: true}) {
 		// The service is named after the program (kumo-hub on a hub
 		// installed before the rename).
-		return errors.New("installed: restart the hub to use it (sudo systemctl restart " + filepath.Base(exe) + ")")
+		return errors.New("installed: restart the hub to start mediaserver (sudo systemctl restart " + filepath.Base(exe) + ")")
 	}
 	return nil
 }

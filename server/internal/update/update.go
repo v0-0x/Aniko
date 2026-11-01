@@ -359,9 +359,9 @@ func (c *Checker) applyable() (bool, string) {
 		return true, "Aniko downloads the new version and Android asks you to install it."
 	case HubSystem:
 		if err != nil || !c.Writable(filepath.Dir(exe)) {
-			return false, "The hub's program can't be replaced where it is: install the hub again with its install script."
+			return false, "The hub's program can't be replaced where it is: install mediaserver with its install script (github.com/v0-0x/mediaserver)."
 		}
-		return true, "The hub downloads the new version, swaps it in and starts again (a few seconds)."
+		return true, "The hub downloads mediaserver, swaps it in and starts again as mediaserver (a few seconds), keeping all it has."
 	}
 	return false, "Aniko can't update itself on this system."
 }
@@ -604,9 +604,18 @@ func fromReleases(goos string) bool {
 	return goos == "windows" || goos == "darwin" || goos == "android" || goos == HubSystem
 }
 
-// HubSystem is what an Aniko Hub updates as (Checker.GOOS): its own releases,
-// hub-v<version>, one archive per processor (see applyHub).
+// HubSystem is what an Aniko Hub updates as (Checker.GOOS). Its last
+// version updates to mediaserver, which takes its place: mediaserver's
+// releases (ServerRepo), server-v<version>, one archive per processor (see
+// applyHub).
 const HubSystem = "hub"
+
+// ServerRepo is mediaserver's repository (ServerRepoID its number), where an
+// Aniko Hub looks for its update.
+const (
+	ServerRepo   = "v0-0x/mediaserver"
+	ServerRepoID = "1441645210"
+)
 
 // releasePrefix starts the tags of a system's releases: <prefix><version>.
 func releasePrefix(goos string) string {
@@ -616,7 +625,7 @@ func releasePrefix(goos string) string {
 	case "android":
 		return "android-v"
 	case HubSystem:
-		return "hub-v"
+		return "server-v"
 	}
 	return "windows-v"
 }
@@ -658,7 +667,10 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 	prefix := releasePrefix(c.GOOS)
 	best := pickRelease(releases, prefix, c.beta())
 	if best == nil {
-		system := map[string]string{"darwin": "macOS", "android": "Android", HubSystem: "the Aniko Hub"}[c.GOOS]
+		if c.GOOS == HubSystem {
+			return result{note: "mediaserver, which takes Aniko Hub's place, has no release yet."}, nil
+		}
+		system := map[string]string{"darwin": "macOS", "android": "Android"}[c.GOOS]
 		if system == "" {
 			system = "Windows"
 		}
@@ -670,7 +682,11 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 		latest.Commit = best.TargetCommitish
 	}
 	res := result{latest: latest, available: compareVersions(version, c.Version) > 0}
-	if !c.beta() && compareVersions(version, c.Version) < 0 {
+	// mediaserver takes an Aniko Hub's place, whatever its version (1.0.x).
+	if c.GOOS == HubSystem {
+		res.available = true
+		res.note = "mediaserver " + version + " takes Aniko Hub's place: one server for the Aniko apps (this hub, with its library, AniList logins, devices and password) and the KumoBox apps. It updates itself from then on."
+	} else if !c.beta() && compareVersions(version, c.Version) < 0 {
 		res.note = "This copy is a beta, newer than the newest stable release (" + version + "). It stays until a newer stable release comes out."
 	}
 	file := releaseAsset(c.GOOS, version)
@@ -680,8 +696,8 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 		}
 	}
 	// What changed since this build, when it knows its commit: a bonus,
-	// which doesn't fail the check.
-	if res.available && c.Commit != "" {
+	// which doesn't fail the check. (Not mediaserver's: another repository.)
+	if res.available && c.Commit != "" && c.GOOS != HubSystem {
 		if cmp, err := g.compare(ctx, c.Commit, best.TagName); err == nil && cmp.AheadBy > 0 {
 			res.changes, res.changesTotal = cmp.changes(), cmp.AheadBy
 		}

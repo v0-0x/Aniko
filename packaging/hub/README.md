@@ -1,5 +1,11 @@
 # Aniko Hub
 
+> **Aniko Hub is now [mediaserver](https://github.com/v0-0x/mediaserver):**
+> one server for the Aniko apps and the KumoBox apps. A hub's dashboard
+> (**Settings › Updates**) installs it in the hub's place, keeping its
+> library, AniList logins, devices and password; a new server is installed
+> with mediaserver's own install script. This is Aniko Hub's last version.
+
 Aniko Hub is Aniko without a player, for a computer that stays on: a
 Raspberry Pi 4 or 5, or any Linux computer. It shares its library with the
 Aniko apps on your home network (computers, TVs, phones) and keeps them in

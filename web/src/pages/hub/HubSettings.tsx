@@ -176,7 +176,8 @@ function Updates({ settings, set }: { settings: Settings; set: SetFn }) {
                         </Button>
                     </div>
                 )}
-                {u && !u.available && !u.error && u.checkedAt > 0 && <p className="text-[12.5px] text-muted">This is the newest version.</p>}
+                {u?.note && <p className="text-[12.5px] leading-relaxed text-muted">{u.note}</p>}
+                {u && !u.available && !u.error && !u.note && u.checkedAt > 0 && <p className="text-[12.5px] text-muted">This is the newest version.</p>}
                 {busy && (
                     <div className="flex flex-col gap-1.5">
                         <p className="text-[12.5px] text-muted">{u?.message}</p>
