@@ -275,8 +275,25 @@ func (e *Engine) dropLocked(s *session) {
 		}
 	}
 	s.t.drop()
-	_ = os.RemoveAll(filepath.Join(e.dir, s.t.infoHash()))
+	removeDir(filepath.Join(e.dir, s.t.infoHash()))
 	log.Printf("torrent stream: done with %s", s.name)
+}
+
+// removeDir removes a dropped torrent's files: again for a while when they
+// can't be yet (on Windows, a file the client hasn't closed yet can't be).
+func removeDir(dir string) {
+	if os.RemoveAll(dir) == nil {
+		return
+	}
+	go func() {
+		for range 30 {
+			time.Sleep(time.Second)
+			if os.RemoveAll(dir) == nil {
+				return
+			}
+		}
+		log.Printf("torrent stream: couldn't remove %s", dir)
+	}()
 }
 
 // Status is how a session is doing.

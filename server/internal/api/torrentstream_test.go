@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/bencode"
@@ -62,7 +63,7 @@ func TestTorrentStream(t *testing.T) {
 	}
 	const local = "127.0.0.1:5000"
 	s := newTestServer(t)
-	batch := filepath.Join(t.TempDir(), "[Group] Show (01-02) [1080p]")
+	batch := filepath.Join(seedDir(t), "[Group] Show (01-02) [1080p]")
 	if err := os.MkdirAll(batch, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -108,4 +109,21 @@ func TestTorrentStream(t *testing.T) {
 	if w := do(s, "POST", "/api/playback/local", local, fmt.Sprintf(`{"path":%q,"mediaId":1,"episode":2}`, started.Path), nil); w.Code != http.StatusNotFound {
 		t.Fatalf("after stop: %d %s", w.Code, w.Body)
 	}
+}
+
+// seedDir is a temporary folder for a seeder's files, removed after the
+// test as well as it can be: on Windows, a file a client has just closed
+// can't be removed at once (t.TempDir would fail the test).
+func seedDir(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "seed-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		for i := 0; i < 50 && os.RemoveAll(dir) != nil; i++ {
+			time.Sleep(100 * time.Millisecond)
+		}
+	})
+	return dir
 }
