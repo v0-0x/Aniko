@@ -26,6 +26,32 @@ export function usePlay() {
         }
     }
 
+    // Plays a torrent (a Torrents tab result) as it downloads, here: the
+    // episode's file of it, in the in-app player (as a library file is,
+    // by its torrent: path) or mpv.
+    const streamTorrent = async (mediaId: number, episode: number, r: { magnetLink?: string; infoHash?: string; name: string }, opts: { player?: "mpv" | "builtin" } = {}) => {
+        const player = localPlayer(opts.player)
+        const t = toast.loading("Connecting to the torrent's peers…")
+        try {
+            const res = await api.post<{ player: string; path: string }>("/api/torrents/stream", {
+                mediaId,
+                episode,
+                magnet: r.magnetLink || undefined,
+                infoHash: r.infoHash || undefined,
+                name: r.name,
+                player,
+            })
+            if (res.player === "builtin") {
+                toast.dismiss(t)
+                playerStore.set({ kind: "local", path: res.path, mediaId, episode })
+            } else {
+                toast.success("Playing in mpv", { id: t })
+            }
+        } catch (e: any) {
+            toast.error(e.message, { id: t })
+        }
+    }
+
     const playStream = async (provider: string, mediaId: number, episode: number, dub: boolean, opts: { player?: "mpv" | "builtin"; server?: string } = {}) => {
         if (streamPlayer(opts.player) === "builtin") {
             playerStore.set({ kind: "stream", provider, mediaId, episode, dub, server: opts.server })
@@ -40,5 +66,5 @@ export function usePlay() {
         }
     }
 
-    return { playLocal, playStream, localPlayer, streamPlayer, remote }
+    return { playLocal, playStream, streamTorrent, localPlayer, streamPlayer, remote }
 }

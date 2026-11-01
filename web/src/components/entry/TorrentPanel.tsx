@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowDownToLine, Copy, ExternalLink, Magnet, Search, ShieldCheck, Users } from "lucide-react"
+import { ArrowDownToLine, Copy, ExternalLink, Magnet, MonitorPlay, Play, Search, ShieldCheck, Users } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api } from "@/lib/api"
+import { usePlay } from "@/lib/play"
 import { useStatus, useTorrentSearch } from "@/lib/queries"
+import { tv } from "@/lib/tv"
 import type { EntryView, TorrentResult } from "@/lib/types"
 import { cn, copyText, relativeTime } from "@/lib/utils"
 import { Badge, Button, EmptyState, ErrorState, Input, Select, Switch } from "../ui"
@@ -22,6 +24,11 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
     const [selected, setSelected] = useState<Set<string>>(new Set())
     const [sending, setSending] = useState(false)
     const search = useTorrentSearch()
+    const { streamTorrent, remote } = usePlay()
+    // A result played as it downloads: the episode it holds, or of a batch
+    // the one looked for (the first for a movie).
+    const stream = (r: TorrentResult, player?: "mpv" | "builtin") =>
+        streamTorrent(media.id, r.episodeNumber > 0 ? r.episodeNumber : media.format === "MOVIE" ? 1 : episode, r, { player })
 
     const run = () => {
         setSelected(new Set())
@@ -176,9 +183,25 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                                             <Copy className="size-4" />
                                         </button>
                                     )}
-                                    <Button size="sm" variant="white" onClick={() => download([r])} loading={sending && chosen.length === 0}>
+                                    <Button size="sm" variant={tv ? "white" : "subtle"} onClick={() => download([r])} loading={sending && chosen.length === 0}>
                                         Download
                                     </Button>
+                                    {!tv && (r.infoHash || r.magnetLink) && (
+                                        <>
+                                            {!remote && (
+                                                <button
+                                                    className="grid size-9 place-items-center rounded-lg text-muted hover:bg-white/[0.06] hover:text-fg"
+                                                    title="Stream in mpv"
+                                                    onClick={() => stream(r, "mpv")}
+                                                >
+                                                    <MonitorPlay className="size-4" />
+                                                </button>
+                                            )}
+                                            <Button size="sm" variant="white" icon={<Play className="size-3.5 fill-current" />} onClick={() => stream(r, "builtin")}>
+                                                Stream
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )

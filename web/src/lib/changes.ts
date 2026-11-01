@@ -7,6 +7,16 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 30,
+        title: "Stream torrents",
+        changes: [
+            {
+                title: "Play a torrent as it downloads",
+                text: "A result of an anime's Torrents tab now has Stream: it plays in a few seconds, the part being watched first, and seeking works; of a batch, the episode you looked for. It plays like a file on this computer (converted when it has to be, its audio tracks too); its own subtitles show once most of it is here. What it downloads is only kept while it's played. Download still sends it to your torrent client.",
+            },
+        ],
+    },
+    {
         id: 29,
         title: "Aniko Hub is now mediaserver",
         changes: [

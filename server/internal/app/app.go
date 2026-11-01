@@ -37,34 +37,38 @@ import (
 	"github.com/v0-0x/Aniko/server/internal/share"
 	"github.com/v0-0x/Aniko/server/internal/stream"
 	"github.com/v0-0x/Aniko/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/torrentstream"
 	"github.com/v0-0x/Aniko/server/internal/update"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 type App struct {
-	DB         *db.DB
-	Settings   *config.Store
-	Hub        *events.Hub
-	Platform   *anilist.Platform
-	Meta       *metadata.Service
-	Files      *library.Store
-	Scanner    *library.Scanner
-	Library    *library.Service
-	History    *history.Store
-	Player     *player.Manager
-	AniCli     *anicli.Driver
-	Downloads  *downloads.Manager
-	Torrents   *torrent.Manager
-	AutoDL     *torrent.AutoDownloader
-	Extensions *extensions.Manager
-	Stream     *stream.Service
-	Local      *stream.Local
-	HLS        *stream.HLS
-	Share      *share.Service
-	Manga      *manga.Service
-	Discord    *discord.Client
-	Images     *images.Cache
-	Logs       *LogBuffer
-	Update     *update.Checker
+	DB        *db.DB
+	Settings  *config.Store
+	Hub       *events.Hub
+	Platform  *anilist.Platform
+	Meta      *metadata.Service
+	Files     *library.Store
+	Scanner   *library.Scanner
+	Library   *library.Service
+	History   *history.Store
+	Player    *player.Manager
+	AniCli    *anicli.Driver
+	Downloads *downloads.Manager
+	Torrents  *torrent.Manager
+	// TorrentStream plays torrents as they download (package torrentstream).
+	TorrentStream *torrentstream.Engine
+	AutoDL        *torrent.AutoDownloader
+	Extensions    *extensions.Manager
+	Stream        *stream.Service
+	Local         *stream.Local
+	HLS           *stream.HLS
+	Share         *share.Service
+	Manga         *manga.Service
+	Discord       *discord.Client
+	Images        *images.Cache
+	Logs          *LogBuffer
+	Update        *update.Checker
 	// Awake keeps the computer from sleeping while others play its files.
 	Awake *awake.Keeper
 	// Trash holds the files put away from Library tools › Clean up.
@@ -166,8 +170,23 @@ func New(dataDir string) (*App, error) {
 	// Libraries other Aniko apps share with this one show with its own.
 	lib.Remote = a.Share.RemoteFiles
 	a.ShellToken = randomToken()
+	a.TorrentStream = torrentstream.New(torrentStreamDir(dataDir))
+	a.TorrentStream.Free = func(dir string) (uint64, error) {
+		_, free, err := util.DiskSpace(dir)
+		return free, err
+	}
+	a.Local.Torrents = a.TorrentStream
 	a.wire()
 	return a, nil
+}
+
+// torrentStreamDir holds the torrents being played, in the cache folder
+// (gone when they're done).
+func torrentStreamDir(dataDir string) string {
+	if dir, err := os.UserCacheDir(); err == nil {
+		return filepath.Join(dir, "aniko", "torrent-stream")
+	}
+	return filepath.Join(dataDir, "torrent-stream")
 }
 
 // hlsDir holds the in-app player's HLS segments: on disk, in the cache
@@ -512,6 +531,7 @@ func (a *App) Shutdown() {
 	a.Share.Stop()
 	a.Awake.Close()
 	a.Update.Stop()
+	a.TorrentStream.Close()
 	a.HLS.Close()
 	a.Scanner.StopWatcher()
 	a.Discord.Clear()

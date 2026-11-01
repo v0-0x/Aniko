@@ -854,3 +854,6 @@ export type WatchOrder = {
     partial?: boolean
     edited?: boolean
 }
+
+// How a torrent playing as it downloads is doing (GET /api/torrentstream/{id}).
+export type TorrentStreamStatus = { id: string; name: string; size: number; done: number; peers: number; seeds: number; speed: number }
