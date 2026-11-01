@@ -151,6 +151,18 @@ export function pictureState(v: HTMLVideoElement, canvas: HTMLCanvasElement): "p
     }
 }
 
+// The formats marked as showing no picture here and the software conversion,
+// forgotten: they were the WebView's doing, and Android's own player plays
+// the video now (lib/nativeVideo).
+export function forgetNoPicture() {
+    try {
+        localStorage.removeItem(NO_PICTURE)
+        localStorage.removeItem(SOFTWARE_VIDEO)
+    } catch {
+        /* nothing kept either */
+    }
+}
+
 // A random id; crypto.randomUUID only exists on https and localhost, and
 // devices on the home network use plain http.
 export function randomId() {

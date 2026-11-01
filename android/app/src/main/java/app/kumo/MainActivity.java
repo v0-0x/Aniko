@@ -67,6 +67,8 @@ public class MainActivity extends Activity {
     private boolean resumed;
     // Checks the server runs, while Aniko shows (see watch).
     private final Runnable watcher = this::watch;
+    // Android's own player, behind the page (the Fire TV's WebView shows no picture).
+    private final NativeVideo video = new NativeVideo(this);
 
     // The window's color: the page's (its --frame), so nothing flashes a
     // different black between the start and Aniko showing.
@@ -162,6 +164,12 @@ public class MainActivity extends Activity {
                 return leave(Uri.parse(url));
             }
 
+            // Another page (Aniko's opened again): its video goes with the old one.
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                if (view == MainActivity.this.web) video.close();
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 // Not the WebView's own error page, if Aniko's didn't load.
@@ -188,6 +196,7 @@ public class MainActivity extends Activity {
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 if (view != MainActivity.this.web) return true;
                 Log.e("aniko", "the page stopped" + (detail.didCrash() ? " (crashed)" : "") + ": opening it again");
+                video.close();
                 exitFullscreen();
                 letScreenSleep();
                 root.removeView(view);
@@ -391,6 +400,7 @@ public class MainActivity extends Activity {
         resumed = false;
         main.removeCallbacks(watcher);
         js("document.querySelectorAll('video').forEach(function(v){v.pause()})");
+        video.pause();
         web.onPause();
         super.onPause();
     }
@@ -400,6 +410,7 @@ public class MainActivity extends Activity {
         main.removeCallbacks(watcher);
         if (multicast != null && multicast.isHeld()) multicast.release();
         if (isFinishing()) AnikoServer.get(this).stop();
+        video.close();
         web.destroy();
         super.onDestroy();
     }
@@ -486,8 +497,16 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void js(String code) {
+    void js(String code) {
         if (loaded) web.evaluateJavascript(code, null);
+    }
+
+    FrameLayout rootView() {
+        return root;
+    }
+
+    WebView webView() {
+        return web;
     }
 
     // ------------------------------------------------------------ the bridge
@@ -501,6 +520,12 @@ public class MainActivity extends Activity {
                 if (on) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             });
+        }
+
+        /** Android's own player, behind the page (NativeVideo): its commands. */
+        @JavascriptInterface
+        public void video(final String json) {
+            video.command(json);
         }
 
         /** Installs an update the server downloaded (Android asks first). */
@@ -536,7 +561,7 @@ public class MainActivity extends Activity {
                 || pm.hasSystemFeature("amazon.hardware.fire_tv");
     }
 
-    private String versionName() {
+    String versionName() {
         try {
             PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
             return info.versionName;

@@ -13,6 +13,8 @@ import { createStore } from "./store"
 type AndroidBridge = {
     keepAwake?: (on: boolean) => void
     installApk?: (path: string) => void
+    // Android's own player, behind the page (lib/nativeVideo); 2.0.42 on.
+    video?: (json: string) => void
 }
 
 declare global {

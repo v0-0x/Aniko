@@ -7,6 +7,24 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 28,
+        title: "A picture on the Fire TV",
+        changes: [
+            {
+                title: "The TV plays videos in Android's own player",
+                text: "The Fire TV's built-in web view has been showing videos as a grey picture under their sound, in other apps too. On the TV, Aniko now plays every video, from the hub, a computer or online, in Android's own video player, with Aniko's controls and subtitles over it as before.",
+            },
+            {
+                title: "Less converting on the hub",
+                text: "Android's player plays Matroska (.mkv) files as they are, so the hub sends more episodes to the TV unchanged instead of converting them. What the old grey-picture fix set up on the TV (converting in software) is undone.",
+            },
+            {
+                title: "Android's video player, on or off",
+                text: "In the player's settings (the gauge) on the TV: turn it off to go back to the web view's player, or on again. The episode goes on from where it was.",
+            },
+        ],
+    },
+    {
         id: 27,
         title: "The whole library, every time",
         changes: [

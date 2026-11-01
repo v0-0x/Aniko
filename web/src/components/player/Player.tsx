@@ -28,7 +28,8 @@ import {
 import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, ApiError, qs } from "@/lib/api"
-import { markNoPicture, pictureState, prefersHls, randomId, setSoftwareVideo, softwareVideo, videoCaps, videoFormat } from "@/lib/playback"
+import { nativeVideo, nativeVideoAvailable, nativeVideoOn, setNativeVideo } from "@/lib/nativeVideo"
+import { forgetNoPicture, markNoPicture, pictureState, prefersHls, randomId, setSoftwareVideo, softwareVideo, videoCaps, videoFormat } from "@/lib/playback"
 import { canPip, closeMini, expandMini, openMini } from "@/lib/pip"
 import { useSettings } from "@/lib/queries"
 import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
@@ -38,6 +39,7 @@ import { android, androidApp, move, tv } from "@/lib/tv"
 import { cn, formatDuration, img, readLocal, title as animeTitle } from "@/lib/utils"
 import { parseVTT, type Cue } from "@/lib/vtt"
 import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger } from "../ui"
+import { NativeSubtitles } from "./NativeSubtitles"
 
 type SubOption = { key: string; label: string; lang: string; title: string; index: number; url: string; bitmap?: boolean }
 type Skip = { type: string; start: number; end: number }
@@ -86,7 +88,7 @@ export function PlayerOverlay({ mini = false }: { mini?: boolean }) {
     const stage = useRef<HTMLDivElement>(null)
     if (!req) return null
     return (
-        <div ref={stage} className="fixed inset-0 z-[80] bg-black fade-in">
+        <div ref={stage} data-player-overlay className="fixed inset-0 z-[80] bg-black fade-in">
             <Player
                 key={JSON.stringify(req)}
                 req={req}
@@ -211,15 +213,26 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const mediaId = req.mediaId
     const episode = req.episode
     const source = req.kind === "local" ? "local" : req.provider === "ani-cli" ? "anicli" : "stream"
+    // Android's own player plays the video (the TV app's, lib/nativeVideo).
+    // What the page's player found showing no picture here (the WebView's
+    // doing) is forgotten: it plays Matroska files as they are, too.
+    const [native] = useState(() => {
+        const on = nativeVideoOn()
+        if (on) forgetNoPicture()
+        return on
+    })
     // Safari and iPhone/iPad get converted files as HLS (see lib/playback).
     const hlsMode = useMemo(() => prefersHls(), [])
-    const allCaps = useMemo(() => videoCaps(hlsMode && Hls.isSupported() ? "mse" : "element"), [hlsMode])
+    const allCaps = useMemo(() => {
+        const c = videoCaps(hlsMode && Hls.isSupported() ? "mse" : "element")
+        return native && !c.includes("mkv") ? [...c, "mkv"] : c
+    }, [hlsMode, native])
     // Formats that showed no picture here: converted (see the picture
     // watchdog). And, last, the video converted in software rather than by
     // the computer's encoder: kept for this device once chosen.
     const [noPic, setNoPic] = useState<string[]>([])
     const caps = useMemo(() => allCaps.filter(c => !noPic.includes(c)), [allCaps, noPic])
-    const [software, setSoftware] = useState(() => softwareVideo())
+    const [software, setSoftware] = useState(() => !native && softwareVideo())
     const clientId = useMemo(() => randomId(), [])
     const base = req.kind === "local" && method !== "direct" && stream ? stream.base : offset
     const absTime = (v: HTMLVideoElement) => v.currentTime + base
@@ -296,7 +309,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     // Converted in software on this device (Grey picture?): always
                     // converted, never the file as it is.
                     const m =
-                        softwareVideo() && res.probe.video?.length ? "transcode" : ai === 0 && res.probe.method === "direct" ? "direct" : res.probe.method === "direct" ? "remux" : res.probe.method
+                        !native && softwareVideo() && res.probe.video?.length ? "transcode" : ai === 0 && res.probe.method === "direct" ? "direct" : res.probe.method === "direct" ? "remux" : res.probe.method
                     setMethod(m)
                     // Ignore saved positions past the end of this file.
                     // (One handed over from the other player is where it was, also
@@ -477,6 +490,15 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         const resume = localHls ? Math.max(0, offset - stream!.base) : req.kind === "local" ? (method === "direct" ? startAt.current : 0) : startAt.current
         expected.current = (req.kind === "local" && method !== "direct" && stream ? stream.base : offset) + resume
         const isHls = localHls || (req.kind === "stream" && (src?.type === "m3u8" || /m3u8/i.test(src?.originalUrl ?? "")))
+        if (native) {
+            // Android's player, behind the page: HLS and all, from where asked.
+            const nv = nativeVideo(v)
+            nv.open(videoSrc, { start: resume, hls: isHls })
+            v.volume = volume
+            v.playbackRate = rate
+            v.play().catch(() => {})
+            return () => nv.close()
+        }
         let onMeta: (() => void) | null = null
         if (isHls && Hls.isSupported()) {
             // A local session's playlist grows while it's converted: give a
@@ -572,7 +594,8 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     useEffect(() => {
         const v = videoRef.current
         // Not for a file without video (sound only).
-        if (!v || !videoSrc || req.kind !== "local" || pictureTries.current >= 4 || (probe && !probe.video?.length)) return
+        // Nor with Android's player: the page doesn't draw that video.
+        if (!v || !videoSrc || native || req.kind !== "local" || pictureTries.current >= 4 || (probe && !probe.video?.length)) return
         // Frames shown (requestVideoFrameCallback), or else decoded.
         const rvfc = "requestVideoFrameCallback" in v
         let frames = 0
@@ -710,8 +733,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 /* ignore bad cue */
             }
         }
-        tr.mode = "showing"
-    }, [cues, base, videoKey, delay, subStyle])
+        // Over Android's player, the page draws them (NativeSubtitles).
+        tr.mode = native ? "hidden" : "showing"
+    }, [cues, base, videoKey, delay, subStyle, native])
     // Subtitles earlier or later (z / x, or the subtitles menu): kept for the
     // anime.
     const moveSubs = (by: number) => {
@@ -1431,6 +1455,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 }}
             />
 
+            {native && <NativeSubtitles video={videoRef} cues={cues} base={base} delay={delay} style={subStyle} lifted={controls && !mini} />}
             {(loading || buffering || !started) && !error && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
                     <Loader2 className={cn("animate-spin text-white/80", mini ? "size-8" : "size-12")} />
@@ -1714,7 +1739,22 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                             <DropdownSeparator />
                                         </>
                                     )}
-                                    {req.kind === "local" && !!probe?.video?.length && (
+                                    {nativeVideoAvailable && (
+                                        <>
+                                            <DropdownItem
+                                                onSelect={() => {
+                                                    // Opened again from here, by the other player.
+                                                    setNativeVideo(!native)
+                                                    note(native ? "Android's video player turned off on this device" : "Android's video player turned on on this device")
+                                                    playerStore.set(handOver())
+                                                }}
+                                            >
+                                                {native ? "● Android's video player (turn off)" : "No picture? Use Android's video player"}
+                                            </DropdownItem>
+                                            <DropdownSeparator />
+                                        </>
+                                    )}
+                                    {req.kind === "local" && !native && !!probe?.video?.length && (
                                         <>
                                             <DropdownItem
                                                 onSelect={() => {

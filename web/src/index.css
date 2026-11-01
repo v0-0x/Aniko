@@ -319,6 +319,33 @@ video::cue {
     text-shadow: var(--sub-shadow, 0 2px 4px rgb(0 0 0 / 0.8));
 }
 
+/* Android's own player draws the video behind the page (lib/nativeVideo):
+   the page is see-through, but for the player's controls and subtitles,
+   and toasts. */
+html.native-video,
+html.native-video body,
+html.native-video #root,
+html.native-video [data-player-overlay],
+html.native-video [data-player-overlay] [data-tv-scope] {
+    background: transparent !important;
+}
+html.native-video #root > :not([data-player-overlay]):not(section) {
+    visibility: hidden !important;
+}
+/* Its subtitles, drawn by the page: as video::cue above. */
+.native-cue {
+    background: var(--sub-bg, rgb(0 0 0 / 0.55));
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: calc(clamp(16px, 2.4vw, 34px) * var(--sub-scale, 1));
+    font-weight: 600;
+    line-height: 1.35;
+    text-shadow: var(--sub-shadow, 0 2px 4px rgb(0 0 0 / 0.8));
+    padding: 0 0.3em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
 /* Plugins (from the marketplace) style their tray UIs with Tailwind classes;
    generate the common utilities so they render properly. */
 @source inline("{flex,inline-flex,grid,block,inline-block,hidden,contents,relative,absolute,sticky,truncate,italic,underline,uppercase,capitalize,shrink-0,grow,flex-1,flex-wrap,flex-row,flex-col,flex-row-reverse,flex-col-reverse,w-full,h-full,w-auto,h-auto,min-w-0,max-w-full,overflow-hidden,overflow-auto,overflow-y-auto,overflow-x-auto,whitespace-nowrap,break-all,break-words,object-cover,object-contain,cursor-pointer,select-none,pointer-events-none,transition,border,border-0,border-t,border-b,shadow,shadow-md,shadow-lg,opacity-50,opacity-60,opacity-70,opacity-80,line-clamp-1,line-clamp-2,line-clamp-3,aspect-video,aspect-square}");
