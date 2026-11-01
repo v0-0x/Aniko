@@ -83,25 +83,6 @@ func TestGetenvOldName(t *testing.T) {
 	}
 }
 
-// A hub installed as Kumo Hub keeps its kumo-hub folder (its service names
-// it); a new one gets aniko-hub.
-func TestHubDataDir(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
-	t.Setenv("APPDATA", filepath.Join(home, "data", "Roaming"))
-	base := filepath.Dir(defaultDataDir())
-	if got := HubDataDir(); got != filepath.Join(base, "aniko-hub") {
-		t.Fatalf("new hub: %q", got)
-	}
-	if err := os.MkdirAll(filepath.Join(base, "kumo-hub"), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if got := HubDataDir(); got != filepath.Join(base, "kumo-hub") {
-		t.Fatalf("Kumo Hub's: %q", got)
-	}
-}
-
 // A setting naming a file in Kumo's data folder follows it to Aniko's.
 func TestMovedPaths(t *testing.T) {
 	home := t.TempDir()

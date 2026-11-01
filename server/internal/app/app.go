@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/v0-0x/Aniko/server/internal/awake"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,8 +16,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/v0-0x/Aniko/server/internal/awake"
+
 	"github.com/v0-0x/Aniko/server/internal/anicli"
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
 	"github.com/v0-0x/Aniko/server/internal/anilist"
 	"github.com/v0-0x/Aniko/server/internal/config"
 	"github.com/v0-0x/Aniko/server/internal/db"
@@ -79,13 +79,6 @@ type App struct {
 	ShellToken string
 	DataDir    string
 
-	// HubStore is set when Aniko runs as an Aniko Hub (aniko --hub, package
-	// anikohub): it plays nothing, shares its library with the Aniko apps on
-	// the network and keeps them in step; the heavy parts don't run.
-	HubStore *anikohub.Store
-	Streams  *anikohub.Streams
-	Sampler  *anikohub.Sampler
-
 	prefetch *prefetcher
 
 	ctx    context.Context
@@ -125,25 +118,8 @@ func (l *LogBuffer) Lines() []string {
 	return append([]string(nil), l.lines...)
 }
 
-// Options say how Aniko runs.
-type Options struct {
-	// Hub: as an Aniko Hub (see App.HubStore).
-	Hub bool
-}
-
-func New(dataDir string, opts ...Options) (*App, error) {
-	var opt Options
-	if len(opts) > 0 {
-		opt = opts[0]
-	}
+func New(dataDir string) (*App, error) {
 	logs := &LogBuffer{out: os.Stderr}
-	if opt.Hub {
-		if f, err := OpenLogFile(filepath.Join(dataDir, "logs")); err == nil {
-			logs.File = f
-		} else {
-			fmt.Fprintf(os.Stderr, "the log won't be kept on disk: %v\n", err)
-		}
-	}
 	log.SetOutput(logs)
 	log.SetFlags(log.LstdFlags)
 
@@ -187,20 +163,6 @@ func New(dataDir string, opts ...Options) (*App, error) {
 	if a.Share, err = share.New(d, settings, files, hub); err != nil {
 		return nil, fmt.Errorf("library sharing: %w", err)
 	}
-	if opt.Hub {
-		if a.HubStore, err = anikohub.New(d); err != nil {
-			return nil, fmt.Errorf("hub: %w", err)
-		}
-		a.Streams = anikohub.NewStreams()
-		// Its update is mediaserver, which takes its place (server-v…).
-		a.Update.GOOS = update.HubSystem
-		if config.Getenv("UPDATE_REPO") == "" {
-			a.Update.Repo, a.Update.RepoID = update.ServerRepo, update.ServerRepoID
-		}
-		if err := a.hubSettings(); err != nil {
-			return nil, err
-		}
-	}
 	// Libraries other Aniko apps share with this one show with its own.
 	lib.Remote = a.Share.RemoteFiles
 	a.ShellToken = randomToken()
@@ -241,14 +203,10 @@ func (a *App) wire() {
 	}
 	a.Share.OnFiles = a.prefetchLibrary
 	// Anikos on the same AniList account keep their watch histories in step,
-	// as positions are saved. A hub keeps every account's instead (hub.go).
-	if a.HubStore != nil {
-		a.wireHub()
-	} else {
-		a.Share.History = a.History
-		a.History.OnChange = a.Share.HistoryChanged
-		a.wirePrefs()
-	}
+	// as positions are saved.
+	a.Share.History = a.History
+	a.History.OnChange = a.Share.HistoryChanged
+	a.wirePrefs()
 	a.Share.OnWatchedElsewhere = func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()
@@ -263,10 +221,6 @@ func (a *App) wire() {
 		return host != "" || err != nil, err
 	}
 	a.Share.User = func() int {
-		// A hub is on each device's account, not one of its own.
-		if a.HubStore != nil {
-			return 0
-		}
 		if v := a.Platform.Viewer(); v != nil {
 			return v.ID
 		}
@@ -505,10 +459,6 @@ func (a *App) background(job func()) {
 
 // Start runs the background jobs.
 func (a *App) Start() {
-	if a.HubStore != nil {
-		a.startHub()
-		return
-	}
 	a.Share.Start()
 	a.background(func() { a.runPrefetch(a.ctx) })
 	a.Extensions.LoadAll()
@@ -555,9 +505,6 @@ func (a *App) Start() {
 }
 
 func (a *App) Shutdown() {
-	if a.HubStore != nil {
-		a.HubStore.Log(anikohub.Event{Kind: "stop", By: "hub", Text: "stopped"})
-	}
 	a.cancel()
 	// The player first: it saves where it stopped, which sharing then sends
 	// to the other Anikos before it stops.

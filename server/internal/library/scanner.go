@@ -348,7 +348,7 @@ func (s *Scanner) removedFiles(byPath map[string]*LocalFile, found map[string]fs
 }
 
 // ErrLibraryOff: this computer's library is off (Settings › Local library).
-var ErrLibraryOff = errors.New("this computer's library is off: it plays the ones your Aniko Hub and other computers share with it (Settings › Local library)")
+var ErrLibraryOff = errors.New("this computer's library is off: it plays the ones your mediaserver and other computers share with it (Settings › Local library)")
 
 // Forget drops from the index the files of folders that left the library
 // (taken out of it, or the library turned off); they stay on the disk. A

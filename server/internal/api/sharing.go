@@ -159,7 +159,6 @@ func (s *Server) peerRoutes() {
 		s.app.Share.TakePrefs(peerOf(r).ID, p)
 		return nil, nil
 	})))
-	s.hubPeerRoutes()
 	// This Aniko's AniList login, for an Aniko it shares it with: sealed, only
 	// that one can read it.
 	m.HandleFunc("GET /api/peer/anilist", shared(h(func(r *http.Request) (any, error) {
@@ -226,17 +225,10 @@ func (s *Server) peerRoutes() {
 		if !s.app.Share.Shares(req.Path) {
 			return nil, notFound("that file isn't shared")
 		}
-		sess, err := s.app.HLS.Start(r.Context(), req)
-		if err == nil && s.app.Streams != nil {
-			s.app.Streams.Label(sess.ID, req.Path, sess.Method)
-		}
-		return sess, err
+		return s.app.HLS.Start(r.Context(), req)
 	})))
 	m.HandleFunc("GET /api/peer/local/hls/{id}/{name}", shared(func(w http.ResponseWriter, r *http.Request) {
 		defer s.awakeFor(r)()
-		if s.app.Streams != nil {
-			w = s.app.Streams.Keyed(r.PathValue("id"), peerOf(r).Name).Writer(w)
-		}
 		s.app.HLS.Serve(w, r, r.PathValue("id"), r.PathValue("name"))
 	}))
 	m.HandleFunc("DELETE /api/peer/local/hls/{id}", shared(h(func(r *http.Request) (any, error) {
@@ -391,15 +383,6 @@ const (
 	maxPeerTorrents = 50
 )
 
-// hubDownloaded notes on a hub's dashboard (Activity) a device's download.
-func (s *Server) hubDownloaded(c share.Caller, mediaID int, text string) {
-	if s.app.HubStore == nil {
-		return
-	}
-	s.app.HubStore.Log(anikohub.Event{Kind: "download", Device: c.Name, User: c.User, Text: text, MediaID: mediaID})
-	s.app.Hub.Publish("hub-updated", nil)
-}
-
 func (s *Server) peerDownload(r *http.Request) (any, error) {
 	c := peerOf(r)
 	if !c.Downloads {
@@ -424,7 +407,6 @@ func (s *Server) peerDownload(r *http.Request) (any, error) {
 			return nil, err
 		}
 		s.app.Hub.Info(fmt.Sprintf("%s is downloading %d episode(s) here", from, len(items)))
-		s.hubDownloaded(c, body.MediaID, fmt.Sprintf("is downloading %d episode(s) onto the hub:", len(items)))
 		return map[string]int{"queued": len(items)}, nil
 	case share.DownloadTorrent:
 		var body share.TorrentDownload
@@ -447,7 +429,6 @@ func (s *Server) peerDownload(r *http.Request) (any, error) {
 			return nil, err
 		}
 		s.app.Hub.Info(fmt.Sprintf("%s sent %d torrent(s) to the torrent client here", from, len(body.URIs)))
-		s.hubDownloaded(c, body.MediaID, fmt.Sprintf("sent %d torrent(s) to the hub:", len(body.URIs)))
 		return map[string]string{"savePath": save}, nil
 	}
 	return nil, notFound("unknown download")
@@ -475,24 +456,7 @@ func (s *Server) awakeFor(r *http.Request) (release func()) {
 
 func (s *Server) localFile(w http.ResponseWriter, r *http.Request) {
 	defer s.awakeFor(r)()
-	w, done := s.track(w, r, "file")
-	defer done()
 	s.app.Local.ServeFile(w, r, r.URL.Query().Get("path"))
-}
-
-// track counts what a video request sends a device, for a hub's dashboard
-// (elsewhere it does nothing).
-func (s *Server) track(w http.ResponseWriter, r *http.Request, kind string) (http.ResponseWriter, func()) {
-	if s.app.Streams == nil || isTrusted(r) {
-		return w, func() {}
-	}
-	c := peerOf(r)
-	name := c.Name
-	if name == "" {
-		name = "A browser"
-	}
-	st := s.app.Streams.Begin(name, r.URL.Query().Get("path"), kind)
-	return st.Writer(w), st.End
 }
 
 func (s *Server) localTranscode(w http.ResponseWriter, r *http.Request) {
@@ -500,12 +464,6 @@ func (s *Server) localTranscode(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	start, _ := strconv.ParseFloat(q.Get("start"), 64)
 	audio, _ := strconv.Atoi(q.Get("audio"))
-	kind := q.Get("method")
-	if kind != "remux" {
-		kind = "transcode"
-	}
-	w, done := s.track(w, r, kind)
-	defer done()
 	s.app.Local.ServeTranscode(w, r, q.Get("path"), start, audio, q.Get("method"), stream.ParseCaps(q.Get("caps")))
 }
 

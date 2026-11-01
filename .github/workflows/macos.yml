@@ -33,7 +33,6 @@ on:
       - "packaging/windows/**"
       - "android/**"
       - "packaging/android/**"
-      - "packaging/hub/**"
   workflow_dispatch:
     inputs:
       publish:

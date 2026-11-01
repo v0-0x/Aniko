@@ -94,7 +94,7 @@ Aniko was called Kumo before 2.0.37, and every copy updates to Aniko by itself, 
 - **Windows**: the update moves the app to an Aniko folder, with new shortcuts. A taskbar pin of Kumo's may need pinning again.
 - **macOS**: the update arrives in the app still named Kumo.app, which renames itself Aniko.app when it opens (and opens again from there).
 - **Android TV**: the update installs over Kumo in place.
-- **Kumo Hub** updates itself to Aniko Hub, still as the `kumo-hub` service. Running the [install command](#aniko-hub-raspberry-pi) again moves it to the new names (`aniko-hub`), with its data.
+- **Kumo Hub** and **Aniko Hub** update themselves to [mediaserver](#a-home-server-mediaserver), which takes their place with their data.
 
 ### Updates
 When GitHub has a newer Aniko, the **Home** page shows it with an **Update** button: Aniko downloads the new source, builds it with makepkg and installs the package with pacman (a password dialog asks for your password); **Restart Aniko** then starts the new version. **Settings › Updates & about** shows the version and the last check, and checks again right away.
@@ -146,15 +146,11 @@ Aniko for Android is made for TVs (a Fire TV Stick, Android TV) and plays the li
 
 When something doesn't play right on the TV (no picture, it stops), the TV writes what it saw to its log and to the computer's (Settings › Logs & cache), which helps find out why.
 
-## Aniko Hub (Raspberry Pi)
+## A home server: mediaserver
 
-Aniko Hub is Aniko without a player, for a computer that stays on, like a Raspberry Pi 4: it shares its library with the Aniko apps at home, streams to them (converting with the Pi's video chip what a device can't play), keeps the devices on the same AniList account in step as they watch (progress, list, theme), takes their downloads if you let it, and has a dashboard in the browser showing what it streams to whom and how the Pi is doing. On the Pi:
+For a computer that stays on, like a Raspberry Pi 4, [mediaserver](https://github.com/v0-0x/mediaserver) is the home server for Aniko (and KumoBox): it shares its library with the Aniko apps at home, streams to them (converting with the Pi's video chip what a device can't play), keeps the devices on the same AniList account in step as they watch (progress, list, theme), takes their downloads and uploads if you let it, and has a dashboard in the browser showing what it streams to whom and how the Pi is doing. It was Aniko Hub, which updates itself to mediaserver, keeping its library, logins, devices and password. Its install and setup: [mediaserver's README](https://github.com/v0-0x/mediaserver/blob/main/packaging/README.md).
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/v0-0x/Aniko/HEAD/packaging/hub/install.sh | bash
-```
-
-Then open `http://<your Pi>.local:43211` and follow [packaging/hub/README.md](packaging/hub/README.md). Releases are tagged `hub-vX.Y.Z`; the hub updates itself from its dashboard.
+To send it episodes (whole folders too) from a computer: **Local library › Upload**.
 
 ## Development
 

@@ -643,7 +643,7 @@ export type SharingPeer = {
     waking?: boolean
     platform?: string // what it runs on ("android": a TV)
     declined?: boolean // asked on Home whether to share with it: "not now"
-    role?: "hub" // an Aniko Hub (no player: it shares and keeps devices in step)
+    role?: "hub" // mediaserver (its anime side: it shares and keeps devices in step)
     parental?: boolean // parental controls are set for it here
 }
 

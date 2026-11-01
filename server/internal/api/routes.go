@@ -26,7 +26,7 @@ import (
 func (s *Server) routes() {
 	m := s.mux
 	s.peerRoutes()
-	s.hubRoutes()
+	s.uploadRoutes()
 	s.parentalRoutes()
 	s.noteRoutes()
 	s.cleanupRoutes()
@@ -122,12 +122,12 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/library/unmatched", h(s.unmatched))
 	m.HandleFunc("GET /api/library/ignored", h(func(r *http.Request) (any, error) { return s.app.Files.Ignored() }))
 	m.HandleFunc("GET /api/library/files", h(func(r *http.Request) (any, error) { return s.app.Files.All() }))
-	m.HandleFunc("POST /api/library/match", h(libraryEdited(s.match)))
+	m.HandleFunc("POST /api/library/match", h(s.match))
 	m.HandleFunc("GET /api/library/folders", h(func(r *http.Request) (any, error) { return s.app.Scanner.Folders() }))
 	m.HandleFunc("POST /api/library/index", h(s.indexFolders))
-	m.HandleFunc("POST /api/library/unmatch", h(libraryEdited(s.unmatch)))
-	m.HandleFunc("POST /api/library/ignore", h(libraryEdited(s.ignore)))
-	m.HandleFunc("PATCH /api/library/file", h(libraryEdited(s.patchFile)))
+	m.HandleFunc("POST /api/library/unmatch", h(s.unmatch))
+	m.HandleFunc("POST /api/library/ignore", h(s.ignore))
+	m.HandleFunc("PATCH /api/library/file", h(s.patchFile))
 	m.HandleFunc("POST /api/library/open-folder", h(s.openFolder))
 
 	// --- playback
@@ -430,10 +430,7 @@ func (s *Server) status(r *http.Request) (any, error) {
 	_, feat.YtDlp = util.LookPath("yt-dlp")
 	_, feat.XdgOpen = util.LookPath("xdg-open")
 	feat.XdgOpen = feat.XdgOpen || runtime.GOOS == "windows" || runtime.GOOS == "darwin" // Explorer, Finder
-	kind := map[clientKind]string{clientShell: "desktop", clientLocal: "local", clientLAN: "lan", clientOwner: "owner"}[kindOf(r)]
-	if s.app.HubStore != nil && kindOf(r) == clientLAN {
-		return s.hubStatus(r, nil), nil
-	}
+	kind := map[clientKind]string{clientShell: "desktop", clientLocal: "local", clientLAN: "lan"}[kindOf(r)]
 	host, _ := os.Hostname()
 	var lan []string
 	if cfg.Server.AllowLAN {
@@ -470,9 +467,6 @@ func (s *Server) status(r *http.Request) (any, error) {
 		"webUiForced":  s.ForceWebUI,
 		"setupRunning": setupRunning(),
 		"settings":     settingsFor(r, cfg),
-	}
-	if s.app.HubStore != nil {
-		return s.hubStatus(r, st), nil
 	}
 	return st, nil
 }
@@ -565,21 +559,18 @@ func (s *Server) serverLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	ip := clientIP(r).String()
 	if wait := s.logins.wait(ip, time.Now()); wait > 0 {
-		s.signedIn(r, false, "was kept out: too many wrong passwords")
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many wrong passwords: try again in %d minute(s)", int(wait.Minutes())+1)})
 		return
 	}
 	cfg := s.app.Settings.Get()
 	if cfg.Server.Password == "" || constEq(body.Password, cfg.Server.Password) {
 		s.logins.passed(ip)
-		s.signedIn(r, true, "signed in to the dashboard")
 		http.SetCookie(w, &http.Cookie{Name: "kumo_session", Value: s.sessionToken(), Path: "/", HttpOnly: true,
 			SameSite: http.SameSiteStrictMode, Expires: time.Now().Add(365 * 24 * time.Hour)})
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
 	s.logins.failed(ip, time.Now())
-	s.signedIn(r, false, "tried a wrong password")
 	time.Sleep(time.Second) // slow down guessing
 	writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "wrong password"})
 }

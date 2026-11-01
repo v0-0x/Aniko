@@ -71,19 +71,6 @@ func MoveOldFiles(dataDir string) {
 	}
 }
 
-// HubDataDir is a hub's data folder when none is given: aniko-hub next to
-// Aniko's, or the kumo-hub one a hub installed as Kumo Hub has (its service
-// names that one, so it stays where it is).
-func HubDataDir() string {
-	dir := filepath.Join(filepath.Dir(defaultDataDir()), "aniko-hub")
-	if _, err := os.Lstat(dir); errors.Is(err, fs.ErrNotExist) {
-		if old := filepath.Join(filepath.Dir(dir), "kumo-hub"); isDir(old) {
-			return old
-		}
-	}
-	return dir
-}
-
 func isDir(p string) bool {
 	st, err := os.Stat(p)
 	return err == nil && st.IsDir()

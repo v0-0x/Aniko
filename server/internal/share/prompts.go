@@ -35,6 +35,11 @@ func (s *Service) Prompts() []Prompt {
 		if !p.online(now) {
 			continue
 		}
+		// A server (mediaserver's anime side): its owner shares its library
+		// from its dashboard, and updates it there.
+		if p.role == RoleHub {
+			continue
+		}
 		pr := Prompt{ID: p.id, Name: s.view(p, now).Name, Platform: p.platform, Version: p.version}
 		// One that shares its library with this Aniko isn't new here.
 		if !p.allowed && !p.shares && !p.declined {

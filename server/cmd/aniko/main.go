@@ -11,44 +11,23 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"slices"
-	"strings"
 	"syscall"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
 	"github.com/v0-0x/Aniko/server/internal/api"
 	"github.com/v0-0x/Aniko/server/internal/app"
 	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/db"
 	"github.com/v0-0x/Aniko/server/internal/lifecycle"
 	"github.com/v0-0x/Aniko/server/internal/util"
 	"github.com/v0-0x/Aniko/server/internal/webui"
 )
 
 func main() {
-	// The hub's own program (packaging/hub) is an Aniko Hub without being
-	// asked, with its data apart from an Aniko's on the same computer
-	// (kumo-hub: one installed before the rename, which updated itself).
-	name := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
-	asHub := name == "aniko-hub" || name == "kumo-hub"
-	var defaultData string
-	if asHub && config.Getenv("DATA_DIR") == "" {
-		defaultData = config.HubDataDir()
-	} else {
-		defaultData = config.DataDir()
-	}
 	var (
-		dataDir = flag.String("data-dir", defaultData, "where Aniko stores its database")
+		dataDir = flag.String("data-dir", config.DataDir(), "where Aniko stores its database")
 		port    = flag.Int("port", 0, "override the port (default from settings, 43211)")
 		webUI   = flag.Bool("web-ui", false, "force-enable the browser web UI for this run")
 		desktop = flag.Bool("desktop", false, "started by the desktop app")
 		version = flag.Bool("version", false, "print the version")
-		// An Aniko Hub: shares its library with the Aniko apps on the network and
-		// keeps them in step; plays nothing (a Raspberry Pi, say).
-		hub           = flag.Bool("hub", asHub, "run as an Aniko Hub (no player; a dashboard at http://<this computer>:<port>)")
-		setupCode     = flag.Bool("setup-code", false, "print an Aniko Hub's setup code (to set its dashboard's password) and stop")
-		resetPassword = flag.Bool("reset-password", false, "remove an Aniko Hub's dashboard password (set a new one with its setup code) and stop")
-		setChannel    = flag.String("set-channel", "", "save which updates to take, stable or beta (a hub installed from a beta follows the betas), and stop")
 		// Windows has no signals to ask a program to stop: the desktop app
 		// closes the server's input instead.
 		exitWithStdin = flag.Bool("exit-with-stdin", false, "stop when standard input closes")
@@ -57,18 +36,6 @@ func main() {
 	config.MoveOldFiles(*dataDir)
 	if *version {
 		fmt.Println(config.AppName, config.AppVersion)
-		return
-	}
-	if *setupCode {
-		printSetupCode(*dataDir)
-		return
-	}
-	if *resetPassword {
-		resetHubPassword(*dataDir)
-		return
-	}
-	if *setChannel != "" {
-		saveChannel(*dataDir, *setChannel)
 		return
 	}
 	// Whatever Aniko starts (ffmpeg, ani-cli, mpv) ends with it, even when
@@ -81,7 +48,7 @@ func main() {
 	}
 	// Programs the macOS setup installs (Settings > App > Programs).
 	util.SetToolsDir(filepath.Join(*dataDir, "bin"))
-	a, err := app.New(*dataDir, app.Options{Hub: *hub})
+	a, err := app.New(*dataDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,7 +72,7 @@ func main() {
 	srv := api.New(a, webui.FS())
 	// Without the desktop app nothing could reach the server if the web UI
 	// were off, so headless runs always serve it (on 127.0.0.1 by default).
-	srv.ForceWebUI = *webUI || *hub || (!*desktop && !appWindow)
+	srv.ForceWebUI = *webUI || (!*desktop && !appWindow)
 	srv.AppOnly = appWindow
 	if err := srv.Start(); err != nil {
 		log.Fatalf("could not start the server: %v (is Aniko already running?)", err)
@@ -118,18 +85,10 @@ func main() {
 		raw, _ := json.Marshal(map[string]any{"pid": os.Getpid(), "port": a.Settings.Get().Server.Port, "addr": srv.Addr(), "tokenFile": tokenPath})
 		_ = os.WriteFile(infoPath, raw, 0o600)
 	}
-	// (Not a hub's: the desktop app isn't to find it.)
-	if a.HubStore == nil {
-		writeInfo()
-		a.Settings.OnChange(func(_, _ config.Settings) { writeInfo() })
-	}
+	writeInfo()
+	a.Settings.OnChange(func(_, _ config.Settings) { writeInfo() })
 	log.Printf("%s %s ready — data: %s — shell token: %s", config.AppName, config.AppVersion, *dataDir, tokenPath)
-	if a.HubStore != nil {
-		log.Printf("Aniko Hub dashboard: http://%s:%d", hubHost(), cfg.Server.Port)
-		if cfg.Server.Password == "" {
-			log.Printf("Aniko Hub setup code: %s (to set the dashboard's password)", a.HubStore.SetupCode())
-		}
-	} else if srv.ForceWebUI || cfg.Server.WebUI {
+	if srv.ForceWebUI || cfg.Server.WebUI {
 		log.Printf("Web UI: http://127.0.0.1:%d", cfg.Server.Port)
 	}
 
@@ -179,81 +138,4 @@ func end(exit lifecycle.Exit, desktop bool) {
 		log.Printf("could not start Aniko again: %v", err)
 	}
 	os.Exit(lifecycle.CodeRestart)
-}
-
-// hubHost is how the hub is reached on the network: its name (a Pi is
-// raspberrypi.local), for the log.
-func hubHost() string {
-	n, err := os.Hostname()
-	if err != nil || n == "" {
-		return "<this computer>"
-	}
-	if !strings.Contains(n, ".") {
-		n += ".local"
-	}
-	return n
-}
-
-// openSettings opens the database in dataDir and its settings, for the
-// flags that only read or save one and stop.
-func openSettings(dataDir string) (*db.DB, *config.Store) {
-	if err := os.MkdirAll(dataDir, 0o700); err != nil {
-		log.Fatal(err)
-	}
-	d, err := db.Open(filepath.Join(dataDir, "aniko.db"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	settings, err := config.NewStore(d)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return d, settings
-}
-
-// printSetupCode prints a hub's setup code, or that its password is set.
-func printSetupCode(dataDir string) {
-	d, settings := openSettings(dataDir)
-	defer d.Close()
-	if settings.Get().Server.Password != "" {
-		fmt.Println("The hub's password is set already: sign in to its dashboard with it.")
-		return
-	}
-	h, err := anikohub.New(d)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(h.SetupCode())
-}
-
-// saveChannel saves the update channel (Settings › Updates & about).
-func saveChannel(dataDir, channel string) {
-	if !slices.Contains(config.UpdateChannels, channel) {
-		log.Fatalf("--set-channel takes %s, not %q", strings.Join(config.UpdateChannels, " or "), channel)
-	}
-	d, settings := openSettings(dataDir)
-	defer d.Close()
-	cfg := settings.Get()
-	cfg.Updates.Channel = channel
-	if _, err := settings.Save(cfg); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Updates:", channel)
-}
-
-// resetHubPassword removes a hub's dashboard password, for its owner who
-// forgot it: the dashboard asks for the setup code again.
-func resetHubPassword(dataDir string) {
-	d, settings := openSettings(dataDir)
-	defer d.Close()
-	cfg := settings.Get()
-	cfg.Server.Password = ""
-	if _, err := settings.Save(cfg); err != nil {
-		log.Fatal(err)
-	}
-	h, err := anikohub.New(d)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("The dashboard's password is removed: open the dashboard and set a new one with the setup code", h.SetupCode())
 }

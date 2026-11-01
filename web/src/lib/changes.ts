@@ -7,6 +7,22 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 29,
+        title: "Aniko Hub is now mediaserver",
+        changes: [
+            {
+                title: "mediaserver",
+                text: "Aniko Hub became mediaserver, one home server for Aniko and KumoBox: the same library, devices and AniList logins, on the same address. Its dashboard installs it in the hub's place (Settings › Updates there).",
+                to: "/settings?tab=devices",
+            },
+            {
+                title: "Upload to your server",
+                text: "Episodes, whole folders of them, and their subtitles from this computer into the server's library: Local library › Upload, or Upload next to it in Settings › Other devices. An upload cut short carries on where it stopped. The server lets this device download there first (its dashboard's Devices › Let it download here).",
+                to: "/local",
+            },
+        ],
+    },
+    {
         id: 28,
         title: "A picture on the Fire TV",
         changes: [

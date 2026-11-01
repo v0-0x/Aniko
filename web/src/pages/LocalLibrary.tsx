@@ -1,16 +1,18 @@
-import { Check, CheckCheck, ChevronDown, FolderOpen, FolderSearch, FolderSync, HardDrive, Info, LayoutGrid, List as ListIcon, Play, Search, Settings2, Share2 } from "lucide-react"
+import { Check, CheckCheck, ChevronDown, FolderOpen, FolderSearch, FolderSync, HardDrive, Info, LayoutGrid, List as ListIcon, Play, Search, Settings2, Share2, Upload } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { EpisodeCard } from "@/components/EpisodeCard"
 import { Carousel, MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
+import { UploadDialog, useUploadTargets } from "@/components/UploadDialog"
 import { Badge, Button, EmptyState, IconButton, Input, Progress, Select, Tabs, Tooltip } from "@/components/ui"
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { usePlay } from "@/lib/play"
 import { useCollection, useEpisodeMarker, useLibraryFiles, useScan, useSharedLibraries, useStatus } from "@/lib/queries"
 import { scanStore, useStore } from "@/lib/store"
+import { tv } from "@/lib/tv"
 import type { CollectionItem, LocalFile } from "@/lib/types"
 import { banner, cn, cover, entryUrl, formatBytes, formatLabel, LIST_STATUS, mostCommon, relativeTime, title, totalEpisodes } from "@/lib/utils"
 
@@ -221,9 +223,20 @@ export default function LocalLibraryPage() {
     const libraryDir = off ? undefined : status?.settings.library.dir
     const trusted = status?.client !== "lan"
     const openFolder = (path?: string) => path && api.post("/api/open", { path }).catch(e => toast.error(e.message))
+    // Files from this computer to a server (one that takes this device's
+    // downloads: mediaserver, say).
+    const uploads = useUploadTargets(trusted && !tv)
+    const [uploading, setUploading] = useState(false)
+    const canUpload = !!uploads.data?.length
+    const uploadButton = canUpload && (
+        <Button icon={<Upload className="size-4" />} onClick={() => setUploading(true)}>
+            Upload
+        </Button>
+    )
 
     return (
         <div className="min-h-full pb-24">
+            {canUpload && <UploadDialog open={uploading} onOpenChange={setUploading} target={host?.host.id} />}
             <header className="border-b border-line px-6 pt-8 pb-7 md:px-8 xl:px-10">
                 <div className="flex flex-wrap items-end justify-between gap-6">
                     <div>
@@ -232,8 +245,11 @@ export default function LocalLibraryPage() {
                             {host ? `Shared by ${host.host.name} over your network${host.host.online ? "" : " (not answering right now)"}.` : "Only anime you have downloaded on this computer."}
                         </p>
                     </div>
+                    {host && uploadButton}
+                    {!host && off && uploadButton}
                     {!host && !off && (
                         <div className="flex items-center gap-2">
+                            {uploadButton}
                             {trusted && libraryDir && (
                                 <IconButton label="Open library folder" variant="subtle" onClick={() => openFolder(libraryDir)}>
                                     <FolderOpen className="size-4" />
@@ -307,7 +323,7 @@ export default function LocalLibraryPage() {
                             </Button>
                         }
                     >
-                        Its anime come from your Aniko Hub and the computers that share their library with it, and none does right now. Turn it back on in Settings › Local library.
+                        Its anime come from your mediaserver and the computers that share their library with it, and none does right now. Turn it back on in Settings › Local library.
                     </EmptyState>
                 )}
 

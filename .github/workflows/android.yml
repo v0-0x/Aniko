@@ -34,7 +34,6 @@ on:
       - "packaging/arch/**"
       - "packaging/macos/**"
       - "packaging/windows/**"
-      - "packaging/hub/**"
   workflow_dispatch:
     inputs:
       publish:

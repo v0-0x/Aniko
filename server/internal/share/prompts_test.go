@@ -18,7 +18,7 @@ func TestPrompts(t *testing.T) {
 
 	s := hostWithSharing(t)
 	now := time.Now()
-	tv, older, newer, same, dev := newGuest(t), newGuest(t), newGuest(t), newGuest(t), newGuest(t)
+	tv, older, newer, same, dev, server := newGuest(t), newGuest(t), newGuest(t), newGuest(t), newGuest(t), newGuest(t)
 	s.mu.Lock()
 	s.running = &run{wake: make(chan struct{}, 1)}
 	tvKey, _ := parsePublicKey(tv.ID, tv.PublicKey())
@@ -27,6 +27,8 @@ func TestPrompts(t *testing.T) {
 	s.peers[newer.ID] = &peer{id: newer.ID, name: "Desk", version: "1.0.150", shares: true, seen: now}
 	s.peers[same.ID] = &peer{id: same.ID, name: "Same", version: "1.0.140", allowed: true, seen: now}
 	s.peers[dev.ID] = &peer{id: dev.ID, name: "Dev", version: "1.0.0", allowed: true, seen: now}
+	// A server (mediaserver): neither "share with it" nor "update it".
+	s.peers[server.ID] = &peer{id: server.ID, name: "Pi", version: "1.0.100", role: RoleHub, seen: now}
 	s.mu.Unlock()
 
 	kinds := func() map[string]string {
