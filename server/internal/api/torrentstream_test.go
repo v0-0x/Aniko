@@ -17,6 +17,7 @@ import (
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
+	"github.com/v0-0x/Aniko/server/internal/torrentstream"
 )
 
 // seedTorrent seeds the files of dir (a batch) from another client, and
@@ -63,6 +64,7 @@ func TestTorrentStream(t *testing.T) {
 	}
 	const local = "127.0.0.1:5000"
 	s := newTestServer(t)
+	useTorrentCache(t, s)
 	batch := filepath.Join(seedDir(t), "[Group] Show (01-02) [1080p]")
 	if err := os.MkdirAll(batch, 0o755); err != nil {
 		t.Fatal(err)
@@ -126,4 +128,14 @@ func seedDir(t *testing.T) string {
 		}
 	})
 	return dir
+}
+
+// useTorrentCache gives the app's torrent engine a cache the test removes
+// as well as it can (on Windows the BitTorrent library may keep a file
+// open until the program ends: in t.TempDir that would fail the test).
+func useTorrentCache(t *testing.T, s *Server) {
+	t.Helper()
+	s.app.TorrentStream = torrentstream.New(filepath.Join(seedDir(t), "cache"))
+	s.app.Local.Torrents = s.app.TorrentStream
+	t.Cleanup(s.app.TorrentStream.Close)
 }
