@@ -34,7 +34,9 @@ type Entry struct {
 	Conflict bool `json:"conflict,omitempty"`
 	// Hidden by you (Edit).
 	Hidden bool `json:"hidden,omitempty"`
-	// Extras: how it's related (SPIN_OFF, ALTERNATIVE).
+	// Extras: how it's related (SPIN_OFF, ALTERNATIVE). In the orders,
+	// OTHER: a movie AniList links to the franchise only loosely, placed
+	// by its release date (see Build).
 	Relation string `json:"relation,omitempty"`
 }
 
@@ -78,6 +80,15 @@ var follow = map[string]bool{"PREQUEL": true, "SEQUEL": true, "PARENT": true, "S
 // aside: listed apart, not walked from (that way lies every Gundam).
 var aside = map[string]bool{"SPIN_OFF": true, "ALTERNATIVE": true}
 
+// loose: links AniList gives many a franchise's movies (Detective Conan's,
+// Pokémon's, a series' theatrical films): their movies go in the orders,
+// by their release dates, but aren't walked from (a crossover film would
+// bring in another franchise).
+var loose = map[string]bool{"OTHER": true, "CHARACTER": true}
+
+// maxLoose caps the loosely linked anime looked at for movies.
+const maxLoose = 100
+
 // ErrNotFound: AniList doesn't know the anime.
 var ErrNotFound = errors.New("AniList doesn't know this anime")
 
@@ -108,8 +119,11 @@ func Build(ctx context.Context, root int, fetch Fetch) (*Order, error) {
 			if l == nil {
 				continue
 			}
+			// A movie linked to its series only loosely: from its page,
+			// the series it belongs to (and on from there).
+			fromMovie := id == root && len(nodes) == 1 && l.Media.Format == "MOVIE" && !hasStory(l)
 			for _, k := range l.Links {
-				if follow[k.Type] && !seen[k.ID] {
+				if (follow[k.Type] || fromMovie && loose[k.Type]) && !seen[k.ID] {
 					seen[k.ID] = true
 					next = append(next, k.ID)
 				}
@@ -123,8 +137,45 @@ func Build(ctx context.Context, root int, fetch Fetch) (*Order, error) {
 	if nodes[root] == nil {
 		return nil, ErrNotFound
 	}
+
+	// The franchise's movies AniList links only loosely: in, by their
+	// release dates.
+	var cands []int
+	for _, id := range sortedIDs(nodes) {
+		for _, k := range nodes[id].Links {
+			if loose[k.Type] && nodes[k.ID] == nil && !seen[k.ID] && len(cands) < maxLoose {
+				seen[k.ID] = true
+				cands = append(cands, k.ID)
+			}
+		}
+	}
+	looseMovie := map[int]bool{}
+	if len(cands) > 0 {
+		got, err := fetch(ctx, cands)
+		if err != nil {
+			partial = true
+		}
+		for _, id := range cands {
+			if l := got[id]; l != nil && l.Media != nil && l.Media.Format == "MOVIE" {
+				if len(nodes) >= Max {
+					partial = true
+					break
+				}
+				nodes[id] = l
+				looseMovie[id] = true
+			}
+		}
+	}
+
 	o := Compute(nodes)
 	o.Partial = partial
+	for _, list := range [][]Entry{o.Story, o.Release} {
+		for i := range list {
+			if looseMovie[list[i].Media.ID] {
+				list[i].Relation = "OTHER"
+			}
+		}
+	}
 
 	// Spin-offs and other versions, by their release dates.
 	relation := map[int]string{}
@@ -360,6 +411,16 @@ func dateKey(d anilist.FuzzyDate) int {
 		}
 	}
 	return *d.Year*10000 + m*100 + day
+}
+
+// hasStory: it has a link that stays within the story (followed).
+func hasStory(l *anilist.Linked) bool {
+	for _, k := range l.Links {
+		if follow[k.Type] {
+			return true
+		}
+	}
+	return false
 }
 
 func sortedIDs(nodes map[int]*anilist.Linked) []int {

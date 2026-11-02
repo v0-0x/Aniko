@@ -842,7 +842,8 @@ export type WatchOrderEntry = {
     // Story order: AniList's links contradict each other here.
     conflict?: boolean
     hidden?: boolean
-    // Extras: SPIN_OFF or ALTERNATIVE.
+    // Extras: SPIN_OFF or ALTERNATIVE. In the orders, OTHER: a movie
+    // AniList links to the franchise only loosely (placed by its date).
     relation?: string
 }
 

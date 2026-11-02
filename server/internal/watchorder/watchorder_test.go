@@ -177,6 +177,66 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+// Movies AniList links only loosely (OTHER, CHARACTER) are in the orders
+// by their release dates, marked; other loosely linked anime aren't, and
+// nothing is walked from them (a crossover's other franchise stays out).
+// From such a movie's own page, its series is found.
+func TestLooseMovies(t *testing.T) {
+	g := graph{}
+	g.add(1, "TV", date(2000, 4, 1), link(2, "SEQUEL"), link(50, "OTHER"), link(51, "OTHER"), link(60, "CHARACTER"))
+	g.add(2, "TV", date(2004, 4, 1), link(1, "PREQUEL"))
+	g.add(50, "MOVIE", date(2002, 8, 1), link(1, "OTHER"))
+	g.add(51, "MUSIC", date(2001, 1, 1), link(1, "OTHER"))
+	g.add(60, "MOVIE", date(2006, 3, 1), link(1, "CHARACTER"), link(70, "CHARACTER"))
+	g.add(70, "TV", date(1999, 1, 1), link(60, "CHARACTER"))
+	var asked []int
+	fetch := func(ctx context.Context, ids []int) (map[int]*anilist.Linked, error) {
+		asked = append(asked, ids...)
+		out := map[int]*anilist.Linked{}
+		for _, id := range ids {
+			if l := g[id]; l != nil {
+				out[id] = l
+			}
+		}
+		return out, nil
+	}
+	o, err := Build(context.Background(), 1, fetch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := ids(o.Story), []int{1, 50, 2, 60}; !reflect.DeepEqual(got, want) {
+		t.Errorf("story = %v, want %v", got, want)
+	}
+	if got, want := ids(o.Release), []int{1, 50, 2, 60}; !reflect.DeepEqual(got, want) {
+		t.Errorf("release = %v, want %v", got, want)
+	}
+	for _, id := range []int{50, 60} {
+		if e := find(o.Story, id); e.Relation != "OTHER" || !e.ByDate {
+			t.Errorf("movie %d: relation %q, by date %v; want OTHER, by date", id, e.Relation, e.ByDate)
+		}
+		if e := find(o.Release, id); e.Relation != "OTHER" {
+			t.Errorf("movie %d in the release order: relation %q", id, e.Relation)
+		}
+	}
+	if e := find(o.Story, 2); e.Relation != "" {
+		t.Errorf("season 2 marked %q", e.Relation)
+	}
+	for _, id := range asked {
+		if id == 70 {
+			t.Error("the crossover's other franchise was asked for")
+		}
+	}
+
+	asked = nil
+	o, err = Build(context.Background(), 50, fetch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := ids(o.Story), []int{1, 50, 2, 60}; !reflect.DeepEqual(got, want) {
+		t.Errorf("story from the movie = %v, want %v", got, want)
+	}
+}
+
 // A franchise bigger than Max is cut there, and says so.
 func TestBuildCap(t *testing.T) {
 	g := graph{}

@@ -10,10 +10,13 @@ import type { CollectionItem, WatchOrder as Order, WatchOrderEntry } from "@/lib
 import { cn, cover, formatLabel, title } from "@/lib/utils"
 
 // A franchise's watch order (experimental): the story's, from AniList's
-// prequel and sequel links, and the release order. The story order can be
-// changed; the change is kept on this Aniko (server/internal/watchorder).
+// prequel and sequel links, and the release order, and its movies apart.
+// The story order can be changed; the change is kept on this Aniko
+// (server/internal/watchorder).
 
-type View = "story" | "release"
+type View = "story" | "release" | "movies"
+
+const isMovie = (e: WatchOrderEntry) => e.media.format === "MOVIE"
 
 export function WatchOrder({ mediaId }: { mediaId: number }) {
     const { data, isLoading, error, refetch, isFetching } = useWatchOrder(mediaId)
@@ -37,6 +40,7 @@ export function WatchOrder({ mediaId }: { mediaId: number }) {
     }
     // Nothing to put in order.
     if (data.story.length < 2 && data.extras.length === 0) return null
+    const movieCount = data.story.filter(e => isMovie(e) && !e.hidden).length + data.extras.filter(isMovie).length
 
     const lookAgain = async () => {
         try {
@@ -63,6 +67,7 @@ export function WatchOrder({ mediaId }: { mediaId: number }) {
                             tabs={[
                                 { value: "story", label: "Story" },
                                 { value: "release", label: "Release" },
+                                ...(movieCount > 0 ? [{ value: "movies" as const, label: "Movies", count: movieCount }] : []),
                             ]}
                         />
                     )}
@@ -101,6 +106,7 @@ export function WatchOrder({ mediaId }: { mediaId: number }) {
 type StatusOf = (id: number) => string
 
 function Entries({ order, view, current, status }: { order: Order; view: View; current: number; status: StatusOf }) {
+    if (view === "movies") return <Movies order={order} current={current} status={status} />
     const all = view === "story" ? order.story : order.release
     const shown = all.filter(e => !e.hidden)
     const hidden = all.length - shown.length
@@ -120,6 +126,29 @@ function Entries({ order, view, current, status }: { order: Order; view: View; c
             <ol className="flex flex-col divide-y divide-line rounded-xl border border-line">
                 {shown.map((e, i) => (
                     <Row key={e.media.id} entry={e} n={i + 1} current={e.media.id === current} story={view === "story" && !order.edited} status={status(e.media.id)} />
+                ))}
+            </ol>
+        </>
+    )
+}
+
+// The franchise's movies: those of the story in its order (yours, if you
+// changed it), then the spin-offs' and other versions'.
+function Movies({ order, current, status }: { order: Order; current: number; status: StatusOf }) {
+    const story = order.story.filter(e => isMovie(e) && !e.hidden)
+    const others = order.extras.filter(isMovie)
+    return (
+        <>
+            <p className="text-sm text-muted">
+                {story.length === 1 ? "The movie" : `The ${story.length} movies`} of the story, in {order.edited ? "your" : "story"} order
+                {others.length > 0 && `, then ${others.length === 1 ? "one" : others.length} from spin-offs and other versions`}.
+            </p>
+            <ol className="flex flex-col divide-y divide-line rounded-xl border border-line">
+                {story.map((e, i) => (
+                    <Row key={e.media.id} entry={e} n={i + 1} current={e.media.id === current} story={!order.edited} status={status(e.media.id)} />
+                ))}
+                {others.map(e => (
+                    <Row key={e.media.id} entry={e} current={e.media.id === current} status={status(e.media.id)} note={e.relation === "ALTERNATIVE" ? "Another version" : "Spin-off"} />
                 ))}
             </ol>
         </>

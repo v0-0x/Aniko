@@ -7,6 +7,20 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 31,
+        title: "Movies in the watch order",
+        changes: [
+            {
+                title: "A Movies tab",
+                text: "An anime's Watch order has a Movies tab: all of the franchise's movies, in story order, then those of its spin-offs and other versions.",
+            },
+            {
+                title: "Movies AniList links only loosely",
+                text: "Many franchises' films (Detective Conan's, Pokémon's, a series' theatrical movies) are linked on AniList as just \"other\". They're now in the watch order too, placed by their release dates. A movie's own page now shows its series' order as well.",
+            },
+        ],
+    },
+    {
         id: 30,
         title: "Stream torrents",
         changes: [
