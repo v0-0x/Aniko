@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -95,6 +96,38 @@ func TestUploadToHost(t *testing.T) {
 	}
 	if w := do(guest, "POST", "/api/upload?"+uploadQuery("", 0, "c.mkv", 0, 1), local, "x", nil); w.Code != http.StatusBadRequest {
 		t.Fatalf("here, not a server: %d %s", w.Code, w.Body)
+	}
+
+	// Downloaded manga: into the host's manga folder, the series' details
+	// sent again (with the next chapter) counting as there already.
+	if !folders.Manga {
+		t.Fatal("the host doesn't say it takes manga")
+	}
+	mangaDir := t.TempDir()
+	cfg = host.app.Settings.Get()
+	cfg.Manga.Dir = mangaDir
+	if _, err := host.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	src := t.TempDir()
+	series := filepath.Join(src, "series.json")
+	chapter := filepath.Join(src, "Test - Ch. 001.cbz")
+	big := bytes.Repeat([]byte("page"), (folders.Chunk+100)/4)
+	if os.WriteFile(series, []byte(`{"anilistId":1}`), 0o644) != nil || os.WriteFile(chapter, big, 0o644) != nil {
+		t.Fatal("couldn't write the test files")
+	}
+	last := 0
+	for range 2 {
+		if err := guest.app.SendManga(context.Background(), hid, "Test [anilist-1]", []string{series, chapter}, func(p int) { last = p }); err != nil {
+			t.Fatalf("sending manga: %v", err)
+		}
+	}
+	got, err = os.ReadFile(filepath.Join(mangaDir, "Test [anilist-1]", "Test - Ch. 001.cbz"))
+	if err != nil || !bytes.Equal(got, big) || last != 100 {
+		t.Fatalf("the chapter on the host: %v (progress %d)", err, last)
+	}
+	if err := guest.app.SendManga(context.Background(), hid, "../escape", []string{series}, func(int) {}); err == nil {
+		t.Error("sent out of the manga folder")
 	}
 }
 

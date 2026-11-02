@@ -221,7 +221,8 @@ export type Settings = {
     }
     qbittorrent: TorrentClientConfig
     transmission: TorrentClientConfig
-    manga: { enabled: boolean; defaultProvider: string; readingMode: "long-strip" | "paged" | "double"; direction: string }
+    // dir: where downloaded manga go ("": the default, ~/Manga).
+    manga: { enabled: boolean; defaultProvider: string; readingMode: "long-strip" | "paged" | "double"; direction: string; dir?: string }
     anilist: { clientId: string; hideAdult: boolean }
     server: { host: string; port: number; allowLan: boolean; password: string; webUi: boolean }
     // downloadTo: the Aniko this one's downloads go to (its ID; "" here).
@@ -858,3 +859,40 @@ export type WatchOrder = {
 
 // How a torrent playing as it downloads is doing (GET /api/torrentstream/{id}).
 export type TorrentStreamStatus = { id: string; name: string; size: number; done: number; peers: number; seeds: number; speed: number }
+
+// Downloaded manga (GET /api/manga-library…) and their downloads
+// (/api/manga-downloads).
+export type MangaSeries = {
+    anilistId: number
+    title: string
+    english?: string
+    romaji?: string
+    description?: string
+    genres?: string[]
+    status?: string
+    year?: number
+    chapters?: number
+    folder: string
+    count: number
+    size: number
+    hasCover: boolean
+    latest?: string
+    updated: number
+}
+export type LocalMangaChapter = { chapter: string; title?: string; file: string; pages: number; size: number; added: number }
+export type MangaDownload = {
+    id: string
+    mediaId: number
+    title: string
+    provider: string
+    chapterId: string
+    chapter: string
+    name?: string
+    target?: string
+    targetName?: string
+    state: "queued" | "downloading" | "sending" | "done" | "failed"
+    pages: number
+    got: number
+    error?: string
+    added: number
+}

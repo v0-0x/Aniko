@@ -7,6 +7,24 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 32,
+        title: "Download manga",
+        changes: [
+            {
+                title: "Chapters to keep",
+                text: "On a manga's page: Download (unread chapters, all of them, or from one chapter to another), or the download button on a chapter. Each is saved as a comic book file (.cbz) with its details from AniList inside, and the manga's details and cover beside it, so other comic readers show them properly too.",
+            },
+            {
+                title: "Read without the provider",
+                text: "A downloaded chapter opens from your device, also offline or once the provider has dropped it. Manga › Downloaded lists what you have; Settings › Manga sets the folder (Manga in your home folder unless you choose).",
+            },
+            {
+                title: "Or onto your media server",
+                text: "With a media server that takes your downloads, pick it under Save on: each chapter goes to the server's manga folder once downloaded. On a TV, that's where they go.",
+            },
+        ],
+    },
+    {
         id: 31,
         title: "Movies in the watch order",
         changes: [
