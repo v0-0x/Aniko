@@ -7,6 +7,21 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 33,
+        title: "Download missing episodes",
+        changes: [
+            {
+                title: "From Library tools, sub or dub",
+                text: "Library tools › Missing episodes has a Download button on each anime: pick Sub or Dub (the anime's own choice to start with), the missing episodes, the ones aired since, or both, and a quality. ani-cli downloads them into your library, and they're matched by themselves.",
+                to: "/library?tab=missing",
+            },
+            {
+                title: "Only what's there",
+                text: "Before you download, it says which of them ani-cli has in that version, which it doesn't (try the other version, or torrents), and which are already downloading.",
+            },
+        ],
+    },
+    {
         id: 32,
         title: "Download manga",
         changes: [
