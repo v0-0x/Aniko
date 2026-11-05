@@ -7,6 +7,16 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 34,
+        title: "A tidier sidebar",
+        changes: [
+            {
+                title: "What you use most, first",
+                text: "Home, Search, Discover and Local library are at the top, then My lists, Schedule and Manga. Downloads, Torrents and the Auto downloader come next, and Library tools, Extensions and Stats are together at the bottom. On a phone, the tabs along the bottom go Home, Search, Discover, Library.",
+            },
+        ],
+    },
+    {
         id: 33,
         title: "Download missing episodes",
         changes: [
