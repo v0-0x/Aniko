@@ -7,6 +7,24 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 35,
+        title: "Steadier with the media server",
+        changes: [
+            {
+                title: "Not offline on one slow answer",
+                text: "A media server or another Aniko busy for a moment (a scan, a disk waking up) no longer shows as offline, nor loses its library here: it has to miss twice. Playing from it or syncing with it also counts as hearing from it.",
+            },
+            {
+                title: "Your list comes at once",
+                text: "Home and Local library show the copy here right away and ask AniList in the background, so a slow AniList doesn't hold the page. Episode names come from what's kept here the same way.",
+            },
+            {
+                title: "Windows: a firewall rule",
+                text: "The installer offers to add a Windows Firewall rule for Aniko's server, so the other devices' announcements get through. Settings › Devices says when a device is found by its address only, and has a Refresh button.",
+            },
+        ],
+    },
+    {
         id: 34,
         title: "A tidier sidebar",
         changes: [

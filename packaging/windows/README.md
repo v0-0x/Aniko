@@ -100,8 +100,21 @@ is found by itself.
 
 Uninstalling keeps your data; delete the first two folders to remove it too.
 
-When **Allow devices on my network** is turned on, Windows Firewall asks
-whether `aniko.exe` may accept connections: allow it on **private** networks.
+The installer offers to add a **Windows Firewall rule** for `aniko.exe` on
+private networks (TCP 43211 for the apps and devices, UDP 43212 for the
+announcements the Anikos find each other by); Windows asks for an
+administrator's permission once. Without the rule, Windows Firewall asks
+whether `aniko.exe` may accept connections when **Allow devices on my
+network** is turned on (allow it on **private** networks), and it keeps
+dropping the other devices' announcements, so a media server or another
+Aniko shows as offline now and then between its answers (Settings › Devices
+says "its announcements aren't getting through"). Add the rule by hand in
+an administrator PowerShell:
+
+```powershell
+netsh advfirewall firewall add rule name="Aniko" dir=in action=allow program="$env:LOCALAPPDATA\Programs\Aniko\resources\aniko.exe" protocol=TCP localport=43211 profile=private
+netsh advfirewall firewall add rule name="Aniko" dir=in action=allow program="$env:LOCALAPPDATA\Programs\Aniko\resources\aniko.exe" protocol=UDP localport=43212 profile=private
+```
 
 `aniko.exe --web-ui` (in the app's `resources` folder) runs the server alone,
 without the window: the web UI is then at `http://127.0.0.1:43211`. The app
