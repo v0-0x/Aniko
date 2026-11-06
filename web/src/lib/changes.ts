@@ -7,6 +7,16 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 36,
+        title: "Continue watching starts where the card says",
+        changes: [
+            {
+                title: "Resumed from the card's position",
+                text: "A Continue watching card starts the episode at the time it shows, also when the saved position moved on after Home was loaded (watched further, or finished, on another device). A saved position is also kept when the file's length isn't known, and a video that has to be converted after all goes on from where it was.",
+            },
+        ],
+    },
+    {
         id: 35,
         title: "Steadier with the media server",
         changes: [
