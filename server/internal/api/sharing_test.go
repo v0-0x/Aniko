@@ -972,3 +972,68 @@ func TestAutoSyncWhenBack(t *testing.T) {
 		t.Errorf("synced again at once: %+v", e)
 	}
 }
+
+// A shared file played from Continue watching starts where it was left:
+// the position kept here, with the host's probe (its length), and the
+// stream asked to start there.
+func TestSharedFileResumes(t *testing.T) {
+	video := os.Getenv("ANIKO_TEST_VIDEO")
+	if video == "" {
+		t.Skip("ANIKO_TEST_VIDEO (a real video over 2 minutes) not set")
+	}
+	const local = "127.0.0.1:5000"
+	host, hostSrv := sharingServer(t)
+	guest, _ := sharingServer(t)
+	// The host's file: the real video, in its library.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "Show - 01.mkv")
+	data, err := os.ReadFile(video)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := host.app.Files.Save(&library.LocalFile{Path: path, Dir: dir, Name: filepath.Base(path), Size: int64(len(data)), MediaID: 21, Episode: 1, Kind: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	addr := strings.TrimPrefix(hostSrv.URL, "http://")
+	if w := do(guest, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("connect: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, guest); return ok })
+	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the library", func() bool {
+		do(guest, "GET", "/api/sharing?refresh=1", local, "", nil)
+		return len(guest.app.Share.Libraries()) == 1
+	})
+	// Left at 1:00 of 2:00 here.
+	if _, err := guest.app.History.Merge(history.Entry{MediaID: 21, Episode: 1, Position: 60, Duration: 120, Source: "local", UpdatedAt: time.Now().Unix()}); err != nil {
+		t.Fatal(err)
+	}
+	remote := share.RemotePath(host.app.Share.ID(), path)
+	body, _ := json.Marshal(map[string]any{"path": remote, "mediaId": 21, "episode": 1, "player": "builtin", "caps": []string{"h264"}})
+	w := do(guest, "POST", "/api/playback/local", local, string(body), nil)
+	var res struct {
+		ResumeAt float64 `json:"resumeAt"`
+		Probe    struct {
+			Duration float64 `json:"duration"`
+			Method   string  `json:"method"`
+		} `json:"probe"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if w.Code != http.StatusOK || res.ResumeAt != 60 || res.Probe.Duration < 119 {
+		t.Fatalf("play: %d %s", w.Code, w.Body)
+	}
+	// Converted on the host: the stream starts at the second asked.
+	w = do(guest, "GET", "/api/local/seekpoint?"+url.Values{"path": {remote}, "t": {"60.000"}, "audio": {"0"}, "method": {"transcode"}, "caps": {"h264"}}.Encode(), local, "", nil)
+	var sp struct {
+		Start float64 `json:"start"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &sp)
+	if w.Code != http.StatusOK || sp.Start != 60 {
+		t.Fatalf("seekpoint: %d %s", w.Code, w.Body)
+	}
+}
