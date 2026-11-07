@@ -181,6 +181,8 @@ export type Settings = {
         off?: boolean
         dir: string
         extraDirs: string[]
+        // The library folder new downloads go into ("" = the first).
+        downloadDir?: string
         autoRefresh: boolean
         refreshOnStartup: boolean
         matchThreshold: number

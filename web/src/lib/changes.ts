@@ -7,6 +7,17 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 37,
+        title: "Downloads go to the folder you pick",
+        changes: [
+            {
+                title: "A library folder for new downloads",
+                text: "With more than one library folder, Settings › Library › Downloads go to picks the one new anime are downloaded into (streams and torrents alike). An anime that already has a folder, in any library folder, keeps it. On the media server, the same choice is under Library › Folders.",
+                to: "/settings?tab=library",
+            },
+        ],
+    },
+    {
         id: 36,
         title: "Continue watching starts where the card says",
         changes: [
