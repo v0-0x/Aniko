@@ -493,7 +493,7 @@ func (s *Server) localTranscode(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	start, _ := strconv.ParseFloat(q.Get("start"), 64)
 	audio, _ := strconv.Atoi(q.Get("audio"))
-	s.app.Local.ServeTranscode(w, r, q.Get("path"), start, audio, q.Get("method"), stream.ParseCaps(q.Get("caps")))
+	s.app.Local.ServeTranscode(w, r, q.Get("path"), start, audio, q.Get("method"), stream.ParseCaps(q.Get("caps")), subParam(q.Get("sub")))
 }
 
 func (s *Server) localSeekPoint(r *http.Request) (any, error) {
@@ -501,7 +501,7 @@ func (s *Server) localSeekPoint(r *http.Request) (any, error) {
 	t, _ := strconv.ParseFloat(q.Get("t"), 64)
 	audio, _ := strconv.Atoi(q.Get("audio"))
 	method := q.Get("method")
-	start, use, err := s.app.Local.Seek(r.Context(), q.Get("path"), t, audio, method, stream.ParseCaps(q.Get("caps")), q.Get("hls") == "1")
+	start, use, err := s.app.Local.Seek(r.Context(), q.Get("path"), t, audio, method, stream.ParseCaps(q.Get("caps")), q.Get("hls") == "1", subParam(q.Get("sub")))
 	if err != nil {
 		return nil, err
 	}
@@ -510,6 +510,16 @@ func (s *Server) localSeekPoint(r *http.Request) (any, error) {
 		return map[string]any{"start": start, "method": use}, nil
 	}
 	return map[string]any{"start": start}, nil
+}
+
+// subParam is the ?sub= of a stream request: the subtitle track to draw
+// onto the video, or -1 when none (left out, or not a number).
+func subParam(v string) int {
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return -1
+	}
+	return n
 }
 
 func (s *Server) localThumb(w http.ResponseWriter, r *http.Request) {

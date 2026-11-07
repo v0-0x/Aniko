@@ -7,6 +7,20 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 39,
+        title: "Image subtitles in the in-app player",
+        changes: [
+            {
+                title: "PGS and VobSub subtitles, drawn on by the server",
+                text: "Image subtitles (Blu-ray PGS, DVD VobSub) can be picked in the player now: the computer the file is on draws them onto the video and converts it, so they show here, on the TV and on a phone. Converting costs that computer some work; a subtitle line already on screen when you seek into it isn't drawn.",
+            },
+            {
+                title: "Sound in step after a seek",
+                text: "A converted video with copied sound started a few seconds early after a seek (the sound from the keyframe before it), and its time was off by that much. The sound is converted with the video now.",
+            },
+        ],
+    },
+    {
         id: 38,
         title: "Small fixes",
         changes: [
