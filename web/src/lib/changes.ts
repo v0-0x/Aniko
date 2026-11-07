@@ -7,6 +7,16 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 40,
+        title: "Torrents streamed on the TV",
+        changes: [
+            {
+                title: "Stream, through the computer your downloads go to",
+                text: "On a TV, a torrent in the Torrents tab can be streamed: the computer that takes the TV's downloads (Settings › Other devices, \"Let it download here\") plays it as it downloads and the TV reads it from there, like a shared file. Only that TV can read it, and it stops when the TV stops it. Not with parental controls, on either side.",
+            },
+        ],
+    },
+    {
         id: 39,
         title: "Image subtitles in the in-app player",
         changes: [

@@ -17,6 +17,7 @@ import (
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
+	"github.com/v0-0x/Aniko/server/internal/share"
 	"github.com/v0-0x/Aniko/server/internal/torrentstream"
 )
 
@@ -138,4 +139,112 @@ func useTorrentCache(t *testing.T, s *Server) {
 	s.app.TorrentStream = torrentstream.New(filepath.Join(seedDir(t), "cache"))
 	s.app.Local.Torrents = s.app.TorrentStream
 	t.Cleanup(s.app.TorrentStream.Close)
+}
+
+// A TV (no torrent client) plays a torrent through the computer its
+// downloads go to: that one streams it, and the TV reads it from there as a
+// shared file, alone (another Aniko can't), with its status; stopping it
+// stops it there.
+func TestTorrentStreamThroughHost(t *testing.T) {
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Skip("no ffmpeg")
+	}
+	const local = "127.0.0.1:5000"
+	host, hostSrv := sharingServer(t)
+	guest, _ := sharingServer(t)
+	other, _ := sharingServer(t)
+	useTorrentCache(t, host)
+	useTorrentCache(t, guest)
+	guest.app.TorrentStream.Unavailable = true // a TV
+	batch := filepath.Join(seedDir(t), "[Group] Show (01-02) [1080p]")
+	if err := os.MkdirAll(batch, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for ep, secs := range map[int]int{1: 2, 2: 3} {
+		out := filepath.Join(batch, fmt.Sprintf("[Group] Show - %02d [1080p].mkv", ep))
+		cmd := exec.Command(ffmpeg, "-loglevel", "error", "-f", "lavfi", "-i", fmt.Sprintf("testsrc=duration=%d:size=320x240:rate=24", secs), "-f", "lavfi", "-i", fmt.Sprintf("sine=duration=%d", secs),
+			"-c:v", "libx264", "-c:a", "aac", "-shortest", "-y", out)
+		if b, err := cmd.CombinedOutput(); err != nil {
+			t.Skipf("ffmpeg: %v %s", err, b)
+		}
+	}
+	magnet := seedTorrent(t, batch)
+
+	addr := strings.TrimPrefix(hostSrv.URL, "http://")
+	for _, g := range []*Server{guest, other} {
+		if w := do(g, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+			t.Fatalf("connect: %d %s", w.Code, w.Body)
+		}
+		eventually(t, "the host to list the guest", func() bool { _, ok := peerIn(host, g); return ok })
+		if err := host.app.Share.SetAllowed(g.app.Share.ID(), true); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gid, hid := guest.app.Share.ID(), host.app.Share.ID()
+	asked := func(ok func() bool) func() bool {
+		return func() bool { do(guest, "GET", "/api/sharing?refresh=1", local, "", nil); return ok() }
+	}
+	eventually(t, "the library", asked(func() bool { return len(guest.app.Share.Libraries()) == 1 }))
+	body := fmt.Sprintf(`{"mediaId":1,"episode":2,"magnet":%q,"player":"builtin"}`, magnet)
+	// Not before the host takes this device's downloads.
+	if w := do(guest, "POST", "/api/torrents/stream", local, body, nil); w.Code == http.StatusOK {
+		t.Fatalf("streamed through a host that doesn't take downloads: %s", w.Body)
+	}
+	yes := true
+	if err := host.app.Share.SetGrants(gid, share.Grants{Downloads: &yes}); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "downloads to go to the host", asked(func() bool { return guest.app.Settings.Get().Sharing.DownloadTo == hid }))
+
+	var started struct {
+		Player, Path, Host string
+		Torrent            struct{ ID, Name string }
+	}
+	w := do(guest, "POST", "/api/torrents/stream", local, body, nil)
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &started) != nil || started.Player != "builtin" ||
+		!strings.HasPrefix(started.Path, "kumo://"+hid+"/torrent:") || !strings.HasPrefix(started.Torrent.ID, hid+".") || started.Torrent.Name != "[Group] Show - 02 [1080p].mkv" {
+		t.Fatalf("stream through the host: %d %s", w.Code, w.Body)
+	}
+	sid := strings.TrimPrefix(started.Torrent.ID, hid+".")
+	// Its status, from the host.
+	var st struct{ ID, Name string }
+	if w := do(guest, "GET", "/api/torrentstream/"+started.Torrent.ID, local, "", nil); w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &st) != nil || st.ID != sid || st.Name != started.Torrent.Name {
+		t.Fatalf("status: %d %s", w.Code, w.Body)
+	}
+	// Opened in the player: probed on the host, its file read from there.
+	var opened struct {
+		Player string
+		Probe  struct {
+			Duration float64
+			Path     string
+		}
+	}
+	w = do(guest, "POST", "/api/playback/local", local, fmt.Sprintf(`{"path":%q,"mediaId":1,"episode":2,"player":"builtin"}`, started.Path), nil)
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &opened) != nil || opened.Player != "builtin" || opened.Probe.Duration < 2.5 || opened.Probe.Path != started.Path {
+		t.Fatalf("open: %d %s", w.Code, w.Body)
+	}
+	want, _ := os.ReadFile(filepath.Join(batch, "[Group] Show - 02 [1080p].mkv"))
+	w = do(guest, "GET", "/api/local/file?path="+started.Path, local, "", func(r *http.Request) { r.Header.Set("Range", "bytes=1000-1999") })
+	if w.Code != http.StatusPartialContent || !bytes.Equal(w.Body.Bytes(), want[1000:2000]) {
+		t.Fatalf("file through the host: %d, %d bytes", w.Code, w.Body.Len())
+	}
+	// Another Aniko the host shares with can't read it: it isn't its.
+	req, _ := http.NewRequest("GET", hostSrv.URL+"/api/peer/local/probe?path=torrent:"+sid, nil)
+	if err := other.app.Share.Sign(req, hid, host.app.Share.Whoami().Key); err != nil {
+		t.Fatal(err)
+	}
+	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("another Aniko read the torrent: %v %v", resp, err)
+	}
+	// Stopped from the TV: gone on the host.
+	if w := do(guest, "DELETE", "/api/torrentstream/"+started.Torrent.ID, local, "", nil); w.Code != http.StatusOK {
+		t.Fatalf("stop: %d %s", w.Code, w.Body)
+	}
+	if _, ok := host.app.TorrentStream.Status(sid); ok {
+		t.Fatal("still streamed on the host after stop")
+	}
+	if w := do(guest, "GET", "/api/torrentstream/"+started.Torrent.ID, local, "", nil); w.Code != http.StatusNotFound {
+		t.Fatalf("status after stop: %d %s", w.Code, w.Body)
+	}
 }

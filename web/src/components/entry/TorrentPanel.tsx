@@ -25,6 +25,9 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
     const [sending, setSending] = useState(false)
     const search = useTorrentSearch()
     const { streamTorrent, remote } = usePlay()
+    // A TV has no torrent client: the computer its downloads go to streams
+    // a torrent for it (Settings › Other devices, "Let it download here").
+    const viaHost = !!settings?.sharing?.downloadTo
     // A result played as it downloads: the episode it holds, or of a batch
     // the one looked for (the first for a movie).
     const stream = (r: TorrentResult, player?: "mpv" | "builtin") =>
@@ -186,6 +189,11 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                                     <Button size="sm" variant={tv ? "white" : "subtle"} onClick={() => download([r])} loading={sending && chosen.length === 0}>
                                         Download
                                     </Button>
+                                    {tv && viaHost && (r.infoHash || r.magnetLink) && (
+                                        <Button size="sm" variant="white" icon={<Play className="size-3.5 fill-current" />} title="Streamed by the computer your downloads go to" onClick={() => stream(r, "builtin")}>
+                                            Stream
+                                        </Button>
+                                    )}
                                     {!tv && (r.infoHash || r.magnetLink) && (
                                         <>
                                             {!remote && (

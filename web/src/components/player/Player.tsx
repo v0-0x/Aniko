@@ -1485,7 +1485,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
                     <div className="flex flex-col items-center gap-3">
                         <Loader2 className={cn("animate-spin text-white/80", mini ? "size-8" : "size-12")} />
-                        {!mini && req.kind === "local" && req.path.startsWith("torrent:") && <TorrentProgress id={req.path.slice("torrent:".length)} />}
+                        {!mini && req.kind === "local" && torrentIdOf(req.path) && <TorrentProgress id={torrentIdOf(req.path)!} />}
                     </div>
                 </div>
             )}
@@ -2156,6 +2156,15 @@ function pickSub(opts: SubOption[], prefs: TrackPrefs | null, preferred: string,
     }
     const first = opts.find(o => !o.bitmap)
     return first ? first.key : "off"
+}
+
+// torrentIdOf is the ID of a torrent playing as it downloads, from its
+// path: torrent:<id> here, or kumo://<host>/torrent:<id> on the computer
+// the downloads go to (its ID is then <host>.<id>); "" for a file.
+function torrentIdOf(path: string) {
+    if (path.startsWith("torrent:")) return path.slice("torrent:".length)
+    const m = /^kumo:\/\/([^/]+)\/torrent:(.+)$/.exec(path)
+    return m ? `${m[1]}.${m[2]}` : ""
 }
 
 // A torrent playing as it downloads, while the player waits for it: its

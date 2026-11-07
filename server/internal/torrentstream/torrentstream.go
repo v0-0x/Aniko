@@ -82,6 +82,10 @@ type Engine struct {
 	dir string
 	// Free reports the room on the cache's drive (nil: not checked).
 	Free func(dir string) (uint64, error)
+	// Unavailable: no torrents are streamed here (as on Android, where the
+	// client doesn't build): they go through the computer the downloads go
+	// to. For tests of that.
+	Unavailable bool
 
 	mu       sync.Mutex
 	client   client
@@ -470,6 +474,9 @@ func (e *Engine) Close() {
 func (e *Engine) start() (client, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if e.Unavailable {
+		return nil, ErrUnavailable
+	}
 	if e.client != nil {
 		return e.client, nil
 	}
