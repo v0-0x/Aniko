@@ -268,7 +268,7 @@ jobs:
 
           The files aren't code-signed, so Windows SmartScreen may warn "Windows protected your PC" the first time: click **More info**, then **Run anyway**.
 
-          Aniko finds newer releases by itself: the installed app updates from its Home page (**Update**); for the portable build, download the newest zip.
+          Aniko finds newer releases by itself and updates from its Home page (**Update**): the installed app runs the new installer, the portable build puts the new zip in place once it has closed.
 
           Some features use other programs: ffmpeg (needed by the in-app player for most files), mpv, yt-dlp, ani-cli and qBittorrent. What to install for what, and where Aniko keeps its data: [packaging/windows/README.md]({guide}).
 

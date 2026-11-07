@@ -111,7 +111,7 @@ git remote set-url origin https://github.com/v0-0x/Aniko.git   # once, for a clo
 git pull && cd packaging/arch && makepkg -sif
 ```
 
-`git pull` gets the newest commit, which is the newest beta. `-f` rebuilds (without it makepkg reinstalls the package it built last time). Build from a `git clone`, not a downloaded ZIP: without git the package's version can't be read and stays 1.0.0, which pacman then calls a downgrade and the updater an old version.
+`git pull` gets the newest commit, which is the newest beta. `-f` rebuilds (without it makepkg reinstalls the package it built last time). Build from a `git clone` when you can: without git the version comes from a `VERSION` file at the root, the folder's name (a release's source zip unpacks to `Aniko-windows-v2.0.59`) or, failing those, the newest release on GitHub; a branch zip built offline stays 1.0.0, which pacman then calls a downgrade and the updater an old version.
 
 The **Update** button asks for your password with your desktop's polkit agent. Desktops like GNOME and KDE have one; on a bare window manager (Hyprland, Sway, i3…) start one (e.g. `polkit-gnome`'s `/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1`), or Aniko shows the `sudo pacman -U …` command to run instead.
 

@@ -1,0 +1,51 @@
+# Tests on every push and pull request: the server's Go tests and the web
+# UI's type check and build, on Linux. The release workflows (windows.yml,
+# macos.yml, android.yml) test again on their own systems before building.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    name: Server (Go)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: go vet
+        working-directory: server
+        run: go vet ./...
+      - name: go test
+        working-directory: server
+        run: go test -count 1 -timeout 8m ./...
+
+  web:
+    name: Web UI (TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Type check and build
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          npx tsc --noEmit
+          npm run build

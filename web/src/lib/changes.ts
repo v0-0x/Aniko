@@ -7,6 +7,33 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 38,
+        title: "Small fixes",
+        changes: [
+            {
+                title: "Anime still being looked up are said so",
+                text: "When AniList hasn't said yet what some anime in your library are, Home and Local library say how many are still being looked up; they come in by themselves.",
+            },
+            {
+                title: "The portable Windows build updates itself",
+                text: "Update on the Home page downloads the new portable zip, puts it in place once Aniko has closed, and opens Aniko again. Nothing is installed.",
+            },
+            {
+                title: "Report wrong order",
+                text: "Editing a watch order has a Report wrong order button: it keeps Aniko's order and your edit as a file, to send along with a bug report so the order can be put right for everyone.",
+            },
+            {
+                title: "Marketplace: what a plugin needs",
+                text: "A plugin that asks for permissions Aniko doesn't have (Seanime's playback, system…) is marked in the Marketplace: what it does with them won't work here.",
+                to: "/extensions",
+            },
+            {
+                title: "Built from a source zip, with its version",
+                text: "An Arch package built from a downloaded source zip (no git) gets its version from the folder's name or the newest release, instead of 1.0.0.",
+            },
+        ],
+    },
+    {
         id: 37,
         title: "Downloads go to the folder you pick",
         changes: [

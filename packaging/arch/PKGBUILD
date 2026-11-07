@@ -67,6 +67,18 @@ build() {
             version="${mm:-1.0}.$((count - ${from:-0}))"
         fi
     fi
+    # Not a checkout (a source zip from GitHub): the version from a VERSION
+    # file at the root, else from the folder's name (a release's source zip
+    # unpacks to Aniko-windows-v2.0.59), else the newest release's.
+    if [[ -z ${version} && -r "${_root}/VERSION" ]]; then
+        version="$(tr -d '[:space:]' < "${_root}/VERSION")"
+    fi
+    if [[ -z ${version} && "$(basename "${_root}")" =~ -v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+        version="${BASH_REMATCH[1]}"
+    fi
+    if [[ -z ${version} && ! -e "${_root}/.git" ]] && command -v curl >/dev/null; then
+        version="$(curl -fsSL --max-time 10 https://api.github.com/repos/v0-0x/Aniko/releases/latest 2>/dev/null | sed -n 's/.*"tag_name": *"[a-z]*-v\([0-9.]*\)".*/\1/p' | head -n1)"
+    fi
     local config=github.com/v0-0x/Aniko/server/internal/config
     local ldflags="-s -w"
     [[ -z ${commit} ]] || ldflags+=" -X ${config}.Commit=${commit}"
