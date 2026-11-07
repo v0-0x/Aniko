@@ -190,6 +190,16 @@ func (s *Server) peerRoutes() {
 		s.app.Share.TakePrefs(peerOf(r).ID, p)
 		return nil, nil
 	})))
+	// The list and watch-order edits a hub sends on, changed on another
+	// device on the same account (hub.go): merged in, item by item.
+	m.HandleFunc("POST /api/peer/blobs/{kind}", paired(h(func(r *http.Request) (any, error) {
+		var b anikohub.Blob
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&b); err != nil {
+			return nil, badRequest(err.Error())
+		}
+		s.app.Share.TakeBlob(peerOf(r).ID, r.PathValue("kind"), b)
+		return nil, nil
+	})))
 	// This Aniko's AniList login, for an Aniko it shares it with: sealed, only
 	// that one can read it.
 	m.HandleFunc("GET /api/peer/anilist", shared(h(func(r *http.Request) (any, error) {

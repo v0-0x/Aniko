@@ -7,6 +7,17 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 41,
+        title: "Lists and watch order on all your devices",
+        changes: [
+            {
+                title: "Kept in step through mediaserver (experimental)",
+                text: "Your watch-order edits, and the list of a device that isn't logged into AniList, now follow you between your devices through mediaserver: an anime added or removed on one, an order fixed on one, shows on the others. The devices on no AniList account share one list through the server. Experimental: Settings › Other devices turns it off, and the lists then stay as they are on each device.",
+                to: "/settings?tab=devices",
+            },
+        ],
+    },
+    {
         id: 40,
         title: "Torrents streamed on the TV",
         changes: [
