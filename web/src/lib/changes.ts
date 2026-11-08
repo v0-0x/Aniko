@@ -7,6 +7,17 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 44,
+        title: "When your lists were last in step",
+        changes: [
+            {
+                title: "Shown in Settings",
+                text: "Under \"Same list and watch order on all my devices\", Settings › Other devices says when your lists were last in step with mediaserver. And when an episode starts somewhere other than where it should (resume), the app notes both times in its log, so a report says why.",
+                to: "/settings?tab=devices",
+            },
+        ],
+    },
+    {
         id: 43,
         title: "Image subtitles after a seek",
         changes: [
