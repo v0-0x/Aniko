@@ -7,6 +7,24 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 42,
+        title: "Fixes",
+        changes: [
+            {
+                title: "The Marketplace opens at once",
+                text: "It no longer waits for every plugin's details before showing the list: the \"Needs …\" badges come in a moment later.",
+            },
+            {
+                title: "Image subtitles from an older computer",
+                text: "When the computer or server a file is on is too old to draw its image subtitles, the track says it needs that one updated, instead of playing without them.",
+            },
+            {
+                title: "Lists kept in step: one send for many changes",
+                text: "Changes made close together (removing several anime) go to the server as one, a couple of seconds after the last.",
+            },
+        ],
+    },
+    {
         id: 41,
         title: "Lists and watch order on all your devices",
         changes: [
