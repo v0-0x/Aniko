@@ -7,6 +7,16 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 43,
+        title: "Image subtitles after a seek",
+        changes: [
+            {
+                title: "A line already on screen is drawn too",
+                text: "Seeking into the middle of an image subtitle (PGS, VobSub) now shows it from there, instead of nothing until the next line.",
+            },
+        ],
+    },
+    {
         id: 42,
         title: "Fixes",
         changes: [
@@ -51,7 +61,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "PGS and VobSub subtitles, drawn on by the server",
-                text: "Image subtitles (Blu-ray PGS, DVD VobSub) can be picked in the player now: the computer the file is on draws them onto the video and converts it, so they show here, on the TV and on a phone. Converting costs that computer some work; a subtitle line already on screen when you seek into it isn't drawn.",
+                text: "Image subtitles (Blu-ray PGS, DVD VobSub) can be picked in the player now: the computer the file is on draws them onto the video and converts it, so they show here, on the TV and on a phone. Converting costs that computer some work.",
             },
             {
                 title: "Sound in step after a seek",
