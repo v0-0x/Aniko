@@ -7,6 +7,21 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 45,
+        title: "Manga on your server, and Continue watching arrows",
+        changes: [
+            {
+                title: "Read the manga on mediaserver",
+                text: "Manga › Downloaded shows the manga downloaded onto mediaserver (or another computer that shares with this one), under its name, and a manga's page lists the chapters there: they open in the reader from the server. Needs mediaserver 1.0.30 or newer.",
+                to: "/manga",
+            },
+            {
+                title: "Arrows on Continue watching",
+                text: "On a computer, round arrows on the Continue watching row scroll it, as many cards at a time as fit.",
+            },
+        ],
+    },
+    {
         id: 44,
         title: "When your lists were last in step",
         changes: [
