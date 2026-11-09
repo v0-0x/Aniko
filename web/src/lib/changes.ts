@@ -12,7 +12,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Read the manga on mediaserver",
-                text: "Manga › Downloaded shows the manga downloaded onto mediaserver (or another computer that shares with this one), under its name, and a manga's page lists the chapters there: they open in the reader from the server. Needs mediaserver 1.0.30 or newer.",
+                text: "Manga › Downloaded shows the manga downloaded onto mediaserver (or another computer that shares with this one), under its name, and a manga's page lists the chapters there: they open in the reader from the server. Needs mediaserver 1.0.29 or newer.",
                 to: "/manga",
             },
             {
