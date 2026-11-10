@@ -1,8 +1,8 @@
 {
   "name": "aniko",
   "productName": "Aniko",
-  "version": "2.0.0",
-  "anikoVersionBase": 147,
+  "version": "3.0.0",
+  "anikoVersionBase": 222,
   "description": "Aniko desktop window (starts the local Aniko server)",
   "main": "main.js",
   "desktopName": "aniko.desktop",

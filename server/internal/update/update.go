@@ -104,8 +104,13 @@ const (
 	// 2.0.<commits since then>, as the PKGBUILD and the release workflows
 	// make it, and was 1.0.<commits> before.
 	VersionBase = 147
-	maxChanges  = 30
-	maxLogLines = 20
+	// Version3Base: the same for 3.0.0 (desktop/package.json's
+	// anikoVersionBase since 3.0).
+	Version3Base = 222
+	// previewBranch is where 3.0's changes land while it's a preview.
+	previewBranch = "3.0"
+	maxChanges    = 30
+	maxLogLines   = 20
 	// failureFile keeps why an update failed after Aniko had quit for it
 	// (in CacheDir), for the next run to show.
 	failureFile = "last-failure.txt"
@@ -361,6 +366,11 @@ func (c *Checker) applyable() (bool, string) {
 		return c.macApplyable(exe, err)
 	case "android":
 		return true, "Aniko downloads the new version and Android asks you to install it."
+	case HubSystem:
+		if err != nil || !c.Writable(filepath.Dir(exe)) {
+			return false, "mediaserver's program can't be replaced where it is: install it again with its install script."
+		}
+		return true, "mediaserver downloads the new version, swaps it in and starts again (a few seconds)."
 	}
 	return false, "Aniko can't update itself on this system."
 }
@@ -480,22 +490,22 @@ func (c *Checker) describe(err error) (string, string) {
 		if c.GOOS == "windows" {
 			hint = "If the repository is private, sign in to GitHub: Settings › Desktop app & programs › Install missing programs signs you in, or run gh auth login."
 		}
-		return fmt.Sprintf("Aniko can't read github.com/%s (HTTP %d).", c.Repo, ae.status), hint
+		return fmt.Sprintf("%s can't read github.com/%s (HTTP %d).", c.name(), c.Repo, ae.status), hint
 	case errors.As(err, &ae) && ae.rateLimited:
-		return "GitHub's limit on requests was reached: Aniko checks again later.", "Signing in to GitHub (gh auth login) raises the limit."
+		return "GitHub's limit on requests was reached: " + c.name() + " checks again later.", "Signing in to GitHub (gh auth login) raises the limit."
 	case errors.Is(err, context.DeadlineExceeded):
 		return "GitHub didn't answer in time.", ""
 	}
 	var dnsErr *net.DNSError
 	if errors.As(err, &dnsErr) {
-		return "Aniko can't reach GitHub: is this computer online?", ""
+		return c.name() + " can't reach GitHub: is this computer online?", ""
 	}
 	// Anything else: said plainly, what happened under it as a detail.
-	return "Aniko couldn't check for updates just now. It tries again later.", "Details: " + err.Error()
+	return c.name() + " couldn't check for updates just now. It tries again later.", "Details: " + err.Error()
 }
 
 func (c *Checker) check(ctx context.Context) (result, error) {
-	g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(ctx), userAgent: "Aniko/" + c.Version}
+	g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(ctx), userAgent: c.name() + "/" + c.Version}
 	if fromReleases(c.GOOS) {
 		return c.checkReleases(ctx, g)
 	}
@@ -527,7 +537,7 @@ func (c *Checker) checkStable(ctx context.Context, g *github) (result, error) {
 		}
 	}
 	if best == nil {
-		return result{note: "There's no stable release of Aniko yet."}, nil
+		return result{note: "There's no stable release of " + c.name() + " yet."}, nil
 	}
 	commit, err := g.commit(ctx, best.TagName)
 	if err != nil {
@@ -549,8 +559,13 @@ func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 	if repo.DefaultBranch == "" {
 		return result{}, errors.New("GitHub didn't say which branch is the repository's main one")
 	}
-	head, err := g.commit(ctx, repo.DefaultBranch)
-	if err != nil {
+	// While this version is a preview, its changes land on its own branch
+	// (previewBranch), which is gone once it's the default branch's.
+	branch := repo.DefaultBranch
+	head, err := g.commit(ctx, previewBranch)
+	if err == nil {
+		branch = previewBranch
+	} else if head, err = g.commit(ctx, branch); err != nil {
 		return result{}, err
 	}
 	latest := &Version{Commit: head.SHA, Date: head.Commit.Committer.Date, URL: head.HTMLURL, Beta: true}
@@ -558,7 +573,7 @@ func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 	if n := g.commitCount(ctx, head.SHA); n > 0 {
 		latest.Version = VersionOf(n)
 	}
-	return c.against(ctx, g, latest, "GitHub's "+repo.DefaultBranch)
+	return c.against(ctx, g, latest, "GitHub's "+branch)
 }
 
 // against compares this build with latest (a commit), named what for the
@@ -568,7 +583,7 @@ func (c *Checker) against(ctx context.Context, g *github, latest *Version, what 
 	res := result{latest: latest}
 	if c.Commit == "" {
 		res.available = true
-		res.note = "Aniko can't tell which version this copy is (it was built without its git commit), so it offers the newest one."
+		res.note = c.name() + " can't tell which version this copy is (it was built without its git commit), so it offers the newest one."
 		return res, nil
 	}
 	// Against the head's commit, not the branch: the version, the changes
@@ -578,7 +593,7 @@ func (c *Checker) against(ctx context.Context, g *github, latest *Version, what 
 	var ae *apiError
 	if errors.As(err, &ae) && (ae.status == http.StatusNotFound || ae.status == http.StatusUnprocessableEntity) {
 		res.available = true
-		res.note = "This copy was built from a commit GitHub doesn't have (" + short(c.Commit) + "), so Aniko can't tell what changed."
+		res.note = "This copy was built from a commit GitHub doesn't have (" + short(c.Commit) + "), so " + c.name() + " can't tell what changed."
 		return res, nil
 	}
 	if err != nil {
@@ -612,8 +627,29 @@ func (c *Checker) against(ctx context.Context, g *github, latest *Version, what 
 // fromReleases: Windows, macOS and Android update from GitHub Releases,
 // Linux from the default branch.
 func fromReleases(goos string) bool {
-	return goos == "windows" || goos == "darwin" || goos == "android"
+	return goos == "windows" || goos == "darwin" || goos == "android" || goos == HubSystem
 }
+
+// AsHub makes the checker mediaserver's: its own repository's releases
+// (unless $ANIKO_UPDATE_REPO names another), installed as applyHub does.
+func (c *Checker) AsHub() {
+	c.GOOS = HubSystem
+	if strings.TrimSpace(config.Getenv("UPDATE_REPO")) == "" {
+		c.Repo, c.RepoID = config.HubUpdateRepo, config.HubUpdateRepoID
+	}
+}
+
+// name is the program the messages are about.
+func (c *Checker) name() string {
+	if c.GOOS == HubSystem {
+		return "mediaserver"
+	}
+	return "Aniko"
+}
+
+// HubSystem is what mediaserver updates as (Checker.GOOS): its own releases,
+// server-v<version>, one archive per processor (see applyHub).
+const HubSystem = "hub"
 
 // releasePrefix starts the tags of a system's releases: <prefix><version>.
 func releasePrefix(goos string) string {
@@ -622,6 +658,8 @@ func releasePrefix(goos string) string {
 		return "macos-v"
 	case "android":
 		return "android-v"
+	case HubSystem:
+		return "server-v"
 	}
 	return "windows-v"
 }
@@ -633,6 +671,8 @@ func releaseAsset(goos, version string) string {
 		return "Aniko-" + version + "-macos-universal.zip"
 	case "android":
 		return "Aniko-" + version + "-android.apk"
+	case HubSystem:
+		return HubArchive(version, runtime.GOARCH)
 	}
 	return "Aniko-Setup-" + version + "-windows-x64.exe"
 }
@@ -649,6 +689,8 @@ func releaseFile(goos string) string {
 		return "zip of the app"
 	case "android":
 		return "APK"
+	case HubSystem:
+		return "archive for this computer"
 	}
 	return "installer"
 }
@@ -663,7 +705,19 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 	}
 	prefix := releasePrefix(c.GOOS)
 	best := pickRelease(releases, prefix, c.beta())
+	// With betas on, the previews of the next version too: tagged apart
+	// (windows-next-v…), so that copies of the version before, which don't
+	// look at those, aren't offered them.
+	if c.beta() {
+		next := strings.TrimSuffix(prefix, "v") + "next-v"
+		if r := pickRelease(releases, next, true); r != nil && (best == nil || compareVersions(strings.TrimPrefix(r.TagName, next), strings.TrimPrefix(best.TagName, prefix)) > 0) {
+			best, prefix = r, next
+		}
+	}
 	if best == nil {
+		if c.GOOS == HubSystem {
+			return result{note: "There's no mediaserver release yet."}, nil
+		}
 		system := map[string]string{"darwin": "macOS", "android": "Android"}[c.GOOS]
 		if system == "" {
 			system = "Windows"
@@ -700,6 +754,9 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 
 // VersionOf is the version of the build with n commits.
 func VersionOf(n int) string {
+	if n >= Version3Base {
+		return fmt.Sprintf("3.0.%d", n-Version3Base)
+	}
 	if n >= VersionBase {
 		return fmt.Sprintf("2.0.%d", n-VersionBase)
 	}
@@ -812,13 +869,13 @@ func (c *Checker) Apply() error {
 		inst = &a
 	}
 	c.applying = true
-	c.st.State, c.st.Progress, c.st.Message = StateDownloading, -1, "Downloading Aniko "+display(target)+"…"
+	c.st.State, c.st.Progress, c.st.Message = StateDownloading, -1, "Downloading "+c.name()+" "+display(target)+"…"
 	c.st.Log, c.st.ManualCommand, c.st.InstallFile = nil, "", ""
 	c.publishLocked()
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
-		g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(c.ctx), userAgent: "Aniko/" + c.Version}
+		g := &github{api: strings.TrimRight(c.API, "/"), repo: c.Repo, repoID: c.RepoID, client: c.Client, token: c.Token(c.ctx), userAgent: c.name() + "/" + c.Version}
 		var err error
 		switch c.GOOS {
 		case "windows":
@@ -831,6 +888,8 @@ func (c *Checker) Apply() error {
 			err = c.applyMac(c.ctx, g, target, inst)
 		case "android":
 			err = c.applyAndroid(c.ctx, g, target, inst)
+		case HubSystem:
+			err = c.applyHub(c.ctx, g, target, inst)
 		default:
 			err = c.applyLinux(c.ctx, g, target)
 		}

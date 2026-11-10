@@ -55,7 +55,7 @@ concurrency:
 jobs:
   macos:
     name: Build, test and package (macOS universal)
-    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch || github.ref_name == '3.0'
     runs-on: macos-latest
     timeout-minutes: 60
     env:
@@ -74,12 +74,19 @@ jobs:
       # Each push is a beta (a GitHub pre-release, which only copies with
       # Beta updates on are offered) unless its newest commit's message has
       # [stable] in it, or the workflow is run by hand as stable.
+      # On the 3.0 branch, a build is a preview of Aniko 3.0: always a beta,
+      # tagged <system>-next-v<version>, which copies of Aniko 2 don't look
+      # at (theirs are <system>-v…), so none is offered it; a copy of 3.0
+      # with Beta updates on is.
       - name: Pick the channel
         id: channel
         env:
           INPUT: ${{ inputs.channel }}
         run: |
-          if [ "$INPUT" = stable ] || git log -1 --format=%B | grep -qF '[stable]'; then
+          if [ "$GITHUB_REF_NAME" = 3.0 ]; then
+            echo "channel=beta" >> "$GITHUB_OUTPUT"
+            echo "A preview of 3.0 (a beta)"
+          elif [ "$INPUT" = stable ] || git log -1 --format=%B | grep -qF '[stable]'; then
             echo "channel=stable" >> "$GITHUB_OUTPUT"
             echo "A stable release"
           else
@@ -103,9 +110,11 @@ jobs:
             exit 1
           fi
           version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$patch"
+          next=""
+          if [ "$GITHUB_REF_NAME" = 3.0 ]; then next="next-"; fi
           {
             echo "version=$version"
-            echo "tag=macos-v$version"
+            echo "tag=macos-${next}v$version"
             echo "dmg=Aniko-$version-macos-universal.dmg"
             echo "zip=Aniko-$version-macos-universal.zip"
           } >> "$GITHUB_OUTPUT"
@@ -371,10 +380,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          # The 3.0 previews are counted apart (their own tags).
+          next=""
+          if [ "$GITHUB_REF_NAME" = 3.0 ]; then next="next-"; fi
           list=$(gh release list --limit 1000 --json tagName,isPrerelease --jq '.[] | "\(.isPrerelease) \(.tagName)"')
           old=$(for pre in true false; do
             printf '%s\n' "$list" | awk -v pre="$pre" '$1 == pre { print $2 }' |
-              { grep -E '^macos-v[0-9]+(\.[0-9]+)*$' || true; } | sort -V -r | tail -n +11
+              { grep -E "^macos-${next}v[0-9]+(\.[0-9]+)*\$" || true; } | sort -V -r | tail -n +11
           done)
           if [ -z "$old" ]; then
             echo "No old releases to delete"
@@ -389,7 +401,7 @@ jobs:
   # Mac. It doesn't hold back the release either.
   setup-intel:
     name: Programs setup (macOS Intel)
-    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch || github.ref_name == '3.0'
     runs-on: macos-15-intel
     timeout-minutes: 20
     # It releases nothing.

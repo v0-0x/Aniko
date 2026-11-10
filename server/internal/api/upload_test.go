@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -134,4 +136,57 @@ func TestUploadToHost(t *testing.T) {
 type httpResult struct {
 	code int
 	body string
+}
+
+// mediaserver's anime side (a hub) takes files from its dashboard itself,
+// and notes them in its audit log.
+func TestUploadHere(t *testing.T) {
+	s := newHubServer(t)
+	lib := t.TempDir()
+	cfg := s.app.Settings.Get()
+	cfg.Library.Dir = lib
+	if _, err := s.app.Settings.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	w := do(s, "GET", "/api/upload/targets", "127.0.0.1:5000", "", nil)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"here":true`) {
+		t.Fatalf("targets: %d %s", w.Code, w.Body)
+	}
+	if w := do(s, "POST", "/api/upload?"+uploadQuery("", 0, "Show/Show - 01.mkv", 0, 5), "127.0.0.1:5000", "hello", nil); w.Code != http.StatusOK {
+		t.Fatalf("upload: %d %s", w.Code, w.Body)
+	}
+	if b, err := os.ReadFile(filepath.Join(lib, "Show", "Show - 01.mkv")); err != nil || string(b) != "hello" {
+		t.Fatalf("the file: %q %v", b, err)
+	}
+	found := false
+	for _, e := range s.app.HubStore.Activity() {
+		if e.Kind == "upload" && strings.Contains(e.Text, "Show - 01.mkv") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("not in the audit log: %+v", s.app.HubStore.Activity())
+	}
+}
+
+// The other sides' uploads go in the same audit log, saying which side.
+func TestLogUploadFromOtherSides(t *testing.T) {
+	s := newHubServer(t)
+	r := httptest.NewRequest("POST", "/api/upload", nil)
+	r.RemoteAddr = "192.168.1.20:5000"
+	s.LogUpload(r, "Movies", "Laptop", "Film (2020)/Film.mkv", "/srv/movies/Film (2020)/Film.mkv", 42)
+	s.LogUpload(r, "Music", "", "Band/Song.flac", "/srv/music/Band/Song.flac", 7)
+	var got []string
+	for _, e := range s.app.HubStore.Activity() {
+		if e.Kind == "upload" {
+			got = append(got, fmt.Sprintf("%s|%s|%s|%s|%d|%d", e.Device, e.By, e.IP, e.Text, e.Size, len(e.Files)))
+		}
+	}
+	want := map[string]bool{
+		"Laptop|||uploaded Film (2020)/Film.mkv to Movies|42|1":  true,
+		"|hub|192.168.1.20|uploaded Band/Song.flac to Music|7|1": true,
+	}
+	if len(got) != 2 || !want[got[0]] || !want[got[1]] {
+		t.Fatalf("audit log: %q", got)
+	}
 }

@@ -30,7 +30,7 @@ func (a *App) MangaDir() string {
 	if d := strings.TrimSpace(a.Settings.Get().Manga.Dir); d != "" {
 		return config.ExpandHome(d)
 	}
-	if runtime.GOOS == "android" {
+	if runtime.GOOS == "android" || a.HubStore != nil {
 		return filepath.Join(a.DataDir, "manga")
 	}
 	if home, err := os.UserHomeDir(); err == nil && home != "" {

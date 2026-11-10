@@ -65,7 +65,7 @@ concurrency:
 jobs:
   windows:
     name: Build, test and package (Windows x64)
-    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch || github.ref_name == '3.0'
     runs-on: windows-latest
     timeout-minutes: 60
     defaults:
@@ -87,6 +87,10 @@ jobs:
       # Each push is a beta (a GitHub pre-release, which only copies with
       # Beta updates on are offered) unless its newest commit's message has
       # [stable] in it, or the workflow is run by hand as stable.
+      # On the 3.0 branch, a build is a preview of Aniko 3.0: always a beta,
+      # tagged <system>-next-v<version>, which copies of Aniko 2 don't look
+      # at (theirs are <system>-v…), so none is offered it; a copy of 3.0
+      # with Beta updates on is.
       - name: Pick the channel
         id: channel
         env:
@@ -94,7 +98,10 @@ jobs:
         run: |
           $message = (git log -1 --format=%B) -join "`n"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if ($env:INPUT -eq "stable" -or $message.Contains("[stable]")) {
+          if ($env:GITHUB_REF_NAME -eq "3.0") {
+            "channel=beta" >> $env:GITHUB_OUTPUT
+            "A preview of 3.0 (a beta)"
+          } elseif ($env:INPUT -eq "stable" -or $message.Contains("[stable]")) {
             "channel=stable" >> $env:GITHUB_OUTPUT
             "A stable release"
           } else {
@@ -116,7 +123,8 @@ jobs:
           if ($patch -lt 0) { throw "This commit is before anikoVersionBase ($from) in desktop/package.json" }
           $version = "$($Matches[1]).$($Matches[2]).$patch"
           "version=$version" >> $env:GITHUB_OUTPUT
-          "tag=windows-v$version" >> $env:GITHUB_OUTPUT
+          $next = if ($env:GITHUB_REF_NAME -eq "3.0") { "next-" } else { "" }
+          "tag=windows-${next}v$version" >> $env:GITHUB_OUTPUT
           "installer=Aniko-Setup-$version-windows-x64.exe" >> $env:GITHUB_OUTPUT
           "portable=Aniko-$version-windows-x64-portable.zip" >> $env:GITHUB_OUTPUT
           "Building Aniko $version for Windows"
@@ -309,8 +317,10 @@ jobs:
         run: |
           $json = gh release list --limit 1000 --json tagName,isPrerelease
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $releases = @(($json -join "`n") | ConvertFrom-Json | Where-Object { $_.tagName -match '^windows-v\d+(\.\d+)*$' })
-          $byVersion = @{ Descending = $true; Expression = { ($_.Substring("windows-v".Length).Split(".") | ForEach-Object { $_.PadLeft(10, "0") }) -join "." } }
+          # The 3.0 previews are counted apart (their own tags).
+          $prefix = if ($env:GITHUB_REF_NAME -eq "3.0") { "windows-next-v" } else { "windows-v" }
+          $releases = @(($json -join "`n") | ConvertFrom-Json | Where-Object { $_.tagName -match "^$prefix\d+(\.\d+)*$" })
+          $byVersion = @{ Descending = $true; Expression = { ($_.Substring($prefix.Length).Split(".") | ForEach-Object { $_.PadLeft(10, "0") }) -join "." } }
           $old = @(foreach ($pre in $true, $false) {
             $releases | Where-Object { $_.isPrerelease -eq $pre } | ForEach-Object { $_.tagName } | Sort-Object -Property $byVersion | Select-Object -Skip 10
           })
