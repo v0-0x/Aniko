@@ -92,7 +92,8 @@ type NavItem = {
     keywords?: string
 }
 
-// Settings in five groups, each page about one thing.
+// The settings' parts, each about one thing (search lists them one by one);
+// PAGES puts them on eight pages.
 const NAV: { title: string; items: NavItem[] }[] = [
     {
         title: "General",
@@ -145,6 +146,25 @@ const NOT_ON_ANDROID: SectionId[] = ["mpv", "transcode", "discord", "desktop"]
 const SHOWN_NAV = androidApp ? NAV.map(g => ({ ...g, items: g.items.filter(i => !NOT_ON_ANDROID.includes(i.id)) })) : NAV
 const NAV_ITEMS = SHOWN_NAV.flatMap(g => g.items)
 
+// The pages, each with the parts on it (a page is named by its first part).
+const PAGES: (NavItem & { parts: SectionId[] })[] = (
+    [
+        { id: "account", label: "Account", icon: <UserRound />, description: "Your AniList account and what Aniko tells you about", parts: ["account", "notifications"] },
+        { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors, holidays, the classic look and what's shown", parts: ["appearance"] },
+        { id: "playback", label: "Playback", icon: <Clapperboard />, description: "How episodes play, the players and video conversion", parts: ["playback", "mpv", "transcode", "discord"] },
+        { id: "library", label: "Library", icon: <LibraryBig />, description: "Your anime folders and how they're scanned", parts: ["library"] },
+        { id: "streaming", label: "Sources", icon: <Tv />, description: "Where anime and manga come from: streaming, torrents and extensions", parts: ["streaming", "torrents", "manga", "extensions"] },
+        { id: "devices", label: "Devices & network", icon: <MonitorSmartphone />, description: "Your other computers, TVs and server, and using Aniko from a browser", parts: ["devices", "network"] },
+        { id: "desktop", label: "App & data", icon: <AppWindow />, description: "The window and programs, backups, logs and cache", parts: ["desktop", "backup", "logs"] },
+        { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Aniko's version, updates and beta updates", parts: ["updates"] },
+    ] satisfies (NavItem & { parts: SectionId[] })[]
+)
+    .map(pg => ({ ...pg, parts: pg.parts.filter(id => NAV_ITEMS.some(i => i.id === id)) }))
+    .filter(pg => pg.parts.length > 0)
+// Parts whose first group has their name already.
+const TITLED: SectionId[] = ["streaming", "manga", "extensions"]
+const pageOf = (part: string) => PAGES.find(pg => pg.parts.includes(part as SectionId))
+
 // Older links (and the names before the regrouping).
 const ALIASES: Record<string, SectionId> = {
     app: "account",
@@ -181,8 +201,11 @@ export default function SettingsPage() {
     const [params, setParams] = useSearchParams()
     const raw = params.get("tab") ?? "app"
     const tab = ALIASES[raw] ?? raw
-    // Unknown tabs (old links, typos) open the first one instead of nothing.
-    const section = (SECTION_IDS.includes(tab) ? tab : "account") as SectionId
+    // Unknown tabs (old links, typos) open the first page instead of
+    // nothing; a part's name opens its page, at that part.
+    const current = pageOf(tab) ?? PAGES[0]
+    const section = current.id
+    const part = SECTION_IDS.includes(tab) && tab !== current.parts[0] ? tab : ""
     const save = useSaveSettings()
     const server = status?.settings
     // draft is what the form edits, base the server copy it was made from.
@@ -230,9 +253,13 @@ export default function SettingsPage() {
     }, [ui?.colorTheme, ui?.accentColor, ui?.seasonal, ui?.seasonalEffects, ui?.classicLook])
     useEffect(() => () => themePreviewStore.set(null), [])
 
+    useEffect(() => {
+        if (part) document.getElementById(`settings-${part}`)?.scrollIntoView({ block: "start" })
+        // Once the settings are here (the page is empty until then).
+    }, [part, section, !draft])
+
     if (!draft || !status) return null
     const set = <K extends keyof Settings>(k: K, v: Partial<Settings[K]>) => setDraft(d => (d ? { ...d, [k]: { ...d[k], ...v } } : d))
-    const current = NAV_ITEMS.find(i => i.id === section) ?? NAV_ITEMS[0]
 
     const onSave = () => {
         const oldPort = status.settings.server.port
@@ -295,16 +322,11 @@ export default function SettingsPage() {
                             setQuery("")
                             setParams({ tab: v }, { replace: true })
                         }}
-                        options={SHOWN_NAV.flatMap(g => g.items.map(it => ({ value: it.id, label: `${g.title} › ${it.label}` })))}
+                        options={PAGES.map(it => ({ value: it.id, label: it.label }))}
                     />
                 </div>
-                <nav aria-label="Settings sections" className="hidden flex-col gap-5 md:flex">
-                    {SHOWN_NAV.map(g => (
-                        <div key={g.title} className="flex flex-col gap-0.5">
-                            <p className="px-2.5 pb-1 text-[11px] font-medium text-subtle">{g.title}</p>
-                            {g.items.map(navButton)}
-                        </div>
-                    ))}
+                <nav aria-label="Settings sections" className="hidden flex-col gap-0.5 md:flex">
+                    {PAGES.map(navButton)}
                 </nav>
                 <p className="mt-6 hidden px-2.5 text-xs text-subtle md:block">
                     Aniko {status.version} · {platformName(status.platform)} · {status.client === "desktop" ? "Desktop" : status.client === "lan" ? "LAN" : "Web UI"}
@@ -329,7 +351,24 @@ export default function SettingsPage() {
                             <p className="mt-1 text-sm text-muted">{current.description}</p>
                         </div>
                         <div key={section} className="flex flex-col gap-8 fade-in">
-                            <SectionBody id={section} {...sectionProps} />
+                            {current.parts.map((id, i) => {
+                                const it = NAV_ITEMS.find(n => n.id === id)!
+                                return (
+                                    <div key={id} id={`settings-${id}`} className={cn("flex scroll-mt-6 flex-col gap-8", i > 0 && "border-t border-line pt-8")}>
+                                        {/* A page of several parts names each. */}
+                                        {current.parts.length > 1 && it.label !== current.label && !TITLED.includes(id) && (
+                                            <div>
+                                                <h3 className="flex items-center gap-2 text-base font-semibold tracking-tight [&>svg]:size-4 [&>svg]:text-muted">
+                                                    {it.icon}
+                                                    {it.label}
+                                                </h3>
+                                                <p className="mt-1 text-sm text-muted">{it.description}</p>
+                                            </div>
+                                        )}
+                                        <SectionBody id={id} {...sectionProps} />
+                                    </div>
+                                )
+                            })}
                         </div>
                     </>
                 )}
