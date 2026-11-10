@@ -18,6 +18,7 @@ import {
     Puzzle,
     Rss,
     Search,
+    Server as ServerIcon,
     Settings as SettingsIcon,
     UserRound,
 } from "lucide-react"
@@ -25,7 +26,7 @@ import { useEffect, useRef, useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { api, desktop } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
-import { useCollection, useDownloads, useStatus } from "@/lib/queries"
+import { useCollection, useDownloads, useSharing, useStatus } from "@/lib/queries"
 import { notificationsMutedStore, torrentCountStore, useStore } from "@/lib/store"
 import { holidayStore, useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
@@ -82,6 +83,8 @@ export function useNavGroups(): { label: string; items: NavItem[] }[] {
     const { data: downloads } = useDownloads()
     const torrentCount = useStore(torrentCountStore)
     const settings = status?.settings
+    const { data: sharing } = useSharing(!!settings?.sharing?.enabled)
+    const hasServer = !!sharing?.peers?.some(p => p.role === "hub" && p.shares)
     const activeDownloads = (downloads ?? []).filter(d => ["queued", "resolving", "downloading"].includes(d.status)).length
 
     // Three groups: finding and watching anime (what's used most, first),
@@ -113,6 +116,8 @@ export function useNavGroups(): { label: string; items: NavItem[] }[] {
                 { to: "/library", label: "Library tools", icon: <FolderSearch />, badge: coll?.unmatchedCount ?? 0 },
                 { to: "/extensions", label: "Extensions", icon: <Puzzle /> },
                 { to: "/stats", label: "Stats", icon: <ChartColumn /> },
+                // Your mediaserver, when this device uses one.
+                ...(hasServer ? [{ to: "/server", label: "Server", icon: <ServerIcon /> }] : []),
             ],
         },
     ]

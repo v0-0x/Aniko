@@ -50,6 +50,7 @@ const MangaEntryPage = lazy(() => import("./pages/MangaEntry"))
 const MangaReaderPage = lazy(() => import("./pages/MangaReader"))
 const WebviewPage = lazy(() => import("./pages/Webview"))
 const ProfilePage = lazy(() => import("./pages/Profile"))
+const ServerPage = lazy(() => import("./pages/Server"))
 
 // An Aniko Hub (aniko --hub) shows its dashboard instead of the app.
 const HubApp = lazy(() => import("./pages/hub/HubApp"))
@@ -198,6 +199,7 @@ function AnikoApp() {
                                 <Route path="/schedule" element={<SchedulePage />} />
                                 <Route path="/lists" element={<ListsPage />} />
                                 <Route path="/stats" element={<StatsPage />} />
+                                <Route path="/server" element={<ServerPage />} />
                                 <Route path="/torrent-list" element={<TorrentsPage />} />
                                 <Route path="/downloads" element={<DownloadsPage />} />
                                 <Route path="/auto-downloader" element={<AutoDownloaderPage />} />
