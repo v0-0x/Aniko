@@ -147,6 +147,22 @@
     .fade-in {
         animation: fade-in 0.18s var(--ease) both;
     }
+    /* A page arriving: a short fade up, the same for every page. Backwards
+       only, so no transform stays on the page (sticky bars, menus). */
+    #main-scroll > * {
+        animation: page-in 0.24s var(--ease) backwards;
+    }
+    html.tv #main-scroll > * {
+        animation: none;
+    }
+    /* Panels answer the pointer the same way everywhere. */
+    .card {
+        transition:
+            border-color 0.18s var(--ease),
+            background-color 0.18s var(--ease),
+            box-shadow 0.18s var(--ease),
+            transform 0.18s var(--ease);
+    }
     .rise-in {
         animation: rise-in 0.28s var(--ease) both;
     }
@@ -188,6 +204,12 @@
     }
     to {
         opacity: 1;
+    }
+}
+@keyframes page-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
     }
 }
 @keyframes rise-in {

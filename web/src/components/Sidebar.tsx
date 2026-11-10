@@ -170,8 +170,6 @@ function BackButton({ wide }: { wide: boolean }) {
 
 // Labels from 1024px wide; narrower, only the icons, named by tooltips.
 const WIDE = "(min-width: 1024px)"
-// A short window (a laptop's): the groups without their names, closer.
-const SHORT = "(max-height: 880px)"
 const FADE = "linear-gradient(to bottom, #000 calc(100% - 36px), transparent)"
 
 export function Sidebar() {
@@ -181,7 +179,6 @@ export function Sidebar() {
     const navigate = useNavigate()
     const qc = useQueryClient()
     const wide = useMediaQuery(WIDE)
-    const short = useMediaQuery(SHORT)
     // Before 2.0: no group names, the open page in plain white.
     const classic = useClassic()
     // Links that don't fit scroll: they fade out at the bottom while there
@@ -222,7 +219,10 @@ export function Sidebar() {
                 // Icons only (narrow): named for screen readers too.
                 aria-label={wide ? undefined : it.label}
                 className={cn(
-                    "focus-ring relative flex h-9 shrink-0 items-center text-[13.5px] font-medium transition-colors [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75] [&>svg]:transition-colors",
+                    "focus-ring relative flex h-9 shrink-0 items-center text-[13.5px] font-medium transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75] [&>svg]:transition-colors [&>svg]:duration-200",
+                    // The open page's mark: a bar in the accent at its left, growing in.
+                    !classic && "before:absolute before:top-2 before:bottom-2 before:left-0 before:w-[3px] before:origin-center before:rounded-full before:bg-brand before:transition-transform before:duration-200",
+                    !classic && (active ? "before:scale-y-100" : "before:scale-y-0"),
                     classic ? "rounded-md" : "rounded-lg",
                     wide ? "gap-3 px-2.5" : "w-10 justify-center",
                     // The page it's on: tinted with the accent.
@@ -237,7 +237,6 @@ export function Sidebar() {
             >
                 {it.icon}
                 {wide && <span className="truncate">{it.label}</span>}
-                {wide && it.hint && !badge && !tv && <kbd className="ml-auto font-sans text-[11px] text-subtle">{it.hint}</kbd>}
                 {badge &&
                     (wide ? (
                         <span className={cn("ml-auto bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums", classic ? "rounded" : "rounded-md")}>{badge}</span>
@@ -276,13 +275,12 @@ export function Sidebar() {
 
             <nav
                 ref={navRef}
-                className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (classic || short ? "gap-4" : tv ? "gap-3" : "gap-5") : "items-center gap-3")}
+                className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (classic ? "gap-4" : "gap-3") : "items-center gap-3")}
                 style={more ? { maskImage: FADE, WebkitMaskImage: FADE } : undefined}
             >
                 {groups.map((g, i) => (
-                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", (!wide || (tv && !classic)) && i > 0 && "border-t border-line pt-3")}>
-                        {/* Their names; not on a TV, whose screen is short. */}
-                        {wide && !tv && !classic && !short && <p className="px-2.5 pb-1 text-[11px] font-medium text-subtle">{g.label}</p>}
+                    // The groups: a thin line between them, no names.
+                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", !classic && i > 0 && "border-t border-line/70 pt-3")}>
                         {g.items.map(link)}
                     </div>
                 ))}
