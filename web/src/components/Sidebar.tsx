@@ -224,7 +224,7 @@ export function Sidebar() {
                     // The open page's mark: a bar in the accent at its left, growing in.
                     !classic && "before:absolute before:top-2 before:bottom-2 before:left-0 before:w-[3px] before:origin-center before:rounded-full before:bg-brand before:transition-transform before:duration-200",
                     !classic && (active ? "before:scale-y-100" : "before:scale-y-0"),
-                    classic ? "rounded-md" : "rounded-lg",
+                    classic ? "rounded-md" : "rounded-[10px]",
                     wide ? "gap-3 px-2.5" : "w-10 justify-center",
                     // The page it's on: tinted with the accent.
                     classic
@@ -232,7 +232,7 @@ export function Sidebar() {
                             ? "bg-white/[0.08] text-fg"
                             : "text-muted hover:bg-white/[0.04] hover:text-fg"
                         : active
-                          ? "bg-white/[0.07] text-fg [&>svg]:text-brand-strong"
+                          ? "bg-white/[0.08] text-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] [&>svg]:text-brand-strong"
                           : "text-muted hover:bg-white/[0.045] hover:text-fg",
                 )}
             >
@@ -256,7 +256,7 @@ export function Sidebar() {
     }
 
     return (
-        <aside className={cn("relative z-40 flex h-full shrink-0 flex-col py-3", wide ? "w-56 px-3" : "w-16 items-center px-2")}>
+        <aside className={cn("relative z-40 flex h-full shrink-0 flex-col py-3", wide ? "w-52 px-2.5" : "w-16 items-center px-2")}>
             <div className={cn("mb-4 flex", wide ? "items-center gap-1" : "flex-col items-center gap-1")}>
                 {/* Home is the first link below: the remote skips this one. */}
                 <button

@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 
 export function HolidayBackdrop({ holiday, phone }: { holiday: Holiday | null; phone?: boolean }) {
     return (
-        <div aria-hidden className={cn("pointer-events-none absolute overflow-hidden bg-bg", phone ? "inset-0" : "inset-y-2 right-2 left-0 rounded-[14px]")}>
+        <div aria-hidden className={cn("page-backdrop pointer-events-none absolute overflow-hidden bg-bg", phone ? "inset-0" : "inset-y-2 right-2 left-0 rounded-[14px]")}>
             {holiday && (
                 <>
                     {/* The holiday's light, from the top. */}
