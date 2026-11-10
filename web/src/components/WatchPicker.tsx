@@ -78,7 +78,7 @@ export function WatchPicker({ open, onOpenChange }: { open: boolean; onOpenChang
     const progress = pick?.listEntry?.progress ?? 0
     const downloaded = pick?.downloaded ?? []
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} title="What should I watch?" description="An anime picked at random from your list." className="w-[min(94vw,640px)]">
+        <Dialog open={open} onOpenChange={onOpenChange} title="What should I watch?" description="A random pick from your list." className="w-[min(94vw,640px)]">
             <div className="flex flex-col gap-5">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <Select className="w-full" value={from} onChange={v => change(setFrom)(v as From)} options={FROM} />

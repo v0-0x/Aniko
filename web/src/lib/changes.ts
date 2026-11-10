@@ -12,26 +12,26 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Home starts with your next episode",
-                text: "The banner on Home says which episode is next and how much of it is left, with Resume (or Play) and Details right there. The rows follow as before.",
+                text: "The Home banner shows your next episode, with Resume and Details.",
                 to: "/",
             },
             {
                 title: "A new look for the player",
-                text: "The controls float over the picture in a glass panel, the play button stands out, and the subtitle, audio and speed menus mark the choice in use with a check.",
+                text: "The controls float over the picture, and menus show a check on the choice in use.",
             },
             {
                 title: "Settings in ten pages",
-                text: "Eighteen pages became ten: Account, Appearance, Playback, Players & conversion, Library, Streaming & torrents, Manga & extensions, Devices & network, App & data, Updates & about. Nothing was removed, and the search still finds every setting.",
+                text: "Eighteen pages became ten, with every setting still there.",
                 to: "/settings",
             },
             {
                 title: "Your server, from the app",
-                text: "With a mediaserver (2.0.3 or newer), a Server page in the sidebar shows whether it's on, what it's doing, its CPU, memory and temperature, and how full its drives are.",
+                text: "With mediaserver 2.0.3 or newer, a Server page shows its status, load and drive space.",
                 to: "/server",
             },
             {
                 title: "Faster to open",
-                text: "The player loads after the page, so Aniko starts with less than half of what it used to load first.",
+                text: "Aniko loads less than half as much at startup.",
             },
         ],
     },

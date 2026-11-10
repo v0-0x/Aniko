@@ -48,7 +48,7 @@ export function Unmatched() {
     if (!data?.length)
         return (
             <EmptyState icon={<Link2 className="size-6" />} title="Everything is matched">
-                All video files in your library are linked to an anime.
+                Every video file has an anime.
             </EmptyState>
         )
     return (
@@ -104,7 +104,7 @@ export function Unmatched() {
                 onOpenChange={v => !v && setPicking(null)}
                 initialQuery={picking?.title ?? ""}
                 heading="Match files"
-                description={picking ? `${picking.paths.length} file(s) will be linked to the anime you choose.` : undefined}
+                description={picking ? `Pick the anime for ${picking.paths.length} file(s).` : undefined}
                 onPick={m => picking && match(m.id, picking.paths)}
             />
         </div>
@@ -182,7 +182,7 @@ export function AllFiles({ links = true }: { links?: boolean }) {
                             )}
                         </div>
                         {f.locked && (
-                            <span title="Locked: re-scans won't change this file">
+                            <span title="Locked. Scans won't change it">
                                 <Lock className="size-3.5 text-subtle" />
                             </span>
                         )}
@@ -219,7 +219,7 @@ export function Ignored() {
     const restore = async (paths: string[]) => {
         try {
             await api.post("/api/library/ignore", { paths, ignored: false })
-            toast.success("Restored — run a scan to match them")
+            toast.success("Restored. Run a scan to match them")
             qc.invalidateQueries({ queryKey: ["library"] })
             qc.invalidateQueries({ queryKey: ["hub", "overview"] }) // its counts, on a hub
             qc.invalidateQueries({ queryKey: ["collection"] })
@@ -231,7 +231,7 @@ export function Ignored() {
     if (!files.length)
         return (
             <EmptyState icon={<EyeOff className="size-6" />} title="No ignored files">
-                Files you ignore won’t be matched or shown anywhere.
+                Ignored files aren’t matched or shown.
             </EmptyState>
         )
     return (

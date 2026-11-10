@@ -105,9 +105,9 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
                 title="Restarting Aniko…"
                 text={
                     windows
-                        ? "The installer is updating Aniko, which then opens again. This page reloads when Aniko is back."
+                        ? "Installing. This page reloads when Aniko is back."
                         : mac
-                          ? "Aniko is putting the new version in place, then opens again. This page reloads when Aniko is back."
+                          ? "Installing. This page reloads when Aniko is back."
                           : "This page reloads when Aniko is back."
                 }
             />
@@ -131,7 +131,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
             <Panel
                 icon={<Icon><Download /></Icon>}
                 title={`Aniko ${latest} is ready to install`}
-                text="Android asks before installing it; then Aniko closes, and you open it again. Cancelled? Press Install again."
+                text="Android asks first. Open Aniko again once it's installed."
                 actions={
                     <Button size="sm" variant="primary" icon={<Download className="size-4" />} loading={apply.isPending} onClick={() => apply.mutate()}>
                         Install

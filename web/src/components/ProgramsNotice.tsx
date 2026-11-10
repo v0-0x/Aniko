@@ -25,10 +25,10 @@ export function ProgramsNotice() {
                 <p className="font-semibold text-amber-200">{running ? "Installing the programs Aniko uses…" : `Aniko needs ${list(missing)}`}</p>
                 <p className="mt-0.5 text-muted">
                     {running
-                        ? `Follow the ${setupWindow(status)} window. Aniko picks the programs up as soon as they're installed.`
+                        ? `Follow the ${setupWindow(status)} window.`
                         : status?.platform === "darwin"
-                          ? "Aniko can download them for you, in a Terminal window: no Homebrew or password needed."
-                          : "Aniko can install them for you with Scoop, in a PowerShell window, for your Windows user (no administrator rights)."}
+                          ? "Aniko can download them. No Homebrew or password needed."
+                          : "Aniko can install them with Scoop. No administrator rights needed."}
                 </p>
             </div>
             {!running && (

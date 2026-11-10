@@ -19,7 +19,7 @@ export function SleepingHosts() {
         setBusy(id)
         try {
             await api.post(`/api/sharing/libraries/${encodeURIComponent(id)}/wake`)
-            toast.info(`Waking ${name}… its library comes back when it answers.`)
+            toast.info(`Waking ${name}…`)
             qc.invalidateQueries({ queryKey: ["status"] })
         } catch (e: any) {
             toast.error(e.message)
@@ -38,10 +38,10 @@ export function SleepingHosts() {
                         <p className="font-medium">{h.waking ? `Waking ${h.name}…` : `${h.name} is asleep or off`}</p>
                         <p className="mt-0.5 text-sm text-muted">
                             {h.waking
-                                ? "Its library shows up here as soon as it answers."
+                                ? "Its library shows up when it answers."
                                 : h.canWake
-                                  ? "Its library isn't here until it's on. It can be woken up from here."
-                                  : `Its library isn't here until it's on. To wake it from here, update Aniko on ${h.name} and turn on Wake-on-LAN in its settings (BIOS).`}
+                                  ? "Wake it to see its library."
+                                  : `To wake it from here, update Aniko on ${h.name} and turn on Wake-on-LAN in its BIOS.`}
                         </p>
                     </div>
                     {h.canWake && (

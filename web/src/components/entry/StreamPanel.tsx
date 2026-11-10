@@ -135,11 +135,11 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                         <p className="font-semibold text-amber-200">{status?.platform === "android" ? "ani-cli doesn’t run on Android" : "ani-cli isn’t installed"}</p>
                         {status?.platform === "android" ? (
                             <p className="mt-1 text-muted">
-                                It runs on a computer with Aniko and ani-cli instead: there, turn on <b>Share my library</b> for this device (Settings › Other devices). Or pick an extension
+                                On a computer with Aniko and ani-cli, turn on <b>Share my library</b> for this device in Settings › Other devices. Or pick an extension
                                 provider from the marketplace.
                             </p>
                         ) : canInstallPrograms(status) ? (
-                            <p className="mt-1 text-muted">Aniko can install it, with the programs it needs, or pick an extension provider from the marketplace.</p>
+                            <p className="mt-1 text-muted">Aniko can install it, or pick an extension provider from the marketplace.</p>
                         ) : (
                             <p className="mt-1 text-muted">
                                 {installSource(status?.platform, "ani-cli")} <code className="rounded bg-black/40 px-1.5 py-0.5">{installHint(status?.platform, "ani-cli")}</code> (it also
@@ -296,7 +296,7 @@ function ManualMatchDialog({
         }
     }
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} title="Pick the right anime" description="Search the provider and choose the matching entry. Aniko remembers your choice.">
+        <Dialog open={open} onOpenChange={onOpenChange} title="Pick the right anime" description="Choose the matching entry. Aniko remembers it.">
             <div className="flex gap-2">
                 <Input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && search()} placeholder="Search…" icon={<Search className="size-4" />} />
                 {canDub && (
@@ -362,7 +362,7 @@ function DownloadDialog({ open, onOpenChange, provider, mediaId, dub, episodes, 
             open={open}
             onOpenChange={onOpenChange}
             title="Download episodes"
-            description={`Saved into your library folder (${dub ? "dub" : "sub"}) and matched automatically.`}
+            description={`Saved to your library folder (${dub ? "dub" : "sub"}).`}
             footer={
                 <>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>

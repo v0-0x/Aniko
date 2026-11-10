@@ -89,7 +89,7 @@ export function MissingDownloadDialog({ media, missing, open, onOpenChange }: { 
             open={open}
             onOpenChange={onOpenChange}
             title={`Download ${title(media)}`}
-            description="With ani-cli, into your library folder, matched automatically."
+            description="Saved to your library folder with ani-cli."
             footer={
                 <>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>

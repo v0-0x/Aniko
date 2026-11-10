@@ -50,7 +50,7 @@ function LibraryCardMenu({ media, onMatch }: { media: Media; onMatch: (files: Lo
         const paths = fs.map(f => f.path)
         await post("/api/library/ignore", { paths, ignored: true })
         toast.success(`Ignoring ${plural(fs.length, "file")} of ${title(media)}`, {
-            description: "Restore them any time in Library tools › Ignored.",
+            description: "Restore them in Library tools › Ignored.",
             action: { label: "Undo", onClick: () => post("/api/library/ignore", { paths, ignored: false }).catch(e => toast.error(e.message)) },
         })
     })

@@ -38,7 +38,7 @@ export function DevicePrompts() {
         setBusy(p.id)
         try {
             await api.post(`/api/sharing/peers/${encodeURIComponent(p.id)}`, share ? { allowed: true } : { declined: true })
-            if (share) toast.success(`Sharing this library with ${p.name}. Your AniList account and downloads can go with it, in Settings › Other devices.`)
+            if (share) toast.success(`Sharing this library with ${p.name}. More in Settings › Other devices.`)
             await qc.invalidateQueries({ queryKey: ["status"] })
             qc.invalidateQueries({ queryKey: ["sharing"] })
         } catch (e: any) {
@@ -73,10 +73,10 @@ export function DevicePrompts() {
                             </p>
                             <p className="mt-0.5 text-sm text-muted">
                                 {isNew
-                                    ? `Aniko${tvApp ? "'s TV app" : ""} on ${p.name} is on this network. Once shared, it can play this computer's anime.`
+                                    ? `Aniko${tvApp ? "'s TV app" : ""} on ${p.name} can then play this computer's anime.`
                                     : p.kind === "older"
-                                      ? `Aniko ${p.version} there, ${status.version} here: update it on ${p.name} (from its Home page) so everything works together.`
-                                      : `Aniko ${p.version} there, ${status.version} here: update this one (Settings › Updates & about) so everything works together.`}
+                                      ? `Aniko ${p.version} there, ${status.version} here. Update it on ${p.name}, from its Home page.`
+                                      : `Aniko ${p.version} there, ${status.version} here. Update this one in Settings › Updates & about.`}
                             </p>
                         </div>
                         {isNew ? (

@@ -378,7 +378,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     // The other version, when the one asked for has no stream.
                     const dub = res.dub ?? !!req.dub
                     dubbed.current = dub
-                    if (dub !== !!req.dub) toast.info(dub ? "This episode is only dubbed: playing the dub" : "No dub of this episode: playing it with subtitles")
+                    if (dub !== !!req.dub) toast.info(dub ? "Only dubbed. Playing the dub" : "No dub. Playing with subtitles")
                     const media = await api.get<EntryView>(`/api/anime/${req.mediaId}`).catch(() => null)
                     setTitle(`${animeTitle(media?.media) || res.title || "Episode"} — Episode ${req.episode}${dub ? " (Dub)" : ""}`)
                     const sorted = [...res.sources].sort((a, b) => qualityRank(b.quality) - qualityRank(a.quality))
@@ -684,7 +684,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 again(() => setSoftware(true))
             } else {
                 pictureTries.current = 4
-                toast.error("This device shows no picture of this video: only its sound plays.")
+                toast.error("This device can't show the picture. Only the sound plays.")
             }
         }, 500)
         return () => {
@@ -900,7 +900,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         // Another computer's file: it may have gone to sleep. Woken up (if it
         // can be from here), it answers the next tries.
         if (n === 1 && req.kind === "local" && req.path.startsWith("kumo://")) api.post("/api/sharing/wake", { path: req.path }).catch(() => {})
-        toast.info(n === 1 ? "Connection lost: trying again…" : `Still trying to reach it (${n})…`)
+        toast.info(n === 1 ? "Connection lost. Trying again…" : `Still trying (${n})…`)
         if (retryTimer.current) clearTimeout(retryTimer.current)
         retryTimer.current = setTimeout(() => reopen(at), 1000 * Math.min(8, 2 ** (n - 1)))
     }
@@ -1441,7 +1441,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     if (v && total > 0 && total - at > 20 && earlyEnds.current < 3) {
                         earlyEnds.current++
                         note(`the video stopped at ${Math.round(at)}s of ${Math.round(total)}s (${method})`)
-                        toast.info("The video stopped early: going on from there…")
+                        toast.info("The video stopped early. Continuing…")
                         reopen(at)
                         return
                     }
@@ -1468,7 +1468,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             else {
                                 note(`the video can't be reached${why}`)
                                 unreachableAt.current = at
-                                setError("The video can't be reached. Is the computer that has it on, and on the network?")
+                                setError("The video can't be reached. Check that its computer is on and on the network.")
                             }
                             return
                         }
@@ -1793,7 +1793,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                                     playerStore.set(handOver())
                                                 }}
                                             >
-                                                {native ? "● Android's video player (turn off)" : "No picture? Use Android's video player"}
+                                                {native ? "● Android's video player" : "Use Android's video player"}
                                             </DropdownItem>
                                             <DropdownSeparator />
                                         </>
@@ -1806,13 +1806,13 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                                     const on = !software
                                                     setSoftwareVideo(on)
                                                     note(on ? "grey picture: converted in software from now on, on this device" : "converted as before again, on this device")
-                                                    if (on) toast.info("Converting the video in software on this device from now on")
+                                                    if (on) toast.info("Converting in software on this device")
                                                     setOffset(where(v))
                                                     setSoftware(on)
                                                     setMethod("transcode")
                                                 }}
                                             >
-                                                {software ? "● Converted in software here (turn off)" : "Grey picture? Convert in software"}
+                                                {software ? "● Convert in software" : "Convert in software"}
                                             </DropdownItem>
                                             <DropdownSeparator />
                                         </>
@@ -1864,7 +1864,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     <div data-tv-skip className={cn("bg-black/80 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in", mini ? "w-52 rounded-xl p-2.5" : "w-72 rounded-2xl p-4")}>
                         <p className="text-xs font-medium tracking-wide text-white/60 uppercase">Up next</p>
                         <p className={cn("mt-0.5 font-semibold", mini && "text-sm")}>Episode {nextEp.episode}</p>
-                        <p className={cn("mt-0.5 text-white/70 tabular-nums", mini ? "text-xs" : "text-sm")}>{autoNext ? (countdown <= 10 ? `Playing in ${countdown}s` : "Plays when this one ends") : "Ready when you are"}</p>
+                        <p className={cn("mt-0.5 text-white/70 tabular-nums", mini ? "text-xs" : "text-sm")}>{autoNext ? (countdown <= 10 ? `Playing in ${countdown}s` : "Plays when this one ends") : "Ready"}</p>
                         <div className={cn("flex gap-2", mini ? "mt-2" : "mt-3")}>
                             <button
                                 ref={upNextRef}

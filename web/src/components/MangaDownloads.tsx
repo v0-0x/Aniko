@@ -169,7 +169,7 @@ export function DownloadDialog({
             open={open}
             onOpenChange={onOpenChange}
             title="Download chapters"
-            description="Each chapter is saved as a comic book file (.cbz) with its details from AniList, readable here without the provider, and in other comic readers."
+            description="Chapters are saved as .cbz files and read here without the provider."
             footer={
                 <>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>
@@ -213,7 +213,7 @@ export function DownloadDialog({
                             ...servers.map(s => ({ value: s.id!, label: `${s.name}${s.online ? "" : " (offline)"}` })),
                         ]}
                     />
-                    {where !== "" && <p className="text-xs text-subtle">Sent to the server's manga folder once each chapter is downloaded; its dashboard lists them under Library › Manga.</p>}
+                    {where !== "" && <p className="text-xs text-subtle">Sent to the server's manga folder. Its dashboard lists them under Library › Manga.</p>}
                 </div>
             </div>
         </Dialog>
@@ -343,8 +343,7 @@ export function DownloadedGrid() {
         <div className="flex flex-col gap-8">
             {series.length === 0 && others.length === 0 ? (
                 <EmptyState icon={<Download className="size-6" />} title={sharedLoading ? "Looking for downloaded manga…" : "No downloaded manga"}>
-                    Download chapters from a manga's page (the Download button) to read them without the provider. They're kept in {data?.dir ?? "your manga folder"}, or on your
-                    server when you pick it there.
+                    Download chapters from a manga's page. They're kept in {data?.dir ?? "your manga folder"} or on your server.
                 </EmptyState>
             ) : (
                 series.length > 0 && (

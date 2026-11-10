@@ -50,7 +50,7 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
     const remove = (which: "allowed" | "blocked", id: number) => setRules(r => ({ ...r, [which]: (r[which] ?? []).filter(x => x !== id) }))
     const save = async (next: ParentalRules, newPin: string) => {
         if (newPin && newPin !== "-" && (newPin.length < 4 || newPin.length > 12)) {
-            toast.error("A PIN of 4 to 12 characters")
+            toast.error("The PIN needs 4 to 12 characters")
             return
         }
         setBusy(true)
@@ -59,7 +59,7 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
             await qc.invalidateQueries({ queryKey: key })
             qc.invalidateQueries({ queryKey: ["sharing"] })
             qc.invalidateQueries({ queryKey: ["hub", "overview"] })
-            toast.success(active(next) ? `Parental controls saved: ${device.name} gets them in a few seconds` : `Parental controls off for ${device.name}`)
+            toast.success(active(next) ? `Parental controls saved for ${device.name}` : `Parental controls off for ${device.name}`)
             onOpenChange(false)
         } catch (e) {
             toast.error((e as Error).message)
@@ -73,7 +73,7 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
             open={open}
             onOpenChange={onOpenChange}
             title={`Parental controls · ${device.name}`}
-            description={`What it may watch. Its Aniko hides the rest and won't open or play it, also away from home; ${host} shares nothing blocked with it.`}
+            description={"What it may watch. The rest is hidden and won't play, also away from home."}
             className="w-[min(94vw,640px)]"
             footer={
                 tab === "rules" ? (
@@ -102,7 +102,7 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
             />
             {tab === "rules" ? (
                 <div className="flex max-h-[60vh] flex-col gap-5 overflow-y-auto pr-1">
-                    <Row label="Block 18+ anime" help="AniList's adult anime and manga, Hentai and Ecchi, and anything AniList tags with sexual content (nudity and the like): hidden, and never played.">
+                    <Row label="Block 18+ anime" help="Hides and blocks adult anime and manga, Hentai, Ecchi, and anything AniList tags as sexual content.">
                         <Switch label="Block 18+ anime" checked={!!rules.noAdult} onChange={v => setRules(r => ({ ...r, noAdult: v }))} />
                     </Row>
                     <div>
@@ -132,7 +132,7 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
                             })}
                         </div>
                     </div>
-                    <Row label="Only these anime" help="Nothing else at all: the genres and 18+ don't matter then.">
+                    <Row label="Only these anime" help="Nothing else plays. Genres and 18+ are ignored.">
                         <Switch label="Only these anime" checked={!!rules.onlyAllowed} onChange={v => setRules(r => ({ ...r, onlyAllowed: v }))} />
                     </Row>
                     {rules.onlyAllowed && <AnimeList ids={rules.allowed ?? []} names={names} onRemove={id => remove("allowed", id)} onAdd={() => setPicking("allowed")} addLabel="Allow an anime" />}
@@ -147,7 +147,7 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
                             {data?.hasPin && !removePin && <Badge tone="green">Set</Badge>}
                         </p>
                         <p className="mt-0.5 mb-2 text-[12.5px] text-muted">
-                            Lifts them on the device itself, for when {host} is gone for good (on the device: Settings › Other devices). While {host} is around, it sets them again.
+                            Lifts the controls on the device, in its Settings › Other devices. {host} sets them again while it's reachable.
                         </p>
                         <div className="flex items-center gap-2">
                             <Input
@@ -231,7 +231,7 @@ function Watched({ list, on }: { list: DeviceParental["watched"]; on: boolean })
     if (!list.length)
         return (
             <EmptyState icon={<ShieldCheck />} title="Nothing yet">
-                {on ? "What it watches shows here, a few seconds after it does." : "Turn parental controls on, and what it watches shows here."}
+                {on ? "What it watches shows here." : "Turn parental controls on to see what it watches."}
             </EmptyState>
         )
     return (

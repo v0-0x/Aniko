@@ -193,7 +193,7 @@ export function UploadDialog({
 
     const close = (v: boolean) => {
         if (!v && busy) {
-            if (!window.confirm("Stop sending the files? What's sent stays; sending them again carries on from there.")) return
+            if (!window.confirm("Stop sending? Files already sent stay on the server.")) return
             stop.current = true
         }
         if (!v && !busy) setItems(xs => xs.filter(x => x.state !== "done" && x.state !== "there"))
@@ -208,7 +208,7 @@ export function UploadDialog({
             open={open}
             onOpenChange={close}
             title="Upload to a server"
-            description={description ?? "Anime episodes and their subtitles from this computer, into the server's library. Folders keep their names and what's in them."}
+            description={description ?? "Send episodes and subtitles to the server's library."}
             className="w-[min(94vw,640px)]"
             footer={
                 <>
@@ -229,7 +229,7 @@ export function UploadDialog({
         >
             {targets.isLoading ? null : !list.length ? (
                 <p className="text-sm leading-relaxed text-muted">
-                    No server takes files from this device yet. On the server (or the computer to send them to), in <b>Settings › Other devices</b> (on mediaserver, its dashboard's <b>Devices</b>), turn on <b>Let it download here</b>
+                    No server takes files from this device yet. On the server, in <b>Settings › Other devices</b> (on mediaserver, <b>Devices</b>), turn on <b>Let it download here</b>
                     for this device.
                 </p>
             ) : (
@@ -251,7 +251,7 @@ export function UploadDialog({
                             ) : folderOptions.length ? (
                                 <Select value={String(folder)} onChange={v => setFolder(Number(v))} disabled={busy} options={folderOptions} />
                             ) : folders.data ? (
-                                <span className="text-[12.5px] font-normal text-amber-300">It has no library folder yet (its Settings › Local library).</span>
+                                <span className="text-[12.5px] font-normal text-amber-300">Set its library folder in its Settings › Local library.</span>
                             ) : (
                                 <span className="text-[12.5px] font-normal text-muted">…</span>
                             )}

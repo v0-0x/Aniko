@@ -130,7 +130,7 @@ export function MatchDialog({
                 }}
                 initialQuery={initialQuery}
                 heading={`Match ${files.length} ${files.length === 1 ? "file" : "files"} to…`}
-                description="Search AniList for the right anime. The match is locked, so later scans keep it."
+                description="Later scans keep this match."
             />
         )
     }
@@ -190,7 +190,7 @@ export function MatchDialog({
                 ))}
                 {outOfRange > 0 && (
                     <p className="text-xs text-amber-300">
-                        {outOfRange} {outOfRange === 1 ? "file gets" : "files get"} an episode number above {total}. If the folder uses absolute numbering, shift the numbers down.
+                        {outOfRange} {outOfRange === 1 ? "file gets" : "files get"} an episode number above {total}. Shift the numbers down if needed.
                     </p>
                 )}
             </div>

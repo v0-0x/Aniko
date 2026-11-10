@@ -97,7 +97,7 @@ export function useHolidayNotice(holiday: Holiday | null, seasonal: string) {
             return // nowhere to remember it: not said each time
         }
         toast(`Aniko's ${holiday.name} theme is on`, {
-            description: `Its colors and ${holiday.effectName.toLowerCase()}, ${holiday.when.replace(/^In /, "in ").replace(/^January/, "on January")}. Change it from Themes in the sidebar.`,
+            description: "Change it from Themes in the sidebar.",
             duration: 12000,
             // Only that: the settings as they are then (not when it showed).
             action: { label: "Turn off", onClick: () => saveUI({ seasonal: "off" }) },

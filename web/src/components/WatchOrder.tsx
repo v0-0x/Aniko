@@ -84,7 +84,7 @@ export function WatchOrder({ mediaId }: { mediaId: number }) {
                 </div>
             </div>
             {editing ? <Editor order={data} current={mediaId} status={status} onDone={() => setEditing(false)} /> : <Entries order={data} view={view} current={mediaId} status={status} />}
-            {data.partial && <p className="text-xs text-subtle">A big franchise: only part of it is shown.</p>}
+            {data.partial && <p className="text-xs text-subtle">Only part of this franchise is shown.</p>}
             {data.extras.length > 0 && !editing && (
                 <div>
                     <button onClick={() => setExtras(v => !v)} className="focus-ring rounded text-sm text-muted hover:text-fg">
@@ -114,7 +114,7 @@ function Entries({ order, view, current, status }: { order: Order; view: View; c
     return (
         <>
             <p className="text-sm text-muted">
-                {view === "release" ? "The order it came out in." : order.edited ? "Your order, kept on this device." : "The order the story happens in."}
+                {view === "release" ? "Release order." : order.edited ? "Your order, saved on this device." : "Story order."}
                 {hidden > 0 && ` ${hidden} hidden.`}
             </p>
             {conflicts && (
@@ -259,7 +259,7 @@ function Editor({ order, current, status, onDone }: { order: Order; current: num
         setSaving(true)
         try {
             const r = await api.post<{ path: string }>(`/api/watch-order/${order.key}/report`, { animeId: current, order: ids, hidden: [...hidden] })
-            toast.success(`Saved: ${r.path}. Attach it to an issue on GitHub (Help › Report a problem).`, { duration: 12000 })
+            toast.success(`Saved: ${r.path}. Attach it in Help › Report a problem.`, { duration: 12000 })
         } catch (e) {
             toast.error((e as Error).message)
         } finally {
@@ -281,7 +281,7 @@ function Editor({ order, current, status, onDone }: { order: Order; current: num
 
     return (
         <>
-            <p className="text-sm text-muted">Move anime up or down and hide what you'd skip. Saved on this device, for every anime of this franchise.</p>
+            <p className="text-sm text-muted">Move anime up or down and hide what you'd skip. Saved on this device.</p>
             <ol className="flex flex-col divide-y divide-line rounded-xl border border-line">
                 {ids.map((id, i) => {
                     const e = byId.get(id)!
@@ -331,7 +331,7 @@ function Editor({ order, current, status, onDone }: { order: Order; current: num
                     Report wrong order
                 </Button>
             </div>
-            <p className="text-xs text-muted">Report wrong order keeps a note of Aniko's order and your edit, as a file to send along with a bug report, so the order can be put right for everyone.</p>
+            <p className="text-xs text-muted">Report wrong order saves a file to attach to a bug report.</p>
         </>
     )
 }

@@ -22,7 +22,7 @@ export function AddFromLibraryDialog({ open, onOpenChange, media }: { open: bool
                     if (!v) onOpenChange(false)
                 }}
                 title={`Add files to ${title(media)}`}
-                description="Pick the folders that hold this anime. Likely ones are listed first."
+                description="Pick the folders that hold this anime."
                 className="w-[min(94vw,720px)]"
             >
                 {open && <FolderPicker target={media} onPicked={setFiles} />}
@@ -58,7 +58,7 @@ export function EntryFilesMenu({ entry }: { entry: EntryView }) {
     const [moving, setMoving] = useState(false)
     const files = entryFiles(entry)
     const unmatchAll = async () => {
-        if (!confirm(`Unmatch all ${files.length} files of ${title(entry.media)}? They'll show up under Library tools › Unmatched.`)) return
+        if (!confirm(`Unmatch all ${files.length} files of ${title(entry.media)}? Find them in Library tools › Unmatched.`)) return
         try {
             await api.post("/api/library/unmatch", { paths: files.map(f => f.path) })
             toast.success(`Unmatched ${files.length} files`)
@@ -82,7 +82,7 @@ export function EntryFilesMenu({ entry }: { entry: EntryView }) {
                         Add files from library…
                     </DropdownItem>
                     <DropdownItem icon={<Link2 />} onSelect={() => setMoving(true)} disabled={files.length === 0}>
-                        Wrong anime? Match these files to another…
+                        Match to another anime…
                     </DropdownItem>
                     <DropdownItem icon={<Link2Off />} onSelect={unmatchAll} disabled={files.length === 0} danger>
                         Unmatch all files

@@ -190,7 +190,7 @@ export function LibraryFolders() {
     return (
         <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">
-                Wrong or missing match? Use <b>Match…</b> or <b>Change match…</b> to pick the right anime. Matches you pick are locked, so later scans keep them.
+                Wrong or missing match? Use <b>Match…</b> or <b>Change match…</b>. Later scans keep your pick.
             </p>
             <div className="w-full max-w-md">
                 <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter folders or anime…" icon={<Search className="size-4" />} />
@@ -216,7 +216,7 @@ export function LibraryFolders() {
                 <div className="mt-2 flex flex-col gap-2">
                     <div>
                         <h3 className="font-semibold">Nothing to match yet</h3>
-                        <p className="text-sm text-muted">Aniko found these folders, but nothing in them it can play.</p>
+                        <p className="text-sm text-muted">Nothing in these folders can be played.</p>
                     </div>
                     {unusable.map(f => (
                         <ProblemRow key={f.dir} folder={f} trusted={trusted} />
@@ -295,7 +295,7 @@ function FolderRow({
                     )}
                     {f.matches.length > 0 && f.unmatched > 0 && <Badge tone="amber">{f.unmatched} unmatched</Badge>}
                     {hasFiles && f.notIndexed > 0 && (
-                        <Tooltip content="Added since the last scan. Match… includes them.">
+                        <Tooltip content="Added since the last scan">
                             <Badge tone="blue">{f.notIndexed} new</Badge>
                         </Tooltip>
                     )}
@@ -370,7 +370,7 @@ function FolderRow({
                                     {x.name}
                                 </span>
                                 <span className="hidden max-w-56 truncate text-xs text-subtle sm:inline">{x.mediaId > 0 ? title(m) || `#${x.mediaId}` : "Unmatched"}</span>
-                                <Tooltip content={x.locked ? "Matched by hand — scans keep it" : "Matched automatically"}>
+                                <Tooltip content={x.locked ? "Matched by hand. Scans keep it" : "Matched automatically"}>
                                     <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums">{x.kind === "nc" ? "OP/ED" : x.kind === "special" ? "Special" : x.episode ? `Ep ${x.episode}` : "—"}</span>
                                 </Tooltip>
                             </label>
