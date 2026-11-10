@@ -1,4 +1,4 @@
-import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Play, Download, FolderOpen, FolderSearch, FolderSync, HardDrive, LibraryBig, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
+import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Play, FolderOpen, FolderSync, HardDrive, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Sparkles, X } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { EpisodeCard } from "@/components/EpisodeCard"
@@ -34,7 +34,6 @@ export default function HomePage() {
     const [onlyLocal, setOnlyLocal] = usePersisted("aniko-home-only-local", false)
     const [sort, setSort] = usePersisted<SortKey>("aniko-home-sort", "activity")
     const [loginOpen, setLoginOpen] = useState(false)
-    const navigate = useNavigate()
     const qc = useQueryClient()
     const libraryMenu = useLibraryCardMenu()
 
@@ -154,35 +153,22 @@ export default function HomePage() {
                 loading={isLoading}
                 toolbar={
                     <div className="glass flex items-center gap-0.5 rounded-lg p-1 [&_button]:text-white/80 [&_button:hover]:bg-white/10 [&_button:hover]:text-white [&_button[data-state=open]]:bg-white/10">
-                        {/* On a phone, the buttons' icons only: they fit across. */}
-                        <Button size="sm" variant="ghost" icon={<HardDrive className="size-4" />} onClick={() => navigate("/local")} aria-label="Local library">
-                            <span className="max-sm:hidden">Local library</span>
-                        </Button>
-                        <IconButton label="Library tools" size="sm" onClick={() => navigate("/library")}>
-                            <LibraryBig className="size-4" />
-                        </IconButton>
-                        <IconButton label={`Unmatched files (${data?.unmatchedCount ?? 0})`} size="sm" className="relative" onClick={() => navigate("/library?tab=unmatched")}>
-                            <FolderSearch className="size-4" />
-                            {!!data?.unmatchedCount && <span className="absolute top-1 right-1 size-2 rounded-full bg-amber-400" />}
-                        </IconButton>
-                        <IconButton label="Downloads" size="sm" onClick={() => navigate("/downloads")}>
-                            <Download className="size-4" />
-                        </IconButton>
+                        {/* What the sidebar has (the library, its tools, downloads) isn't repeated here. */}
                         <IconButton label="What should I watch?" size="sm" onClick={() => setPicking(true)}>
                             <Dices className="size-4" />
                         </IconButton>
-                        <Button size="sm" variant="ghost" loading={scanning || scan.isPending} icon={<FolderSync className="size-4" />} onClick={() => scan.mutate(false)} aria-label="Refresh">
-                            <span className="max-sm:hidden">Refresh</span>
-                        </Button>
+                        <IconButton label="Refresh the library" size="sm" onClick={() => scan.mutate(false)} disabled={scanning || scan.isPending}>
+                            <FolderSync className={cn("size-4", (scanning || scan.isPending) && "animate-pulse")} />
+                        </IconButton>
                         {paired.length > 0 && (
-                            <Button size="sm" variant="ghost" loading={syncing} icon={<ArrowLeftRight className="size-4" />} onClick={syncDevices} title={`Sync with ${paired.join(", ")} and AniList`} aria-label="Sync">
-                                <span className="max-sm:hidden">Sync</span>
-                            </Button>
+                            <IconButton label={`Sync with ${paired.join(", ")}`} size="sm" onClick={syncDevices} disabled={syncing}>
+                                <ArrowLeftRight className={cn("size-4", syncing && "animate-pulse")} />
+                            </IconButton>
                         )}
                         <Dropdown>
                             <DropdownTrigger asChild>
-                                <IconButton label="Display" size="sm">
-                                    <Settings2 className="size-4" />
+                                <IconButton label="Show, sort and more" size="sm">
+                                    <MoreVertical className="size-4" />
                                 </IconButton>
                             </DropdownTrigger>
                             <DropdownContent>
@@ -209,15 +195,7 @@ export default function HomePage() {
                                         {l}
                                     </DropdownItem>
                                 ))}
-                            </DropdownContent>
-                        </Dropdown>
-                        <Dropdown>
-                            <DropdownTrigger asChild>
-                                <IconButton label="More" size="sm">
-                                    <MoreVertical className="size-4" />
-                                </IconButton>
-                            </DropdownTrigger>
-                            <DropdownContent>
+                                <DropdownSeparator />
                                 <DropdownItem icon={<RefreshCw />} onSelect={() => scan.mutate(true)}>
                                     Full rescan (re-match everything)
                                 </DropdownItem>

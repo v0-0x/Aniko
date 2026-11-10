@@ -1,5 +1,6 @@
 import {
     ArrowLeft,
+    ChevronDown,
     Bell,
     BellOff,
     BookOpen,
@@ -25,7 +26,7 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { api, desktop } from "@/lib/api"
-import { useMediaQuery } from "@/lib/hooks"
+import { useMediaQuery, usePersisted } from "@/lib/hooks"
 import { useCollection, useDownloads, useSharing, useStatus } from "@/lib/queries"
 import { notificationsMutedStore, torrentCountStore, useStore } from "@/lib/store"
 import { holidayStore, useClassic } from "@/lib/themes"
@@ -203,6 +204,17 @@ export function Sidebar() {
     const holiday = useStore(holidayStore)
 
     const groups = useNavGroups()
+    // What's used every day stays in sight; the rest folds under More (not
+    // on a TV or the icons-only sidebar, where everything shows).
+    const all = groups.flatMap(g => g.items)
+    const daily = new Set([...(groups[0]?.items ?? []).map(i => i.to), "/downloads"])
+    const main = all.filter(i => daily.has(i.to))
+    const rest = all.filter(i => !daily.has(i.to))
+    const isActive = (it: Item) => (it.match ? it.match(location.pathname) : location.pathname.startsWith(it.to))
+    const [moreOpen, setMoreOpen] = usePersisted("aniko-sidebar-more", false)
+    const folds = wide && !tv && !classic
+    const showRest = !folds || moreOpen || rest.some(isActive)
+    const restBadge = rest.reduce((n, i) => n + (i.badge ?? 0), 0)
 
     const logout = async () => {
         await api.post("/api/auth/logout")
@@ -211,7 +223,7 @@ export function Sidebar() {
     }
 
     const link = (it: Item) => {
-        const active = it.match ? it.match(location.pathname) : location.pathname.startsWith(it.to)
+        const active = isActive(it)
         const badge = it.badge && it.badge > 0 ? (it.badge > 99 ? "99+" : String(it.badge)) : ""
         const el = (
             <NavLink
@@ -279,12 +291,24 @@ export function Sidebar() {
                 className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (classic ? "gap-4" : "gap-3") : "items-center gap-3")}
                 style={more ? { maskImage: FADE, WebkitMaskImage: FADE } : undefined}
             >
-                {groups.map((g, i) => (
-                    // The groups: a thin line between them, no names.
-                    <div key={g.label} className={cn("flex flex-col gap-0.5", !wide && "items-center", !classic && i > 0 && "border-t border-line/70 pt-3")}>
-                        {g.items.map(link)}
+                <div className={cn("flex flex-col gap-0.5", !wide && "items-center")}>{main.map(link)}</div>
+                {/* The pages used less: under More, closed until asked for (open on one of them). */}
+                {rest.length > 0 && (
+                    <div className={cn("flex flex-col gap-0.5", !wide && "items-center", !classic && "border-t border-line/70 pt-3")}>
+                        {folds && (
+                            <button
+                                onClick={() => setMoreOpen(!moreOpen)}
+                                aria-expanded={showRest}
+                                className="focus-ring flex h-9 shrink-0 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] font-medium text-muted transition-colors duration-200 hover:bg-white/[0.045] hover:text-fg"
+                            >
+                                <ChevronDown className={cn("size-[18px] shrink-0 stroke-[1.75] transition-transform duration-200", !showRest && "-rotate-90")} />
+                                <span className="truncate">More</span>
+                                {!showRest && restBadge > 0 && <span className="ml-auto rounded-md bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums">{restBadge > 99 ? "99+" : restBadge}</span>}
+                            </button>
+                        )}
+                        {showRest && rest.map(link)}
                     </div>
-                ))}
+                )}
             </nav>
 
             <div className={cn("flex flex-col gap-0.5 pt-3", !classic && "border-t border-line", !wide && "items-center")}>
