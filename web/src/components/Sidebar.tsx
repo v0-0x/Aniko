@@ -327,7 +327,7 @@ export function Sidebar() {
                 ) : (
                     <>
                         <PluginTrays />
-                        <div className={cn("flex items-center gap-1", wide ? "justify-between px-0.5" : "flex-col")}>
+                        <div className={cn("flex items-center gap-1", wide ? "justify-center gap-2" : "flex-col")}>
                             <ThemesMenu wide={false} />
                             <MuteButton side={wide ? "top" : "right"} />
                             <Tooltip content="Settings" side={wide ? "top" : "right"}>
