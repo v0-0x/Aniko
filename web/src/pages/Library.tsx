@@ -33,16 +33,17 @@ export default function LibraryPage() {
                 </div>
             </div>
             <Tabs
-                className="mb-8"
+                variant="underline"
+                className="mb-6"
                 value={tab}
                 onChange={t => setParams({ tab: t }, { replace: true })}
                 tabs={[
                     { value: "folders", label: "Folders & matches" },
-                    { value: "unmatched", label: "Unmatched", count: coll?.unmatchedCount ?? 0 },
-                    { value: "missing", label: "Missing episodes", count: withMissing(coll).length },
+                    { value: "unmatched", label: counted("Unmatched", coll?.unmatchedCount ?? 0) },
+                    { value: "missing", label: counted("Missing episodes", withMissing(coll).length) },
                     { value: "cleanup", label: "Clean up" },
                     { value: "files", label: "All files" },
-                    { value: "ignored", label: "Ignored", count: coll?.ignoredCount ?? 0 },
+                    { value: "ignored", label: counted("Ignored", coll?.ignoredCount ?? 0) },
                 ]}
             />
             {tab === "folders" && <LibraryFolders />}
@@ -52,6 +53,16 @@ export default function LibraryPage() {
             {tab === "files" && <AllFiles />}
             {tab === "ignored" && <Ignored />}
         </div>
+    )
+}
+
+// A tab's name with its count as a plain muted number (as on an anime's page).
+function counted(label: string, count: number) {
+    return (
+        <>
+            {label}
+            <span className="font-normal text-subtle tabular-nums">{count}</span>
+        </>
     )
 }
 

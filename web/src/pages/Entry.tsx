@@ -13,6 +13,7 @@ import {
     MoreHorizontal,
     Play,
     RefreshCw,
+    RotateCcw,
     Tv,
     Users,
 } from "lucide-react"
@@ -27,14 +28,14 @@ import { TorrentPanel } from "@/components/entry/TorrentPanel"
 import { Carousel, MediaCard } from "@/components/MediaCard"
 import { PluginActions, PluginSlot, usePluginDropdownActions } from "@/components/plugins/PluginSlot"
 import { sendPluginEvent } from "@/components/plugins/PluginRenderer"
-import { Badge, Button, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger, EmptyState, Skeleton, Tabs, Tooltip } from "@/components/ui"
+import { Badge, Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, Skeleton, Tabs, Tooltip } from "@/components/ui"
 import { WatchOrder } from "@/components/WatchOrder"
 import { api } from "@/lib/api"
 import { formatRanges, missingEpisodes } from "@/lib/missing"
 import { usePlay } from "@/lib/play"
 import { fetchLanguageMode, useEntry, useEpisodeMarker, useLanguageMode, useStatus } from "@/lib/queries"
 import type { EntryView, Probe } from "@/lib/types"
-import { banner, cleanDescription, cn, cover, formatLabel, img, otherTitle, readLocal, scoreColor, seasonLabel, statusLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
+import { banner, cleanDescription, cn, cover, formatBytes, formatDuration, formatLabel, img, otherTitle, readLocal, scoreColor, seasonLabel, statusLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
 import { tv } from "@/lib/tv"
 
 type Tab = "episodes" | "stream" | "torrents" | "details"
@@ -67,17 +68,27 @@ export default function EntryPage() {
         )
     }
 
-    const tabs: { value: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
-        { value: "episodes", label: "Library", icon: <HardDrive className="size-4" />, count: entry.localCount + (entry.sharedCount ?? 0) || undefined },
-        ...(status?.settings.onlineStream.enabled !== false ? [{ value: "stream" as Tab, label: "Watch online", icon: <Tv className="size-4" /> }] : []),
-        { value: "torrents", label: "Torrents", icon: <Magnet className="size-4" /> },
-        { value: "details", label: "Details", icon: <Info className="size-4" /> },
+    const files = entry.localCount + (entry.sharedCount ?? 0)
+    // One slim row; a tab's count is a plain muted number (as on Library tools).
+    const tabs: { value: Tab; label: React.ReactNode }[] = [
+        {
+            value: "episodes",
+            label: (
+                <>
+                    Library
+                    {files > 0 && <span className="font-normal text-subtle tabular-nums">{files}</span>}
+                </>
+            ),
+        },
+        ...(status?.settings.onlineStream.enabled !== false ? [{ value: "stream" as Tab, label: "Watch online" }] : []),
+        { value: "torrents", label: "Torrents" },
+        { value: "details", label: "Details" },
     ]
 
     return (
         <div className="relative min-h-full pb-24">
             <EntryHero entry={entry} onTab={setTab} />
-            <div className="relative z-10 flex flex-col gap-8 px-6 md:px-8 xl:px-10">
+            <div className="relative z-10 flex flex-col gap-6 px-6 md:px-8 xl:px-10">
                 <PluginSlot slot="before-anime-entry-episode-list" />
                 <Tabs variant="underline" value={tab} onChange={setTab} tabs={tabs} />
                 {/* Keyed by anime too: panels keep per-anime state (dub, search results). */}
@@ -212,16 +223,17 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                                 {next.resumeAt > 0 ? "Resume" : entry.listEntry?.progress ? "Continue" : "Watch"} · Ep {next.number}
                             </Button>
                         )}
-                        <ListStatusButton media={media} entry={entry.listEntry} />
-                        {entry.listEntry && <ProgressEditor media={media} entry={entry.listEntry} />}
-                        <ScoreEditor media={media} entry={entry.listEntry} />
-                        <PluginActions kind="anime-page-button" mediaId={media.id} />
-                        <Dropdown>
-                            <DropdownTrigger asChild>
-                                <Button variant="subtle" size="lg" className="w-11 px-0" aria-label="More">
-                                    <MoreHorizontal className="size-5" />
-                                </Button>
-                            </DropdownTrigger>
+                        {/* The list's status, progress and score, and the rest: one quiet group. */}
+                        <div className="flex max-w-full flex-wrap items-center gap-0.5 rounded-xl border border-white/10 bg-white/[0.06] p-0.5 *:h-[38px]! *:rounded-[9px]! *:bg-transparent! [&>button:not([aria-label])]:px-3.5! [&>button]:text-sm! [&>button:hover]:bg-white/[0.08]! [&>button[data-state=open]]:bg-white/[0.08]!">
+                            <ListStatusButton media={media} entry={entry.listEntry} />
+                            {entry.listEntry && <ProgressEditor media={media} entry={entry.listEntry} />}
+                            <ScoreEditor media={media} entry={entry.listEntry} />
+                            <Dropdown>
+                                <DropdownTrigger asChild>
+                                    <Button variant="ghost" size="lg" className="w-[38px] px-0! text-fg" aria-label="More">
+                                        <MoreHorizontal className="size-5" />
+                                    </Button>
+                                </DropdownTrigger>
                             <DropdownContent align="start">
                                 {entry.localCount > 0 && status?.client !== "lan" && (
                                     <DropdownItem icon={<FolderOpen />} onSelect={() => api.post("/api/library/open-folder", { mediaId: media.id }).catch(e => toast.error(e.message))}>
@@ -246,7 +258,9 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                                     </DropdownItem>
                                 ))}
                             </DropdownContent>
-                        </Dropdown>
+                            </Dropdown>
+                        </div>
+                        <PluginActions kind="anime-page-button" mediaId={media.id} />
                     </div>
                 </div>
             </div>
@@ -276,7 +290,7 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
             <div className="flex flex-col gap-10">
                 <EmptyState
                     icon={<HardDrive className="size-6" />}
-                    title="No local files yet"
+                    title="No files yet"
                     action={
                         <div className="flex flex-wrap justify-center gap-2">
                             {status?.settings.onlineStream.enabled !== false && (
@@ -288,104 +302,121 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                                 Find torrents
                             </Button>
                             <Button icon={<FolderInput className="size-4" />} onClick={() => setAdding(true)}>
-                                Already have it? Add from library
+                                Add from library
                             </Button>
                             <AddFromLibraryDialog open={adding} onOpenChange={setAdding} media={media} />
                         </div>
                     }
-                >
-                    Download episodes, or add files already in your library.
-                </EmptyState>
+                />
                 <WatchOrder mediaId={media.id} />
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col gap-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-4">
-                    <p className="text-sm text-muted">
-                        {withFiles.length} of {entry.episodes.length || "?"} episodes {entry.localCount ? "downloaded" : "available"}
-                        {hosts.length > 0 && ` · ${entry.localCount ? "some " : ""}shared by ${hosts.join(", ")}`}
-                    </p>
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <p className="min-w-0 text-muted">
+                    <span className="tabular-nums">
+                        {withFiles.length} of {entry.episodes.length || "?"}
+                    </span>{" "}
+                    {entry.localCount ? "downloaded" : "available"}
+                    {hosts.length > 0 && ` · ${entry.localCount ? "some " : ""}on ${hosts.join(", ")}`}
+                </p>
+                {missing.length > 0 && (
+                    <button onClick={() => onTorrents(missing[0])} className="focus-ring rounded text-amber-200/85 hover:underline" title="Find torrents">
+                        Missing {formatRanges(missing, 5)}
+                    </button>
+                )}
+                <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2">
                     <LocalLanguageSwitch mediaId={media.id} samplePath={withFiles[0]?.file?.path} />
-                    {missing.length > 0 && (
-                        <button onClick={() => onTorrents(missing[0])} className="text-sm text-amber-200/85 hover:underline" title="Find torrents for it">
-                            Missing {missing.length === 1 ? "episode" : "episodes"} {formatRanges(missing, 5)}
-                        </button>
-                    )}
-                </div>
-                <div className="flex items-center gap-3">
                     {entry.episodes.length > withFiles.length && (
-                        <button onClick={() => setShowAll(s => !s)} className="text-sm font-medium text-muted transition-colors hover:text-fg">
-                            {showAll ? "Show downloaded only" : "Show all episodes"}
+                        <button onClick={() => setShowAll(s => !s)} aria-pressed={showAll} className="focus-ring rounded font-medium text-muted transition-colors hover:text-fg">
+                            {showAll ? "Downloaded only" : "All episodes"}
                         </button>
                     )}
                     <EntryFilesMenu entry={entry} />
                 </div>
             </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-5 gap-y-7">
-                {list.map(ep => (
-                    <EpisodeCard
-                        key={ep.number}
-                        image={ep.image}
-                        number={ep.number}
-                        title={media.format === "MOVIE" ? title(media) : ep.title || `Episode ${ep.number}`}
-                        subtitle={ep.file ? (ep.file.hostName ? `On ${ep.file.hostName} · ${ep.file.name}` : ep.file.name) : `Episode ${ep.number}${ep.airDate ? ` · ${ep.airDate}` : ""}`}
-                        runtime={ep.runtime}
-                        watched={ep.watched}
-                        hasFile={ep.hasFile}
-                        aired={ep.hasFile || ep.aired}
-                        resumeAt={ep.resumeAt}
-                        progress={ep.history?.duration ? ep.resumeAt / ep.history.duration : 0}
-                        blur={status?.settings.ui.blurUnwatched}
-                        onClick={() => (ep.file ? playLocal(ep.file.path, media.id, ep.number) : onStream())}
-                        actions={
-                            <div className="flex gap-1">
-                                {(ep.aired || ep.hasFile) && <WatchedToggle watched={ep.watched} disabled={marker.pending} onToggle={() => marker.mark(ep.number, !ep.watched)} />}
-                                <Dropdown>
-                                    <DropdownTrigger asChild>
-                                        <button
-                                            onClick={e => e.stopPropagation()}
-                                            aria-label={`More for episode ${ep.number}`}
-                                            className="grid size-7 place-items-center rounded-md bg-black/70 text-white transition-colors hover:bg-black/85"
-                                        >
-                                            <MoreHorizontal className="size-4" />
-                                        </button>
-                                    </DropdownTrigger>
-                                    <DropdownContent>
-                                        {ep.file && !remote && (
-                                            <DropdownItem icon={<MonitorPlay />} onSelect={() => playLocal(ep.file!.path, media.id, ep.number, { player: localPlayer() === "mpv" ? "builtin" : "mpv" })}>
-                                                Play in {localPlayer() === "mpv" ? "in-app player" : "mpv"}
-                                            </DropdownItem>
-                                        )}
-                                        {ep.file && ep.resumeAt > 0 && (
-                                            <DropdownItem icon={<Play />} onSelect={() => playLocal(ep.file!.path, media.id, ep.number, { start: 0 })}>
-                                                Play from the beginning
-                                            </DropdownItem>
-                                        )}
-                                        <DropdownItem icon={<CheckCheck />} onSelect={() => marker.mark(ep.number, !ep.watched)}>
-                                            {ep.watched ? "Mark as unwatched" : "Mark as watched (and everything before)"}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-x-5 gap-y-6">
+                {list.map(ep => {
+                    const play = () => (ep.file ? playLocal(ep.file.path, media.id, ep.number) : onStream())
+                    const canMark = ep.aired || ep.hasFile
+                    return (
+                        <EpisodeCard
+                            key={ep.number}
+                            image={ep.image}
+                            number={ep.number}
+                            epLabel={media.format === "MOVIE" ? false : undefined}
+                            title={media.format === "MOVIE" ? title(media) : ep.title || undefined}
+                            // Length · air date · the file's size and quality.
+                            facts={[
+                                !!ep.runtime && `${ep.runtime}m`,
+                                ep.airDate,
+                                ep.file && formatBytes(ep.file.size),
+                                ep.file?.parsed?.resolution,
+                                ep.file?.hostName && `on ${ep.file.hostName}`,
+                                ep.resumeAt > 0 && `at ${formatDuration(ep.resumeAt)}`,
+                                !ep.aired && !ep.hasFile && "Not aired",
+                            ]}
+                            watched={ep.watched}
+                            hasFile={ep.hasFile}
+                            aired={ep.hasFile || ep.aired}
+                            resumeAt={ep.resumeAt}
+                            progress={ep.history?.duration ? ep.resumeAt / ep.history.duration : 0}
+                            blur={status?.settings.ui.blurUnwatched}
+                            onClick={play}
+                            actions={canMark && <WatchedToggle watched={ep.watched} disabled={marker.pending} onToggle={() => marker.mark(ep.number, !ep.watched)} />}
+                            menu={
+                                <>
+                                    {ep.file && (
+                                        <DropdownLabel>
+                                            <span className="block max-w-72 truncate" title={ep.file.name}>
+                                                {ep.file.name}
+                                            </span>
+                                        </DropdownLabel>
+                                    )}
+                                    {canMark && (
+                                        <DropdownItem icon={<Play />} onSelect={play}>
+                                            {ep.file ? (ep.resumeAt > 0 ? "Resume" : "Play") : "Watch online"}
                                         </DropdownItem>
-                                    </DropdownContent>
-                                </Dropdown>
-                            </div>
-                        }
-                    />
-                ))}
+                                    )}
+                                    {ep.file && !remote && (
+                                        <DropdownItem icon={<MonitorPlay />} onSelect={() => playLocal(ep.file!.path, media.id, ep.number, { player: localPlayer() === "mpv" ? "builtin" : "mpv" })}>
+                                            Play in {localPlayer() === "mpv" ? "in-app player" : "mpv"}
+                                        </DropdownItem>
+                                    )}
+                                    {ep.file && ep.resumeAt > 0 && (
+                                        <DropdownItem icon={<RotateCcw />} onSelect={() => playLocal(ep.file!.path, media.id, ep.number, { start: 0 })}>
+                                            Play from the beginning
+                                        </DropdownItem>
+                                    )}
+                                    {!ep.file && (
+                                        <DropdownItem icon={<Magnet />} onSelect={() => onTorrents(ep.number)}>
+                                            Find torrents
+                                        </DropdownItem>
+                                    )}
+                                    <DropdownItem icon={<CheckCheck />} onSelect={() => marker.mark(ep.number, !ep.watched)}>
+                                        {ep.watched ? "Mark as unwatched" : "Mark as watched (and everything before)"}
+                                    </DropdownItem>
+                                </>
+                            }
+                        />
+                    )
+                })}
             </div>
             {specials.length > 0 && (
                 <div>
-                    <h3 className="mb-4 text-lg font-semibold tracking-tight">Specials & extras</h3>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-5 gap-y-6">
+                    <h3 className="mb-3 text-sm font-medium text-muted">Specials & extras</h3>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))] gap-x-5 gap-y-6">
                         {specials.map(sp => (
                             <EpisodeCard
                                 key={sp.file?.path}
                                 image={media.bannerImage || cover(media)}
                                 number={sp.number}
                                 title={sp.title}
-                                subtitle={sp.kind === "nc" ? "Opening / ending" : "Special"}
+                                epLabel={false}
+                                facts={[sp.kind === "nc" ? "Opening / ending" : "Special", sp.file && formatBytes(sp.file.size), sp.file?.parsed?.resolution]}
                                 hasFile
                                 onClick={() => sp.file && playLocal(sp.file.path, media.id, 0)}
                             />

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowDownToLine, Copy, ExternalLink, Magnet, MonitorPlay, Play, Search, ShieldCheck, Users } from "lucide-react"
+import { ArrowDownToLine, Copy, ExternalLink, Magnet, MonitorPlay, MoreHorizontal, Play, Search } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api } from "@/lib/api"
@@ -8,7 +8,7 @@ import { useStatus, useTorrentSearch } from "@/lib/queries"
 import { tv } from "@/lib/tv"
 import type { EntryView, TorrentResult } from "@/lib/types"
 import { cn, copyText, relativeTime } from "@/lib/utils"
-import { Badge, Button, EmptyState, ErrorState, Input, Select, Switch } from "../ui"
+import { Button, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Switch } from "../ui"
 
 // episode: the one to look for first (a missing one), else the next to watch.
 export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; episode?: number }) {
@@ -60,44 +60,39 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
     }
 
     return (
-        <div className="flex flex-col gap-5">
-            <div className="card flex flex-wrap items-end gap-3 p-4">
-                <label className="flex w-48 flex-col gap-1.5">
-                    <span className="text-xs font-medium text-subtle">Provider</span>
-                    <Select
-                        value={provider}
-                        onChange={setProvider}
-                        options={[
-                            { value: "all", label: `All providers${providers ? ` (${providers.length})` : ""}` },
-                            ...(providers ?? []).map(p => ({ value: p.id, label: p.name + (p.extension ? " (extension)" : "") })),
-                        ]}
-                    />
+        <div className="flex flex-col gap-4">
+            {/* The source and the filters in one row. */}
+            <div className="flex flex-wrap items-center gap-2">
+                <Select
+                    className="min-w-0 flex-1 basis-36 sm:w-44 sm:flex-none sm:basis-auto"
+                    value={provider}
+                    onChange={setProvider}
+                    options={[
+                        { value: "all", label: `All providers${providers ? ` (${providers.length})` : ""}` },
+                        ...(providers ?? []).map(p => ({ value: p.id, label: p.name + (p.extension ? " (extension)" : "") })),
+                    ]}
+                />
+                <div className="w-24 shrink-0">
+                    <Input type="number" min={1} aria-label="Episode" title="Episode" value={episode} disabled={batch} onChange={e => setEpisode(Number(e.target.value))} icon={<span className="text-xs">Ep</span>} />
+                </div>
+                <Select
+                    className="w-24 shrink-0"
+                    value={resolution}
+                    onChange={setResolution}
+                    options={[
+                        { value: "any", label: "Any" },
+                        { value: "2160", label: "2160p" },
+                        { value: "1080", label: "1080p" },
+                        { value: "720", label: "720p" },
+                        { value: "480", label: "480p" },
+                    ]}
+                />
+                <label className="flex h-9 shrink-0 items-center gap-2 px-1 text-sm text-muted">
+                    <Switch checked={batch} onChange={setBatch} label="Batch" />
+                    Batch
                 </label>
-                <label className="flex w-28 flex-col gap-1.5">
-                    <span className="text-xs font-medium text-subtle">Episode</span>
-                    <Input type="number" min={1} value={episode} disabled={batch} onChange={e => setEpisode(Number(e.target.value))} />
-                </label>
-                <label className="flex w-32 flex-col gap-1.5">
-                    <span className="text-xs font-medium text-subtle">Resolution</span>
-                    <Select
-                        value={resolution}
-                        onChange={setResolution}
-                        options={[
-                            { value: "any", label: "Any" },
-                            { value: "2160", label: "2160p" },
-                            { value: "1080", label: "1080p" },
-                            { value: "720", label: "720p" },
-                            { value: "480", label: "480p" },
-                        ]}
-                    />
-                </label>
-                <label className="flex h-10 items-center gap-2.5 px-1">
-                    <Switch checked={batch} onChange={setBatch} />
-                    <span className="text-sm">Batch</span>
-                </label>
-                <div className="min-w-56 flex-1">
-                    <span className="mb-1.5 block text-xs font-medium text-subtle">Custom query (optional)</span>
-                    <Input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === "Enter" && run()} placeholder="Leave empty for smart search" icon={<Search className="size-4" />} />
+                <div className="min-w-0 flex-1 basis-40">
+                    <Input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === "Enter" && run()} aria-label="Custom query" placeholder="Custom query" icon={<Search className="size-4" />} />
                 </div>
                 <Button variant="primary" loading={search.isPending} onClick={run} icon={<Search className="size-4" />}>
                     Search
@@ -105,8 +100,8 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
             </div>
 
             {chosen.length > 0 && (
-                <div className="sticky top-3 z-20 flex items-center justify-between rounded-xl border border-line-strong bg-surface-2/95 px-4 py-3 shadow-lg shadow-black/40 backdrop-blur rise-in">
-                    <span className="text-sm">{chosen.length} selected</span>
+                <div className="sticky top-3 z-20 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-surface-2/95 py-2 pr-2 pl-4 shadow-lg shadow-black/40 backdrop-blur rise-in">
+                    <span className="text-sm tabular-nums">{chosen.length} selected</span>
                     <Button variant="primary" size="sm" loading={sending} icon={<ArrowDownToLine className="size-4" />} onClick={() => download(chosen)}>
                         Send to {settings?.torrent.defaultClient === "transmission" ? "Transmission" : "qBittorrent"}
                     </Button>
@@ -116,20 +111,33 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
             {search.isPending && <div className="card h-40 shimmer" />}
             {search.isError && <ErrorState title="Couldn't search for torrents" error={search.error} onRetry={run} />}
             {!search.isPending && results.length === 0 && search.isSuccess && (
-                <EmptyState icon={<Magnet className="size-6" />} title="No torrents found">
-                    Try another provider, a different resolution, or a custom query.
-                </EmptyState>
+                <EmptyState icon={<Magnet className="size-6" />} title="No torrents found" />
             )}
 
             {results.length > 0 && (
-                <div className="card divide-y divide-line overflow-hidden">
+                <div className="flex flex-col gap-2">
                     {results.map(r => {
                         const k = key(r)
                         const isSel = selected.has(k)
+                        const canStream = !!(r.infoHash || r.magnetLink) && (tv ? viaHost : true)
+                        // What it is, on one line.
+                        const facts = [
+                            provider === "all" && r.provider && providerName(r.provider),
+                            r.releaseGroup,
+                            r.resolution,
+                            r.isBatch ? "Batch" : r.episodeNumber > 0 && `Ep ${r.episodeNumber}`,
+                            r.dub && "Dual audio",
+                            r.trusted && "Trusted",
+                            r.confirmed && "Confirmed",
+                            r.remake && "Remake",
+                            r.formattedSize,
+                            r.date && relativeTime(new Date(r.date).getTime() / 1000),
+                        ].filter(Boolean)
                         return (
-                            <div key={k} className={cn("flex items-center gap-4 px-4 py-3 transition hover:bg-white/[0.03]", isSel && "bg-brand-soft")}>
+                            <div key={k} className={cn("card flex items-center gap-3 p-3 transition-colors", isSel && "bg-brand-soft")}>
                                 <input
                                     type="checkbox"
+                                    aria-label={`Select ${r.name}`}
                                     checked={isSel}
                                     onChange={() =>
                                         setSelected(s => {
@@ -138,77 +146,58 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                                             return n
                                         })
                                     }
-                                    className="size-4 shrink-0 accent-[var(--brand)]"
+                                    className="focus-ring size-4 shrink-0 rounded accent-[var(--brand)]"
                                 />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium" title={r.name}>
                                         {r.name}
                                     </p>
-                                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                        {provider === "all" && r.provider && <Badge>{providerName(r.provider)}</Badge>}
-                                        {r.releaseGroup && <Badge tone="brand">{r.releaseGroup}</Badge>}
-                                        {r.resolution && <Badge>{r.resolution}</Badge>}
-                                        {r.isBatch && <Badge tone="blue">Batch</Badge>}
-                                        {r.episodeNumber > 0 && !r.isBatch && <Badge>Ep {r.episodeNumber}</Badge>}
-                                        {r.dub && <Badge tone="amber">Dual audio</Badge>}
-                                        {r.trusted && (
-                                            <Badge tone="green">
-                                                <ShieldCheck className="size-3" /> Trusted
-                                            </Badge>
-                                        )}
-                                        {r.confirmed && <Badge tone="green">Confirmed</Badge>}
-                                        {r.remake && <Badge tone="red">Remake</Badge>}
-                                        <span className="text-xs text-subtle">
-                                            {r.formattedSize} {r.date && `· ${relativeTime(new Date(r.date).getTime() / 1000)}`}
-                                        </span>
-                                    </div>
+                                    <p className="mt-0.5 truncate text-xs text-muted tabular-nums">
+                                        <span className={cn("font-medium", r.seeders > 20 ? "text-emerald-300" : r.seeders > 0 ? "text-amber-300" : "text-rose-300")}>{r.seeders}</span>
+                                        <span className="text-subtle">/{r.leechers} seeding</span>
+                                        {facts.length > 0 && ` · ${facts.join(" · ")}`}
+                                    </p>
                                 </div>
-                                <div className="flex w-24 shrink-0 items-center justify-end gap-1 text-sm">
-                                    <Users className="size-3.5 text-subtle" />
-                                    <span className={cn("font-semibold", r.seeders > 20 ? "text-emerald-300" : r.seeders > 0 ? "text-amber-300" : "text-rose-300")}>{r.seeders}</span>
-                                    <span className="text-subtle">/ {r.leechers}</span>
-                                </div>
-                                <div className="flex shrink-0 gap-1">
-                                    {r.link && (
-                                        <a href={r.link} target="_blank" rel="noopener noreferrer" className="grid size-9 place-items-center rounded-lg text-muted hover:bg-white/[0.06] hover:text-fg" title="Open page">
-                                            <ExternalLink className="size-4" />
-                                        </a>
-                                    )}
-                                    {r.magnetLink && (
-                                        <button
-                                            className="grid size-9 place-items-center rounded-lg text-muted hover:bg-white/[0.06] hover:text-fg"
-                                            title="Copy magnet"
-                                            onClick={async () => {
-                                                if (await copyText(r.magnetLink)) toast.success("Magnet link copied")
-                                                else toast.error("Couldn't copy the magnet link: the browser blocked the clipboard")
-                                            }}
-                                        >
-                                            <Copy className="size-4" />
-                                        </button>
-                                    )}
+                                <div className="flex shrink-0 items-center gap-1">
                                     <Button size="sm" variant={tv ? "white" : "subtle"} onClick={() => download([r])} loading={sending && chosen.length === 0}>
                                         Download
                                     </Button>
-                                    {tv && viaHost && (r.infoHash || r.magnetLink) && (
-                                        <Button size="sm" variant="white" icon={<Play className="size-3.5 fill-current" />} title="Streamed by the computer your downloads go to" onClick={() => stream(r, "builtin")}>
-                                            Stream
-                                        </Button>
-                                    )}
-                                    {!tv && (r.infoHash || r.magnetLink) && (
-                                        <>
-                                            {!remote && (
-                                                <button
-                                                    className="grid size-9 place-items-center rounded-lg text-muted hover:bg-white/[0.06] hover:text-fg"
-                                                    title="Stream in mpv"
-                                                    onClick={() => stream(r, "mpv")}
-                                                >
-                                                    <MonitorPlay className="size-4" />
-                                                </button>
-                                            )}
-                                            <Button size="sm" variant="white" icon={<Play className="size-3.5 fill-current" />} onClick={() => stream(r, "builtin")}>
-                                                Stream
-                                            </Button>
-                                        </>
+                                    {(canStream || r.link || r.magnetLink) && (
+                                        <Dropdown>
+                                            <DropdownTrigger asChild>
+                                                <IconButton size="sm" aria-label={`More for ${r.name}`}>
+                                                    <MoreHorizontal className="size-4" />
+                                                </IconButton>
+                                            </DropdownTrigger>
+                                            <DropdownContent>
+                                                {canStream && (
+                                                    <DropdownItem icon={<Play />} onSelect={() => stream(r, "builtin")}>
+                                                        Stream
+                                                    </DropdownItem>
+                                                )}
+                                                {canStream && !tv && !remote && (
+                                                    <DropdownItem icon={<MonitorPlay />} onSelect={() => stream(r, "mpv")}>
+                                                        Stream in mpv
+                                                    </DropdownItem>
+                                                )}
+                                                {r.link && (
+                                                    <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(r.link, "_blank", "noopener,noreferrer")}>
+                                                        Open page
+                                                    </DropdownItem>
+                                                )}
+                                                {r.magnetLink && (
+                                                    <DropdownItem
+                                                        icon={<Copy />}
+                                                        onSelect={async () => {
+                                                            if (await copyText(r.magnetLink)) toast.success("Magnet link copied")
+                                                            else toast.error("Couldn't copy the magnet link: the browser blocked the clipboard")
+                                                        }}
+                                                    >
+                                                        Copy magnet
+                                                    </DropdownItem>
+                                                )}
+                                            </DropdownContent>
+                                        </Dropdown>
                                     )}
                                 </div>
                             </div>

@@ -10,13 +10,14 @@ import {
     Globe,
     Link2,
     Magnet,
+    MoreVertical,
     Puzzle,
     RefreshCw,
     Search,
     Settings2,
     ShieldAlert,
     ShieldCheck,
-    Star,
+    SlidersHorizontal,
     Trash2,
     Tv,
     TriangleAlert,
@@ -24,7 +25,7 @@ import {
 import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
-import { Badge, Button, Dialog, EmptyState, Field, IconButton, Input, Select, Switch, Tabs } from "@/components/ui"
+import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger, EmptyState, Field, IconButton, Input, Popover, Select, Switch, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useExtensions, useMarketplace, useStatus } from "@/lib/queries"
 import type { ExtensionInfo, LogLineT, MarketEntry } from "./extensionTypes"
@@ -38,41 +39,59 @@ const TYPES: Record<string, { label: string; icon: React.ReactNode }> = {
     "custom-source": { label: "Custom source", icon: <Globe className="size-3.5" /> },
 }
 
+const openLink = (url: string) => window.open(url, "_blank", "noopener,noreferrer")
+
 export default function ExtensionsPage() {
     const [params, setParams] = useSearchParams()
     const tab = params.get("tab") === "marketplace" ? "marketplace" : "installed"
     const { data: installed } = useExtensions()
     const [manualOpen, setManualOpen] = useState(false)
+    const [checking, setChecking] = useState(false)
+    const [updates, setUpdates] = useState<Record<string, string>>({})
     // From another device on the network: what's installed is shown, but only
     // the computer Aniko runs on installs and sets up extensions (the server
     // refuses the rest).
     const { data: status } = useStatus()
     const lan = status?.client === "lan"
+    const check = async () => {
+        setChecking(true)
+        try {
+            const u = await api.get<{ id: string; latestVersion: string }[]>("/api/extensions/updates")
+            setUpdates(Object.fromEntries(u.map(x => [x.id, x.latestVersion])))
+            toast.success(u.length ? `${u.length} update(s) available` : "Everything is up to date")
+        } catch (e: any) {
+            toast.error(e.message)
+        } finally {
+            setChecking(false)
+        }
+    }
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-[1.75rem] font-semibold tracking-tight">Extensions</h1>
-                    <p className="mt-1 max-w-2xl text-muted">Streaming, torrent and manga providers, and plugins.</p>
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                <h1 className="text-[1.75rem] font-semibold tracking-tight">Extensions</h1>
+                <div className="flex min-w-0 items-center gap-1">
+                    <Tabs
+                        className="mr-1"
+                        value={tab}
+                        onChange={t => setParams({ tab: t }, { replace: true })}
+                        tabs={[
+                            { value: "installed", label: "Installed", count: installed?.length ?? 0 },
+                            { value: "marketplace", label: "Marketplace" },
+                        ]}
+                    />
+                    {!lan && tab === "installed" && (installed?.length ?? 0) > 0 && (
+                        <IconButton label="Check for updates" icon={<RefreshCw className="size-4" />} loading={checking} onClick={check} />
+                    )}
+                    {!lan && (
+                        <IconButton label="Install from URL" onClick={() => setManualOpen(true)}>
+                            <Link2 className="size-4" />
+                        </IconButton>
+                    )}
                 </div>
-                {!lan && (
-                    <Button icon={<Link2 className="size-4" />} onClick={() => setManualOpen(true)}>
-                        Install from URL
-                    </Button>
-                )}
             </div>
-            {lan && <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-muted">View only. Install and set up extensions on the computer Aniko runs on.</p>}
-            <Tabs
-                className="mb-8"
-                value={tab}
-                onChange={t => setParams({ tab: t }, { replace: true })}
-                tabs={[
-                    { value: "installed", label: "Installed", count: installed?.length ?? 0 },
-                    { value: "marketplace", label: "Marketplace" },
-                ]}
-            />
+            {lan && <p className="mb-6 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-muted">View only. Set up extensions on the computer Aniko runs on.</p>}
             <fieldset disabled={lan} className="m-0 min-w-0 border-0 p-0">
-                {tab === "installed" ? <Installed /> : <Marketplace />}
+                {tab === "installed" ? <Installed updates={updates} /> : <Marketplace />}
             </fieldset>
             <InstallUrlDialog open={manualOpen} onOpenChange={setManualOpen} />
         </div>
@@ -92,24 +111,10 @@ function ExtIcon({ src, className }: { src?: string; className?: string }) {
 
 // ---------------------------------------------------------------------------
 
-function Installed() {
+function Installed({ updates }: { updates: Record<string, string> }) {
     const { data, isLoading } = useExtensions()
     const qc = useQueryClient()
-    const [checking, setChecking] = useState(false)
-    const [updates, setUpdates] = useState<Record<string, string>>({})
-    const check = async () => {
-        setChecking(true)
-        try {
-            const u = await api.get<{ id: string; latestVersion: string }[]>("/api/extensions/updates")
-            setUpdates(Object.fromEntries(u.map(x => [x.id, x.latestVersion])))
-            toast.success(u.length ? `${u.length} update(s) available` : "Everything is up to date")
-        } catch (e: any) {
-            toast.error(e.message)
-        } finally {
-            setChecking(false)
-        }
-    }
-    if (isLoading) return <div className="card h-40 shimmer" />
+    if (isLoading) return <div className="card h-[4.5rem] shimmer" />
     if (!data?.length)
         return (
             <EmptyState
@@ -120,28 +125,22 @@ function Installed() {
                         <Button variant="primary">Browse the marketplace</Button>
                     </Link>
                 }
-            >
-                Get providers and plugins from the marketplace.
-            </EmptyState>
+            />
         )
-    const groups = Object.keys(TYPES)
+    // A type Aniko doesn't know still gets its rows.
+    const groups = [...Object.keys(TYPES), ...new Set(data.map(e => e.manifest.type).filter(t => !TYPES[t]))]
         .map(t => ({ type: t, items: data.filter(e => e.manifest.type === t) }))
         .filter(g => g.items.length)
     return (
-        <div className="flex flex-col gap-10">
-            <div>
-                <Button size="sm" icon={<RefreshCw className="size-4" />} loading={checking} onClick={check}>
-                    Check for updates
-                </Button>
-            </div>
+        <div className="flex flex-col gap-8">
             {groups.map(g => (
                 <section key={g.type}>
-                    <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold tracking-tight">
-                        {TYPES[g.type].icon} {TYPES[g.type].label}
+                    <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted">
+                        {TYPES[g.type]?.icon} {TYPES[g.type]?.label ?? g.type}
                     </h2>
-                    <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                    <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
                         {g.items.map(e => (
-                            <InstalledCard key={e.manifest.id} ext={e} update={updates[e.manifest.id]} onChange={() => qc.invalidateQueries({ queryKey: ["extensions"] })} />
+                            <InstalledRow key={e.manifest.id} ext={e} update={updates[e.manifest.id]} onChange={() => qc.invalidateQueries({ queryKey: ["extensions"] })} />
                         ))}
                     </div>
                 </section>
@@ -150,7 +149,7 @@ function Installed() {
     )
 }
 
-function InstalledCard({ ext, update, onChange }: { ext: ExtensionInfo; update?: string; onChange: () => void }) {
+function InstalledRow({ ext, update, onChange }: { ext: ExtensionInfo; update?: string; onChange: () => void }) {
     const m = ext.manifest
     const [cfgOpen, setCfgOpen] = useState(false)
     const [logsOpen, setLogsOpen] = useState(false)
@@ -170,63 +169,72 @@ function InstalledCard({ ext, update, onChange }: { ext: ExtensionInfo; update?:
     }
     const isPlugin = m.type === "plugin"
     const needsGrant = isPlugin && !ext.granted
+    const on = ext.enabled && !needsGrant
+    const facts = [`v${m.version}`, m.author, m.language === "typescript" ? "TS" : "JS", m.lang?.toUpperCase(), ext.running && "Running", update && `${update} available`].filter(Boolean)
+    const notes = !ext.supported || !!ext.error || !!ext.configError || needsGrant
     return (
-        <div className="card flex flex-col gap-4 p-4">
-            <div className="flex items-start gap-3">
-                <ExtIcon src={m.icon} className="size-12" />
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                        <p className="truncate font-semibold">{m.name}</p>
-                        <span className="text-xs text-subtle">v{m.version}</span>
+        <div className="card flex items-center gap-3 p-3 fade-in">
+            <ExtIcon src={m.icon} className={cn("size-11 transition-opacity", !on && "opacity-60")} />
+            <div className="min-w-0 flex-1">
+                <p className={cn("truncate font-medium transition-opacity", !on && "opacity-60")}>{m.name}</p>
+                <p className="mt-0.5 truncate text-sm text-muted">{facts.join(" · ")}</p>
+                {m.description && (
+                    <p className="mt-0.5 truncate text-xs text-subtle" title={m.description}>
+                        {m.description}
+                    </p>
+                )}
+                {notes && (
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+                        {!ext.supported && <Badge tone="amber">Not supported by Aniko yet</Badge>}
+                        {needsGrant && <span className="text-amber-300">Permissions needed</span>}
+                        {ext.configError && <span className="text-amber-300">Needs configuration</span>}
+                        {ext.error && <span className="line-clamp-3 min-w-0 break-words text-rose-300">{ext.error}</span>}
                     </div>
-                    <p className="text-xs text-subtle">by {m.author}</p>
-                </div>
+                )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
                 <Switch
-                    checked={ext.enabled && !needsGrant}
+                    label={`${m.name} enabled`}
+                    checked={on}
                     disabled={busy}
                     onChange={v => (v && needsGrant ? setGrantOpen(true) : call(api.post(`/api/extensions/${m.id}/enable`, { enabled: v })))}
                 />
-            </div>
-            {m.description && <p className="line-clamp-2 text-sm text-muted">{m.description}</p>}
-            <div className="flex flex-wrap gap-1.5">
-                <Badge>{m.language === "typescript" ? "TS" : "JS"}</Badge>
-                {m.lang && <Badge className="uppercase">{m.lang}</Badge>}
-                {!ext.supported && <Badge tone="amber">Not supported by Aniko yet</Badge>}
-                {ext.error && <Badge tone="red">Error</Badge>}
-                {ext.configError && <Badge tone="amber">Needs configuration</Badge>}
-                {needsGrant && <Badge tone="amber">Permissions needed</Badge>}
-                {ext.running && <Badge tone="green">Running</Badge>}
-            </div>
-            {ext.error && <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-xs text-rose-200">{ext.error}</p>}
-            <div className="mt-auto flex flex-wrap items-center gap-1.5">
-                {update && (
-                    <Button size="sm" variant="primary" icon={<ArrowUpCircle className="size-4" />} loading={busy} onClick={() => call(api.post(`/api/extensions/${m.id}/update`), `Updated to ${update}`)}>
-                        Update to {update}
-                    </Button>
-                )}
-                {needsGrant && (
-                    <Button size="sm" variant="primary" icon={<ShieldCheck className="size-4" />} onClick={() => setGrantOpen(true)}>
-                        Review permissions
-                    </Button>
-                )}
-                {(m.userConfig?.fields?.length ?? 0) > 0 && (
-                    <Button size="sm" icon={<Settings2 className="size-4" />} onClick={() => setCfgOpen(true)}>
-                        Configure
-                    </Button>
-                )}
-                <Button size="sm" variant="ghost" icon={<FileText className="size-4" />} onClick={() => setLogsOpen(true)}>
-                    Logs
-                </Button>
-                {m.website && (
-                    <a href={m.website} target="_blank" rel="noopener noreferrer">
-                        <IconButton size="sm" label="Website">
-                            <ExternalLink className="size-4" />
+                <Dropdown>
+                    <DropdownTrigger asChild>
+                        <IconButton aria-label="More">
+                            <MoreVertical className="size-4" />
                         </IconButton>
-                    </a>
-                )}
-                <IconButton size="sm" label="Uninstall" className="ml-auto hover:text-rose-300" onClick={() => confirm(`Uninstall ${m.name}?`) && call(api.del(`/api/extensions/${m.id}`), "Uninstalled")}>
-                    <Trash2 className="size-4" />
-                </IconButton>
+                    </DropdownTrigger>
+                    <DropdownContent>
+                        {update && (
+                            <DropdownItem icon={<ArrowUpCircle />} disabled={busy} onSelect={() => call(api.post(`/api/extensions/${m.id}/update`), `Updated to ${update}`)}>
+                                Update to {update}
+                            </DropdownItem>
+                        )}
+                        {needsGrant && (
+                            <DropdownItem icon={<ShieldCheck />} onSelect={() => setGrantOpen(true)}>
+                                Review permissions
+                            </DropdownItem>
+                        )}
+                        {(m.userConfig?.fields?.length ?? 0) > 0 && (
+                            <DropdownItem icon={<Settings2 />} onSelect={() => setCfgOpen(true)}>
+                                Configure
+                            </DropdownItem>
+                        )}
+                        <DropdownItem icon={<FileText />} onSelect={() => setLogsOpen(true)}>
+                            Logs
+                        </DropdownItem>
+                        {m.website && (
+                            <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(m.website)}>
+                                Website
+                            </DropdownItem>
+                        )}
+                        <DropdownSeparator />
+                        <DropdownItem danger icon={<Trash2 />} disabled={busy} onSelect={() => confirm(`Uninstall ${m.name}?`) && call(api.del(`/api/extensions/${m.id}`), "Uninstalled")}>
+                            Uninstall
+                        </DropdownItem>
+                    </DropdownContent>
+                </Dropdown>
             </div>
             <ConfigDialog open={cfgOpen} onOpenChange={setCfgOpen} ext={ext} onSaved={onChange} />
             <LogsDialog open={logsOpen} onOpenChange={setLogsOpen} id={m.id} />
@@ -398,40 +406,64 @@ function Marketplace() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="card flex flex-col gap-3 p-4">
-                <div className="flex gap-2">
-                    <Input defaultValue={effectiveUrl} onKeyDown={e => e.key === "Enter" && setUrl((e.target as HTMLInputElement).value)} onBlur={e => setUrl(e.target.value)} icon={<Globe className="size-4" />} />
-                    <Button icon={<RefreshCw className={cn("size-4", (reloading || isFetching) && "animate-spin")} />} disabled={reloading} onClick={reload}>
-                        Reload
-                    </Button>
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="min-w-0 basis-full sm:max-w-80 sm:flex-1 sm:basis-0">
+                    <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Search…" aria-label="Search extensions" icon={<Search className="size-4" />} />
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Search extensions…" icon={<Search className="size-4" />} className="w-72" />
-                    <Select
-                        className="w-48"
-                        value={type}
-                        onChange={setType}
-                        options={[{ value: "all", label: `All types (${data?.length ?? 0})` }, ...Object.entries(TYPES).map(([k, v]) => ({ value: k, label: `${v.label} (${counts[k] ?? 0})` }))]}
-                    />
-                    <Select
-                        className="w-40"
-                        value={sort}
-                        onChange={setSort}
-                        options={[
-                            { value: "stars", label: "Most starred" },
-                            { value: "new", label: "Recently updated" },
-                            { value: "name", label: "Name" },
-                        ]}
-                    />
-                    <label className="flex items-center gap-2 text-sm text-muted">
-                        <Switch checked={hideBroken} onChange={setHideBroken} /> Hide broken
-                    </label>
-                </div>
+                <Select
+                    className="min-w-0 flex-1 sm:w-52 sm:flex-none"
+                    value={type}
+                    onChange={setType}
+                    options={[{ value: "all", label: `All types (${data?.length ?? 0})` }, ...Object.entries(TYPES).map(([k, v]) => ({ value: k, label: `${v.label} (${counts[k] ?? 0})` }))]}
+                />
+                <Popover
+                    side="bottom"
+                    align="end"
+                    className="w-[min(22rem,calc(100vw-1.5rem))]"
+                    trigger={
+                        <IconButton aria-label="Sort and source" className="rounded-xl border border-white/10 bg-white/[0.045]">
+                            <SlidersHorizontal className="size-4" />
+                        </IconButton>
+                    }
+                >
+                    <div className="flex flex-col gap-4">
+                        <Field label="Sort">
+                            <Select
+                                value={sort}
+                                onChange={setSort}
+                                options={[
+                                    { value: "stars", label: "Most starred" },
+                                    { value: "new", label: "Recently updated" },
+                                    { value: "name", label: "Name" },
+                                ]}
+                            />
+                        </Field>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                            Hide broken
+                            <Switch label="Hide broken" checked={hideBroken} onChange={setHideBroken} />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-[13px] font-medium text-fg/90">Source</span>
+                            <div className="flex gap-2">
+                                <Input
+                                    aria-label="Marketplace URL"
+                                    defaultValue={effectiveUrl}
+                                    onKeyDown={e => e.key === "Enter" && setUrl((e.target as HTMLInputElement).value)}
+                                    onBlur={e => setUrl(e.target.value)}
+                                    icon={<Globe className="size-4" />}
+                                />
+                                <IconButton variant="subtle" label="Reload" disabled={reloading} onClick={reload}>
+                                    <RefreshCw className={cn("size-4", (reloading || isFetching) && "animate-spin")} />
+                                </IconButton>
+                            </div>
+                        </div>
+                    </div>
+                </Popover>
             </div>
             {isLoading && (
-                <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-                    {Array.from({ length: 9 }).map((_, i) => (
-                        <div key={i} className="card h-44 shimmer" />
+                <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                        <div key={i} className="card h-[4.5rem] shimmer" />
                     ))}
                 </div>
             )}
@@ -440,16 +472,17 @@ function Marketplace() {
                     {(error as Error).message}
                 </EmptyState>
             )}
-            <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+            {!isLoading && !error && entries.length === 0 && <EmptyState icon={<Search className="size-6" />} title="Nothing found" />}
+            <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
                 {entries.map(e => (
-                    <MarketCard key={e.id} e={e} />
+                    <MarketRow key={e.id} e={e} />
                 ))}
             </div>
         </div>
     )
 }
 
-function MarketCard({ e }: { e: MarketEntry }) {
+function MarketRow({ e }: { e: MarketEntry }) {
     const [busy, setBusy] = useState(false)
     const [grant, setGrant] = useState<ExtensionInfo | null>(null)
     const qc = useQueryClient()
@@ -466,69 +499,78 @@ function MarketCard({ e }: { e: MarketEntry }) {
             setBusy(false)
         }
     }
-    const t = TYPES[e.type]
+    const facts = [
+        TYPES[e.type]?.label,
+        `v${e.version}`,
+        e.author,
+        e.lang?.toUpperCase(),
+        e.stars > 0 && `★ ${e.stars}`,
+        e.official && "Official",
+        e.workingTag && "Working",
+        e.brokenTag && "Broken",
+        e.deprecatedTag && "Deprecated",
+    ].filter(Boolean)
+    const needs = (e.unsupported?.length ?? 0) > 0
     return (
-        <div className={cn("card flex flex-col gap-3 p-4 transition hover:border-line-strong", e.brokenTag && "opacity-60")}>
-            <div className="flex items-start gap-3">
-                <ExtIcon src={e.icon} className="size-12" />
-                <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{e.name}</p>
-                    <p className="truncate text-xs text-subtle">
-                        by {e.author} · v{e.version}
+        <div className="card flex items-center gap-3 p-3 fade-in">
+            <ExtIcon src={e.icon} className={cn("size-11", e.brokenTag && "opacity-60")} />
+            <div className="min-w-0 flex-1">
+                <p className={cn("truncate font-medium", e.brokenTag && "opacity-60")}>{e.name}</p>
+                <p className={cn("mt-0.5 truncate text-sm text-muted", e.brokenTag && "text-rose-300/80", e.deprecatedTag && !e.brokenTag && "text-amber-300/80")}>{facts.join(" · ")}</p>
+                {e.description && (
+                    <p className="mt-0.5 truncate text-xs text-subtle" title={e.description}>
+                        {e.description}
                     </p>
-                </div>
-                {e.stars > 0 && (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-amber-300">
-                        <Star className="size-3.5 fill-amber-300" /> {e.stars}
-                    </span>
+                )}
+                {(!e.supported || needs) && (
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                        {!e.supported && <Badge tone="amber">Not supported</Badge>}
+                        {needs && (
+                            <span className="min-w-0" title={`Aniko doesn't support ${e.unsupported!.join(", ")}. Parts of this plugin won't work.`}>
+                                <Badge tone="amber" className="max-w-full">
+                                    <TriangleAlert className="size-3 shrink-0" /> <span className="truncate">Needs {e.unsupported!.join(", ")}</span>
+                                </Badge>
+                            </span>
+                        )}
+                    </div>
                 )}
             </div>
-            <p className="line-clamp-2 min-h-10 text-sm text-muted">{e.description}</p>
-            <div className="flex flex-wrap gap-1.5">
-                {t && (
-                    <Badge tone="brand">
-                        {t.icon}
-                        {t.label}
-                    </Badge>
-                )}
-                {e.lang && <Badge className="uppercase">{e.lang}</Badge>}
-                {e.workingTag && (
-                    <Badge tone="green">
-                        <CheckCircle2 className="size-3" /> Working
-                    </Badge>
-                )}
-                {e.brokenTag && <Badge tone="red">Broken</Badge>}
-                {e.deprecatedTag && <Badge tone="amber">Deprecated</Badge>}
-                {e.official && <Badge tone="blue">Official</Badge>}
-                {!e.supported && <Badge tone="amber">Not supported</Badge>}
-                {e.unsupported && e.unsupported.length > 0 && (
-                    <span title={`Aniko doesn't support ${e.unsupported.join(", ")}. Parts of this plugin won't work.`}>
-                        <Badge tone="amber">
-                            <TriangleAlert className="size-3" /> Needs {e.unsupported.join(", ")}
-                        </Badge>
-                    </span>
-                )}
-            </div>
-            <div className="mt-auto flex items-center gap-2 pt-1">
+            <div className="flex shrink-0 items-center gap-1">
                 {e.installed ? (
                     e.hasUpdate ? (
-                        <Button size="sm" variant="primary" icon={<ArrowUpCircle className="size-4" />} loading={busy} onClick={install}>
-                            Update to {e.version}
+                        <Button size="sm" icon={<ArrowUpCircle className="size-4" />} loading={busy} onClick={install} aria-label={`Update to ${e.version}`} title={`Update to ${e.version}`}>
+                            <span className="max-sm:sr-only">Update</span>
                         </Button>
                     ) : (
-                        <Badge tone="green">
-                            <CheckCircle2 className="size-3" /> Installed
-                        </Badge>
+                        <span className="flex items-center gap-1.5 px-1 text-xs font-medium text-emerald-300">
+                            <CheckCircle2 className="size-4" /> <span className="max-sm:sr-only">Installed</span>
+                        </span>
                     )
                 ) : (
-                    <Button size="sm" variant="white" icon={<Download className="size-4" />} loading={busy} onClick={install} disabled={!e.manifestURI}>
-                        Install
+                    <Button size="sm" icon={<Download className="size-4" />} loading={busy} onClick={install} disabled={!e.manifestURI} aria-label="Install">
+                        <span className="max-sm:sr-only">Install</span>
                     </Button>
                 )}
-                {e.permalink && (
-                    <a href={e.permalink} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-subtle hover:text-fg" title="VirusTotal scan">
-                        VT {e.flags}
-                    </a>
+                {(e.website || e.permalink) && (
+                    <Dropdown>
+                        <DropdownTrigger asChild>
+                            <IconButton aria-label="More">
+                                <MoreVertical className="size-4" />
+                            </IconButton>
+                        </DropdownTrigger>
+                        <DropdownContent>
+                            {e.website && (
+                                <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(e.website)}>
+                                    Website
+                                </DropdownItem>
+                            )}
+                            {e.permalink && (
+                                <DropdownItem icon={<ShieldCheck />} onSelect={() => openLink(e.permalink)}>
+                                    VirusTotal scan{e.flags ? ` · ${e.flags}` : ""}
+                                </DropdownItem>
+                            )}
+                        </DropdownContent>
+                    </Dropdown>
                 )}
             </div>
             {grant && <GrantDialog open onOpenChange={v => !v && setGrant(null)} ext={grant} onDone={() => qc.invalidateQueries({ queryKey: ["extensions"] })} />}

@@ -124,8 +124,8 @@
     /* Controls over artwork (banners, covers): dark and see-through. */
     .glass {
         background: rgb(10 10 12 / 0.55);
-        backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
         color: #fff;
     }
     .no-scrollbar {
@@ -413,8 +413,9 @@ html.tv #main-scroll:focus {
 /* A TV draws blurs over moving pictures slowly: see-through without them. */
 html.tv .glass,
 html.tv [class*="backdrop-blur"] {
-    backdrop-filter: none !important;
+    /* -webkit- first: the build keeps only the last of the pair. */
     -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
 }
 html.tv .glass {
     background: rgb(10 10 12 / 0.72);
@@ -474,6 +475,7 @@ html:not([data-look="classic"]) .glass {
 /* The TV: the same light and see-through panels, nothing blurred, and what
    has text on it a little denser so it reads from the sofa. */
 html.tv:not([data-look="classic"]) .page-backdrop,
+html.tv:not([data-look="classic"]) .glass,
 html.tv:not([data-look="classic"]) [role="menu"],
 html.tv:not([data-look="classic"]) [role="dialog"],
 html.tv:not([data-look="classic"]) [data-radix-popper-content-wrapper] > [data-state] {

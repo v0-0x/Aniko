@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Download, MonitorPlay, Play, RefreshCw, Search, Terminal, Wand2 } from "lucide-react"
+import { AlertTriangle, CheckCheck, Download, MonitorPlay, MoreHorizontal, Play, RefreshCw, Search, Terminal, Wand2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, qs } from "@/lib/api"
@@ -8,9 +8,9 @@ import { installHint, installSource } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms } from "@/lib/programs"
 import { useEpisodeMarker, useLanguageMode, useOnlineProviders, useStatus, useStreamEpisodes, useStreamModes } from "@/lib/queries"
 import type { EntryView } from "@/lib/types"
-import { cn, readLocal, writeLocal } from "@/lib/utils"
+import { cn, formatDuration, readLocal, writeLocal } from "@/lib/utils"
 import { EpisodeCard, WatchedToggle } from "../EpisodeCard"
-import { Badge, Button, Dialog, EmptyState, Field, IconButton, Input, Select, Skeleton, Tooltip } from "../ui"
+import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Skeleton, Tooltip } from "../ui"
 
 export function StreamPanel({ entry }: { entry: EntryView }) {
     const { data: status } = useStatus()
@@ -59,6 +59,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                 title: m?.title || e.title || "",
                 image: m?.image || media.bannerImage || media.coverImage?.extraLarge,
                 runtime: m?.runtime,
+                airDate: m?.airDate,
                 watched: e.number <= progress,
                 resumeAt: m?.resumeAt ?? 0,
                 duration: m?.history?.duration ?? 0,
@@ -77,18 +78,28 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
 
     const providerOptions = (providers ?? [{ id: "ani-cli", name: "ani-cli", builtin: true } as any]).map(p => ({ value: p.id, label: p.builtin ? "ani-cli (built-in)" : p.name }))
     const aniMissing = provider === "ani-cli" && status && !status.features.aniCli
+    const otherPlayer = streamPlayer() === "mpv" ? "in-app player" : "mpv"
+    // What's matched and where it plays: a muted line in the row (and in its menu).
+    const notes = [
+        data?.mapping && `Matched ${data.mapping.title}`,
+        !remote && `Plays in ${streamPlayer() === "mpv" ? "mpv" : "the in-app player"}`,
+        !remote && provider === "ani-cli" && status?.features.aniCliHost && `ani-cli on ${status.features.aniCliHost}`,
+    ].filter((n): n is string => !!n)
+    const download = (n: number) => api.post("/api/onlinestream/download", { provider, mediaId: media.id, episodes: [n], dub }).catch(err => toast.error(err.message))
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center gap-3">
-                <Select value={provider} onChange={setProvider} options={providerOptions} className="w-60" />
+            {/* The source and the version in one row; the rest in its menu. */}
+            <div className="flex flex-wrap items-center gap-2">
+                <Select value={provider} onChange={setProvider} options={providerOptions} className="min-w-0 flex-1 basis-36 sm:w-56 sm:flex-none sm:basis-auto" />
                 {hasSub && hasDub ? (
-                    <div className="flex rounded-lg bg-white/[0.04] p-0.5">
+                    <div className="flex shrink-0 rounded-lg bg-white/[0.04] p-0.5">
                         {(["sub", "dub"] as const).map(m => (
                             <button
                                 key={m}
                                 onClick={() => setDub(m === "dub")}
-                                className={cn("h-8 rounded-md px-3.5 text-[13px] font-medium uppercase transition-colors", (m === "dub") === dub ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
+                                aria-pressed={(m === "dub") === dub}
+                                className={cn("focus-ring h-8 rounded-md px-3.5 text-[13px] font-medium uppercase transition-colors", (m === "dub") === dub ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
                             >
                                 {m}
                             </button>
@@ -96,55 +107,60 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                     </div>
                 ) : (
                     <Tooltip content={`${prov?.name ?? provider} only has it ${dub ? "dubbed" : "with subtitles"}`}>
-                        <span className="flex rounded-lg bg-white/[0.04] p-0.5">
+                        <span className="flex shrink-0 rounded-lg bg-white/[0.04] p-0.5">
                             <span className="grid h-8 place-items-center rounded-md bg-white/[0.1] px-3.5 text-[13px] font-medium uppercase text-fg">{dub ? "dub" : "sub"}</span>
                         </span>
                     </Tooltip>
                 )}
-                <IconButton label="Refresh episode list" variant="subtle" onClick={refresh}>
-                    <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
+                <p className="order-last min-w-0 basis-full truncate text-xs text-subtle sm:order-none sm:flex-1 sm:basis-0" title={notes.join(" · ")}>
+                    {data?.mapping && data.mapping.score < 0.8 && <span className="text-amber-300">Low match · </span>}
+                    {notes.join(" · ")}
+                </p>
+                <IconButton label="Download episodes" variant="subtle" disabled={!episodes.length} onClick={() => setDlOpen(true)}>
+                    <Download className="size-4" />
                 </IconButton>
-                <Button variant="subtle" icon={<Wand2 className="size-4" />} onClick={() => setMatchOpen(true)}>
-                    {data?.mapping ? "Change match" : "Find manually"}
-                </Button>
-                <Button variant="subtle" icon={<Download className="size-4" />} disabled={!episodes.length} onClick={() => setDlOpen(true)}>
-                    Download episodes
-                </Button>
-                {data?.mapping && (
-                    <span className="text-sm text-muted">
-                        Matched <span className="font-semibold text-fg">{data.mapping.title}</span>
-                        {data.mapping.score < 0.8 && (
-                            <Badge tone="amber" className="ml-2">
-                                low confidence
-                            </Badge>
-                        )}
-                    </span>
-                )}
-                {!remote && (
-                    <span className="ml-auto flex items-center gap-1.5 text-xs text-subtle">
-                        <MonitorPlay className="size-3.5" /> Plays in {streamPlayer() === "mpv" ? "mpv" : "the in-app player"}
-                        {provider === "ani-cli" && status?.features.aniCliHost && <> · ani-cli runs on {status.features.aniCliHost}</>}
-                    </span>
-                )}
+                <Dropdown>
+                    <DropdownTrigger asChild>
+                        <IconButton variant="subtle" aria-label="More">
+                            {isFetching ? <RefreshCw className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                        </IconButton>
+                    </DropdownTrigger>
+                    <DropdownContent>
+                        {notes.map(n => (
+                            <DropdownLabel key={n}>
+                                <span className="block max-w-72 truncate">{n}</span>
+                            </DropdownLabel>
+                        ))}
+                        {notes.length > 0 && <DropdownSeparator />}
+                        <DropdownItem icon={<RefreshCw />} onSelect={refresh}>
+                            Refresh episode list
+                        </DropdownItem>
+                        <DropdownItem icon={<Wand2 />} onSelect={() => setMatchOpen(true)}>
+                            {data?.mapping ? "Change match" : "Find manually"}
+                        </DropdownItem>
+                        <DropdownItem icon={<Download />} disabled={!episodes.length} onSelect={() => setDlOpen(true)}>
+                            Download episodes
+                        </DropdownItem>
+                    </DropdownContent>
+                </Dropdown>
             </div>
 
             {aniMissing && (
-                <div className="flex items-start gap-4 rounded-xl border border-amber-500/25 bg-amber-500/10 p-5">
-                    <Terminal className="mt-0.5 size-5 text-amber-300" />
-                    <div className="text-sm">
-                        <p className="font-semibold text-amber-200">{status?.platform === "android" ? "ani-cli doesn’t run on Android" : "ani-cli isn’t installed"}</p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3">
+                    <Terminal className="size-5 shrink-0 text-amber-300" />
+                    <div className="min-w-0 flex-1 basis-48 text-sm">
+                        <p className="font-medium text-amber-200">{status?.platform === "android" ? "ani-cli doesn’t run on Android" : "ani-cli isn’t installed"}</p>
                         {status?.platform === "android" ? (
-                            <p className="mt-1 text-muted">
-                                On a computer with Aniko and ani-cli, turn on <b>Share my library</b> for this device in Settings › Other devices. Or pick an extension
-                                provider from the marketplace.
+                            <p className="mt-0.5 text-muted">
+                                Use a computer’s: Settings › Other devices › <b>Share my library</b>. Or pick another provider.
                             </p>
                         ) : canInstallPrograms(status) ? (
-                            <p className="mt-1 text-muted">Aniko can install it, or pick an extension provider from the marketplace.</p>
+                            <p className="mt-0.5 text-muted">Install it, or pick another provider.</p>
                         ) : (
-                            <p className="mt-1 text-muted">
-                                {installSource(status?.platform, "ani-cli")} <code className="rounded bg-black/40 px-1.5 py-0.5">{installHint(status?.platform, "ani-cli")}</code> (it also
-                                needs <code className="rounded bg-black/40 px-1.5 py-0.5">mpv</code>, <code className="rounded bg-black/40 px-1.5 py-0.5">yt-dlp</code> or{" "}
-                                <code className="rounded bg-black/40 px-1.5 py-0.5">ffmpeg</code>), or pick an extension provider from the marketplace.
+                            <p className="mt-0.5 break-words text-muted">
+                                {installSource(status?.platform, "ani-cli")} <code className="rounded bg-black/40 px-1.5 py-0.5">{installHint(status?.platform, "ani-cli")}</code> (needs{" "}
+                                <code className="rounded bg-black/40 px-1.5 py-0.5">mpv</code>, <code className="rounded bg-black/40 px-1.5 py-0.5">yt-dlp</code> or{" "}
+                                <code className="rounded bg-black/40 px-1.5 py-0.5">ffmpeg</code>). Or pick another provider.
                             </p>
                         )}
                     </div>
@@ -153,7 +169,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
             )}
 
             {(isLoading || (!error && data && episodes.length === 0 && !modesKnown)) && (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-x-5 gap-y-6">
                     {Array.from({ length: 6 }).map((_, i) => (
                         <Skeleton key={i} className="aspect-video" />
                     ))}
@@ -166,20 +182,20 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
             )}
             {!isLoading && !error && data && episodes.length === 0 && modesKnown && (
                 <EmptyState icon={<Search className="size-6" />} title="No match found" action={<Button variant="primary" onClick={() => setMatchOpen(true)}>Search manually</Button>}>
-                    {prov?.name ?? provider} didn’t return episodes for this anime{dub ? " in dub" : ""}.
+                    Nothing on {prov?.name ?? provider}
+                    {dub ? " in dub" : ""}.
                 </EmptyState>
             )}
 
             {episodes.length > 0 && (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-6 gap-y-8">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-x-5 gap-y-6">
                     {episodes.map(ep => (
                         <EpisodeCard
                             key={ep.number}
                             image={ep.image}
                             number={ep.number}
-                            title={ep.title || `Episode ${ep.number}`}
-                            subtitle={`Episode ${ep.number}${dub ? " · Dub" : " · Sub"}`}
-                            runtime={ep.runtime}
+                            title={ep.title || undefined}
+                            facts={[!!ep.runtime && `${ep.runtime}m`, ep.airDate, dub ? "Dub" : "Sub", ep.resumeAt > 0 && `at ${formatDuration(ep.resumeAt)}`]}
                             watched={ep.watched}
                             resumeAt={ep.resumeAt}
                             progress={ep.duration ? ep.resumeAt / ep.duration : 0}
@@ -188,33 +204,37 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                             actions={
                                 <div className="flex gap-1">
                                     <WatchedToggle watched={ep.watched} disabled={marker.pending} onToggle={() => marker.mark(ep.number, !ep.watched)} />
-                                    {!remote && (
-                                        <Tooltip content={streamPlayer() === "mpv" ? "Play in the in-app player" : "Play in mpv"}>
-                                            <button
-                                                aria-label={`Episode ${ep.number}: ${streamPlayer() === "mpv" ? "play in the in-app player" : "play in mpv"}`}
-                                                className="grid size-8 place-items-center rounded-lg bg-black/60 text-white backdrop-blur hover:bg-black/80"
-                                                onClick={e => {
-                                                    e.stopPropagation()
-                                                    playStream(provider, media.id, ep.number, dub, { player: streamPlayer() === "mpv" ? "builtin" : "mpv" })
-                                                }}
-                                            >
-                                                {streamPlayer() === "mpv" ? <Play className="size-4" /> : <MonitorPlay className="size-4" />}
-                                            </button>
-                                        </Tooltip>
-                                    )}
-                                    <Tooltip content="Download to library">
+                                    <Tooltip content="Download">
                                         <button
                                             aria-label={`Episode ${ep.number}: download to the library`}
-                                            className="grid size-8 place-items-center rounded-lg bg-black/60 text-white backdrop-blur hover:bg-black/80"
+                                            className="grid size-7 place-items-center rounded-md bg-black/70 text-white transition-colors hover:bg-black/85"
                                             onClick={e => {
                                                 e.stopPropagation()
-                                                api.post("/api/onlinestream/download", { provider, mediaId: media.id, episodes: [ep.number], dub }).catch(err => toast.error(err.message))
+                                                download(ep.number)
                                             }}
                                         >
                                             <Download className="size-4" />
                                         </button>
                                     </Tooltip>
                                 </div>
+                            }
+                            menu={
+                                <>
+                                    <DropdownItem icon={<Play />} onSelect={() => playStream(provider, media.id, ep.number, dub)}>
+                                        {ep.resumeAt > 0 ? "Resume" : "Play"}
+                                    </DropdownItem>
+                                    {!remote && (
+                                        <DropdownItem icon={<MonitorPlay />} onSelect={() => playStream(provider, media.id, ep.number, dub, { player: streamPlayer() === "mpv" ? "builtin" : "mpv" })}>
+                                            Play in {otherPlayer}
+                                        </DropdownItem>
+                                    )}
+                                    <DropdownItem icon={<Download />} onSelect={() => download(ep.number)}>
+                                        Download
+                                    </DropdownItem>
+                                    <DropdownItem icon={<CheckCheck />} onSelect={() => marker.mark(ep.number, !ep.watched)}>
+                                        {ep.watched ? "Mark as unwatched" : "Mark as watched"}
+                                    </DropdownItem>
+                                </>
                             }
                         />
                     ))}
@@ -296,7 +316,7 @@ function ManualMatchDialog({
         }
     }
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} title="Pick the right anime" description="Choose the matching entry. Aniko remembers it.">
+        <Dialog open={open} onOpenChange={onOpenChange} title="Pick the right anime">
             <div className="flex gap-2">
                 <Input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && search()} placeholder="Search…" icon={<Search className="size-4" />} />
                 {canDub && (
@@ -308,7 +328,7 @@ function ManualMatchDialog({
                                     setDubMode(m === "dub")
                                     setResults([])
                                 }}
-                                className={cn("rounded-md px-3 text-xs font-medium uppercase transition-colors", (m === "dub") === dub ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
+                                className={cn("focus-ring h-8 rounded-md px-3 text-xs font-medium uppercase transition-colors", (m === "dub") === dub ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
                             >
                                 {m}
                             </button>
@@ -321,12 +341,9 @@ function ManualMatchDialog({
             </div>
             <div className="mt-4 flex flex-col gap-1">
                 {results.map(r => (
-                    <button key={r.id} onClick={() => pick(r)} className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-white/[0.06]">
-                        <span className="font-medium">{r.title}</span>
-                        <span className="flex shrink-0 gap-1.5">
-                            {r.episodes ? <Badge>{r.episodes} eps</Badge> : null}
-                            {r.subOrDub && <Badge tone="brand">{r.subOrDub}</Badge>}
-                        </span>
+                    <button key={r.id} onClick={() => pick(r)} className="focus-ring flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-white/[0.06]">
+                        <span className="min-w-0 truncate font-medium">{r.title}</span>
+                        <span className="shrink-0 text-xs text-muted tabular-nums">{[r.episodes ? `${r.episodes} eps` : "", r.subOrDub].filter(Boolean).join(" · ")}</span>
                     </button>
                 ))}
                 {!busy && results.length === 0 && <p className="py-6 text-center text-sm text-subtle">Search to see results</p>}

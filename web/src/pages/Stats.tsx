@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { ChartColumn, Table } from "lucide-react"
 import { useMemo, useState } from "react"
-import { EmptyState } from "@/components/ui"
+import { Button, EmptyState } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useCollection } from "@/lib/queries"
 import type { CollectionItem } from "@/lib/types"
@@ -52,27 +52,32 @@ export default function StatsPage() {
         return { anime, episodes, minutes, completed, topGenres, byStatus }
     }, [coll])
 
+    // Every chart as its table, from the one button in the header.
+    const [asTable, setAsTable] = useState(false)
+
     if (isLoading) return <div className="m-10 card h-60 shimmer" />
     if (!coll) return <EmptyState title="Couldn't load your list" />
 
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <div className="mb-8">
+            <div className="mb-8 flex items-center justify-between gap-4">
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Stats</h1>
-                <p className="mt-1 text-muted">Your list and what you watched in Aniko.</p>
+                <Button aria-pressed={asTable} icon={asTable ? <ChartColumn className="size-4" /> : <Table className="size-4" />} onClick={() => setAsTable(t => !t)}>
+                    {asTable ? "Charts" : "Tables"}
+                </Button>
             </div>
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-10">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <StatTile label="Anime on your list" value={stats.anime.toLocaleString()} sub="excluding planned" />
+                    <StatTile label="Anime" value={stats.anime.toLocaleString()} sub="Not planned" />
                     <StatTile label="Completed" value={stats.completed.toLocaleString()} />
-                    <StatTile label="Episodes watched" value={compact(stats.episodes)} sub="rewatches included" />
+                    <StatTile label="Episodes" value={compact(stats.episodes)} sub="With rewatches" />
                     {/* In days and hours, and (from a day on) all in hours. */}
                     <StatTile label="Time watched" value={duration(stats.minutes)} sub={stats.minutes >= 24 * 60 ? `${Math.round(stats.minutes / 60).toLocaleString()} hours` : undefined} />
                 </div>
-                <MonthlyChart months={months ?? []} />
-                <div className="grid gap-8 lg:grid-cols-2">
-                    <GenreBars genres={stats.topGenres} />
-                    <StatusBar counts={stats.byStatus} />
+                <MonthlyChart months={months ?? []} asTable={asTable} />
+                <div className="grid gap-10 lg:grid-cols-2">
+                    <GenreBars genres={stats.topGenres} asTable={asTable} />
+                    <StatusBar counts={stats.byStatus} asTable={asTable} />
                 </div>
             </div>
         </div>
@@ -81,40 +86,30 @@ export default function StatsPage() {
 
 function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
-        <div className="card px-5 py-4">
-            <p className="text-sm text-muted">{label}</p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
-            {sub && <p className="mt-0.5 text-xs text-subtle">{sub}</p>}
+        <div className="card min-w-0 px-4 py-4 sm:px-5">
+            <p className="truncate text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">{value}</p>
+            <p className="mt-1 truncate text-sm text-muted">{label}</p>
+            {sub && <p className="truncate text-xs text-subtle">{sub}</p>}
         </div>
     )
 }
 
-// A chart's frame: its title, and a button between the chart and its table.
-function ChartCard({ title, note, table, children }: { title: string; note?: string; table: React.ReactNode; children: React.ReactNode }) {
-    const [asTable, setAsTable] = useState(false)
+// A chart's frame: a plain heading with what it counts beside it, then the
+// chart (or its table) on the page itself.
+function ChartSection({ title, note, asTable, table, children }: { title: string; note?: string; asTable: boolean; table: React.ReactNode; children: React.ReactNode }) {
     return (
-        <section className="card px-5 pt-4 pb-5">
-            <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                    <h2 className="text-[15px] font-semibold">{title}</h2>
-                    {note && <p className="mt-0.5 text-xs text-subtle">{note}</p>}
-                </div>
-                <button
-                    onClick={() => setAsTable(t => !t)}
-                    className="focus-ring flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted hover:bg-white/[0.05] hover:text-fg"
-                    aria-pressed={asTable}
-                >
-                    {asTable ? <ChartColumn className="size-3.5" /> : <Table className="size-3.5" />}
-                    {asTable ? "Chart" : "Table"}
-                </button>
-            </div>
+        <section className="min-w-0">
+            <h2 className="mb-4 text-xl font-semibold tracking-tight">
+                {title}
+                {note && <span className="ml-2 text-sm font-normal tracking-normal text-subtle">{note}</span>}
+            </h2>
             {asTable ? table : children}
         </section>
     )
 }
 
 // Episodes finished in Aniko, month by month: one series, in the accent.
-function MonthlyChart({ months }: { months: Month[] }) {
+function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }) {
     const [hover, setHover] = useState<number | null>(null)
     const max = Math.max(0, ...months.map(m => m.episodes))
     const ticks = niceTicks(max)
@@ -142,15 +137,15 @@ function MonthlyChart({ months }: { months: Month[] }) {
         </table>
     )
     return (
-        <ChartCard title="Episodes watched in Aniko" note="Last 12 months, by month last watched" table={table}>
+        <ChartSection title="Watched in Aniko" note="Episodes, last 12 months" asTable={asTable} table={table}>
             {empty ? (
-                <p className="py-10 text-center text-sm text-muted">No episodes finished in Aniko in the last 12 months.</p>
+                <p className="py-10 text-sm text-muted">Nothing watched yet.</p>
             ) : (
                 // Headroom above the plot: the hover readout over the tallest
                 // month stays clear of the title.
-                <div className="mt-12 flex gap-3">
+                <div className="mt-14 flex gap-2 sm:gap-3">
                     {/* y axis: clean ticks, tabular so they line up */}
-                    <div className="relative h-48 w-8 shrink-0 text-right text-[11px] text-subtle tabular-nums">
+                    <div className="relative h-48 w-6 shrink-0 sm:w-8 text-right text-[11px] text-subtle tabular-nums">
                         {ticks.map(t => (
                             <span key={t} className="absolute right-0 -translate-y-1/2" style={{ bottom: `${(t / top) * 100}%` }}>
                                 {t}
@@ -169,7 +164,7 @@ function MonthlyChart({ months }: { months: Month[] }) {
                                         key={m.month}
                                         tabIndex={0}
                                         aria-label={`${monthName(m.month, true)}: ${m.episodes} episodes, ${hoursMinutes(m.minutes)}`}
-                                        className="group relative flex h-full flex-1 cursor-default items-end justify-center outline-none"
+                                        className="group relative flex h-full min-w-0 flex-1 cursor-default items-end justify-center rounded-t-md outline-none focus-visible:bg-white/[0.06]"
                                         onPointerEnter={() => setHover(i)}
                                         onPointerLeave={() => setHover(h => (h === i ? null : h))}
                                         onFocus={() => setHover(i)}
@@ -199,7 +194,7 @@ function MonthlyChart({ months }: { months: Month[] }) {
                         </div>
                         <div className="mt-2 flex text-[11px] text-subtle">
                             {months.map((m, i) => (
-                                <span key={m.month} className="flex-1 text-center">
+                                <span key={m.month} className={cn("min-w-0 flex-1 text-center whitespace-nowrap", i % 2 === 1 && "max-sm:invisible")}>
                                     {monthName(m.month, i === 0 || m.month.endsWith("-01"))}
                                 </span>
                             ))}
@@ -207,13 +202,13 @@ function MonthlyChart({ months }: { months: Month[] }) {
                     </div>
                 </div>
             )}
-        </ChartCard>
+        </ChartSection>
     )
 }
 
 // The genres of the anime on the list (not planned): one series, bars with
 // their count at the tip.
-function GenreBars({ genres }: { genres: [string, number][] }) {
+function GenreBars({ genres, asTable }: { genres: [string, number][]; asTable: boolean }) {
     const max = Math.max(1, ...genres.map(g => g[1]))
     const table = (
         <table className="w-full text-sm">
@@ -228,13 +223,13 @@ function GenreBars({ genres }: { genres: [string, number][] }) {
         </table>
     )
     return (
-        <ChartCard title="Top genres" note="Anime on your list per genre" table={table}>
+        <ChartSection title="Top genres" asTable={asTable} table={table}>
             {genres.length === 0 ? (
-                <p className="py-10 text-center text-sm text-muted">No anime on your list yet.</p>
+                <p className="py-10 text-sm text-muted">No anime yet.</p>
             ) : (
                 <div className="flex flex-col gap-2.5">
                     {genres.map(([g, n]) => (
-                        <div key={g} className="grid grid-cols-[7rem_1fr] items-center gap-3 text-sm" title={`${g}: ${n} anime`}>
+                        <div key={g} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 text-sm" title={`${g}: ${n} anime`}>
                             <span className="truncate text-muted">{g}</span>
                             <div className="flex items-center gap-2">
                                 <div className="h-4 rounded-r-[4px] bg-brand" style={{ width: `${(n / max) * 85}%` }} />
@@ -244,13 +239,13 @@ function GenreBars({ genres }: { genres: [string, number][] }) {
                     ))}
                 </div>
             )}
-        </ChartCard>
+        </ChartSection>
     )
 }
 
 // The list by status: one bar of its parts, with a legend (and the counts in
 // it, so identity never rests on color alone).
-function StatusBar({ counts }: { counts: Map<string, number> }) {
+function StatusBar({ counts, asTable }: { counts: Map<string, number>; asTable: boolean }) {
     const parts = STATUSES.filter(s => (counts.get(s.status) ?? 0) > 0).map(s => ({ ...s, n: counts.get(s.status)! }))
     const total = parts.reduce((s, p) => s + p.n, 0)
     const [hover, setHover] = useState<string | null>(null)
@@ -267,9 +262,9 @@ function StatusBar({ counts }: { counts: Map<string, number> }) {
         </table>
     )
     return (
-        <ChartCard title="Your list" note={`${total.toLocaleString()} anime by status`} table={table}>
+        <ChartSection title="Your list" note={`${total.toLocaleString()} anime`} asTable={asTable} table={table}>
             {total === 0 ? (
-                <p className="py-10 text-center text-sm text-muted">No anime on your list yet.</p>
+                <p className="py-10 text-sm text-muted">No anime yet.</p>
             ) : (
                 <div className="flex flex-col gap-5">
                     <div className="flex h-6 gap-[2px]">
@@ -278,7 +273,7 @@ function StatusBar({ counts }: { counts: Map<string, number> }) {
                                 key={p.status}
                                 tabIndex={0}
                                 aria-label={`${p.label}: ${p.n}`}
-                                className={cn("outline-none transition-opacity", i === 0 && "rounded-l-[4px]", i === parts.length - 1 && "rounded-r-[4px]", hover && hover !== p.status && "opacity-50")}
+                                className={cn("outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-white/70", i === 0 && "rounded-l-[4px]", i === parts.length - 1 && "rounded-r-[4px]", hover && hover !== p.status && "opacity-50")}
                                 style={{ flexGrow: p.n, flexBasis: 0, minWidth: 3, background: p.color }}
                                 onPointerEnter={() => setHover(p.status)}
                                 onPointerLeave={() => setHover(null)}
@@ -298,7 +293,7 @@ function StatusBar({ counts }: { counts: Map<string, number> }) {
                     </ul>
                 </div>
             )}
-        </ChartCard>
+        </ChartSection>
     )
 }
 

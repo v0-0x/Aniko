@@ -26,24 +26,19 @@ export default function MangaPage() {
 
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-[1.75rem] font-semibold tracking-tight">Manga</h1>
-                    <p className="mt-1 text-muted">Progress syncs to your list.</p>
-                </div>
+            <div className="mb-8 flex items-center justify-between gap-4">
+                <h1 className="text-[1.75rem] font-semibold tracking-tight">Manga</h1>
                 <Link to="/search?type=MANGA">
                     <Button icon={<Search className="size-4" />}>Find manga</Button>
                 </Link>
             </div>
             {providers && providers.length === 0 && (
-                <div className="mb-8 flex items-center justify-between gap-4 rounded-xl bg-white/[0.03] p-5">
-                    <div className="flex items-center gap-3">
-                        <Puzzle className="size-5 text-muted" />
-                        <p className="text-sm">Install a manga provider extension to start reading.</p>
-                    </div>
+                <div className="card mb-8 flex items-center gap-3 p-3 pl-4">
+                    <Puzzle className="size-4 shrink-0 text-muted" />
+                    <p className="min-w-0 flex-1 text-sm text-muted">No manga provider installed</p>
                     <Link to="/extensions?tab=marketplace">
                         <Button size="sm" variant="primary">
-                            Open marketplace
+                            Marketplace
                         </Button>
                     </Link>
                 </div>
@@ -74,7 +69,7 @@ export default function MangaPage() {
                         </Link>
                     }
                 >
-                    Add manga to your AniList list to see it here.
+                    Add manga to your list from its page.
                 </EmptyState>
             ) : (
                 <MediaGrid start>
