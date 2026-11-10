@@ -26,6 +26,11 @@ const (
 	// old name can be taken by anyone, who would then make the updates.
 	UpdateRepo   = "v0-0x/Aniko"
 	UpdateRepoID = "1406820679"
+
+	// HubUpdateRepo is where mediaserver (this server as its anime side)
+	// looks for its updates instead: its releases, server-v<version>.
+	HubUpdateRepo   = "v0-0x/mediaserver"
+	HubUpdateRepoID = "1441645210"
 )
 
 // Set when building, with -ldflags "-X <module>/internal/config.AppVersion=…

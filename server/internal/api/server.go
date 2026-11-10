@@ -19,6 +19,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/v0-0x/Aniko/server/internal/app"
@@ -51,6 +52,14 @@ type Server struct {
 	// AppOnly: on this device other apps reach 127.0.0.1 too (Android), so
 	// only the app's own window (the shell token) is its user there.
 	AppOnly bool
+	// MoviesPort is where mediaserver's movies side answers, for the
+	// dashboard's link to it; movies its API, which the dashboard reaches
+	// at /api/movies/... (sides.go, SetMovies). MusicPort and music: the
+	// music side's, at /api/music/... (SetMusic).
+	MoviesPort int
+	movies     atomic.Pointer[http.Handler]
+	MusicPort  int
+	music      atomic.Pointer[http.Handler]
 
 	// Files sent into the library (upload.go).
 	uploadOnce sync.Once
@@ -71,6 +80,17 @@ func ListenAddr(cfg config.Settings) string {
 		host = "0.0.0.0"
 	}
 	return fmt.Sprintf("%s:%d", host, cfg.Server.Port)
+}
+
+// IsOwner reports a browser signed in to the dashboard. mediaserver's
+// movies side takes the same sign-in: a browser keeps one host's cookies for
+// all of its ports.
+func (s *Server) IsOwner(r *http.Request) bool {
+	if s.app.Settings.Get().Server.Password == "" {
+		return false
+	}
+	c, err := r.Cookie("kumo_session")
+	return err == nil && subtle.ConstantTimeCompare([]byte(c.Value), []byte(s.sessionToken())) == 1
 }
 
 // Start begins serving and rebinds when the network settings change.
@@ -188,6 +208,10 @@ const (
 	clientShell clientKind = iota
 	clientLocal
 	clientLAN
+	// clientOwner: a browser on the network signed in to an Aniko Hub's
+	// dashboard (its password): the hub's owner, as trusted as its own
+	// computer.
+	clientOwner
 )
 
 type ctxKey struct{}
@@ -260,6 +284,10 @@ var machineName = sync.OnceValue(func() string {
 func (s *Server) sessionToken() string {
 	cfg := s.app.Settings.Get()
 	key := s.app.ShellToken
+	// A hub's sessions outlast it restarting (an update).
+	if s.app.HubStore != nil {
+		key = s.app.HubStore.SessionSecret()
+	}
 	mac := hmac.New(sha256.New, []byte(key+"|"+cfg.Server.Password))
 	mac.Write([]byte("kumo-session"))
 	return hex.EncodeToString(mac.Sum(nil))
@@ -339,11 +367,23 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		if kind == clientLAN && cfg.Server.Password != "" && !strings.HasPrefix(r.URL.Path, "/api/auth/server-login") {
+		// A hub's dashboard: its owner's, by password. Until one is set (with
+		// the setup code), the page shows the setup, and the API only that.
+		if kind == clientLAN && s.app.HubStore != nil {
+			if cfg.Server.Password == "" {
+				if strings.HasPrefix(r.URL.Path, "/api/") && r.URL.Path != "/api/status" && r.URL.Path != "/api/hub/setup" {
+					writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "set the hub's password first", "setupRequired": true})
+					return
+				}
+			} else if c, err := r.Cookie("kumo_session"); err == nil && subtle.ConstantTimeCompare([]byte(c.Value), []byte(s.sessionToken())) == 1 {
+				kind = clientOwner
+			}
+		}
+		if kind == clientLAN && cfg.Server.Password != "" && !strings.HasPrefix(r.URL.Path, "/api/auth/server-login") && r.URL.Path != "/api/hub/setup" {
 			c, err := r.Cookie("kumo_session")
 			if err != nil || subtle.ConstantTimeCompare([]byte(c.Value), []byte(s.sessionToken())) != 1 {
 				if strings.HasPrefix(r.URL.Path, "/api/") {
-					writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "password required", "passwordRequired": true})
+					writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "password required", "passwordRequired": true, "hub": s.app.HubStore != nil})
 					return
 				}
 				// Let the SPA load; it shows the login screen.
@@ -363,9 +403,16 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), ctxKey{}, kind)
 		r = r.WithContext(ctx)
-		// Parental controls set on this device by a computer or server.
+		// Parental controls set on this device by a computer or hub.
 		if rules := s.app.Share.Parental(); rules.Active() && strings.HasPrefix(r.URL.Path, "/api/") {
 			s.parentalServe(rules, w, r, next)
+			return
+		}
+		// A hub notes every change made from its dashboard (or on it) in
+		// its audit log.
+		if s.app.HubStore != nil && (kind == clientOwner || kind == clientLocal || kind == clientShell) && strings.HasPrefix(r.URL.Path, "/api/") &&
+			r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
+			s.audited(w, r, next)
 			return
 		}
 		next.ServeHTTP(w, r)

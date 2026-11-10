@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/v0-0x/Aniko/server/internal/awake"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,9 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/awake"
-
 	"github.com/v0-0x/Aniko/server/internal/anicli"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
 	"github.com/v0-0x/Aniko/server/internal/anilist"
 	"github.com/v0-0x/Aniko/server/internal/config"
 	"github.com/v0-0x/Aniko/server/internal/db"
@@ -43,25 +43,26 @@ import (
 )
 
 type App struct {
-	DB        *db.DB
-	Settings  *config.Store
-	Hub       *events.Hub
-	Platform  *anilist.Platform
-	Meta      *metadata.Service
-	Files     *library.Store
-	Scanner   *library.Scanner
-	Library   *library.Service
-	History   *history.Store
-	Player    *player.Manager
-	AniCli    *anicli.Driver
-	Downloads *downloads.Manager
-	Torrents  *torrent.Manager
-	// TorrentStream plays torrents as they download (package torrentstream).
+	DB         *db.DB
+	Settings   *config.Store
+	Hub        *events.Hub
+	Platform   *anilist.Platform
+	Meta       *metadata.Service
+	Files      *library.Store
+	Scanner    *library.Scanner
+	Library    *library.Service
+	History    *history.Store
+	Player     *player.Manager
+	AniCli     *anicli.Driver
+	Downloads  *downloads.Manager
+	Torrents   *torrent.Manager
+	AutoDL     *torrent.AutoDownloader
+	Extensions *extensions.Manager
+	Stream     *stream.Service
+	Local      *stream.Local
+	// TorrentStream plays torrents as they download, for the devices whose
+	// downloads come here (package torrentstream).
 	TorrentStream *torrentstream.Engine
-	AutoDL        *torrent.AutoDownloader
-	Extensions    *extensions.Manager
-	Stream        *stream.Service
-	Local         *stream.Local
 	HLS           *stream.HLS
 	Share         *share.Service
 	Manga         *manga.Service
@@ -85,6 +86,13 @@ type App struct {
 	// ShellToken authenticates the desktop window (see api middleware).
 	ShellToken string
 	DataDir    string
+
+	// HubStore is set when Aniko runs as an Aniko Hub (aniko --hub, package
+	// anikohub): it plays nothing, shares its library with the Aniko apps on
+	// the network and keeps them in step; the heavy parts don't run.
+	HubStore *anikohub.Store
+	Streams  *anikohub.Streams
+	Sampler  *anikohub.Sampler
 
 	prefetch *prefetcher
 
@@ -119,14 +127,44 @@ func (l *LogBuffer) Write(p []byte) (int, error) {
 	return l.out.Write(p)
 }
 
+// Keep records log lines without writing them out again: in mediaserver,
+// both of its engines keep the one log, which the other already wrote out.
+func (l *LogBuffer) Keep(p []byte) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for _, line := range bytes.Split(bytes.TrimRight(p, "\n"), []byte("\n")) {
+		l.lines = append(l.lines, string(line))
+	}
+	if len(l.lines) > 1000 {
+		l.lines = l.lines[len(l.lines)-1000:]
+	}
+}
+
 func (l *LogBuffer) Lines() []string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return append([]string(nil), l.lines...)
 }
 
-func New(dataDir string) (*App, error) {
+// Options say how Aniko runs.
+type Options struct {
+	// Hub: as an Aniko Hub (see App.HubStore).
+	Hub bool
+}
+
+func New(dataDir string, opts ...Options) (*App, error) {
+	var opt Options
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 	logs := &LogBuffer{out: os.Stderr}
+	if opt.Hub {
+		if f, err := OpenLogFile(filepath.Join(dataDir, "logs")); err == nil {
+			logs.File = f
+		} else {
+			fmt.Fprintf(os.Stderr, "the log won't be kept on disk: %v\n", err)
+		}
+	}
 	log.SetOutput(logs)
 	log.SetFlags(log.LstdFlags)
 
@@ -167,31 +205,48 @@ func New(dataDir string) (*App, error) {
 		ctx: ctx, cancel: cancel, DataDir: dataDir, prefetch: newPrefetcher(),
 	}
 	a.HLS = stream.NewHLS(a.Local, hlsDir(dataDir))
+	// Torrents streamed for the devices whose downloads come here (a TV
+	// has no torrent client): package torrentstream, as in Aniko.
+	a.TorrentStream = torrentstream.New(torrentStreamDir(dataDir, opt.Hub))
+	a.TorrentStream.Free = func(dir string) (uint64, error) {
+		_, free, err := util.DiskSpace(dir)
+		return free, err
+	}
+	a.Local.Torrents = a.TorrentStream
 	a.Notify = notify.New(settings, hub, d, platform)
 	a.Trash = library.NewTrash(d, files, func() []string { return a.Settings.Get().LibraryDirs() })
 	a.Awake = awake.New(func() bool { return a.Settings.Get().Sharing.KeepAwake })
 	if a.Share, err = share.New(d, settings, files, hub); err != nil {
 		return nil, fmt.Errorf("library sharing: %w", err)
 	}
+	if opt.Hub {
+		if a.HubStore, err = anikohub.New(d); err != nil {
+			return nil, fmt.Errorf("hub: %w", err)
+		}
+		a.Streams = anikohub.NewStreams()
+		// It updates from its own releases (hub-v…).
+		a.Update.AsHub()
+		if err := a.hubSettings(); err != nil {
+			return nil, err
+		}
+	}
 	// Libraries other Aniko apps share with this one show with its own.
 	lib.Remote = a.Share.RemoteFiles
 	a.ShellToken = randomToken()
-	a.TorrentStream = torrentstream.New(torrentStreamDir(dataDir))
-	a.TorrentStream.Free = func(dir string) (uint64, error) {
-		_, free, err := util.DiskSpace(dir)
-		return free, err
-	}
-	a.Local.Torrents = a.TorrentStream
 	a.wireManga()
 	a.wire()
 	return a, nil
 }
 
-// torrentStreamDir holds the torrents being played, in the cache folder
-// (gone when they're done).
-func torrentStreamDir(dataDir string) string {
+// torrentStreamDir holds the pieces of the torrents being streamed, in
+// the cache folder (mediaserver's own, as a hub).
+func torrentStreamDir(dataDir string, hub bool) string {
+	name := "aniko"
+	if hub {
+		name = "mediaserver"
+	}
 	if dir, err := os.UserCacheDir(); err == nil {
-		return filepath.Join(dir, "aniko", "torrent-stream")
+		return filepath.Join(dir, name, "torrent-stream")
 	}
 	return filepath.Join(dataDir, "torrent-stream")
 }
@@ -229,11 +284,15 @@ func (a *App) wire() {
 	}
 	a.Share.OnFiles = a.prefetchLibrary
 	// Anikos on the same AniList account keep their watch histories in step,
-	// as positions are saved.
-	a.Share.History = a.History
-	a.History.OnChange = a.Share.HistoryChanged
-	a.wirePrefs()
-	a.wireBlobs()
+	// as positions are saved. A hub keeps every account's instead (hub.go).
+	if a.HubStore != nil {
+		a.wireHub()
+	} else {
+		a.Share.History = a.History
+		a.History.OnChange = a.Share.HistoryChanged
+		a.wirePrefs()
+		a.wireBlobs()
+	}
 	a.Share.OnWatchedElsewhere = func() {
 		ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
 		defer cancel()
@@ -248,6 +307,10 @@ func (a *App) wire() {
 		return host != "" || err != nil, err
 	}
 	a.Share.User = func() int {
+		// A hub is on each device's account, not one of its own.
+		if a.HubStore != nil {
+			return 0
+		}
 		if v := a.Platform.Viewer(); v != nil {
 			return v.ID
 		}
@@ -486,6 +549,10 @@ func (a *App) background(job func()) {
 
 // Start runs the background jobs.
 func (a *App) Start() {
+	if a.HubStore != nil {
+		a.startHub()
+		return
+	}
 	a.Share.Start()
 	a.background(func() { a.runPrefetch(a.ctx) })
 	a.Extensions.LoadAll()
@@ -533,6 +600,9 @@ func (a *App) Start() {
 }
 
 func (a *App) Shutdown() {
+	if a.HubStore != nil {
+		a.HubStore.Log(anikohub.Event{Kind: "stop", By: "hub", Text: "stopped"})
+	}
 	a.cancel()
 	// The player first: it saves where it stopped, which sharing then sends
 	// to the other Anikos before it stops.

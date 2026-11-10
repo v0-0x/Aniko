@@ -14,14 +14,15 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
 	fileup "github.com/v0-0x/Aniko/server/internal/upload"
 	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Uploads (package upload): files and folders sent from a computer into a
 // library. The app (web/src/components/UploadDialog) sends them a piece at
-// a time to its own Aniko (mediaserver's anime side keeps them, for the
-// browser signed in to its dashboard) or passes them on to the Aniko they go to
+// a time to its own Aniko, which keeps them (mediaserver's anime side, for
+// the browser signed in to its dashboard) or passes them on to the Aniko they go to
 // (one that takes this one's downloads), whose /api/peer/upload takes them.
 
 // uploadTarget is where files can go: a Aniko this one may upload to, or
@@ -81,10 +82,10 @@ func (s *Server) uploadRoutes() {
 	}))
 }
 
-// uploadsHere: this Aniko takes files from the browser itself. Only
-// mediaserver's anime side does (from its dashboard): an Aniko takes them
-// from other Aniko apps.
-func (s *Server) uploadsHere() bool { return false }
+// uploadsHere: this Aniko takes files from the browser itself (it's
+// mediaserver's anime side: its dashboard); others take them from other
+// Aniko apps only.
+func (s *Server) uploadsHere() bool { return s.app.HubStore != nil }
 
 // machineHost is this computer's name, for the list of targets.
 func machineHost() (string, error) {
@@ -146,7 +147,7 @@ func (s *Server) uploadHere(w http.ResponseWriter, r *http.Request, from string)
 		writeJSON(w, http.StatusOK, uploadFolders{Folders: append([]string{}, dirs...), Chunk: fileup.Chunk, Manga: true})
 		return
 	}
-	// Downloaded manga, from another Aniko: into the manga folder.
+	// Downloaded manga, from an Aniko: into the manga folder.
 	if q.Get("folder") == "manga" {
 		dir := s.app.MangaDir()
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -190,9 +191,18 @@ func (s *Server) uploadHere(w http.ResponseWriter, r *http.Request, from string)
 			full := filepath.Join(dirs[i], filepath.FromSlash(st.Path))
 			who := from
 			if who == "" {
-				who = "the browser"
+				who = "the dashboard"
 			}
 			log.Printf("upload: %s from %s", full, who)
+			// The hub's audit log: who sent what.
+			if s.app.HubStore != nil {
+				ev := anikohub.Event{Kind: "upload", Device: from, Text: "uploaded " + st.Path, Size: st.Have,
+					Files: []anikohub.AuditFile{{Name: filepath.Base(full), Path: full, Size: st.Have}}}
+				if from == "" {
+					ev.By, ev.IP = auditBy(r)
+				}
+				s.app.HubStore.Log(ev)
+			}
 		}
 	} else {
 		st, err = s.receiver().Status(dirs[i], q.Get("path"), total)

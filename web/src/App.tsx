@@ -51,16 +51,25 @@ const MangaReaderPage = lazy(() => import("./pages/MangaReader"))
 const WebviewPage = lazy(() => import("./pages/Webview"))
 const ProfilePage = lazy(() => import("./pages/Profile"))
 
+// An Aniko Hub (aniko --hub) shows its dashboard instead of the app.
+const HubApp = lazy(() => import("./pages/hub/HubApp"))
+
 export default function App() {
     const { data: status, isError, isFetching } = useStatus()
     const needsPassword = useStore(passwordStore)
     useEffect(() => {
-        const off = onPasswordRequired(() => passwordStore.set(true))
+        const off = onPasswordRequired(d => passwordStore.set(d?.hub ? "hub" : true))
         return () => {
             off()
         }
     }, [])
-    if (needsPassword) return <PasswordGate />
+    if (needsPassword) return <PasswordGate hub={needsPassword === "hub"} />
+    if (status?.hub)
+        return (
+            <Suspense fallback={<div className="h-full bg-frame" />}>
+                <HubApp status={status} />
+            </Suspense>
+        )
     // Until the server says what it is (a moment): not the app's pages
     // asking it for things.
     if (!status && (!isError || isFetching)) return <div className="h-full bg-frame" />
@@ -257,7 +266,7 @@ function MiniPlayer() {
     )
 }
 
-function PasswordGate() {
+function PasswordGate({ hub }: { hub?: boolean }) {
     const [pw, setPw] = useState("")
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState("")
@@ -279,8 +288,8 @@ function PasswordGate() {
         <div className="grid h-full place-items-center bg-bg p-6">
             <div className="card w-full max-w-sm p-8 text-center rise-in">
                 <AnikoLogo className="mx-auto size-11" />
-                <h1 className="mt-4 text-xl font-semibold">Aniko</h1>
-                <p className="mt-1 text-sm text-muted">This server is password protected.</p>
+                <h1 className="mt-4 text-xl font-semibold">{hub ? "mediaserver" : "Aniko"}</h1>
+                <p className="mt-1 text-sm text-muted">{hub ? "Sign in to mediaserver's dashboard with its password." : "This server is password protected."}</p>
                 <div className="mt-6 flex flex-col gap-3">
                     <Input type="password" autoFocus icon={<Lock className="size-4" />} placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} />
                     {err && <p className="text-sm text-rose-300">{err}</p>}
