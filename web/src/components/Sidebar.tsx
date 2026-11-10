@@ -312,12 +312,39 @@ export function Sidebar() {
             </nav>
 
             <div className={cn("flex flex-col gap-0.5 pt-3", !classic && "border-t border-line", !wide && "items-center")}>
-                <ThemesMenu wide={wide} />
-                <PluginTrays />
-                <div className={cn("flex gap-0.5", wide ? "items-center" : "flex-col-reverse items-center")}>
-                    <div className={wide ? "min-w-0 flex-1" : undefined}>{link({ to: "/settings", label: "Settings", icon: <SettingsIcon /> })}</div>
-                    <MuteButton side={wide ? "top" : "right"} />
-                </div>
+                {/* Themes, notifications and Settings: three icons in a row (one
+                    under the other in the icons-only sidebar), named by tooltips.
+                    The classic look and the TV keep their labelled rows. */}
+                {classic || tv ? (
+                    <>
+                        <ThemesMenu wide={wide} />
+                        <PluginTrays />
+                        <div className={cn("flex gap-0.5", wide ? "items-center" : "flex-col-reverse items-center")}>
+                            <div className={wide ? "min-w-0 flex-1" : undefined}>{link({ to: "/settings", label: "Settings", icon: <SettingsIcon /> })}</div>
+                            <MuteButton side={wide ? "top" : "right"} />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <PluginTrays />
+                        <div className={cn("flex items-center gap-1", wide ? "justify-between px-0.5" : "flex-col")}>
+                            <ThemesMenu wide={false} />
+                            <MuteButton side={wide ? "top" : "right"} />
+                            <Tooltip content="Settings" side={wide ? "top" : "right"}>
+                                <NavLink
+                                    to="/settings"
+                                    aria-label="Settings"
+                                    className={cn(
+                                        "focus-ring grid size-9 shrink-0 place-items-center rounded-[10px] transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:stroke-[1.75]",
+                                        location.pathname.startsWith("/settings") ? "bg-white/[0.08] text-brand-strong" : "text-muted hover:bg-white/[0.045] hover:text-fg",
+                                    )}
+                                >
+                                    <SettingsIcon />
+                                </NavLink>
+                            </Tooltip>
+                        </div>
+                    </>
+                )}
                 <Dropdown>
                     <DropdownTrigger asChild>
                         <button
