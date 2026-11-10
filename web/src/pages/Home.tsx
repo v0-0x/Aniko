@@ -1,4 +1,4 @@
-import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Download, FolderOpen, FolderSearch, FolderSync, HardDrive, LibraryBig, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
+import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Play, Download, FolderOpen, FolderSearch, FolderSync, HardDrive, LibraryBig, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { EpisodeCard } from "@/components/EpisodeCard"
@@ -326,11 +326,14 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
     const index = Math.min(useStore(heroStore), Math.max(0, count - 1))
     const item = items[index] ?? null
     const onIndex = heroStore.set
+    const play = useContinuePlay()
+    const started = !!item && item.resumeAt > 0
+    const left = !item ? 0 : item.duration > 0 ? Math.max(1, Math.round((item.duration - item.resumeAt) / 60)) : item.runtime
     // The sharp AniList banner, like the anime page: episode thumbnails are
     // often small, blurry screenshots.
     const img = !item ? "" : item.media.bannerImage ? banner(item.media) : imgUrl(item.image) || cover(item.media)
     return (
-        <div className="relative h-[clamp(300px,44vh,480px)] w-full overflow-hidden">
+        <div className="relative h-[clamp(340px,50vh,540px)] w-full overflow-hidden max-sm:h-[440px]">
             {img ? (
                 <img key={img} src={img} alt="" className="absolute inset-0 size-full object-cover fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
             ) : (
@@ -345,11 +348,33 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                 ) : item ? (
                     // Clear of the arrows at its right on a phone.
                     <div key={item.media.id} className="max-w-3xl rise-in max-sm:pr-20">
-                        <p className="text-sm font-medium text-white/65">Continue watching</p>
+                        <p className="text-sm font-medium text-white/65 max-sm:hidden">Continue watching</p>
                         {/* On a TV the cards below are what's picked (the banner follows them). */}
-                        <Link to={`/entry?id=${item.media.id}`} data-tv-skip-nav className="mt-1.5 block text-4xl leading-[1.1] font-semibold tracking-tight text-white transition-colors hover:text-white/85 md:text-[2.75rem]">
+                        <Link to={`/entry?id=${item.media.id}`} data-tv-skip-nav className="mt-1.5 line-clamp-2 text-4xl leading-[1.1] font-semibold tracking-tight text-white transition-colors hover:text-white/85 md:text-[2.75rem]">
                             {title(item.media)}
                         </Link>
+                        {/* The next episode: what it is, how much is left, and play. */}
+                        <p className="mt-2 line-clamp-1 text-[15px] text-white/80">
+                            Episode {item.episode}
+                            {item.total > 0 && <span className="text-white/50"> of {item.total}</span>}
+                            {item.title && item.title !== `Episode ${item.episode}` && <span> · {item.title}</span>}
+                            {left > 0 && <span className="text-white/50"> · {left} min{started ? " left" : ""}</span>}
+                        </p>
+                        {started && item.duration > 0 && (
+                            <div className="mt-3 h-1 w-64 max-w-full overflow-hidden rounded-full bg-white/20" role="progressbar" aria-label="Watched" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((item.resumeAt / item.duration) * 100)}>
+                                <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (item.resumeAt / item.duration) * 100)}%` }} />
+                            </div>
+                        )}
+                        {!tv && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <Button variant="white" icon={<Play className="size-4 fill-current" />} onClick={() => play(item)}>
+                                    {started ? "Resume" : `Play episode ${item.episode}`}
+                                </Button>
+                                <Link to={`/entry?id=${item.media.id}`} className="focus-ring inline-flex h-9 items-center rounded-lg bg-white/10 px-3.5 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20">
+                                    Details
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="rise-in">
@@ -384,9 +409,27 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
     )
 }
 
-function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: number) => void }) {
+// Plays what a Continue watching item says: its file, else a stream.
+function useContinuePlay() {
     const { playLocal, playStream } = usePlay()
     const { data: status } = useStatus()
+    const navigate = useNavigate()
+    return async (it: ContinueItem) => {
+        // From where the card says: the position shown, not one saved since
+        // (the same episode watched further, or finished, on another device
+        // after this page was loaded).
+        if (it.hasFile && it.filePath) playLocal(it.filePath, it.media.id, it.episode, it.resumeAt > 0 ? { start: it.resumeAt } : {})
+        else if (status?.settings.onlineStream.enabled) {
+            // Same provider and sub/dub as last time for this anime.
+            const provider = readLocal(`aniko-provider-${it.media.id}`) || status.settings.onlineStream.defaultProvider || "ani-cli"
+            const dub = await fetchLanguageMode(it.media.id, status.settings.aniCli.defaultMode === "dub")
+            playStream(provider, it.media.id, it.episode, dub)
+        } else navigate(`/entry?id=${it.media.id}`)
+    }
+}
+
+function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: number) => void }) {
+    const play = useContinuePlay()
     const navigate = useNavigate()
     const qc = useQueryClient()
     const ref = useRef<HTMLDivElement>(null)
@@ -433,18 +476,6 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
             {dir < 0 ? <ChevronLeft className="size-5" /> : <ChevronRight className="size-5" />}
         </button>
     )
-    const play = async (it: ContinueItem) => {
-        // From where the card says: the position shown, not one saved since
-        // (the same episode watched further, or finished, on another device
-        // after this page was loaded).
-        if (it.hasFile && it.filePath) playLocal(it.filePath, it.media.id, it.episode, it.resumeAt > 0 ? { start: it.resumeAt } : {})
-        else if (status?.settings.onlineStream.enabled) {
-            // Same provider and sub/dub as last time for this anime.
-            const provider = readLocal(`aniko-provider-${it.media.id}`) || status.settings.onlineStream.defaultProvider || "ani-cli"
-            const dub = await fetchLanguageMode(it.media.id, status.settings.aniCli.defaultMode === "dub")
-            playStream(provider, it.media.id, it.episode, dub)
-        } else navigate(`/entry?id=${it.media.id}`)
-    }
     // The server hides it until it offers another episode or the anime is
     // watched again. This row and the hero both show the collection's list,
     // so it is edited right away (a refetch in flight would undo that).
