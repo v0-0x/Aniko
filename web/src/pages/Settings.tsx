@@ -99,17 +99,17 @@ const NAV: { title: string; items: NavItem[] }[] = [
         title: "General",
         items: [
             { id: "account", label: "Account", icon: <UserRound />, description: "Your AniList account", keywords: "login log in anilist sign" },
-            { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors, holidays, the classic look and what's shown", keywords: "ui theme color dark classic look titles spoilers card size" },
+            { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors and what's shown", keywords: "ui theme color dark classic look titles spoilers card size" },
             { id: "notifications", label: "Notifications", icon: <Bell />, description: "Alerts for new episodes and finished downloads", keywords: "alerts notify" },
-            { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Aniko's version, updates and beta updates", keywords: "version beta about what's new" },
+            { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Version, updates and beta", keywords: "version beta about what's new" },
         ],
     },
     {
         title: "Watching",
         items: [
-            { id: "playback", label: "Playback", icon: <Clapperboard />, description: "How episodes play, progress, audio and subtitles", keywords: "player video subtitles audio dub sub skip" },
-            { id: "mpv", label: "mpv player", icon: <MonitorPlay />, description: "The desktop media player Aniko can play in", keywords: "external player" },
-            { id: "transcode", label: "Video conversion", icon: <Cpu />, description: "So the in-app player plays every format", keywords: "transcoding direct play ffmpeg hardware gpu hevc" },
+            { id: "playback", label: "Playback", icon: <Clapperboard />, description: "Player, progress, audio and subtitles", keywords: "player video subtitles audio dub sub skip" },
+            { id: "mpv", label: "mpv player", icon: <MonitorPlay />, description: "Play in mpv, a desktop media player", keywords: "external player" },
+            { id: "transcode", label: "Video conversion", icon: <Cpu />, description: "Convert video the in-app player can't play", keywords: "transcoding direct play ffmpeg hardware gpu hevc" },
             { id: "discord", label: "Discord", icon: <Gamepad2 />, description: "Show what you're watching on Discord", keywords: "rich presence status" },
         ],
     },
@@ -118,23 +118,23 @@ const NAV: { title: string; items: NavItem[] }[] = [
         items: [
             { id: "library", label: "Local library", icon: <LibraryBig />, description: "Your anime folders and how they're scanned", keywords: "folder files scan matching downloads" },
             { id: "streaming", label: "Online streaming", icon: <Tv />, description: "ani-cli and streaming extensions", keywords: "ani-cli anicli sub dub stream" },
-            { id: "torrents", label: "Torrents", icon: <Magnet />, description: "Torrent search, your torrent client and the auto downloader", keywords: "qbittorrent transmission nyaa rss provider client" },
-            { id: "manga", label: "Manga", icon: <BookOpen />, description: "Reading manga with provider extensions", keywords: "reader" },
+            { id: "torrents", label: "Torrents", icon: <Magnet />, description: "Torrent search, client and auto downloader", keywords: "qbittorrent transmission nyaa rss provider client" },
+            { id: "manga", label: "Manga", icon: <BookOpen />, description: "Read manga with extensions", keywords: "reader" },
             { id: "extensions", label: "Extensions", icon: <Puzzle />, description: "Where extensions come from", keywords: "marketplace plugins" },
         ],
     },
     {
         title: "Devices & network",
         items: [
-            { id: "devices", label: "Other devices", icon: <MonitorSmartphone />, description: "Aniko on your other computers and TVs: sharing, waking, syncing", keywords: "share sharing tv fire library wake sync" },
-            { id: "network", label: "Network & web UI", icon: <Wifi />, description: "Using Aniko from a browser or other devices at home", keywords: "lan port password browser web" },
+            { id: "devices", label: "Other devices", icon: <MonitorSmartphone />, description: "Share, wake and sync with your other computers and TVs", keywords: "share sharing tv fire library wake sync" },
+            { id: "network", label: "Network & web UI", icon: <Wifi />, description: "Use Aniko from a browser or other devices at home", keywords: "lan port password browser web" },
         ],
     },
     {
         title: "This computer",
         items: [
-            { id: "desktop", label: "Desktop app & programs", icon: <AppWindow />, description: "The window, the tray, starting at login, and the programs Aniko uses", keywords: "tray background startup login ffmpeg yt-dlp mpv install" },
-            { id: "backup", label: "Backup & data", icon: <DatabaseBackup />, description: "Back up and restore, and where Aniko keeps its data", keywords: "restore export import folder" },
+            { id: "desktop", label: "Desktop app & programs", icon: <AppWindow />, description: "Window, tray, start at login and installed programs", keywords: "tray background startup login ffmpeg yt-dlp mpv install" },
+            { id: "backup", label: "Backup & data", icon: <DatabaseBackup />, description: "Back up, restore and the data folder", keywords: "restore export import folder" },
             { id: "logs", label: "Logs & cache", icon: <FileClock />, description: "Server logs and cached data", keywords: "debug clear" },
         ],
     },
@@ -149,16 +149,16 @@ const NAV_ITEMS = SHOWN_NAV.flatMap(g => g.items)
 // The pages, each with the parts on it (a page is named by its first part).
 const PAGES: (NavItem & { parts: SectionId[] })[] = (
     [
-        { id: "account", label: "Account", icon: <UserRound />, description: "Your AniList account and what Aniko tells you about", parts: ["account", "notifications"] },
-        { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors, holidays, the classic look and what's shown", parts: ["appearance"] },
-        { id: "playback", label: "Playback", icon: <Clapperboard />, description: "How episodes play, progress, audio and subtitles, and Discord", parts: ["playback", "discord"] },
-        { id: "mpv", label: "Players & conversion", icon: <MonitorPlay />, description: "The mpv player, and converting video so the in-app player plays every format", parts: ["mpv", "transcode"] },
+        { id: "account", label: "Account", icon: <UserRound />, description: "Your AniList account and notifications", parts: ["account", "notifications"] },
+        { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors and what's shown", parts: ["appearance"] },
+        { id: "playback", label: "Playback", icon: <Clapperboard />, description: "Player, progress, audio, subtitles and Discord", parts: ["playback", "discord"] },
+        { id: "mpv", label: "Players & conversion", icon: <MonitorPlay />, description: "The mpv player and video conversion", parts: ["mpv", "transcode"] },
         { id: "library", label: "Library", icon: <LibraryBig />, description: "Your anime folders and how they're scanned", parts: ["library"] },
-        { id: "streaming", label: "Streaming & torrents", icon: <Tv />, description: "ani-cli and streaming extensions, torrent search and your torrent client", parts: ["streaming", "torrents"] },
-        { id: "manga", label: "Manga & extensions", icon: <BookOpen />, description: "Reading manga, and where extensions come from", parts: ["manga", "extensions"] },
-        { id: "devices", label: "Devices & network", icon: <MonitorSmartphone />, description: "Your other computers, TVs and server, and using Aniko from a browser", parts: ["devices", "network"] },
-        { id: "desktop", label: "App & data", icon: <AppWindow />, description: "The window and programs, backups, logs and cache", parts: ["desktop", "backup", "logs"] },
-        { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Aniko's version, updates and beta updates", parts: ["updates"] },
+        { id: "streaming", label: "Streaming & torrents", icon: <Tv />, description: "ani-cli, streaming extensions, torrent search and client", parts: ["streaming", "torrents"] },
+        { id: "manga", label: "Manga & extensions", icon: <BookOpen />, description: "Manga reader and extension sources", parts: ["manga", "extensions"] },
+        { id: "devices", label: "Devices & network", icon: <MonitorSmartphone />, description: "Your other computers and TVs, and browser access", parts: ["devices", "network"] },
+        { id: "desktop", label: "App & data", icon: <AppWindow />, description: "Window, programs, backups, logs and cache", parts: ["desktop", "backup", "logs"] },
+        { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Version, updates and beta", parts: ["updates"] },
     ] satisfies (NavItem & { parts: SectionId[] })[]
 )
     .map(pg => ({ ...pg, parts: pg.parts.filter(id => NAV_ITEMS.some(i => i.id === id)) }))
@@ -239,7 +239,7 @@ export default function SettingsPage() {
         const onlyThemes = (Object.keys(server) as (keyof Settings)[]).every(k =>
             k === "ui" ? (Object.keys(server.ui) as (keyof Settings["ui"])[]).every(f => picked.includes(f) || same(server.ui[f], base.ui[f])) : same(server[k], base[k]),
         )
-        if (!onlyThemes && !same(draft, base) && !same(next, draft)) toast.info("Settings were changed somewhere else. Your unsaved changes here were kept.")
+        if (!onlyThemes && !same(draft, base) && !same(next, draft)) toast.info("Settings changed elsewhere. Your unsaved changes were kept.")
         setDraft(next)
         setBase(server)
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,7 +338,7 @@ export default function SettingsPage() {
             <section className="min-w-0 flex-1 lg:max-w-4xl">
                 {status.client === "lan" && (
                     <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-muted lg:mt-[3.75rem]">
-                        You're using Aniko from another device: dimmed settings (folders, programs, network, logins) can only be changed on the computer it runs on.
+                        Dimmed settings can only be changed on the computer Aniko runs on.
                     </p>
                 )}
                 {searching ? (
@@ -661,11 +661,11 @@ function Detect({ ok, label }: { ok?: boolean; label: string }) {
 // Where other devices open Aniko, once LAN access is saved.
 function LanAddresses({ status }: { status?: Status }) {
     const urls = status?.lanUrls ?? []
-    if (!status?.settings.server.allowLan) return <p className="px-4 py-3.5 text-sm text-muted">Save, and the address to open on your other devices shows up here.</p>
+    if (!status?.settings.server.allowLan) return <p className="px-4 py-3.5 text-sm text-muted">Save to see the address for your other devices.</p>
     if (!urls.length)
         return (
             <p className="px-4 py-3.5 text-sm text-amber-200/80">
-                Aniko can't find this computer's address on your network. Is it connected to your router (by cable or Wi-Fi)?
+                Can't find this computer's network address. Check that it's connected to your router.
             </p>
         )
     return (
@@ -685,8 +685,8 @@ function LanAddresses({ status }: { status?: Status }) {
                 ))}
             </div>
             <p className="mt-2 text-xs text-subtle">
-                Type it with http://, not https://. On a Mac, Chrome, Brave and Firefox first need Local Network access (System Settings › Privacy & Security ›
-                Local Network); Safari works right away. A VPN on this computer can block other devices too: in Mullvad, turn on Local network sharing.
+                Use http://, not https://. On a Mac, Chrome, Brave and Firefox need Local Network access in System Settings › Privacy & Security. A VPN on this
+                computer can block other devices.
             </p>
         </div>
     )
@@ -720,7 +720,7 @@ function AccountSection({ draft, set }: SectionProps) {
                         </div>
                     )}
                     {status?.user && lan ? (
-                        <p className="max-w-56 text-right text-xs text-subtle">The computer Aniko runs on is logged in: log out there.</p>
+                        <p className="max-w-56 text-right text-xs text-subtle">Log out on the computer Aniko runs on.</p>
                     ) : status?.user ? (
                         <Button
                             variant="danger"
@@ -744,7 +744,7 @@ function AccountSection({ draft, set }: SectionProps) {
                 </div>
                 </Shown>
                 <Locked>
-                    <Stack label="AniList client ID" help="Aniko opens anilist.co/api/v2/oauth/authorize?client_id=…&response_type=token">
+                    <Stack label="AniList client ID" help="Change it only to use your own AniList API client.">
                         <Input value={draft.anilist.clientId} onChange={e => set("anilist", { clientId: e.target.value })} />
                     </Stack>
                 </Locked>
@@ -760,35 +760,35 @@ function NetworkSection({ draft, set }: SectionProps) {
     const lan = status?.client === "lan"
     return (
         <>
-            <Group title="Web UI & network" description="Aniko only ever talks to this computer and — if you allow it — your home network. Connections from the internet are always refused.">
+            <Group title="Web UI & network" description="Connections from the internet are always refused.">
                 {/* The Android app is its own window, on its own port. */}
                 {!androidApp && (
                     <Row
                         label="Web UI"
                         help={
                             status?.webUiForced
-                                ? "Running without the desktop app, so the browser UI is always on."
-                                : `Use Aniko from any browser at http://127.0.0.1:${draft.server.port}`
+                                ? "Always on without the desktop app."
+                                : `Open Aniko in a browser at http://127.0.0.1:${draft.server.port}`
                         }
                     >
                         <Switch checked={draft.server.webUi || !!status?.webUiForced} disabled={!isDesktop || status?.webUiForced} onChange={v => set("server", { webUi: v })} />
                     </Row>
                 )}
-                <Row label="Allow devices on my network" help="Phones, tablets, TVs and other computers on your home network can open Aniko in a browser.">
+                <Row label="Allow devices on my network" help="Open Aniko in a browser on phones, TVs and other computers at home.">
                     <Switch checked={draft.server.allowLan} disabled={lan} onChange={v => set("server", { allowLan: v, webUi: v ? true : draft.server.webUi })} />
                 </Row>
                 {draft.server.allowLan && <LanAddresses status={status} />}
                 {draft.server.allowLan && (
-                    <Stack label="Network password" help="Asked once per device on your network. This computer never needs it.">
+                    <Stack label="Network password" help="Asked once per device. Not needed on this computer.">
                         <Password value={draft.server.password} onChange={v => set("server", { password: v })} placeholder="Leave empty for no password" />
                     </Stack>
                 )}
                 {!androidApp && (
-                    <Row label="Port" help="Restart-free: Aniko moves to the new port when you save.">
+                    <Row label="Port" help="Changes when you save. No restart needed.">
                         <Input type="number" className="w-28" disabled={lan} value={draft.server.port} onChange={e => set("server", { port: Number(e.target.value) })} />
                     </Row>
                 )}
-                {!isDesktop && !lan && !androidApp && <p className="px-4 py-3 text-xs text-amber-200/80">Turning the Web UI off is only possible from the desktop app, so you can't lock yourself out.</p>}
+                {!isDesktop && !lan && !androidApp && <p className="px-4 py-3 text-xs text-amber-200/80">The Web UI can only be turned off from the desktop app.</p>}
             </Group>
         </>
     )
@@ -806,7 +806,7 @@ function ExtensionsSection({ draft, set }: SectionProps) {
                 </Locked>
             </Group>
             <Group title="Your extensions">
-                <Row label="Installed extensions and the marketplace" help="Install, update, set up and remove extensions on the Extensions page." keywords="install update marketplace">
+                <Row label="Installed extensions and the marketplace" help="Manage them on the Extensions page." keywords="install update marketplace">
                     <Button size="sm" variant="ghost" onClick={() => navigate("/extensions")}>
                         Open
                     </Button>
@@ -867,8 +867,8 @@ function DesktopGroup() {
                 label="Keep running when the window is closed"
                 help={
                     mac
-                        ? "Off: closing the window quits Aniko. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; click Aniko in the Dock to open it again, quit with Cmd+Q or the button below."
-                        : `Off: closing the window quits Aniko. On: streaming to your other devices, downloads and the auto downloader keep going, without the window's memory; open or quit Aniko from its tray icon${win ? " (at the right of the taskbar, under ^ when hidden)" : ""}, or open it again from ${win ? "the Start menu" : "your app menu"} and quit with the button below.`
+                        ? "Streaming, downloads and the auto downloader keep going. Quit with Cmd+Q."
+                        : "Streaming, downloads and the auto downloader keep going. Open or quit from the tray icon."
                 }
             >
                 <Switch checked={prefs.keepRunning} onChange={v => change("keepRunning", v)} />
@@ -878,8 +878,8 @@ function DesktopGroup() {
                     label="Start Aniko when you log in"
                     help={
                         prefs.keepRunning
-                            ? `In the background, ${mac ? "in the Dock" : "with its tray icon"}: ready for your other devices, downloads and the auto downloader without opening its window.`
-                            : "It opens its window. Turn on keeping it running to start it in the background instead."
+                            ? "Starts in the background, without its window."
+                            : "Opens its window. Turn on the setting above to start in the background."
                     }
                 >
                     <Switch checked={prefs.startAtLogin} onChange={v => change("startAtLogin", v)} />
@@ -889,13 +889,13 @@ function DesktopGroup() {
             {(mac || win) && (
                 <Row
                     label="Free memory while the computer is locked"
-                    help="After 5 minutes locked, the window lets go of the page and loads it again when you unlock. Never while a video, the manga reader or Settings is open."
+                    help="After 5 minutes locked. Not while a video, the manga reader or Settings is open."
                 >
                     <Switch checked={prefs.freeWhenLocked} onChange={v => change("freeWhenLocked", v)} />
                 </Row>
             )}
             {bridge.quit && (
-                <Row label="Quit Aniko" help="Closes the window and stops the server: streaming to other devices, downloads and library sharing stop until Aniko is opened again.">
+                <Row label="Quit Aniko" help="Also stops streaming to other devices, downloads and sharing.">
                     <Button size="sm" variant="ghost" onClick={() => bridge.quit!()}>
                         Quit
                     </Button>
@@ -923,13 +923,13 @@ function ProgramsGroup() {
     const f = status?.features
     const windows = status?.platform === "windows"
     const programs: { tool: Tool; ok?: boolean; use: string }[] = [
-        { tool: "ffmpeg", ok: f?.ffmpeg, use: "The in-app player (most files) and episode downloads" },
-        { tool: "ani-cli", ok: f?.aniCli, use: windows ? "Sub/dub streaming and downloads (it runs in Git's bash)" : "Sub/dub streaming and downloads" },
-        { tool: "mpv", ok: f?.mpv, use: "The external player" },
+        { tool: "ffmpeg", ok: f?.ffmpeg, use: "In-app player and episode downloads" },
+        { tool: "ani-cli", ok: f?.aniCli, use: windows ? "Sub/dub streaming and downloads. Needs Git Bash" : "Sub/dub streaming and downloads" },
+        { tool: "mpv", ok: f?.mpv, use: "External player" },
         { tool: "yt-dlp", ok: f?.ytDlp, use: "Faster, more reliable episode downloads" },
     ]
     return (
-        <Group title="Programs" description="Aniko uses these programs for some of what it does.">
+        <Group title="Programs">
             {programs.map(p => (
                 <Row
                     key={p.tool}
@@ -952,8 +952,8 @@ function ProgramsGroup() {
                     label="Install missing programs"
                     help={
                         status?.platform === "darwin"
-                            ? "Downloads ffmpeg, yt-dlp and ani-cli for this Mac (Apple silicon or Intel) into Aniko's folder, in a Terminal window: no Homebrew or password needed. mpv, the external player, comes from Homebrew on Apple silicon Macs that have it. Programs you already have are skipped."
-                            : "Installs Git, ani-cli, ffmpeg, mpv, yt-dlp and the rest of what Aniko uses with Scoop, for your Windows user (no administrator rights), in a PowerShell window. Programs you already have are skipped. It also offers to sign you in to GitHub, for Aniko's updates."
+                            ? "Opens a Terminal window. No Homebrew or password needed. mpv needs Homebrew."
+                            : "Opens a PowerShell window and installs with Scoop. No administrator rights needed."
                     }
                 >
                     <InstallProgramsButton />
@@ -987,8 +987,8 @@ function BackupGroup() {
         if (
             !confirm(
                 `Restore the backup of ${info.computer || "a computer"} from ${when}?\n\n` +
-                    "It's merged with what's here: positions and list entries newer here stay, and so do this computer's network and sharing settings. " +
-                    "What's here now is saved first, in Aniko's data folder. Aniko starts again after.",
+                    "It's merged with what's here. Newer positions and list entries stay, and so do this computer's network and sharing settings. " +
+                    "The current data is saved first in Aniko's data folder. Aniko restarts after.",
             )
         )
             return
@@ -998,7 +998,7 @@ function BackupGroup() {
             const sum = await res.json().catch(() => null)
             if (!res.ok) throw new Error(sum?.error || res.statusText)
             const parts = [sum.history && `${sum.history} positions`, sum.list && `${sum.list} list entries`, sum.extensions && `${sum.extensions} extensions`, sum.rules && `${sum.rules} auto downloader rules`].filter(Boolean)
-            toast.success(`Restored${parts.length ? `: ${parts.join(", ")}` : ""}. Aniko is starting again…`, { duration: 15_000 })
+            toast.success(`Restored${parts.length ? `: ${parts.join(", ")}` : ""}. Aniko is restarting…`, { duration: 15_000 })
             // Back once it answers again, with everything read afresh.
             await waitForRestart()
             location.reload()
@@ -1008,16 +1008,16 @@ function BackupGroup() {
         }
     }
     return (
-        <Group title="Backup" description="Your settings, watch history, list, audio and subtitle choices, matches made by hand, auto downloader rules and extensions, as one file. Put it back here, or on another computer.">
-            <Row label="Include logins and passwords" help="Your AniList login and the torrent clients' passwords. Keep a backup with them private.">
+        <Group title="Backup" description="Settings, watch history, list, auto downloader rules and extensions in one file.">
+            <Row label="Include logins and passwords" help="AniList login and torrent client passwords. Keep that backup private.">
                 <Switch checked={logins} onChange={setLogins} />
             </Row>
-            <Row label="Make a backup" help="Downloads the file.">
+            <Row label="Make a backup">
                 <a href={`/api/backup?logins=${logins ? 1 : 0}`} download>
                     <Button size="sm">Download backup</Button>
                 </a>
             </Row>
-            <Row label="Restore a backup" help="Merged with what's here; Aniko starts again after.">
+            <Row label="Restore a backup" help="Merged with what's here. Aniko restarts after.">
                 <label>
                     <input type="file" accept=".json,application/json" className="sr-only" disabled={restoring} onChange={e => e.target.files?.[0] && restore(e.target.files[0])} />
                     <span className={cn("inline-flex h-8 cursor-pointer items-center rounded-lg bg-white/[0.07] px-3 text-[13px] font-medium hover:bg-white/[0.12]", restoring && "pointer-events-none opacity-60")}>
@@ -1053,21 +1053,21 @@ function AlertsGroup({ draft, set }: SectionProps) {
     const [permission, setPermission] = useState(systemNotifications)
     const desktopApp = !!desktop()
     return (
-        <Group title="Alerts" description="Muted with the bell next to Settings, like Aniko's other messages.">
-            <Row label="New episodes" help="When an episode of an anime you're watching comes out.">
+        <Group title="Alerts" description="The bell next to Settings mutes them.">
+            <Row label="New episodes" help="For anime you're watching.">
                 <Switch checked={notify.newEpisodes} onChange={v => set("notify", { ...notify, newEpisodes: v })} />
             </Row>
-            <Row label="Episodes ready to watch" help="When a download finishes, or new episodes show up in your library (a torrent that finished).">
+            <Row label="Episodes ready to watch" help="When a download finishes or new episodes reach your library.">
                 <Switch checked={notify.downloads} onChange={v => set("notify", { ...notify, downloads: v })} />
             </Row>
             {!desktopApp && !androidApp && permission === "default" && (
-                <Row label="Notifications of this browser" help="So alerts show while Aniko's tab isn't in front.">
+                <Row label="Notifications of this browser" help="Show alerts when Aniko's tab is in the background.">
                     <Button size="sm" onClick={() => Notification.requestPermission().then(() => setPermission(systemNotifications()))}>
                         Allow
                     </Button>
                 </Row>
             )}
-            {!desktopApp && !androidApp && permission === "denied" && <p className="px-4 py-3 text-xs text-subtle">This browser blocks Aniko's notifications: alerts show in Aniko only (allow them in the site's settings).</p>}
+            {!desktopApp && !androidApp && permission === "denied" && <p className="px-4 py-3 text-xs text-subtle">This browser blocks notifications. Allow them in the site's settings.</p>}
         </Group>
     )
 }
@@ -1077,7 +1077,7 @@ function AlertsGroup({ draft, set }: SectionProps) {
 function SubtitlesGroup() {
     const style = useStore(subStyleStore)
     return (
-        <Group title="How subtitles look" description="In the in-app player, on this device. Their timing: z and x while playing, or the player's subtitles menu (kept for each anime).">
+        <Group title="How subtitles look" description="In the in-app player, on this device. Adjust timing with z and x while playing.">
             <div className="px-4 py-4">
                 <div className="relative flex h-28 items-end justify-center overflow-hidden rounded-lg bg-gradient-to-br from-sky-900 via-slate-700 to-amber-800 pb-3" aria-hidden>
                     <span
@@ -1099,7 +1099,7 @@ function SubtitlesGroup() {
             <Row label="Background">
                 <Select className="w-48" value={style.background} onChange={v => setSubStyle({ background: v as SubStyle["background"] })} options={SUB_BACKGROUNDS} />
             </Row>
-            <Row label="Position" help="Higher up keeps them clear of a TV's edge or a video's own captions.">
+            <Row label="Position" help="Raise them to clear a TV's edge or a video's own captions.">
                 <Select className="w-40" value={style.position} onChange={v => setSubStyle({ position: v as SubStyle["position"] })} options={SUB_POSITIONS} />
             </Row>
         </Group>
@@ -1143,7 +1143,7 @@ function UISection({ draft, set }: SectionProps) {
     return (
         <>
             <Group title="Theme">
-                <Row label="Classic look" help="Aniko as it looked before 2.0: its sidebar, cards, menus and holiday themes. The colors below work in both.">
+                <Row label="Classic look" help="Aniko as it looked before 2.0.">
                     <Switch checked={!!draft.ui.classicLook} onChange={v => set("ui", { classicLook: v })} />
                 </Row>
                 <Stack label="Colors">
@@ -1220,7 +1220,7 @@ function UISection({ draft, set }: SectionProps) {
                         options={[{ value: "auto", label: "By the date" }, { value: "off", label: "Off" }, ...HOLIDAYS.map(h => ({ value: h.id, label: `Always ${h.name}` }))]}
                     />
                 </Row>
-                <Row label="Holiday animations" help={`${holiday ? holiday.effectName : "Snow, bats, hearts"} over the pages (not over videos). Off with Reduce motion.`}>
+                <Row label="Holiday animations" help={`${holiday ? holiday.effectName : "Snow, bats, hearts"} over the pages. Off with Reduce motion.`}>
                     <Switch checked={draft.ui.seasonalEffects ?? true} disabled={seasonal === "off"} onChange={v => set("ui", { seasonalEffects: v })} />
                 </Row>
                 <Row label="Card size">
@@ -1241,7 +1241,7 @@ function UISection({ draft, set }: SectionProps) {
                 {tv && androidApp && <TvSizeRow />}
             </Group>
             <Group title="Content">
-                <Row label="Anime titles" help="English where AniList has an English title, or Japanese (romaji, in Latin letters)">
+                <Row label="Anime titles" help="Japanese titles are in romaji.">
                     <Select
                         className="w-36"
                         value={draft.ui.titleLanguage === "romaji" ? "romaji" : "english"}
@@ -1252,7 +1252,7 @@ function UISection({ draft, set }: SectionProps) {
                         ]}
                     />
                 </Row>
-                <Row label="Hide spoilers" help="Blur thumbnails of episodes you haven't watched yet">
+                <Row label="Hide spoilers" help="Blur thumbnails of unwatched episodes">
                     <Switch checked={draft.ui.blurUnwatched} onChange={v => set("ui", { blurUnwatched: v })} />
                 </Row>
                 <Row label="Show adult content" help="Include 18+ entries in search and discover">
@@ -1298,24 +1298,24 @@ function SharingGroup({ draft, set }: SectionProps) {
     return (
         <Group
             title="Library sharing"
-            description="Watch the libraries of Aniko on your other computers at home, and share yours with them. Each computer decides who gets its library. Watching updates the AniList account (or local list) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second: to the computer whose files you watch as you watch, and back."
+            description="Watch the libraries of Aniko on your other computers at home, and share yours. Watching updates the list of the computer you watch on."
         >
             <ParentalHere />
-            <Row label="Library sharing" help="Find the Aniko apps on this network, and let them find this one. Turn it on on both computers.">
+            <Row label="Library sharing" help="Turn it on on both computers.">
                 <Switch checked={draft.sharing.enabled} disabled={!trusted} onChange={v => set("sharing", { enabled: v })} />
             </Row>
             {draft.sharing.enabled && (
-                <Stack label="Name on the network" help="What the other Aniko apps call this one.">
+                <Stack label="Name on the network" help="Shown to the other Aniko apps.">
                     <Input value={draft.sharing.name} disabled={!trusted} placeholder={sharing?.name || "This computer's name"} onChange={e => set("sharing", { name: e.target.value })} />
                 </Stack>
             )}
             {draft.sharing.enabled && (
-                <Row label="Sync watch history by itself" help="When a device this one is paired with comes back on the network, or Aniko's TV app is opened again, Continue watching and the positions are brought up to date. Sync on Home still does it at once.">
+                <Row label="Sync watch history by itself" help="When a paired device comes back on the network. Sync on Home does it at once.">
                     <Switch checked={draft.sharing.autoSync ?? true} disabled={!trusted} onChange={v => set("sharing", { autoSync: v })} />
                 </Row>
             )}
             {draft.sharing.enabled && peers.some(p => p.role === "hub") && (
-                <Row label="Same theme on all my devices" help="Through mediaserver: the colors, the look and the player settings stay the same on the devices on your AniList account. Changed on one, they change on the others.">
+                <Row label="Same theme on all my devices" help="Colors, look and player settings, on devices using your AniList account.">
                     <Switch checked={draft.sharing.syncPrefs ?? true} disabled={!trusted} onChange={v => set("sharing", { syncPrefs: v })} />
                 </Row>
             )}
@@ -1326,7 +1326,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                             Same list and watch order on all my devices <Badge tone="amber">Experimental</Badge>
                         </span>
                     }
-                    help="Through mediaserver: your watch-order edits, and the list of a device that isn't logged into AniList, are kept in step between your devices (the devices on no account share one list through the server). Changed on one, they change on the others; what you remove goes on all. If it goes wrong, turn it off here and the lists stay as they are on each device."
+                    help="What you remove on one device is removed on all. Turning this off leaves each device's list as it is."
                 >
                     <Switch checked={draft.sharing.syncLists ?? true} disabled={!trusted} onChange={v => set("sharing", { syncLists: v })} />
                 </Row>
@@ -1334,8 +1334,8 @@ function SharingGroup({ draft, set }: SectionProps) {
             {draft.sharing.enabled && peers.some(p => p.role === "hub") && (draft.sharing.syncLists ?? true) && (
                 <p className="px-4 pb-3 text-xs text-subtle">
                     {sharing?.listsSynced
-                        ? `Lists last in step with ${sharing.listsSynced.with} at ${new Date(sharing.listsSynced.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`
-                        : "Lists not synced yet since Aniko started: they are when the server answers."}
+                        ? `Lists last synced with ${sharing.listsSynced.with} at ${new Date(sharing.listsSynced.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`
+                        : "Lists not synced yet. Waiting for the server."}
                 </p>
             )}
             {draft.sharing.enabled !== !!saved?.enabled && <p className="px-4 py-3 text-xs text-amber-200/80">Save to turn library sharing {draft.sharing.enabled ? "on" : "off"}.</p>}
@@ -1355,7 +1355,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                     </div>
                     {peers.length === 0 && (
                         <p className="px-4 py-3 text-sm text-muted">
-                            {sharing.listening ? "Looking for Aniko apps… Turn on library sharing on the other computer too." : "This computer can't listen for the others (another program uses the network port): add them by address below."}
+                            {sharing.listening ? "Looking for Aniko apps… Turn on library sharing on the other computer too." : "Another program uses the network port. Add the others by address below."}
                         </p>
                     )}
                     {peers.map(p => (
@@ -1374,7 +1374,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                                         !p.online && p.lastSeen > 0 && `seen ${relativeTime(p.lastSeen)}`,
                                         p.shares && `shares its library with you${p.files ? ` (${p.files} ${p.files === 1 ? "file" : "files"})` : ""}`,
                                         p.error,
-                                        p.noBeacons && "found by its address only: its announcements aren't getting through (a firewall, or a network set to Public on it)",
+                                        p.noBeacons && "found by address only, check its firewall or a network set to Public",
                                     ]
                                         .filter(Boolean)
                                         .join(" · ")}
@@ -1417,14 +1417,14 @@ function SharingGroup({ draft, set }: SectionProps) {
                             <div className="mt-3 ml-1 flex flex-col gap-3 border-l border-line pl-4">
                                 <PeerGrant
                                     label="Share my AniList account"
-                                    help="It uses your AniList account: your list, and what it watches updates your progress."
+                                    help="What it watches updates your list and progress."
                                     checked={p.account}
                                     disabled={!trusted}
                                     onChange={v => call(() => api.post(`/api/sharing/peers/${p.id}`, { account: v }))}
                                 />
                                 <PeerGrant
                                     label="Let it download here"
-                                    help="Its downloads and torrents go to this computer's library, and come back shared, and it can upload files and folders into it. It downloads here by default from then on."
+                                    help="Its downloads, torrents and uploads go to this computer's library."
                                     checked={p.downloads}
                                     disabled={!trusted}
                                     onChange={v => call(() => api.post(`/api/sharing/peers/${p.id}`, { downloads: v }))}
@@ -1456,7 +1456,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                         </div>
                     ))}
                     {peers.some(p => p.shares && p.takesDownloads) && (
-                        <Row label="Downloads from this device go to" help="Episodes and torrents you download here: to this device, or to a computer that lets it download there.">
+                        <Row label="Downloads from this device go to">
                             <Select
                                 className="w-48"
                                 value={draft.sharing.downloadTo ?? ""}
@@ -1467,7 +1467,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                         </Row>
                     )}
                     {trusted && (
-                        <Stack label="Add by address" help="When the computers don't find each other by themselves (some routers block it): the other computer's address, shown in its settings here.">
+                        <Stack label="Add by address" help="For computers that don't find each other. The address is in the other computer's settings.">
                             <div className="flex gap-2">
                                 <Input value={address} onChange={e => setAddress(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="192.168.1.20:43211" />
                                 <Button onClick={add} loading={adding} disabled={!address.trim()}>
@@ -1493,7 +1493,7 @@ function ParentalRow({ peer }: { peer: SharingPeer }) {
                     Parental controls
                     {peer.parental && <Badge tone="green">On</Badge>}
                 </p>
-                <p className="mt-0.5 text-xs text-subtle">Block 18+ anime, genres or titles on it, or allow only some; see what it watched.</p>
+                <p className="mt-0.5 text-xs text-subtle">Block 18+ anime, genres or titles, and see what it watched.</p>
             </div>
             <Button size="sm" icon={<ShieldCheck className="size-4" />} onClick={() => setOpen(true)}>
                 {peer.parental ? "Change" : "Set up"}
@@ -1536,7 +1536,7 @@ function ParentalHere() {
                 {[data.rules?.noAdult && "18+ anime are blocked", data.rules?.genres?.length && `blocked genres: ${data.rules.genres.join(", ")}`, data.rules?.onlyAllowed && "only some anime are allowed", data.rules?.blocked?.length && `${data.rules.blocked.length} anime blocked`]
                     .filter(Boolean)
                     .join(" · ")}
-                . They're changed on {names}. Library sharing stays on while they are.
+                . Change them on {names}. Library sharing stays on meanwhile.
             </p>
             {withPin && (
                 <div className="flex gap-2">
@@ -1578,7 +1578,7 @@ function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolea
             <p className="mt-3 ml-1 border-l border-line pl-4 text-xs leading-relaxed text-subtle">
                 {hub.online ? (
                     <>
-                        Waiting for mediaserver to share with this device: on its dashboard (<span className="text-muted">http://{hub.address}</span>), turn on Devices › this device › Share the library.
+                        On mediaserver's dashboard (<span className="text-muted">http://{hub.address}</span>), turn on Devices › this device › Share the library.
                     </>
                 ) : (
                     "mediaserver is off or away."
@@ -1588,7 +1588,7 @@ function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolea
     if (!trusted || !loggedIn)
         return (
             <p className="mt-3 ml-1 border-l border-line pl-4 text-xs leading-relaxed text-subtle">
-                It keeps this device in step with the others on the same AniList account.
+                Keeps this device in sync with others on the same AniList account.
             </p>
         )
     return (
@@ -1596,7 +1596,7 @@ function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolea
             <div className="flex items-center justify-between gap-4 max-sm:flex-wrap">
                 <div className="min-w-0">
                     <p className="text-sm">Send it everything from this device</p>
-                    <p className="mt-0.5 text-xs text-subtle">Your AniList login, your theme and player settings, and every position you've watched: your other devices start where this one is.</p>
+                    <p className="mt-0.5 text-xs text-subtle">Your AniList login, theme, player settings and watch positions.</p>
                 </div>
                 <Button size="sm" variant="primary" loading={busy === "send"} disabled={!!busy && busy !== "send"} onClick={() => run("send")}>
                     Send
@@ -1605,7 +1605,7 @@ function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolea
             <div className="flex items-center justify-between gap-4 max-sm:flex-wrap">
                 <div className="min-w-0">
                     <p className="text-sm">Give it my AniList login</p>
-                    <p className="mt-0.5 text-xs text-subtle">mediaserver can then give your account to devices that aren't logged in (a TV), when you choose so on its dashboard.</p>
+                    <p className="mt-0.5 text-xs text-subtle">Lets mediaserver log in devices you choose on its dashboard, like a TV.</p>
                 </div>
                 <Button size="sm" loading={busy === "account"} disabled={!!busy && busy !== "account"} onClick={() => run("account")}>
                     Give
@@ -1624,8 +1624,8 @@ function VersionNote({ peer, mine }: { peer: SharingPeer; mine?: string }) {
     return (
         <p className="mt-1 text-xs text-amber-200/80">
             {c < 0
-                ? `Older than this one (Aniko ${mine}): update Aniko on ${peer.name} so everything works together. Its Home page has the update button.`
-                : `Newer than this one (Aniko ${mine}): update Aniko here so everything works together (Settings › Updates & about).`}
+                ? `Older than this one (Aniko ${mine}). Update Aniko on ${peer.name} from its Home page.`
+                : `Newer than this one (Aniko ${mine}). Update here in Settings › Updates & about.`}
         </p>
     )
 }
@@ -1643,8 +1643,8 @@ function DevicesSection({ draft, set }: SectionProps) {
                         label="Keep this computer awake"
                         help={
                             status?.keptAwake
-                                ? "Staying awake now: another device is playing from it. It can sleep again 15 minutes after the last episode."
-                                : "While a TV, phone or another computer plays an episode from this one, it doesn't go to sleep (the screen can still turn off). It can sleep again 15 minutes after."
+                                ? "Staying awake now. Another device is playing from it."
+                                : "While another device plays from it, and for 15 minutes after."
                         }
                     >
                         <Switch checked={draft.sharing.keepAwake ?? true} disabled={!trusted} onChange={v => set("sharing", { keepAwake: v })} />
@@ -1680,8 +1680,8 @@ function LibrarySection({ draft, set }: SectionProps) {
                         label="A library on this computer"
                         help={
                             off
-                                ? "Off: this computer plays the libraries your mediaserver and other computers share with it (Settings › Other devices). Its folders are kept for when you turn it back on."
-                                : "Turn it off to use only your mediaserver's library (or another computer's). Aniko forgets this computer's files; nothing is deleted from the disk."
+                                ? "Off. This computer plays only libraries shared with it. Its folders are kept."
+                                : "Turn off to use only shared libraries. Nothing is deleted from the disk."
                         }
                     >
                         <Switch label="A library on this computer" checked={!off} onChange={v => set("library", { off: !v })} />
@@ -1692,10 +1692,10 @@ function LibrarySection({ draft, set }: SectionProps) {
                 <>
                     <Group title="Folders">
                         <Locked>
-                            <Stack label="Library directory" help="Path of the directory where your media files are located.">
+                            <Stack label="Library directory">
                                 <PathInput value={draft.library.dir} onChange={v => set("library", { dir: v })} placeholder="/mnt/big/Media/Anime" />
                             </Stack>
-                            <Stack label="Additional library directories" help="Include additional directory paths if your library is spread across multiple locations.">
+                            <Stack label="Additional library directories">
                                 <div className="flex flex-col gap-2">
                                     {extra.map((d, i) => (
                                         <div key={i} className="flex items-center gap-2">
@@ -1713,7 +1713,7 @@ function LibrarySection({ draft, set }: SectionProps) {
                                 </div>
                             </Stack>
                             {folders.length > 1 && (
-                                <Stack label="Downloads go to" help="The folder new anime are downloaded into (streams and torrents). An anime that already has a folder keeps it.">
+                                <Stack label="Downloads go to" help="For new anime. An anime that already has a folder keeps it.">
                                     <Select
                                         value={folders.includes(draft.library.downloadDir ?? "") ? draft.library.downloadDir! : ""}
                                         onChange={v => set("library", { downloadDir: v })}
@@ -1724,7 +1724,7 @@ function LibrarySection({ draft, set }: SectionProps) {
                         </Locked>
                     </Group>
                     <Group title="Scanning">
-                        <Row label="Automatically refresh library" help="Watch the folders and pick up new or removed files on their own">
+                        <Row label="Automatically refresh library" help="Pick up new and removed files as they change">
                             <Switch checked={draft.library.autoRefresh} onChange={v => set("library", { autoRefresh: v })} />
                         </Row>
                         <Row label="Refresh library on startup">
@@ -1734,20 +1734,20 @@ function LibrarySection({ draft, set }: SectionProps) {
                 </>
             )}
             <Group title="Library sharing">
-                <Row label="Share this library with your other computers and TVs" help="Who gets it, and the libraries shared with this computer, are in Devices.">
+                <Row label="Share this library with your other computers and TVs" help="Choose who gets it in Devices.">
                     <Button size="sm" variant="ghost" onClick={() => setSearchParams({ tab: "devices" })}>
                         Open
                     </Button>
                 </Row>
             </Group>
             <Collapsible title="Advanced">
-                <Stack label={`Matching threshold — ${Math.round(draft.library.matchThreshold * 100)}%`} help="How similar a file name must be to an AniList title to match automatically.">
+                <Stack label={`Matching threshold: ${Math.round(draft.library.matchThreshold * 100)}%`} help="How similar a file name must be to an AniList title to match.">
                     <input type="range" min={0.3} max={0.95} step={0.05} value={draft.library.matchThreshold} onChange={e => set("library", { matchThreshold: Number(e.target.value) })} className="accent-[var(--brand)]" />
                 </Stack>
                 <Row label="Match anime that aren't in my list" help="Search all of AniList when a title isn't on your list">
                     <Switch checked={draft.library.matchOutsideList} onChange={v => set("library", { matchOutsideList: v })} />
                 </Row>
-                <Stack label="Ignore patterns" help="One glob per line, matched against file and folder names (e.g. *sample*).">
+                <Stack label="Ignore patterns" help="One glob per line, for file and folder names, like *sample*.">
                     <LinesInput value={draft.library.ignorePatterns ?? []} onChange={v => set("library", { ignorePatterns: v })} />
                 </Stack>
             </Collapsible>
@@ -1774,7 +1774,7 @@ function PlaybackSection({ draft, set }: SectionProps) {
         <>
             <Group title="Player">
                 {!androidApp && (
-                    <Row label="Default player for local files" help="mpv opens in its own window; the in-app player works everywhere (and on other devices).">
+                    <Row label="Default player for local files" help="mpv opens in its own window. The in-app player also works on other devices.">
                         <Select
                             className="w-48"
                             value={p.defaultPlayer}
@@ -1786,31 +1786,31 @@ function PlaybackSection({ draft, set }: SectionProps) {
                         />
                     </Row>
                 )}
-                <Row label="Resume where I left off" help="Episodes continue from the saved position in mpv and the in-app player">
+                <Row label="Resume where I left off">
                     <Switch checked={p.resumePlayback} onChange={v => set("playback", { resumePlayback: v })} />
                 </Row>
                 <Row label="Auto play next episode">
                     <Switch checked={p.autoPlayNext} onChange={v => set("playback", { autoPlayNext: v })} />
                 </Row>
-                <Row label="Skip openings automatically" help="Uses AniSkip timestamps (the same source as ani-cli --skip)">
+                <Row label="Skip openings automatically" help="Uses AniSkip timestamps">
                     <Switch checked={p.skipIntroAniSkip} onChange={v => set("playback", { skipIntroAniSkip: v })} />
                 </Row>
-                <Row label="Skip endings automatically" help="Jumps past the ending song, also with AniSkip timestamps">
+                <Row label="Skip endings automatically">
                     <Switch checked={p.skipOutroAniSkip} onChange={v => set("playback", { skipOutroAniSkip: v })} />
                 </Row>
-                <Row label="Skip recaps and previews automatically" help="The story so far at the start of an episode, and the next one's preview after the ending, where AniSkip has them">
+                <Row label="Skip recaps and previews automatically" help="Where AniSkip has them">
                     <Switch checked={!!p.skipRecapAniSkip} onChange={v => set("playback", { skipRecapAniSkip: v })} />
                 </Row>
             </Group>
             <Group title="Progress">
-                <Row label="Update progress automatically" help="Mark the episode as watched on AniList after you finish it">
+                <Row label="Update progress automatically" help="Mark episodes as watched on AniList when you finish them">
                     <Switch checked={p.autoUpdateProgress} onChange={v => set("playback", { autoUpdateProgress: v })} />
                 </Row>
                 <Stack label={`Count as watched at ${Math.round(p.completionThreshold * 100)}%`}>
                     <input type="range" min={0.5} max={1} step={0.01} value={p.completionThreshold} onChange={e => set("playback", { completionThreshold: Number(e.target.value) })} className="accent-[var(--brand)]" />
                 </Stack>
             </Group>
-            <Group title="Audio & subtitles" description="Aniko remembers the audio and subtitle track you pick for each anime and uses it for the next episodes.">
+            <Group title="Audio & subtitles">
                 <Row label="Remember my track choice per anime">
                     <Switch checked={p.rememberTracks} onChange={v => set("playback", { rememberTracks: v })} />
                 </Row>
@@ -1836,11 +1836,11 @@ function MpvSection({ draft, set }: SectionProps) {
             <Locked>
                 <Stack
                     label="Executable"
-                    help={`Name or full path, e.g. mpv or ${exampleMpvPath(status?.platform)} (install with: ${installHint(status?.platform, "mpv")})`}
+                    help={`Name or full path, like ${exampleMpvPath(status?.platform)}. Install with: ${installHint(status?.platform, "mpv")}`}
                 >
                     <Input value={draft.mpv.path} onChange={e => set("mpv", { path: e.target.value })} icon={<Terminal className="size-4" />} />
                 </Stack>
-                <Stack label="Extra arguments" help="Passed to every mpv launch, e.g. --profile=gpu-hq --hwdec=auto">
+                <Stack label="Extra arguments" help="For example --profile=gpu-hq --hwdec=auto">
                     <Input value={draft.mpv.extraArgs} onChange={e => set("mpv", { extraArgs: e.target.value })} />
                 </Stack>
             </Locked>
@@ -1856,7 +1856,7 @@ function TranscodeSection({ draft, set }: SectionProps) {
     const t = draft.transcode
     return (
         <>
-            <Group title="In-app player" description="Browsers can't decode every format (HEVC, AC3/DTS audio, MKV with multiple tracks…). Aniko repackages or converts those with ffmpeg on the fly so every file plays.">
+            <Group title="In-app player" description="Formats the browser can't play are converted with ffmpeg.">
                 <Row label="Status">
                     <div className="flex gap-2">
                         <Detect ok={status?.features.ffmpeg} label="ffmpeg" />
@@ -1967,13 +1967,12 @@ function ClientFields({ value, onChange, showTags }: { value: Settings["qbittorr
             <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium">Tags</span>
                 <Input value={value.tags} onChange={e => onChange({ tags: e.target.value })} />
-                <span className="text-xs text-subtle">Comma separated tags to apply to downloaded torrents. e.g. aniko,anime</span>
+                <span className="text-xs text-subtle">Comma separated, like aniko,anime</span>
             </label>
             {showTags && (
                 <label className="flex flex-col gap-1.5">
                     <span className="text-sm font-medium">Category</span>
                     <Input value={value.category} onChange={e => onChange({ category: e.target.value })} />
-                    <span className="text-xs text-subtle">Category to apply to downloaded torrents.</span>
                 </label>
             )}
             <label className="flex items-center gap-3 text-sm">
@@ -1992,15 +1991,15 @@ function TorrentClientSection({ draft, set }: SectionProps) {
         try {
             await save.mutateAsync(draft)
             const s = await api.get<{ connected: boolean; version: string; error?: string }>("/api/torrent-client/status")
-            s.connected ? toast.success(`Connected — version ${s.version}`) : toast.error(s.error ?? "Not reachable")
+            s.connected ? toast.success(`Connected, version ${s.version}`) : toast.error(s.error ?? "Not reachable")
         } finally {
             setTesting(false)
         }
     }
     return (
         <>
-            <Group title="Torrent client" description="The program that downloads torrents. Aniko talks to its web interface.">
-                <Row label="Use" help="Where Aniko sends torrents." keywords="default client qbittorrent transmission">
+            <Group title="Torrent client" description="Aniko connects to the client's web interface.">
+                <Row label="Use" keywords="default client qbittorrent transmission">
                     <Select
                         className="w-44"
                         value={draft.torrent.defaultClient}
@@ -2031,17 +2030,17 @@ function TorrentClientSection({ draft, set }: SectionProps) {
                         </Locked>
                     </Shown>
                 ))}
-                <Row label="Check the connection" help="Saves your changes, then asks the client.">
+                <Row label="Check the connection" help="Saves your changes first.">
                     <Button size="sm" icon={<Network className="size-4" />} loading={testing} onClick={test} disabled={draft.torrent.defaultClient === "none"}>
                         Save & test
                     </Button>
                 </Row>
             </Group>
             <Group title="Integration">
-                <Row label="Show active torrent count" help="Show the number of active torrents in the sidebar.">
+                <Row label="Show active torrent count" help="In the sidebar.">
                     <Switch checked={draft.torrent.showActiveCount} onChange={v => set("torrent", { showActiveCount: v })} />
                 </Row>
-                <Row label="Create a folder per anime" help="Save each anime into its own folder inside the library">
+                <Row label="Create a folder per anime" help="Inside the library">
                     <Switch checked={draft.torrent.createSubfolder} onChange={v => set("torrent", { createSubfolder: v })} />
                 </Row>
                 <Row label="Auto downloader" help="Check RSS rules periodically">
@@ -2066,10 +2065,10 @@ function StreamingSection({ draft, set }: SectionProps) {
                 <Row label="Enable online streaming">
                     <Switch checked={draft.onlineStream.enabled} onChange={v => set("onlineStream", { enabled: v })} />
                 </Row>
-                <Row label="Default provider" help="ani-cli is built in; extensions come from the marketplace">
+                <Row label="Default provider" help="Install more from the marketplace">
                     <Select className="w-56" value={draft.onlineStream.defaultProvider} onChange={v => set("onlineStream", { defaultProvider: v })} options={(providers ?? [{ id: "ani-cli", name: "ani-cli", builtin: true } as any]).map(p => ({ value: p.id, label: p.builtin ? "ani-cli" : p.name }))} />
                 </Row>
-                <Row label="Play streams in" help="Other devices on your network always use the in-app player">
+                <Row label="Play streams in" help="Other devices always use the in-app player">
                     <Select
                         className="w-44"
                         value={a.player}
@@ -2081,7 +2080,7 @@ function StreamingSection({ draft, set }: SectionProps) {
                     />
                 </Row>
             </Group>
-            <Group title="ani-cli" description="Aniko drives your installed ani-cli to find sub and dub streams and downloads, so updating ani-cli keeps everything working.">
+            <Group title="ani-cli" description="Finds sub and dub streams and downloads. Keep it updated.">
                 <Row label="Status">
                     <div className="flex flex-wrap justify-end gap-2">
                         {ani?.installed ? <Badge tone="green">ani-cli {ani.version}</Badge> : <Badge tone="red">ani-cli not found</Badge>}
@@ -2099,8 +2098,8 @@ function StreamingSection({ draft, set }: SectionProps) {
                         label="Install ani-cli"
                         help={
                             status?.platform === "darwin"
-                                ? "With the other programs Aniko uses, downloaded into Aniko's folder: Settings › Desktop app & programs."
-                                : "With Git, whose bash runs it, and the other programs Aniko uses: Settings › Desktop app & programs."
+                                ? "Also installs the other programs Aniko uses."
+                                : "Also installs Git and the other programs Aniko uses."
                         }
                     >
                         <InstallProgramsButton />
@@ -2147,7 +2146,7 @@ function StreamingSection({ draft, set }: SectionProps) {
                     />
                 </Row>
                 <Locked>
-                    <Stack label="Download folder" help={`Empty = your library folder (${status?.settings.library.dir || "not set"}). Downloads are matched automatically.`}>
+                    <Stack label="Download folder" help={`Empty uses your library folder: ${status?.settings.library.dir || "not set"}`}>
                         <PathInput value={a.downloadDir} onChange={v => set("aniCli", { downloadDir: v })} placeholder="Library folder" />
                     </Stack>
                 </Locked>
@@ -2166,7 +2165,7 @@ function MangaSection({ draft, set }: SectionProps) {
             <Row label="Default provider" help="Install manga providers from the marketplace">
                 <Select className="w-56" value={draft.manga.defaultProvider} onChange={v => set("manga", { defaultProvider: v })} options={[{ value: "", label: "First installed" }, ...(data ?? []).map(p => ({ value: p.id, label: p.name }))]} />
             </Row>
-            <Row label="Download folder" help="Where downloaded chapters go on this device, one folder per manga with its details (empty: Manga in your home folder)">
+            <Row label="Download folder" help="One folder per manga. Empty uses Manga in your home folder.">
                 <PathInput value={draft.manga.dir ?? ""} onChange={v => set("manga", { dir: v })} placeholder="~/Manga" />
             </Row>
             <Row label="Reading mode">
@@ -2198,7 +2197,7 @@ function MangaSection({ draft, set }: SectionProps) {
 
 function DiscordSection({ draft, set }: SectionProps) {
     return (
-        <Group title="Rich presence" description="Talks to the Discord app on this computer — nothing is sent anywhere else.">
+        <Group title="Rich presence" description="Uses the Discord app on this computer.">
             <Row label="Show what I'm watching">
                 <Switch checked={draft.discord.richPresence} onChange={v => set("discord", { richPresence: v })} />
             </Row>
@@ -2227,7 +2226,7 @@ function LogsSection() {
     const clearImages = async () => {
         try {
             await api.post("/api/images/clear")
-            toast.success("Artwork cache cleared — covers will be downloaded again")
+            toast.success("Artwork cache cleared. Covers will download again.")
             refetchImgs()
         } catch (e: any) {
             toast.error(e.message)
@@ -2235,13 +2234,13 @@ function LogsSection() {
     }
     return (
         <>
-            <Group title="Cache" description="Cached AniList data, episode metadata, search results and probes.">
+            <Group title="Cache" description="AniList data, episode metadata and search results.">
                 <Row label={`${cache?.entries ?? 0} cached entries`}>
                     <Button variant="danger" size="sm" icon={<Trash2 className="size-4" />} onClick={clear}>
                         Clear cache
                     </Button>
                 </Row>
-                <Row label={`Artwork: ${imgs?.files ?? 0} images (${formatBytes(imgs?.bytes ?? 0)})`} help="Covers, banners and episode thumbnails downloaded for offline use">
+                <Row label={`Artwork: ${imgs?.files ?? 0} images (${formatBytes(imgs?.bytes ?? 0)})`} help="Covers, banners and episode thumbnails">
                     <Button variant="danger" size="sm" icon={<Trash2 className="size-4" />} onClick={clearImages}>
                         Clear artwork
                     </Button>
@@ -2279,7 +2278,7 @@ function AboutSection() {
     else if (u.available) state = { tone: "brand", label: `${latest} available`, help: lan || u.canApply ? undefined : u.applyNote }
     else if (u.latest) state = { tone: "green", label: "Up to date", help: u.note }
     else if (u.error) state = { tone: "amber", label: "Couldn't check" }
-    else state = { tone: "gray", label: "Not checked yet", help: "Aniko checks shortly after it starts, then every 6 hours." }
+    else state = { tone: "gray", label: "Not checked yet", help: "Checked after Aniko starts, then every 6 hours." }
     if (u?.state === "failed" && !busy) state.help = [u.message, state.help].filter(Boolean).join(" ")
     return (
         <>
@@ -2294,7 +2293,7 @@ function AboutSection() {
                         )}
                     </span>
                 </Row>
-                <Row label="What's new" help="What came with the latest versions.">
+                <Row label="What's new">
                     <Button size="sm" variant="ghost" onClick={() => whatsNewStore.set("all")}>
                         Show
                     </Button>
@@ -2302,13 +2301,13 @@ function AboutSection() {
             </Group>
             {/* Installing it, from here too (as on Home). */}
             {!lan && <UpdateBanner inSettings />}
-            <Group title="Updates" description="Aniko looks for a newer version on GitHub and offers it here and on the Home page.">
+            <Group title="Updates" description="New versions are offered here and on Home.">
                 <Row
                     label="Beta updates"
                     help={
                         beta
-                            ? "On: each new version comes here first, as a beta, before everyone gets it. Betas can have rough edges."
-                            : "Off: only the stable releases everyone gets. Turn on to get each new version first, as a beta."
+                            ? "You get each new version first. Betas can have rough edges."
+                            : "Get each new version first, before the stable release."
                     }
                 >
                     <Locked>
@@ -2330,7 +2329,7 @@ function AboutSection() {
                         </a>
                     </Row>
                 )}
-                <Row label="Last check" help={u?.checking ? "Checking now…" : u?.checkedAt ? `${relativeTime(u.checkedAt)}. Aniko checks each time it opens, and every 6 hours.` : "Never"}>
+                <Row label="Last check" help={u?.checking ? "Checking now…" : u?.checkedAt ? `${relativeTime(u.checkedAt)}. Checked every 6 hours.` : "Never"}>
                     {!lan && (
                         <Button size="sm" icon={<RefreshCw className="size-4" />} loading={check.isPending || u?.checking} onClick={() => check.mutate()}>
                             Check for updates
