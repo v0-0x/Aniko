@@ -204,15 +204,15 @@ export function Sidebar() {
     const holiday = useStore(holidayStore)
 
     const groups = useNavGroups()
-    // What's used every day stays in sight; the rest folds under More (not
-    // on a TV or the icons-only sidebar, where everything shows).
+    // What's used every day stays in sight; the rest folds under More (on
+    // the TV too, whose screen is short; not in the icons-only sidebar).
     const all = groups.flatMap(g => g.items)
     const daily = new Set([...(groups[0]?.items ?? []).map(i => i.to), "/downloads"])
     const main = all.filter(i => daily.has(i.to))
     const rest = all.filter(i => !daily.has(i.to))
     const isActive = (it: Item) => (it.match ? it.match(location.pathname) : location.pathname.startsWith(it.to))
     const [moreOpen, setMoreOpen] = usePersisted("aniko-sidebar-more", false)
-    const folds = wide && !tv && !classic
+    const folds = wide && !classic
     const showRest = !folds || moreOpen || rest.some(isActive)
     const restBadge = rest.reduce((n, i) => n + (i.badge ?? 0), 0)
 
