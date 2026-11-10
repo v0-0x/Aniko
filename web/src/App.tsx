@@ -10,6 +10,7 @@ import { HolidayBackdrop, HolidayGarland } from "./components/HolidayDecor"
 import { useHolidayNotice } from "./components/HolidayBadge"
 import { WhatsNew } from "./components/WhatsNew"
 import { AnikoLogo, Sidebar } from "./components/Sidebar"
+import { PageError } from "./components/PageError"
 import { PhoneNav } from "./components/PhoneNav"
 import { Button, Input, Spinner, TooltipProvider } from "./components/ui"
 import { api, onPasswordRequired } from "./lib/api"
@@ -191,6 +192,8 @@ function AnikoApp() {
                                 </div>
                             }
                         >
+                            {/* A page that fails says so; the rest of the app stays (a new page starts fresh). */}
+                            <PageError key={location.pathname}>
                             <Routes key={titleLanguage}>
                                 <Route path="/" element={<HomePage />} />
                                 <Route path="/entry" element={<EntryPage />} />
@@ -215,6 +218,7 @@ function AnikoApp() {
                                 <Route path="/profile" element={<ProfilePage />} />
                                 <Route path="*" element={<HomePage />} />
                             </Routes>
+                            </PageError>
                         </Suspense>
                     </main>
                     {!classic && <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} />}

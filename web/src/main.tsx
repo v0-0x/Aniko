@@ -3,6 +3,7 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 import { BrowserRouter } from "react-router-dom"
 import App from "./App"
+import { PageError } from "./components/PageError"
 import "./index.css"
 import { applyCachedTheme } from "./lib/themes"
 
@@ -35,7 +36,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
-                <App />
+                {/* An error outside the pages (the sidebar, the player): a message, not a black window. */}
+                <PageError full>
+                    <App />
+                </PageError>
             </BrowserRouter>
         </QueryClientProvider>
     </React.StrictMode>,
