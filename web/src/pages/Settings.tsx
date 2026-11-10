@@ -93,7 +93,7 @@ type NavItem = {
 }
 
 // The settings' parts, each about one thing (search lists them one by one);
-// PAGES puts them on eight pages.
+// PAGES puts them on ten pages.
 const NAV: { title: string; items: NavItem[] }[] = [
     {
         title: "General",
@@ -151,9 +151,11 @@ const PAGES: (NavItem & { parts: SectionId[] })[] = (
     [
         { id: "account", label: "Account", icon: <UserRound />, description: "Your AniList account and what Aniko tells you about", parts: ["account", "notifications"] },
         { id: "appearance", label: "Appearance", icon: <Palette />, description: "Themes, colors, holidays, the classic look and what's shown", parts: ["appearance"] },
-        { id: "playback", label: "Playback", icon: <Clapperboard />, description: "How episodes play, the players and video conversion", parts: ["playback", "mpv", "transcode", "discord"] },
+        { id: "playback", label: "Playback", icon: <Clapperboard />, description: "How episodes play, progress, audio and subtitles, and Discord", parts: ["playback", "discord"] },
+        { id: "mpv", label: "Players & conversion", icon: <MonitorPlay />, description: "The mpv player, and converting video so the in-app player plays every format", parts: ["mpv", "transcode"] },
         { id: "library", label: "Library", icon: <LibraryBig />, description: "Your anime folders and how they're scanned", parts: ["library"] },
-        { id: "streaming", label: "Sources", icon: <Tv />, description: "Where anime and manga come from: streaming, torrents and extensions", parts: ["streaming", "torrents", "manga", "extensions"] },
+        { id: "streaming", label: "Streaming & torrents", icon: <Tv />, description: "ani-cli and streaming extensions, torrent search and your torrent client", parts: ["streaming", "torrents"] },
+        { id: "manga", label: "Manga & extensions", icon: <BookOpen />, description: "Reading manga, and where extensions come from", parts: ["manga", "extensions"] },
         { id: "devices", label: "Devices & network", icon: <MonitorSmartphone />, description: "Your other computers, TVs and server, and using Aniko from a browser", parts: ["devices", "network"] },
         { id: "desktop", label: "App & data", icon: <AppWindow />, description: "The window and programs, backups, logs and cache", parts: ["desktop", "backup", "logs"] },
         { id: "updates", label: "Updates & about", icon: <RefreshCw />, description: "Aniko's version, updates and beta updates", parts: ["updates"] },
@@ -162,7 +164,7 @@ const PAGES: (NavItem & { parts: SectionId[] })[] = (
     .map(pg => ({ ...pg, parts: pg.parts.filter(id => NAV_ITEMS.some(i => i.id === id)) }))
     .filter(pg => pg.parts.length > 0)
 // Parts whose first group has their name already.
-const TITLED: SectionId[] = ["streaming", "manga", "extensions"]
+const TITLED: SectionId[] = ["streaming", "manga", "extensions", "mpv"]
 const pageOf = (part: string) => PAGES.find(pg => pg.parts.includes(part as SectionId))
 
 // Older links (and the names before the regrouping).
