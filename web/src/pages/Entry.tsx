@@ -35,6 +35,7 @@ import { usePlay } from "@/lib/play"
 import { fetchLanguageMode, useEntry, useEpisodeMarker, useLanguageMode, useStatus } from "@/lib/queries"
 import type { EntryView, Probe } from "@/lib/types"
 import { banner, cleanDescription, cn, cover, formatLabel, img, otherTitle, readLocal, scoreColor, seasonLabel, statusLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
+import { tv } from "@/lib/tv"
 
 type Tab = "episodes" | "stream" | "torrents" | "details"
 
@@ -141,13 +142,15 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
 
     return (
         <div className="relative">
-            <div className="absolute inset-x-0 top-0 h-[500px] overflow-hidden">
-                {bannerImg && <img src={bannerImg} alt="" className="size-full object-cover opacity-60 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />}
+            <div className="absolute inset-x-0 top-0 h-[460px] overflow-hidden">
+                {bannerImg && <img src={bannerImg} alt="" className="size-full object-cover opacity-80 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />}
                 <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/75 to-bg/10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-bg/90 via-bg/30 to-transparent" />
             </div>
-            <div className="relative z-10 flex flex-col gap-8 px-6 pt-[200px] pb-8 md:flex-row md:px-8 xl:px-10">
-                <div className="w-40 shrink-0 md:w-52">
+            {/* What the anime is and what to do with it, on one glass panel over its art. */}
+            <div className="relative z-10 px-6 pt-28 pb-8 md:px-8 xl:px-10">
+            <div className={cn("flex flex-col gap-6 rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:flex-row md:p-6", !tv && "backdrop-blur-2xl")}>
+                <div className="w-32 shrink-0 md:w-44">
                     <img src={cover(media, "poster")} alt="" className="aspect-[2/3] w-full rounded-lg object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 fade-in" />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-end gap-4 fade-in">
@@ -161,8 +164,12 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                             <span>{formatLabel(media.format)}</span>,
                             media.season ? <span>{seasonLabel(media.season, media.seasonYear)}</span> : null,
                             total > 0 ? <span>{total} episodes</span> : null,
-                            media.duration ? <span>{media.duration} min</span> : null,
-                            media.studios?.nodes?.[0] ? <span className="text-white/55">{media.studios.nodes.map(s => s.name).join(", ")}</span> : null,
+                            // The next one to air, here with the rest (the studio and length are under Details).
+                            media.nextAiringEpisode ? (
+                                <span className="font-medium text-brand-strong">
+                                    Ep {media.nextAiringEpisode.episode} in {timeUntil(media.nextAiringEpisode.timeUntilAiring)}
+                                </span>
+                            ) : null,
                         ]
                             .filter(Boolean)
                             .map((el, k) => (
@@ -175,22 +182,23 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                             {statusLabel(media.status)}
                         </Badge>
                     </div>
-                    {media.nextAiringEpisode && (
-                        <div className="flex items-center gap-2 text-[13px] font-medium text-brand-strong">
-                            <CalendarClock className="size-4" /> Episode {media.nextAiringEpisode.episode} airs in {timeUntil(media.nextAiringEpisode.timeUntilAiring)}
-                        </div>
+                    {/* Its first genres, as words: each opens a search. */}
+                    {!!media.genres?.length && (
+                        <p className="text-sm text-white/55">
+                            {media.genres.slice(0, 3).map((g, k) => (
+                                <span key={g}>
+                                    {k > 0 && " · "}
+                                    <Link to={`/search?genre=${encodeURIComponent(g)}`} className="transition-colors hover:text-white">
+                                        {g}
+                                    </Link>
+                                </span>
+                            ))}
+                        </p>
                     )}
-                    <div className="flex flex-wrap gap-1.5">
-                        {media.genres?.map(g => (
-                            <Link key={g} to={`/search?genre=${encodeURIComponent(g)}`} className="rounded-md bg-white/[0.07] px-2.5 py-1 text-xs font-medium text-white/75 transition-colors hover:bg-white/[0.12] hover:text-white">
-                                {g}
-                            </Link>
-                        ))}
-                    </div>
                     {desc && (
                         <div className="max-w-3xl">
-                            <p className={cn("text-[15px] leading-relaxed whitespace-pre-line text-white/70", !expanded && "line-clamp-3")}>{desc}</p>
-                            {desc.length > 260 && (
+                            <p className={cn("text-[15px] leading-relaxed whitespace-pre-line text-white/70", !expanded && "line-clamp-2")}>{desc}</p>
+                            {desc.length > 180 && (
                                 <button onClick={() => setExpanded(e => !e)} className="mt-1 text-sm font-medium text-fg/80 transition-colors hover:text-fg">
                                     {expanded ? "Show less" : "Read more"}
                                 </button>
@@ -241,6 +249,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                         </Dropdown>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     )

@@ -342,7 +342,14 @@ export function useStreamModes(provider: string, mediaId: number, enabled = true
 }
 
 export function useWatchOrder(id: number) {
-    return useQuery({ queryKey: ["watch-order", id], queryFn: () => api.get<WatchOrder>(`/api/anime/${id}/watch-order`), enabled: id > 0, staleTime: 10 * 60_000 })
+    return useQuery({
+        queryKey: ["watch-order", id],
+        queryFn: () => api.get<WatchOrder>(`/api/anime/${id}/watch-order`),
+        enabled: id > 0,
+        staleTime: 10 * 60_000,
+        // An answer with a list missing would take the anime's page down.
+        select: o => ({ ...o, story: o.story ?? [], release: o.release ?? [], extras: o.extras ?? [] }),
+    })
 }
 
 export function useDownloads() {
