@@ -88,14 +88,18 @@ func TestMangaFromTheHost(t *testing.T) {
 		t.Fatalf("cover: %d %q", w.Code, w.Body)
 	}
 	// The manga's page: its chapters there.
-	var one []struct{ Chapters []struct{ File, Chapter, Title string } }
+	var one []struct {
+		Chapters []struct{ File, Chapter, Title string }
+	}
 	w = do(guest, "GET", "/api/manga-shared/series/42", local, "", nil)
 	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &one) != nil || len(one) != 1 || len(one[0].Chapters) != 1 || one[0].Chapters[0].File != file || one[0].Chapters[0].Title != "The Start" {
 		t.Fatalf("its chapters: %d %s", w.Code, w.Body)
 	}
 	// The reader: chapters and pages by the server: provider.
 	provider := "server:" + hid
-	var ch struct{ Chapters []struct{ ID, Chapter string } }
+	var ch struct {
+		Chapters []struct{ ID, Chapter string }
+	}
 	w = do(guest, "GET", "/api/manga/42/chapters?provider="+url.QueryEscape(provider), local, "", nil)
 	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &ch) != nil || len(ch.Chapters) != 1 || ch.Chapters[0].ID != file || ch.Chapters[0].Chapter != "1" {
 		t.Fatalf("reader's chapters: %d %s", w.Code, w.Body)
