@@ -29,7 +29,7 @@ export default function MangaPage() {
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Manga</h1>
-                    <p className="mt-1 text-muted">Read with manga provider extensions. Progress syncs to your list.</p>
+                    <p className="mt-1 text-muted">Progress syncs to your list.</p>
                 </div>
                 <Link to="/search?type=MANGA">
                     <Button icon={<Search className="size-4" />}>Find manga</Button>
@@ -74,7 +74,7 @@ export default function MangaPage() {
                         </Link>
                     }
                 >
-                    Manga you add to your AniList list show up here, by status.
+                    Add manga to your AniList list to see it here.
                 </EmptyState>
             ) : (
                 <MediaGrid start>

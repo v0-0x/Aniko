@@ -59,11 +59,11 @@ export default function StatsPage() {
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
             <div className="mb-8">
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Stats</h1>
-                <p className="mt-1 text-muted">Your anime in numbers: your list, and what you watched in Aniko.</p>
+                <p className="mt-1 text-muted">Your list and what you watched in Aniko.</p>
             </div>
             <div className="flex flex-col gap-8">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <StatTile label="Anime on your list" value={stats.anime.toLocaleString()} sub="not counting planned ones" />
+                    <StatTile label="Anime on your list" value={stats.anime.toLocaleString()} sub="excluding planned" />
                     <StatTile label="Completed" value={stats.completed.toLocaleString()} />
                     <StatTile label="Episodes watched" value={compact(stats.episodes)} sub="rewatches included" />
                     {/* In days and hours, and (from a day on) all in hours. */}
@@ -142,9 +142,9 @@ function MonthlyChart({ months }: { months: Month[] }) {
         </table>
     )
     return (
-        <ChartCard title="Episodes watched in Aniko" note="By the month you last watched each one, the last 12 months" table={table}>
+        <ChartCard title="Episodes watched in Aniko" note="Last 12 months, by month last watched" table={table}>
             {empty ? (
-                <p className="py-10 text-center text-sm text-muted">No episodes finished in Aniko these 12 months yet. Each one you watch to the end here shows up by month.</p>
+                <p className="py-10 text-center text-sm text-muted">No episodes finished in Aniko in the last 12 months.</p>
             ) : (
                 // Headroom above the plot: the hover readout over the tallest
                 // month stays clear of the title.
@@ -228,7 +228,7 @@ function GenreBars({ genres }: { genres: [string, number][] }) {
         </table>
     )
     return (
-        <ChartCard title="Top genres" note="Anime on your list in each genre (one can have several)" table={table}>
+        <ChartCard title="Top genres" note="Anime on your list per genre" table={table}>
             {genres.length === 0 ? (
                 <p className="py-10 text-center text-sm text-muted">No anime on your list yet.</p>
             ) : (

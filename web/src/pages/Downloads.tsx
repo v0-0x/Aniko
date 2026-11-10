@@ -34,7 +34,7 @@ export default function DownloadsPage() {
                 <div>
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Downloads</h1>
                     <p className="mt-1 text-muted">
-                        Episodes downloaded with ani-cli or streaming extensions, saved to{" "}
+                        Saved to{" "}
                         <span className="font-medium text-fg">{status?.settings.aniCli.downloadDir || status?.settings.library.dir || "your library"}</span>.
                     </p>
                 </div>
@@ -47,7 +47,7 @@ export default function DownloadsPage() {
             {error && !data && <ErrorState title="Couldn't load the downloads" error={error} retrying={isFetching} onRetry={() => refetch()} />}
             {!isLoading && !error && items.length === 0 && (
                 <EmptyState icon={<Download className="size-6" />} title="No downloads yet">
-                    Open an anime, go to <b>Watch online</b> and hit the download button on any episode.
+                    Open an anime, go to <b>Watch online</b> and press download on an episode.
                 </EmptyState>
             )}
             {active.length > 0 && (
@@ -83,13 +83,13 @@ function HostDownloads({ host, items, error, refetch, local }: { host: string; i
             <div className="mb-8">
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Downloads</h1>
                 <p className="mt-1 text-muted">
-                    This device's downloads go to <span className="font-medium text-fg">{host}</span>: these are its downloads, and they show up in its library.
+                    This device's downloads go to <span className="font-medium text-fg">{host}</span>.
                 </p>
             </div>
             {error && <p className="mb-6 rounded-lg border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-200">{error}</p>}
             {!error && items.length === 0 && (
                 <EmptyState icon={<Download className="size-6" />} title={`Nothing downloading on ${host}`}>
-                    Open an anime, go to <b>Watch online</b> and hit the download button on any episode: it downloads on {host}.
+                    Open an anime, go to <b>Watch online</b> and press download on an episode.
                 </EmptyState>
             )}
             {active.length > 0 && (

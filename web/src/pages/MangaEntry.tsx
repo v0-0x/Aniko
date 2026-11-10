@@ -173,7 +173,7 @@ export default function MangaEntryPage() {
                 {/* The provider lists nothing (offline, none installed): what's downloaded. */}
                 {chapters.length === 0 && !chLoading && localChapters.length > 0 && (
                     <>
-                        <p className="text-sm text-muted">Downloaded chapters, read from this device:</p>
+                        <p className="text-sm text-muted">Downloaded chapters</p>
                         <LocalChapters chapters={localChapters} progress={progress} read={c => readLocal(c)} onDelete={deleteLocal} />
                     </>
                 )}

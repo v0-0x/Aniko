@@ -97,7 +97,7 @@ export function LibraryBrowse() {
             ) : list.length === 0 ? (
                 <div className="p-4">
                     <EmptyState icon={<Film className="size-6" />} title={q ? "Nothing matches" : "No anime yet"}>
-                        {q ? "Try another title." : "Add a folder: once it's scanned, its anime show here with their artwork."}
+                        {q ? "Try another title." : "Add a folder to see its anime here."}
                     </EmptyState>
                 </div>
             ) : (
@@ -146,7 +146,7 @@ function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFil
             const failed = Object.values(res.failed ?? {})
             if (res.deleted)
                 toast.success(
-                    `${res.deleted === 1 ? "Deleted" : `${res.deleted} files deleted`} (${formatBytes(res.freed)} freed). To get ${res.deleted === 1 ? "it" : "them"} back, download again from the Audit log.`,
+                    `${res.deleted === 1 ? "Deleted" : `${res.deleted} files deleted`} , ${formatBytes(res.freed)} freed. Download again from the Audit log.`,
                 )
             if (failed.length) toast.error(`${failed.length} couldn't be deleted: ${failed[0]}`)
             setAsking(null)
@@ -197,8 +197,8 @@ function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFil
                     {asking === "all" && (
                         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.07] px-3 py-2.5 text-sm">
                             <span className="min-w-0 flex-1">
-                                Delete its {files.length} {files.length === 1 ? "file" : "files"} ({formatBytes(size)}) from the server? They're gone at once; the Audit log can download the episodes
-                                again.
+                                Delete its {files.length} {files.length === 1 ? "file" : "files"} ({formatBytes(size)}) from the server? This can't be undone, but episodes can be downloaded again
+                                from the Audit log.
                             </span>
                             <Button size="sm" variant="danger" loading={busy} onClick={() => remove(files.map(f => f.path))}>
                                 Delete

@@ -81,7 +81,7 @@ export default function DiscoverPage() {
                             </Button>
                         }
                     >
-                        AniList didn't return any anime. Check your internet connection and try again.
+                        AniList returned nothing. Check your connection.
                     </EmptyState>
                 )}
                 {holiday && picks && pickMedia.length > 0 && (

@@ -34,13 +34,13 @@ export default function ServerPage() {
         <div className="flex flex-col gap-8 px-6 pt-8 pb-24 md:px-8 xl:px-10">
             <div>
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Server</h1>
-                <p className="mt-1 text-sm text-muted">The server this device uses, as it is now.</p>
+                <p className="mt-1 text-sm text-muted">The server this device uses.</p>
             </div>
             {isLoading ? (
                 <Spinner className="mx-auto mt-10" />
             ) : !data?.length ? (
                 <EmptyState icon={<ServerIcon />} title="No server yet">
-                    A mediaserver on your network that shares its library with this device shows here. Add one in{" "}
+                    Add a mediaserver in{" "}
                     <Link to="/settings?tab=devices" className="text-fg underline">
                         Settings › Devices & network
                     </Link>
@@ -55,7 +55,7 @@ export default function ServerPage() {
 
 function ServerCard({ server: { host, state: st, needs } }: { server: ServerView }) {
     const sys = st?.system
-    const temp = !sys?.temp ? "" : sys.throttled ? "Slowing itself down (too hot, or too little power)" : sys.temp >= 75 ? "Hot" : "Fine"
+    const temp = !sys?.temp ? "" : sys.throttled ? "Slowed down: too hot or underpowered" : sys.temp >= 75 ? "Hot" : "Fine"
     return (
         <section className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -69,7 +69,7 @@ function ServerCard({ server: { host, state: st, needs } }: { server: ServerView
                     </span>
                 )}
             </div>
-            {!host.online && <p className="text-sm text-muted">It didn't answer. Its library is back here when it's on again.</p>}
+            {!host.online && <p className="text-sm text-muted">It didn't answer.</p>}
             {host.online && !st && <p className="text-sm text-muted">{needs}</p>}
             {st && sys && (
                 <>
@@ -84,7 +84,7 @@ function ServerCard({ server: { host, state: st, needs } }: { server: ServerView
                         </StatTile>
                         <StatTile label="Temperature" icon={<Thermometer />} value={sys.temp ? `${Math.round(sys.temp)}°C` : "—"} sub={<span className={cn(sys.throttled && "text-amber-300")}>{temp || "Not known on this computer"}</span>} />
                         <StatTile label="Library" icon={<LibraryBig />} value={count(st.anime, "anime", "anime")} sub={`${count(st.files, "episode")} · ${bytes(st.size)}`} />
-                        <StatTile label="Converts with" icon={<Cpu />} value={st.encoder || "Nothing"} sub={st.encoder ? "when a device can't play a file as it is" : "ffmpeg isn't installed on it"} />
+                        <StatTile label="Converts with" icon={<Cpu />} value={st.encoder || "Nothing"} sub={st.encoder ? "for files a device can't play" : "ffmpeg isn't installed"} />
                     </div>
                     {!!sys.disks?.length && (
                         <div className="rounded-xl border border-line bg-surface-1 p-4">

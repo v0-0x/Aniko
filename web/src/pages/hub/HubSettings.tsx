@@ -24,14 +24,14 @@ export default function HubSettings({ o, status }: { o: HubOverview; status: Sta
                 <Password />
                 <Panel title="Address">
                     <div className="flex flex-col gap-2 p-4">
-                        <p className="text-[12.5px] text-muted">Open the dashboard from any browser on the network at:</p>
+                        <p className="text-[12.5px] text-muted">Open the dashboard from any browser on this network.</p>
                         {(o.addresses?.length ? o.addresses : [`http://${status.hostname}.local:${o.port}`]).map(a => (
                             <CopyLine key={a} text={a} />
                         ))}
                     </div>
                 </Panel>
                 <Panel title="Dashboard colors">
-                    <Row label="Colors" help="Of this dashboard only: each device keeps its own, in step with the others on its AniList account.">
+                    <Row label="Colors" help="For this dashboard only.">
                         <Select
                             className="w-40"
                             value={settings.ui.colorTheme || "aniko"}
@@ -46,17 +46,16 @@ export default function HubSettings({ o, status }: { o: HubOverview; status: Sta
                 <Downloads settings={settings} />
                 <Panel title="Video conversion">
                     <p className="px-4 py-3.5 text-[12.5px] leading-relaxed text-muted">
-                        Most videos go to the devices as they are, which the server does with almost no work. One a device can't play (some TVs and phones can't play HEVC or 10-bit
-                        video) is converted as it plays, at most 2 at a time.
+                        A video a device can't play is converted as it plays, at most 2 at a time.
                     </p>
                     <Row label="Converting with">
                         {o.encoder ? (
                             <Badge tone={o.encoder === "h264_v4l2m2m" ? "green" : "gray"}>{encoderName(o.encoder)}</Badge>
                         ) : (
-                            <span className="text-[12.5px] text-amber-300">Nothing: ffmpeg isn't installed (sudo apt install ffmpeg)</span>
+                            <span className="text-[12.5px] text-amber-300">ffmpeg isn't installed. Run: sudo apt install ffmpeg</span>
                         )}
                     </Row>
-                    <Row label="Hardware encoder" help="The Raspberry Pi's (V4L2) uses its video chip: far less CPU than converting on the processor.">
+                    <Row label="Hardware encoder" help="Uses far less CPU than the processor.">
                         <Select
                             className="w-48"
                             value={settings.transcode.hwAccel}
@@ -91,7 +90,7 @@ function Name({ settings, current, set }: { settings: Settings; current: string;
                     if (changed) set("sharing", { name: name.trim() })
                 }}
             >
-                <p className="text-[12.5px] text-muted">What the devices call the server (Settings › Other devices).</p>
+                <p className="text-[12.5px] text-muted">The name devices show for this server.</p>
                 <div className="flex gap-2">
                     <Input value={name} maxLength={40} onChange={e => setName(e.target.value)} />
                     <Button type="submit" variant="primary" disabled={!changed}>
@@ -111,7 +110,7 @@ function Password() {
         try {
             await api.post("/api/hub/password", { password: pw })
             setPw("")
-            toast.success("The password is changed: other browsers sign in again")
+            toast.success("Password changed. Other browsers were signed out.")
         } catch (e) {
             toast.error((e as Error).message)
         } finally {
@@ -127,7 +126,7 @@ function Password() {
                     if (pw.length >= 6) submit()
                 }}
             >
-                <p className="text-[12.5px] text-muted">A new password signs out the other browsers. At least 6 characters.</p>
+                <p className="text-[12.5px] text-muted">At least 6 characters. Changing it signs out other browsers.</p>
                 <div className="flex gap-2">
                     <Input type="password" autoComplete="new-password" icon={<KeyRound className="size-4" />} placeholder="New password" value={pw} onChange={e => setPw(e.target.value)} />
                     <Button type="submit" loading={busy} disabled={pw.length < 6}>
@@ -185,7 +184,7 @@ function Updates({ settings, set }: { settings: Settings; set: SetFn }) {
                 )}
                 {u?.state === "failed" && u.message && <p className="text-[12.5px] text-rose-300">{u.message}</p>}
             </div>
-            <Row label="Beta updates" help="The newest versions as soon as they're out, before they're released for everyone.">
+            <Row label="Beta updates" help="Get new versions before everyone else.">
                 <Switch label="Beta updates" checked={beta} onChange={v => set("updates", { channel: v ? "beta" : "stable" })} />
             </Row>
         </Panel>
@@ -221,11 +220,11 @@ function Downloads({ settings }: { settings: Settings }) {
         value && setConf({ ...value, [k]: k === "port" ? Number(e.target.value) : e.target.value })
     return (
         <Panel title="Downloads">
-            <p className="px-4 pt-3.5 text-[12.5px] leading-relaxed text-muted">The devices you let download here (Devices) send their downloads to the server, into its first library folder.</p>
-            <Row label="Episodes (ani-cli)" help={ani.data?.installed ? undefined : "Install the server again (its install script installs ani-cli) for episode downloads."}>
+            <p className="px-4 pt-3.5 text-[12.5px] leading-relaxed text-muted">Devices allowed to download here (see Devices) save into the first library folder.</p>
+            <Row label="Episodes (ani-cli)" help={ani.data?.installed ? undefined : "Run the server's install script again to add ani-cli."}>
                 {ani.data ? <Badge tone={ani.data.installed ? "green" : "amber"}>{ani.data.installed ? `Installed ${ani.data.version}` : "Not installed"}</Badge> : null}
             </Row>
-            <Row label="Torrents" help="A torrent client on the server (Transmission: sudo apt install transmission-daemon).">
+            <Row label="Torrents" help="A torrent client on the server. For Transmission: sudo apt install transmission-daemon">
                 <Select
                     className="w-40"
                     value={client}

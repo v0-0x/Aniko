@@ -285,7 +285,7 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                         </div>
                     }
                 >
-                    Download episodes with ani-cli or a torrent and they will show up here automatically. If they're already in your library but weren't recognized, add them here.
+                    Download episodes, or add files already in your library.
                 </EmptyState>
                 <WatchOrder mediaId={media.id} />
             </div>
@@ -416,7 +416,7 @@ function LocalLanguageSwitch({ mediaId, samplePath }: { mediaId: number; sampleP
                         <button
                             onClick={() => {
                                 language.set(m)
-                                toast.success(m === "dub" ? "Dub: English audio from now on" : "Sub: original audio with subtitles from now on")
+                                toast.success(m === "dub" ? "Switched to dub" : "Switched to sub")
                             }}
                             className={cn("h-7 rounded-md px-3 text-xs font-medium uppercase transition-colors", mode === m ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
                         >

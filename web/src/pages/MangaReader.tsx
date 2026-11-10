@@ -492,7 +492,7 @@ export function MangaReader({
                 </Tooltip>
                 <div className="min-w-0 flex-1 px-2 pt-1.5">
                     <p className="truncate text-sm font-medium">{chapter ? chapter.title || `Chapter ${chapter.chapter}` : "Loading…"}</p>
-                    {view !== mode && <p className="truncate text-xs text-white/50">This chapter comes in strips: they're joined into one long strip</p>}
+                    {view !== mode && <p className="truncate text-xs text-white/50">Shown as one long strip</p>}
                 </div>
                 {view !== "long-strip" && spread.length > 0 && (
                     <span className="px-2 pt-2 text-[13px] text-white/60 tabular-nums">
@@ -551,7 +551,7 @@ export function MangaReader({
                         {mode === "double" && <DropdownSeparator />}
                         {mode === "double" &&
                             (narrow ? (
-                                <p className="max-w-52 px-2 py-1.5 text-xs text-subtle">One page at a time while the window is taller than it is wide</p>
+                                <p className="max-w-52 px-2 py-1.5 text-xs text-subtle">One page at a time in a tall window</p>
                             ) : (
                                 <DropdownItem onSelect={() => setShifted(s => (s === chapterId ? "" : chapterId))}>
                                     {shifted === chapterId ? "● " : ""}

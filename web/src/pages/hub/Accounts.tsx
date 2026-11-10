@@ -17,7 +17,7 @@ export default function Accounts({ o }: { o: HubOverview }) {
         mutationFn: (user: number) => api.del(`/api/hub/accounts/${user}`),
         onSuccess: () => {
             setRemoving(null)
-            toast.success("The login was removed from the server")
+            toast.success("Login removed")
             qc.invalidateQueries({ queryKey: ["hub", "overview"] })
         },
         onError: (e: Error) => toast.error(e.message),
@@ -28,13 +28,11 @@ export default function Accounts({ o }: { o: HubOverview }) {
     return (
         <div className="flex flex-col gap-6">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-                The server keeps each AniList account's progress apart, and the devices on the same account in step: an episode watched on the TV goes on where it was left on the
-                computer, the list and the theme too. A login given to the server lets it give that account to devices that aren't logged in (Devices › Give it an AniList login).
+                Devices on the same AniList account share progress, list and theme. A login kept here can be given to devices that aren't logged in, under Devices › Give it an AniList login.
             </p>
             {o.accounts.length === 0 ? (
                 <EmptyState icon={<Users />} title="No AniList login given to the server">
-                    On a device logged in to AniList, open Settings › Other devices and, on this hub, choose Give the server my AniList login. Devices logged in on their own are kept in step
-                    without it.
+                    On a device logged in to AniList, open Settings › Other devices and choose Give the server my AniList login.
                 </EmptyState>
             ) : (
                 <ul className="grid gap-3 sm:grid-cols-2">
@@ -79,7 +77,7 @@ export default function Accounts({ o }: { o: HubOverview }) {
                 }
             >
                 <p className="text-sm leading-relaxed text-muted">
-                    Devices given this login by the server are logged out of it. The progress the server kept for the account stays, and devices logged in to it on their own stay in step.
+                    Devices using this login from the server are logged out. The account's progress is kept.
                 </p>
             </Dialog>
         </div>

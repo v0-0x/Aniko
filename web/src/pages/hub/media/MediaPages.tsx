@@ -79,7 +79,7 @@ export function MediaOverview({ kind, o, go }: { kind: MediaKind; o: HubOverview
                     <Wifi className="size-5 text-brand-strong" />
                     <span className="min-w-0 flex-1 text-sm">
                         <span className="font-medium">{waiting.length === 1 ? `${waiting[0].name} wants the library` : `${waiting.length} Moviko apps want the library`}</span>
-                        <span className="text-muted"> — share it with {waiting.length === 1 ? "it" : "them"} in Devices.</span>
+                        <span className="text-muted">. Share it in Devices.</span>
                     </span>
                     <ChevronRight className="size-4 text-muted" />
                 </button>
@@ -126,7 +126,7 @@ export function MediaOverview({ kind, o, go }: { kind: MediaKind; o: HubOverview
                     >
                         {peers.length === 0 ? (
                             <p className="px-4 py-6 text-center text-sm leading-relaxed text-muted">
-                                No devices yet. Open Moviko on a computer, TV or phone on this network and turn on Settings › Other devices › Library sharing.
+                                No devices yet. Open Moviko on a device on this network and turn on Settings › Other devices › Library sharing.
                             </p>
                         ) : (
                             <ul className="divide-y divide-line">
@@ -162,7 +162,7 @@ function TmdbBanner({ go }: { go: (t: MediaTab) => void }) {
             <KeyRound className="size-5 text-amber-300" />
             <span className="min-w-0 flex-1 text-sm">
                 <span className="font-medium">Add a TMDB key</span>
-                <span className="text-muted"> — movies and shows are matched and get their posters from The Movie Database. A key is free (Settings).</span>
+                <span className="text-muted"> to match titles and get posters. It's free. See Settings.</span>
             </span>
             <ChevronRight className="size-4 text-muted" />
         </button>
@@ -216,13 +216,13 @@ export function MediaDevices() {
     return (
         <div className="flex flex-col gap-6">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-                The Moviko apps on this network: the same for Movies and TV. A device shows up here when Moviko is open on it with{" "}
-                <span className="text-fg">Settings › Other devices › Library sharing</span> on. Share the library with it, and it plays the server's movies and shows.
+                A device shows up here when Moviko is open on it with{" "}
+                <span className="text-fg">Settings › Other devices › Library sharing</span> on.
             </p>
             {peers.length === 0 && (
                 <EmptyState icon={<Wifi />} title="No devices yet">
-                    Open Moviko on a computer, TV or phone on this network and turn on Settings › Other devices › Library sharing.
-                    {sharing?.addresses?.length ? ` If it doesn't show up, add this server by address there: ${sharing.addresses[0]}.` : ""}
+                    Open Moviko on a device on this network and turn on Settings › Other devices › Library sharing.
+                    {sharing?.addresses?.length ? ` If it doesn't show up, add this address there: ${sharing.addresses[0]}` : ""}
                 </EmptyState>
             )}
             {[
@@ -251,7 +251,7 @@ export function MediaDevices() {
                                     </div>
                                     {p.error && p.allowed && <Badge tone="red">Not answering</Badge>}
                                     {!p.online && (
-                                        <IconButton size="sm" label={`Remove ${p.name}`} onClick={() => confirm(`Remove ${p.name}? It shows up again when it's back on the network.`) && forget.mutate(p.id)}>
+                                        <IconButton size="sm" label={`Remove ${p.name}`} onClick={() => confirm(`Remove ${p.name}? It shows up again when it's back online.`) && forget.mutate(p.id)}>
                                             <Trash2 className="size-4" />
                                         </IconButton>
                                     )}
@@ -261,7 +261,7 @@ export function MediaDevices() {
                                         <Switch label={`Share the library with ${p.name}`} checked={p.allowed} onChange={v => save.mutate({ id: p.id, change: { allowed: v } })} />
                                     </Setting>
                                     {p.allowed && (
-                                        <Setting label="Let it download here" help="Its downloads and torrents go onto the server, into its library, and it can upload files and folders into it.">
+                                        <Setting label="Let it download here" help="Its downloads, torrents and uploads are saved in the server's library.">
                                             <Switch label={`Let ${p.name} download here`} checked={p.downloads} onChange={v => save.mutate({ id: p.id, change: { downloads: v } })} />
                                         </Setting>
                                     )}
@@ -332,9 +332,9 @@ export function MediaLibrary({ kind, moviesPort }: { kind: MediaKind; moviesPort
                 open={uploading}
                 onOpenChange={setUploading}
                 base={M}
-                description={`${Noun(kind)} and their subtitles from this computer, into the server's library. Folders keep their names and what's in them: ${
+                description={`Add ${noun(kind)} and subtitles from this computer. Best to upload ${
                     kind === "tv" ? "a show's folder with its seasons" : "a movie's folder"
-                } is best.`}
+                }.`}
             />
             <div className="grid gap-5 lg:grid-cols-3">
                 <div className="flex min-w-0 flex-col gap-5 lg:col-span-2">
@@ -353,9 +353,9 @@ export function MediaLibrary({ kind, moviesPort }: { kind: MediaKind; moviesPort
                             </div>
                         }
                     >
-                        <p className="border-b border-line px-4 py-2.5 text-[12.5px] text-muted">The same folders for Movies and TV: a folder may have both, Moviko tells them apart.</p>
+                        <p className="border-b border-line px-4 py-2.5 text-[12.5px] text-muted">Movies and TV share these folders.</p>
                         {folders.length === 0 ? (
-                            <p className="px-4 py-8 text-center text-sm text-muted">No folder yet. Add the folder your movies and shows are in (on a Raspberry Pi, the USB drive's, like /media/pi/Movies).</p>
+                            <p className="px-4 py-8 text-center text-sm text-muted">No folder yet. Add the folder your movies and shows are in.</p>
                         ) : (
                             <ul className="divide-y divide-line">
                                 {folders.map(f => (
@@ -415,7 +415,7 @@ export function MediaLibrary({ kind, moviesPort }: { kind: MediaKind; moviesPort
                 ) : shown.length === 0 ? (
                     <div className="p-4">
                         <EmptyState icon={kind === "tv" ? <Tv /> : <Clapperboard />} title={q ? "Nothing found" : `No ${noun(kind)} yet`}>
-                            {q ? "No title has those words." : `Add a folder with ${noun(kind)}, or upload them: once scanned (and matched, with a TMDB key), they show here.`}
+                            {q ? "Try another title." : `Add a folder with ${noun(kind)}, or upload them.`}
                         </EmptyState>
                     </div>
                 ) : (
@@ -444,17 +444,17 @@ export function MediaSettings({ moviesPort }: { moviesPort?: number }) {
     const shownName = name ?? settings.sharing.name ?? ""
     return (
         <div className="grid gap-5 lg:grid-cols-2">
-            <p className="text-sm leading-relaxed text-muted lg:col-span-2">The movies side's settings: the same for Movies and TV. The server's password, updates and the anime side's settings are under Anime › Settings.</p>
+            <p className="text-sm leading-relaxed text-muted lg:col-span-2">For Movies and TV. Password and updates are under Anime › Settings.</p>
             <Panel title="The Movie Database (TMDB)">
                 <form
                     className="flex flex-col gap-2 p-4"
                     onSubmit={e => {
                         e.preventDefault()
-                        save.mutate(s => ({ ...s, tmdb: { ...s.tmdb, apiKey: apiKey.trim() } }), { onSuccess: () => toast.success("Saved: the library is matched with it") })
+                        save.mutate(s => ({ ...s, tmdb: { ...s.tmdb, apiKey: apiKey.trim() } }), { onSuccess: () => toast.success("Saved") })
                     }}
                 >
                     <p className="text-[12.5px] leading-relaxed text-muted">
-                        Movies and shows are matched, and get their posters and episodes, from TMDB. A key is free: themoviedb.org › Settings › API (the "API Key").
+                        Needed to match titles and get posters. Get a free key at themoviedb.org › Settings › API.
                     </p>
                     <div className="flex gap-2">
                         <Input type="password" autoComplete="off" icon={<KeyRound className="size-4" />} placeholder="API key" value={apiKey} onChange={e => setKey(e.target.value)} />
@@ -472,7 +472,7 @@ export function MediaSettings({ moviesPort }: { moviesPort?: number }) {
                         save.mutate(s => ({ ...s, sharing: { ...s.sharing, name: shownName.trim() } }), { onSuccess: () => toast.success("Saved") })
                     }}
                 >
-                    <p className="text-[12.5px] leading-relaxed text-muted">What the Moviko apps call this server.{sharing?.addresses?.length ? ` It's at ${sharing.addresses.join(", ")}.` : ""}</p>
+                    <p className="text-[12.5px] leading-relaxed text-muted">The name Moviko apps show for this server.{sharing?.addresses?.length ? ` Address: ${sharing.addresses.join(", ")}` : ""}</p>
                     <div className="flex gap-2">
                         <Input placeholder={sharing?.name || "This computer's name"} value={shownName} onChange={e => setName(e.target.value)} />
                         <Button type="submit" loading={save.isPending} disabled={shownName.trim() === (settings.sharing.name ?? "")}>
@@ -485,7 +485,7 @@ export function MediaSettings({ moviesPort }: { moviesPort?: number }) {
                 <HardDrive className="size-4 shrink-0 text-muted" />
                 <span className="min-w-0 flex-1">
                     <span className="font-medium">Everything else</span>
-                    <span className="block text-[12.5px] text-muted">Torrent clients, streaming providers, languages: Moviko's own settings, on this server.</span>
+                    <span className="block text-[12.5px] text-muted">Torrent clients, streaming providers and languages.</span>
                 </span>
                 <ExternalLink className="size-4 text-muted" />
             </a>

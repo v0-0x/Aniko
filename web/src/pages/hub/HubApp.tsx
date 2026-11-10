@@ -287,9 +287,9 @@ function Setup() {
                 <AnikoLogo className="size-11" />
                 <h1 className="mt-4 text-xl font-semibold">Set up your mediaserver</h1>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                    Choose the password for this dashboard. To prove the server is yours, type its setup code: the install printed it, and on the server
+                    Choose a password for this dashboard. The setup code was printed by the installer. To see it again, run
                     <code className="mx-1 rounded bg-white/[0.06] px-1.5 py-0.5 text-[12.5px] text-fg">mediaserver --setup-code</code>
-                    shows it again.
+                    on the server.
                 </p>
                 <div className="mt-6 flex flex-col gap-4">
                     <Field id="setup-code" label="Setup code">
@@ -298,7 +298,7 @@ function Setup() {
                     <Field id="setup-password" label="Password" hint={<span className={short ? "text-amber-300" : undefined}>At least 6 characters.</span>}>
                         <Input id="setup-password" aria-describedby="setup-password-hint" type="password" autoComplete="new-password" icon={<KeyRound className="size-4" />} value={pw} onChange={e => setPw(e.target.value)} />
                     </Field>
-                    <Field id="setup-again" label="The password again" hint={differ ? <span className="text-amber-300">The two aren't the same.</span> : undefined}>
+                    <Field id="setup-again" label="The password again" hint={differ ? <span className="text-amber-300">The passwords don't match.</span> : undefined}>
                         <Input id="setup-again" aria-describedby={differ ? "setup-again-hint" : undefined} type="password" autoComplete="new-password" icon={<KeyRound className="size-4" />} value={again} onChange={e => setAgain(e.target.value)} />
                     </Field>
                     {err && (

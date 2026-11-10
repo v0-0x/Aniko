@@ -146,7 +146,7 @@ export default function HomePage() {
             {!!data?.incomplete && (
                 <p className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-line bg-white/[0.03] px-3 py-2 text-[13px] text-muted md:mx-8 xl:mx-10">
                     <RefreshCw className="size-3.5 shrink-0 animate-spin" />
-                    {data.incomplete} {data.incomplete === 1 ? "anime in your library is" : "anime in your library are"} still being looked up on AniList: they show in a moment.
+                    {data.incomplete} {data.incomplete === 1 ? "anime in your library is" : "anime in your library are"} still being looked up on AniList.
                 </p>
             )}
             <Hero
@@ -175,7 +175,7 @@ export default function HomePage() {
                             <span className="max-sm:hidden">Refresh</span>
                         </Button>
                         {paired.length > 0 && (
-                            <Button size="sm" variant="ghost" loading={syncing} icon={<ArrowLeftRight className="size-4" />} onClick={syncDevices} title={`Continue watching from ${paired.join(", ")}, and your AniList list`} aria-label="Sync">
+                            <Button size="sm" variant="ghost" loading={syncing} icon={<ArrowLeftRight className="size-4" />} onClick={syncDevices} title={`Sync with ${paired.join(", ")} and AniList`} aria-label="Sync">
                                 <span className="max-sm:hidden">Sync</span>
                             </Button>
                         )}
@@ -566,7 +566,7 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
                   done: paired,
                   icon: <FolderOpen className="size-5" />,
                   title: "Watch your computer's library",
-                  text: "On your computer's Aniko, open Settings › Other devices, turn sharing on and share with this device. It shows up here by itself.",
+                  text: "In Aniko on your computer, open Settings › Other devices and share with this device.",
                   action: (
                       <Link to="/settings?tab=devices">
                           <Button size="sm">See devices</Button>
@@ -577,7 +577,7 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
                   done: loggedIn,
                   icon: <LogIn className="size-5" />,
                   title: "Use your AniList account",
-                  text: "Easiest from the computer: next to this device in its Settings › Other devices, turn on “Share my AniList account”. Or log in here.",
+                  text: "On your computer, in Settings › Other devices, turn on “Share my AniList account” for this device. Or log in here.",
                   action: (
                       <Button size="sm" onClick={onLogin}>
                           Log in here
@@ -586,15 +586,15 @@ function Welcome({ loggedIn, hasDir, paired, onLogin }: { loggedIn: boolean; has
               },
           ]
         : [
-        { done: loggedIn, icon: <LogIn className="size-5" />, title: "Connect AniList", text: "Sync your lists, progress and scores (optional — Aniko works offline too).", action: <Button size="sm" variant="primary" onClick={onLogin}>Log in</Button> },
-        { done: hasDir, icon: <FolderOpen className="size-5" />, title: "Choose your library folder", text: "Aniko scans it, matches every file to AniList and grabs artwork, descriptions and episode titles.", action: <Link to="/settings?tab=library"><Button size="sm">Open settings</Button></Link> },
-        { done: false, icon: <Puzzle className="size-5" />, title: "Add extensions", text: "Install streaming, torrent and manga providers or plugins from the marketplace.", action: <Link to="/extensions?tab=marketplace"><Button size="sm">Browse marketplace</Button></Link> },
+        { done: loggedIn, icon: <LogIn className="size-5" />, title: "Connect AniList", text: "Sync your lists, progress and scores. Optional.", action: <Button size="sm" variant="primary" onClick={onLogin}>Log in</Button> },
+        { done: hasDir, icon: <FolderOpen className="size-5" />, title: "Choose your library folder", text: "Aniko scans it and matches your files to AniList.", action: <Link to="/settings?tab=library"><Button size="sm">Open settings</Button></Link> },
+        { done: false, icon: <Puzzle className="size-5" />, title: "Add extensions", text: "Get streaming, torrent and manga providers.", action: <Link to="/extensions?tab=marketplace"><Button size="sm">Browse marketplace</Button></Link> },
           ]
     return (
         <div className="card overflow-hidden rise-in">
             <div className="p-7">
                 <h2 className="text-xl font-semibold tracking-tight">Let’s set things up</h2>
-                <p className="mt-1 text-sm text-muted">{androidApp ? "Two steps on your computer and this device is ready." : "Three quick steps and your anime library is ready."}</p>
+                <p className="mt-1 text-sm text-muted">{androidApp ? "Two steps on your computer." : "Three quick steps."}</p>
                 <div className={cn("mt-6 grid gap-3", androidApp ? "md:grid-cols-2" : "md:grid-cols-3")}>
                     {steps.map((s, i) => (
                         <div key={i} className={cn("flex flex-col gap-3 rounded-lg bg-white/[0.03] p-5", s.done && "opacity-60")}>

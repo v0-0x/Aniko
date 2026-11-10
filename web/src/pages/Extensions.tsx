@@ -53,7 +53,7 @@ export default function ExtensionsPage() {
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Extensions</h1>
-                    <p className="mt-1 max-w-2xl text-muted">Streaming, torrent and manga providers plus plugins, from the extension marketplace.</p>
+                    <p className="mt-1 max-w-2xl text-muted">Streaming, torrent and manga providers, and plugins.</p>
                 </div>
                 {!lan && (
                     <Button icon={<Link2 className="size-4" />} onClick={() => setManualOpen(true)}>
@@ -61,7 +61,7 @@ export default function ExtensionsPage() {
                     </Button>
                 )}
             </div>
-            {lan && <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-muted">Extensions are installed and set up on the computer Aniko runs on; from here you can see them.</p>}
+            {lan && <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-muted">View only. Install and set up extensions on the computer Aniko runs on.</p>}
             <Tabs
                 className="mb-8"
                 value={tab}
@@ -121,7 +121,7 @@ function Installed() {
                     </Link>
                 }
             >
-                Streaming, torrent and manga providers and plugins come from the marketplace.
+                Get providers and plugins from the marketplace.
             </EmptyState>
         )
     const groups = Object.keys(TYPES)
@@ -314,7 +314,7 @@ function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpe
             open={open}
             onOpenChange={onOpenChange}
             title={`Allow ${ext.manifest.name}?`}
-            description="Plugins run sandboxed. Review what this one asks for before enabling it."
+            description="Check what this plugin asks for before enabling it."
             footer={
                 <>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>
@@ -345,11 +345,11 @@ function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpe
                         <p className="flex items-center gap-2 font-semibold">
                             <ShieldAlert className="size-4" /> Page modification
                         </p>
-                        <p className="mt-1 text-xs">This plugin wants to modify the app’s pages. Aniko doesn’t allow that, so those features won’t work.</p>
+                        <p className="mt-1 text-xs">Aniko doesn’t let plugins modify its pages. Those features won’t work.</p>
                     </div>
                 )}
                 <p className="text-xs text-subtle">
-                    Aniko never gives plugins access to your files, terminal or local network. {scopes.includes("anilist-token") && "This plugin can read your AniList token to make requests on your behalf."}
+                    Plugins can't reach your files, terminal or local network. {scopes.includes("anilist-token") && "This plugin can read your AniList token and act as you on AniList."}
                 </p>
             </div>
         </Dialog>
@@ -502,7 +502,7 @@ function MarketCard({ e }: { e: MarketEntry }) {
                 {e.official && <Badge tone="blue">Official</Badge>}
                 {!e.supported && <Badge tone="amber">Not supported</Badge>}
                 {e.unsupported && e.unsupported.length > 0 && (
-                    <span title={`This plugin asks for ${e.unsupported.join(", ")}: Aniko doesn't have ${e.unsupported.length === 1 ? "that" : "those"}, so what it does with ${e.unsupported.length === 1 ? "it" : "them"} won't work here.`}>
+                    <span title={`Aniko doesn't support ${e.unsupported.join(", ")}. Parts of this plugin won't work.`}>
                         <Badge tone="amber">
                             <TriangleAlert className="size-3" /> Needs {e.unsupported.join(", ")}
                         </Badge>
@@ -558,7 +558,7 @@ function InstallUrlDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
             open={open}
             onOpenChange={onOpenChange}
             title="Install from URL"
-            description="Paste the manifest URL of a marketplace extension."
+            description="Paste an extension's manifest URL."
             footer={
                 <Button variant="primary" loading={busy} disabled={!url.trim()} onClick={go}>
                     Install

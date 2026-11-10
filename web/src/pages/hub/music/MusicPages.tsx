@@ -33,13 +33,13 @@ export function MusicOverview({ o, go }: { o: HubOverview; go: (t: MusicTab) => 
             {s.folders === 0 && (
                 <Banner onClick={() => go("library")} icon={<FolderPlus className="size-5 text-amber-300" />} className="border-amber-400/30 bg-amber-400/[0.06] hover:border-amber-400/60">
                     <span className="font-medium">Add your music</span>
-                    <span className="text-muted"> — the folder it's in, in Library. Songs can be uploaded there too, from Utako or this page.</span>
+                    <span className="text-muted">. Add a folder or upload songs in Library.</span>
                 </Banner>
             )}
             {waiting.length > 0 && (
                 <Banner onClick={() => go("devices")} icon={<Wifi className="size-5 text-brand-strong" />} className="border-brand/40 bg-brand-soft hover:border-brand/70">
                     <span className="font-medium">{waiting.length === 1 ? `${waiting[0].name} wants the music` : `${waiting.length} Utako apps want the music`}</span>
-                    <span className="text-muted"> — share it with {waiting.length === 1 ? "it" : "them"} in Devices.</span>
+                    <span className="text-muted">. Share it in Devices.</span>
                 </Banner>
             )}
             <SystemTiles o={o} />
@@ -96,7 +96,7 @@ export function MusicOverview({ o, go }: { o: HubOverview; go: (t: MusicTab) => 
                         }
                     >
                         {list.length === 0 ? (
-                            <p className="px-4 py-6 text-center text-sm leading-relaxed text-muted">No devices yet. Open Utako on a computer or phone on this network and turn on Settings › Media server › Use a media server.</p>
+                            <p className="px-4 py-6 text-center text-sm leading-relaxed text-muted">No devices yet. In Utako, turn on Settings › Media server › Use a media server.</p>
                         ) : (
                             <ul className="divide-y divide-line">
                                 {list.slice(0, 6).map(d => (
@@ -160,7 +160,7 @@ function Cover({ path, has, className }: { path?: string; has?: boolean; classNa
 function AlbumCard({ a, small }: { a: UAlbum; small?: boolean }) {
     const [broken, setBroken] = useState(false)
     return (
-        <div className="min-w-0" title={`${a.album} — ${a.artist}`}>
+        <div className="min-w-0" title={`${a.album} · ${a.artist}`}>
             <div className="aspect-square overflow-hidden rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]">
                 {a.cover && !broken ? (
                     <img src={artURL(a.cover)} alt="" loading="lazy" className="size-full object-cover" onError={() => setBroken(true)} />
@@ -188,17 +188,16 @@ export function MusicDevices() {
     return (
         <div className="flex flex-col gap-4">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-                The Utako apps that asked for the server's music. A device shows up here once <span className="text-fg">Settings › Media server › Use a media server</span> is on in Utako. Let it in and it plays the
-                server's songs, as a playlist named after it.
+                A device shows up here once <span className="text-fg">Settings › Media server › Use a media server</span> is on in Utako.
             </p>
             {list.length === 0 && (
                 <EmptyState icon={<Wifi />} title="No devices yet">
-                    Open Utako on a computer or phone on this network and turn on Settings › Media server › Use a media server.
-                    {s ? ` If it doesn't find the server, type its address there: ${window.location.hostname}:${s.port}.` : ""}
+                    In Utako, turn on Settings › Media server › Use a media server.
+                    {s ? ` If it doesn't find the server, type this address there: ${window.location.hostname}:${s.port}` : ""}
                 </EmptyState>
             )}
             {list.map(d => (
-                <DeviceCard key={d.id} d={d} onChange={change => save.mutate({ id: d.id, change })} onForget={() => confirm(`Remove ${d.name}? It shows up again, not let in, the next time it asks.`) && forget.mutate(d.id)} />
+                <DeviceCard key={d.id} d={d} onChange={change => save.mutate({ id: d.id, change })} onForget={() => confirm(`Remove ${d.name}? It shows up again, not shared, the next time it connects.`) && forget.mutate(d.id)} />
             ))}
         </div>
     )
@@ -229,11 +228,11 @@ function DeviceCard({ d, onChange, onForget }: { d: UDevice; onChange: (c: { all
                 )}
             </div>
             <div className="divide-y divide-line border-t border-line">
-                <Setting label="Share the music" help="It plays the server's songs, and can take the settings and logins kept here.">
+                <Setting label="Share the music" help="It can play the server's songs and take the settings and logins kept here.">
                     <Switch label={`Share the music with ${d.name}`} checked={d.allowed} onChange={v => onChange({ allowed: v })} />
                 </Setting>
                 {d.allowed && (
-                    <Setting label="Let it upload here" help="It can send songs and folders from its computer into the library.">
+                    <Setting label="Let it upload here" help="It can add songs and folders to the library.">
                         <Switch label={`Let ${d.name} upload here`} checked={d.uploads} onChange={v => onChange({ uploads: v })} />
                     </Setting>
                 )}
@@ -280,7 +279,7 @@ export function MusicLibrary() {
     const loading = view === "albums" ? albums.isLoading : tracks.isLoading
     return (
         <div className="flex flex-col gap-5">
-            <UploadDialog open={uploading} onOpenChange={setUploading} base={U} description="Songs and albums from this computer, into the server's music. Folders keep their names and what's in them: an artist's or an album's folder is best." />
+            <UploadDialog open={uploading} onOpenChange={setUploading} base={U} description="Add songs and albums from this computer. Best to upload an artist's or album's folder." />
             <div className="grid gap-5 lg:grid-cols-3">
                 <div className="flex min-w-0 flex-col gap-5 lg:col-span-2">
                     <Panel
@@ -298,9 +297,9 @@ export function MusicLibrary() {
                             </div>
                         }
                     >
-                        <p className="border-b border-line px-4 py-2.5 text-[12.5px] text-muted">Songs keep their own tags; a cover.jpg (or folder, front, album) next to them is their cover. Music videos (mp4, mkv, webm, mov) are indexed with them. Utako's uploads go into the first folder.</p>
+                        <p className="border-b border-line px-4 py-2.5 text-[12.5px] text-muted">A cover.jpg next to the songs is used as their cover. Uploads from Utako go into the first folder.</p>
                         {list.length === 0 ? (
-                            <p className="px-4 py-8 text-center text-sm text-muted">No folder yet. Add the folder your music is in (on a Raspberry Pi, the USB drive's, like /media/pi/Music).</p>
+                            <p className="px-4 py-8 text-center text-sm text-muted">No folder yet. Add the folder your music is in.</p>
                         ) : (
                             <ul className="divide-y divide-line">
                                 {list.map(f => (
@@ -333,7 +332,7 @@ export function MusicLibrary() {
                                 {s?.scanning ? "Scanning…" : "Scan for new songs"}
                             </Button>
                         </div>
-                        {s && !s.lengths && list.length > 0 && <p className="border-t border-line px-4 py-2.5 text-[12.5px] text-amber-300">ffprobe isn't on the server: songs have no length until it is (it comes with ffmpeg).</p>}
+                        {s && !s.lengths && list.length > 0 && <p className="border-t border-line px-4 py-2.5 text-[12.5px] text-amber-300">Song lengths are missing. Install ffmpeg on the server.</p>}
                     </Panel>
                 </div>
             </div>
@@ -378,10 +377,10 @@ export function MusicLibrary() {
                     <div className="p-4">
                         <EmptyState icon={<Disc3 />} title={q ? "Nothing found" : view === "videos" ? "No music videos" : "No music yet"}>
                             {q
-                                ? "Nothing has those words."
+                                ? "Try another search."
                                 : view === "videos"
-                                  ? "Music videos (mp4, mkv, webm, mov) in the music folders show here."
-                                  : "Add a folder with music, or upload some: once read, it shows here."}
+                                  ? "Put mp4, mkv, webm or mov files in the music folders."
+                                  : "Add a folder with music, or upload some."}
                         </EmptyState>
                     </div>
                 ) : (
@@ -435,7 +434,7 @@ function SongRow({ t }: { t: UTrack }) {
 
 export function MusicSettings() {
     const { data: s } = useUStatus()
-    const forget = useUChange(() => api.del(`${U}/kept`), "The settings and logins are gone from the server.")
+    const forget = useUChange(() => api.del(`${U}/kept`), "Settings and logins removed")
     if (!s) return <Loading />
     const address = `${window.location.hostname}:${s.port}`
     return (
@@ -450,7 +449,7 @@ export function MusicSettings() {
                     <Row label="mediaserver" value={s.version} />
                 </dl>
                 <p className="border-t border-line px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-                    Utako finds the server by itself. If it doesn't, type <span className="font-mono text-fg">{address}</span> in Utako's Settings › Media server › Address.
+                    If Utako doesn't find the server, type <span className="font-mono text-fg">{address}</span> in its Settings › Media server › Address.
                 </p>
             </Panel>
             <Panel title="Settings and logins">
@@ -459,18 +458,18 @@ export function MusicSettings() {
                         <KeyRound className="size-4 shrink-0 text-muted" />
                         <span className="min-w-0 flex-1">
                             <span className="block truncate">Sent by {s.kept.from || "a device"}</span>
-                            <span className="text-[12.5px] text-muted">{ago(s.kept.received * 1000)}, {bytes(s.kept.size)}: the devices you share the music with can take them.</span>
+                            <span className="text-[12.5px] text-muted">{ago(s.kept.received * 1000)}, {bytes(s.kept.size)}</span>
                         </span>
                         <Button size="sm" variant="ghost" icon={<Trash2 className="size-4" />} onClick={() => confirm("Remove the settings and logins kept on the server? The devices keep their own.") && forget.mutate(undefined)}>
                             Forget
                         </Button>
                     </div>
                 ) : (
-                    <p className="px-4 py-4 text-[13px] leading-relaxed text-muted">None kept. Utako's Settings › Media server › Send my settings and logins puts them here, sealed, for your other devices.</p>
+                    <p className="px-4 py-4 text-[13px] leading-relaxed text-muted">None kept. To add them, use Utako's Settings › Media server › Send my settings and logins.</p>
                 )}
                 <p className="flex items-start gap-2 border-t border-line px-4 py-3 text-[12.5px] leading-relaxed text-muted">
                     <Server className="mt-0.5 size-4 shrink-0" />
-                    They're sealed so only the server can read them, and sealed again for each device that asks.
+                    Encrypted. Only the server and devices you share with can read them.
                 </p>
             </Panel>
         </div>

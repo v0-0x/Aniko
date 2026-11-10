@@ -242,12 +242,12 @@ export default function LocalLibraryPage() {
                     <div>
                         <h1 className="text-[1.75rem] font-semibold tracking-tight">Local library</h1>
                         <p className="mt-1 text-muted">
-                            {host ? `Shared by ${host.host.name} over your network${host.host.online ? "" : " (not answering right now)"}.` : "Only anime you have downloaded on this computer."}
+                            {host ? `Shared by ${host.host.name}${host.host.online ? "" : ", not answering"}.` : "Anime downloaded on this computer."}
                         </p>
                         {!!coll?.incomplete && (
                             <p className="mt-2 flex items-center gap-2 text-[13px] text-muted">
                                 <RefreshCw className="size-3.5 shrink-0 animate-spin" />
-                                {coll.incomplete} {coll.incomplete === 1 ? "anime is" : "anime are"} still being looked up on AniList: they show in a moment.
+                                {coll.incomplete} {coll.incomplete === 1 ? "anime is" : "anime are"} still being looked up on AniList.
                             </p>
                         )}
                     </div>
@@ -288,7 +288,7 @@ export default function LocalLibraryPage() {
                     {!host && !!coll?.unmatchedCount && (
                         <Link to="/library?tab=unmatched" className="flex items-center gap-2 rounded-lg bg-amber-400/10 px-3 py-2 text-sm text-amber-200 transition-colors hover:bg-amber-400/15">
                             <FolderSearch className="size-4" />
-                            {coll.unmatchedCount} unmatched {coll.unmatchedCount === 1 ? "file" : "files"} — fix
+                            {coll.unmatchedCount} unmatched {coll.unmatchedCount === 1 ? "file" : "files"}. Fix
                         </Link>
                     )}
                 </div>
@@ -308,14 +308,14 @@ export default function LocalLibraryPage() {
                         </div>
                         <Progress value={scanState.total > 0 ? scanState.done / scanState.total : 0} className={cn("mt-4 h-1.5", scanState.total === 0 && "animate-pulse")} />
                         <p className="mt-3 text-xs text-subtle">
-                            Every show is looked up on AniList, then artwork and episode titles are downloaded. A big first scan can take a few minutes.
+                            A big first scan can take a few minutes.
                         </p>
                     </div>
                 )}
 
                 {host && !loading && groups.length === 0 && (
                     <EmptyState icon={<Share2 className="size-6" />} title="Nothing to show yet">
-                        {host.host.name} shares {host.files.length} {host.files.length === 1 ? "file" : "files"}; their anime show here once AniList answers.
+                        {host.host.name} shares {host.files.length} {host.files.length === 1 ? "file" : "files"}. Still looking them up on AniList.
                     </EmptyState>
                 )}
 
@@ -329,7 +329,7 @@ export default function LocalLibraryPage() {
                             </Button>
                         }
                     >
-                        Its anime come from your mediaserver and the computers that share their library with it, and none does right now. Turn it back on in Settings › Local library.
+                        No other device is sharing a library right now. Turn this one back on in Settings › Local library.
                     </EmptyState>
                 )}
 
@@ -351,10 +351,10 @@ export default function LocalLibraryPage() {
                     >
                         {libraryDir ? (
                             <>
-                                Aniko looks for video files in <span className="font-mono text-fg/80">{libraryDir}</span>. Download episodes with ani-cli or torrents, or copy files there.
+                                Download episodes, or copy video files to <span className="font-mono text-fg/80">{libraryDir}</span>.
                             </>
                         ) : (
-                            "Pick the folder where your anime lives and Aniko will scan and match it automatically."
+                            "Pick the folder your anime is in."
                         )}
                     </EmptyState>
                 )}

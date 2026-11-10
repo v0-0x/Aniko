@@ -40,7 +40,7 @@ export default function AutoDownloaderPage() {
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Auto downloader</h1>
-                    <p className="mt-1 max-w-2xl text-muted">Automatically grab new episodes of airing shows from torrent RSS feeds and send them to your torrent client.</p>
+                    <p className="mt-1 max-w-2xl text-muted">Sends new episodes of airing shows to your torrent client.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     {settings && (
@@ -63,7 +63,7 @@ export default function AutoDownloaderPage() {
             </div>
             {settings?.torrent.defaultClient === "none" && (
                 <div className="mb-6 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-200">
-                    No torrent client is configured — <Link to="/settings?tab=torrents" className="underline">set one up</Link> first.
+                    No torrent client yet. <Link to="/settings?tab=torrents" className="underline">Set one up</Link> first.
                 </div>
             )}
             {!isLoading && (rules ?? []).length === 0 && (
@@ -76,7 +76,7 @@ export default function AutoDownloaderPage() {
                         </Button>
                     }
                 >
-                    Create a rule for each airing anime you follow, e.g. “SubsPlease · 1080p”.
+                    Add a rule for each airing anime you follow.
                 </EmptyState>
             )}
             <div className="grid gap-3 lg:grid-cols-2">
@@ -195,7 +195,7 @@ function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) 
                         {mediaTitle || "Choose an anime…"}
                     </Button>
                 </Field>
-                <Field label="Comparison title" help="The title release groups use in torrent names (defaults to the romaji title).">
+                <Field label="Comparison title" help="The title used in torrent names.">
                     <Input value={r.title} onChange={e => setR({ ...r, title: e.target.value })} />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">

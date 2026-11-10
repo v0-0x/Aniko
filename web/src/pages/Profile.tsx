@@ -64,7 +64,7 @@ export default function ProfilePage() {
                         </Button>
                     }
                 >
-                    Your profile, what the people you follow are watching, and your favourites come from your AniList account.
+                    See your profile, favourites and what people you follow are watching.
                 </EmptyState>
                 <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
             </div>
@@ -283,7 +283,7 @@ function Feed({ feed, profile }: { feed: "following" | "user"; profile: Profile 
         return (
             <EmptyState icon={<UsersRound className="size-6" />} title="Nothing here yet">
                 {feed === "following"
-                    ? "When the people you follow on AniList watch, read or post something, it shows up here. Find people to follow on AniList."
+                    ? "Follow people on AniList to see what they watch, read and post."
                     : profile.own
                       ? "What you watch and post on AniList shows up here."
                       : `${profile.name} hasn't watched or posted anything lately.`}
@@ -553,7 +553,7 @@ function Favourites({ profile }: { profile: Profile }) {
     if (!f.anime.length && !f.manga.length && !f.characters.length)
         return (
             <EmptyState icon={<Heart className="size-6" />} title="No favourites yet">
-                {profile.own ? "Anime, manga and characters you favourite on AniList show up here." : `${profile.name} hasn't favourited anything yet.`}
+                {profile.own ? "Add favourites on AniList to see them here." : `${profile.name} hasn't favourited anything yet.`}
             </EmptyState>
         )
     return (
@@ -622,7 +622,7 @@ function People({ profile, kind, onRetry, retrying }: { profile: Profile; kind: 
             <EmptyState icon={<UsersRound className="size-6" />} title={kind === "following" ? "Not following anyone yet" : "No followers yet"}>
                 {kind === "following"
                     ? profile.own
-                        ? "People you follow on AniList show up here, and what they watch shows up in your activity."
+                        ? "People you follow on AniList show up here."
                         : `${profile.name} doesn't follow anyone yet.`
                     : profile.own
                       ? "People who follow you on AniList show up here."

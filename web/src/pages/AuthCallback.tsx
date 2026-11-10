@@ -26,7 +26,7 @@ export default function AuthCallbackPage() {
             return
         }
         if (!takeLogin()) {
-            setError("This login wasn't started from Aniko: log in again with Aniko's own Log in button.")
+            setError("This login wasn't started from Aniko. Log in again from Aniko.")
             return
         }
         api.post<{ name: string }>("/api/auth/anilist", { token })

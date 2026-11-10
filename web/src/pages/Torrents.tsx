@@ -117,12 +117,12 @@ export default function TorrentsPage() {
 
             {host && !hostDown && clientName === "none" && (
                 <EmptyState icon={<Magnet className="size-6" />} title={`Set up a torrent client on ${host}`}>
-                    This device's downloads go to {host}. Choose qBittorrent or Transmission in Aniko's settings there, and its torrents show up here.
+                    Choose qBittorrent or Transmission in Aniko's settings on {host}.
                 </EmptyState>
             )}
             {!host && (!clientName || clientName === "none") && (
                 <EmptyState icon={<Magnet className="size-6" />} title="Connect a torrent client" action={<Link to="/settings?tab=torrents"><Button variant="primary">Open settings</Button></Link>}>
-                    Aniko works with qBittorrent (Web UI) and Transmission to download anime straight into your library.
+                    Works with qBittorrent and Transmission.
                 </EmptyState>
             )}
             {/* Why it can't be reached, and where it's set up. */}
@@ -249,7 +249,7 @@ function AddMagnetDialog({ open, onOpenChange, host }: { open: boolean; onOpenCh
             open={open}
             onOpenChange={onOpenChange}
             title="Add a torrent"
-            description={`Paste a magnet link or a .torrent URL. It is saved to ${host ? `${host}'s` : "your"} library folder.`}
+            description={`Paste a magnet link or .torrent URL. Saves to ${host ? `${host}'s` : "your"} library folder.`}
             footer={
                 <Button variant="primary" loading={busy} disabled={!magnet.trim()} onClick={add}>
                     Add

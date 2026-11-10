@@ -143,7 +143,7 @@ function Events({ o }: { o: HubOverview }) {
                 <div className="min-w-0 flex-1 basis-56">
                     <Input
                         icon={<Search className="size-4" />}
-                        placeholder="Find: an anime, a device, a file, an address…"
+                        placeholder="Find an anime, device, file or address…"
                         aria-label="Find in the audit log"
                         value={typed}
                         onChange={e => setTyped(e.target.value)}
@@ -155,8 +155,8 @@ function Events({ o }: { o: HubOverview }) {
             ) : events.length === 0 ? (
                 <EmptyState icon={<Activity />} title={q || group ? "Nothing found" : "Nothing yet"}>
                     {q || group
-                        ? "Nothing in the audit log matches. It keeps the last 90 days."
-                        : "Everything that happens on the server shows here: what the devices watch and send it, every change made here and who made it, sign-ins, downloads and deleted files."}
+                        ? "The log keeps the last 90 days."
+                        : "Plays, changes, sign-ins, downloads and deleted files show here."}
                 </EmptyState>
             ) : (
                 days.map(d => (
@@ -259,7 +259,7 @@ function Deleted({ e }: { e: HubEvent }) {
         setBusy(true)
         try {
             const res = await api.post<{ queued: number }>(`/api/hub/audit/${e.id}/again`, { dub: dub === "dub" })
-            toast.success(`Downloading ${res.queued} ${res.queued === 1 ? "episode" : "episodes"} again: see Library › Downloading onto the server.`)
+            toast.success(`Downloading ${res.queued} ${res.queued === 1 ? "episode" : "episodes"} again. See Library.`)
             await qc.invalidateQueries({ queryKey: ["hub"] })
         } catch (err) {
             toast.error((err as Error).message)
@@ -288,10 +288,10 @@ function Deleted({ e }: { e: HubEvent }) {
                         {again.episodes.length === 1 ? "Episode" : "Episodes"} {episodeList(again.episodes)}
                         {again.queued ? ` · downloading again since ${new Date(again.queued).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
                     </span>
-                    {skipped > 0 && <span className="basis-full text-xs text-subtle">Openings, endings and files without an episode number can't be downloaded again.</span>}
+                    {skipped > 0 && <span className="basis-full text-xs text-subtle">Files without an episode number can't be downloaded again.</span>}
                 </div>
             ) : (
-                <p className="mt-2 text-xs text-subtle">These can't be downloaded again: they aren't numbered episodes of an anime (openings, endings, unmatched files).</p>
+                <p className="mt-2 text-xs text-subtle">These can't be downloaded again. They aren't numbered episodes.</p>
             )}
         </div>
     )
@@ -352,8 +352,8 @@ function ServerLog() {
             </div>
             <p className="text-xs text-subtle">
                 {onDisk
-                    ? "Every line the server's server writes, kept on its disk (the last 20 MB or so), the newest first."
-                    : "The last 1,000 lines the server's server wrote, the newest first (this hub doesn't keep its log on disk)."}
+                    ? "The last 20 MB or so, newest first."
+                    : "The last 1,000 lines, newest first."}
             </p>
             <Panel title={`${lines.length.toLocaleString()}${log.hasNextPage ? "+" : ""} lines`}>
                 {log.isLoading ? (

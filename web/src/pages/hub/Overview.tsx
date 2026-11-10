@@ -22,7 +22,7 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
                         <span className="font-medium">
                             {waiting.length === 1 ? `${waiting[0].name} wants the library` : `${waiting.length} devices want the library`}
                         </span>
-                        <span className="text-muted"> — share it with {waiting.length === 1 ? "it" : "them"} in Devices.</span>
+                        <span className="text-muted">. Share it in Devices.</span>
                     </span>
                     <ChevronRight className="size-4 text-muted" />
                 </button>
@@ -42,7 +42,7 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
                         action={<span className="text-xs text-muted">{bytes(o.sent)} sent since the server started</span>}
                     >
                         {o.streams.length === 0 ? (
-                            <p className="px-4 py-8 text-center text-sm text-muted">Nothing is streaming. When a device plays an episode from the server, it shows here, with how fast it goes.</p>
+                            <p className="px-4 py-8 text-center text-sm text-muted">Nothing is streaming.</p>
                         ) : (
                             <ul className="divide-y divide-line">
                                 {o.streams.map(st => (
@@ -54,7 +54,7 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
 
                     <Panel title="Watching now">
                         {o.playing.length === 0 ? (
-                            <p className="px-4 py-8 text-center text-sm text-muted">No one is watching. The episodes the devices play (from the server or their own files) show here.</p>
+                            <p className="px-4 py-8 text-center text-sm text-muted">No one is watching.</p>
                         ) : (
                             <ul className="grid gap-3 p-3 sm:grid-cols-2">
                                 {o.playing.map(p => {
@@ -111,7 +111,7 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
                 <div className="flex min-w-0 flex-col gap-5">
                     <Panel title={`Devices · ${online.length} online`} action={<More onClick={() => go("devices")}>Manage</More>}>
                         {o.devices.length === 0 ? (
-                            <EmptyState title="No devices yet">Open Aniko on a computer or TV on this network and turn on Settings › Other devices: it shows up here.</EmptyState>
+                            <EmptyState title="No devices yet">Open Aniko on a device on this network and turn on Settings › Other devices.</EmptyState>
                         ) : (
                             <ul className="divide-y divide-line">
                                 {o.devices.slice(0, 8).map(d => (
@@ -222,7 +222,7 @@ export function DeviceIcon({ d, className }: { d: HubDevice; className?: string 
 // How warm the computer is (a Raspberry Pi slows itself down from 80°C, or
 // when its power supply is too weak: throttled).
 function tempLevel(t: number, throttled: boolean) {
-    if (throttled) return { label: "Slowed down (too hot, or too little power)", className: "text-rose-300", icon: <Flame className="size-3.5" /> }
+    if (throttled) return { label: "Slowed down: too hot or underpowered", className: "text-rose-300", icon: <Flame className="size-3.5" /> }
     if (!t) return { label: "Not known on this computer", className: "text-muted", icon: null }
     if (t >= 75) return { label: "Hot", className: "text-rose-300", icon: <Flame className="size-3.5" /> }
     if (t >= 65) return { label: "Warm", className: "text-amber-300", icon: <TriangleAlert className="size-3.5" /> }

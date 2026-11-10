@@ -90,7 +90,7 @@ function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
             setFolders(folders.filter(x => x !== f))
         },
         onSuccess: () => {
-            toast.success("Moved to Movies & TV: its movies and shows show there once scanned")
+            toast.success("Moved to Movies & TV")
             qc.invalidateQueries({ queryKey: ["movies"] })
         },
         onError: (e: Error) => toast.error(e.message),
@@ -132,7 +132,7 @@ function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
                     >
                         {folders.length === 0 ? (
                             <p className="px-4 py-8 text-center text-sm text-muted">
-                                No folder yet. Add the folder your anime are in (on a Raspberry Pi, the USB drive's, like /media/pi/Anime): its episodes are found and shared with the devices.
+                                No folder yet. Add the folder your anime is in.
                             </p>
                         ) : (
                             <ul className="divide-y divide-line">
@@ -158,7 +158,7 @@ function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
                             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
                                 <div className="text-[13px]">
                                     <div>Downloads go to</div>
-                                    <div className="text-[12px] text-muted">New anime downloaded by the devices land here. An anime that already has a folder keeps it.</div>
+                                    <div className="text-[12px] text-muted">For new anime. An anime that already has a folder keeps it.</div>
                                 </div>
                                 <Select
                                     className="w-64 max-w-full"
@@ -173,7 +173,7 @@ function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
                     <Panel title="Downloading onto the server">
                         {active.length === 0 && done.length === 0 ? (
                             <p className="px-4 py-8 text-center text-sm text-muted">
-                                Nothing. Devices you let download here (Devices › Let it download here) send their downloads and uploads to the server: they land in its library.
+                                Nothing downloading. Allow a device under Devices › Let it download here.
                             </p>
                         ) : (
                             <ul className="divide-y divide-line">
@@ -236,7 +236,7 @@ function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
                         </div>
                     </Panel>
                     {settings.library.autoRefresh && (
-                        <p className="px-1 text-[12.5px] leading-relaxed text-muted">The server watches its folders: episodes added or removed show on the devices by themselves.</p>
+                        <p className="px-1 text-[12.5px] leading-relaxed text-muted">Added or removed episodes are picked up automatically.</p>
                     )}
                 </div>
 
@@ -249,7 +249,7 @@ function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
                 <Panel title="Put the library right">
                     <div className="p-4">
                         <p className="mb-4 text-[13px] text-muted">
-                            Match the files the server couldn't place, ignore what isn't an episode, and fix episode numbers or wrong matches. The devices see the changes at once.
+                            Match unplaced files, ignore what isn't an episode, and fix episode numbers or wrong matches.
                         </p>
                         <Tabs
                             className="mb-5"

@@ -32,7 +32,7 @@ export default function SchedulePage() {
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Schedule</h1>
-                    <p className="mt-1 text-muted">Airing times in your local timezone.</p>
+                    <p className="mt-1 text-muted">Times are in your timezone.</p>
                 </div>
                 <Tabs
                     value={filter}

@@ -31,12 +31,11 @@ export default function Devices({ o }: { o: HubOverview }) {
     return (
         <div className="flex flex-col gap-6">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-                A device shows up here when Aniko is open on it with <span className="text-fg">Settings › Other devices</span> on. Share the library with it, and it plays the server's episodes and
-                keeps its progress, AniList list and theme in step with the other devices on the same AniList account, as they change.
+                A device shows up here when Aniko is open on it with <span className="text-fg">Settings › Other devices</span> on.
             </p>
             {o.devices.length === 0 && (
                 <EmptyState icon={<Wifi />} title="No devices yet">
-                    Open Aniko on a computer, TV or phone on this network and turn on Settings › Other devices.
+                    Open Aniko on a device on this network and turn on Settings › Other devices.
                 </EmptyState>
             )}
             {waiting.length > 0 && (
@@ -88,7 +87,7 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
                 )}
             </div>
             <div className="divide-y divide-line border-t border-line">
-                <Setting label="Share the library" help="It plays the server's episodes, and its progress and list stay in step through the server.">
+                <Setting label="Share the library" help="It can play the server's episodes and sync its progress and list.">
                     <Switch label={`Share the library with ${d.name}`} checked={d.allowed} onChange={v => change(d, { allowed: v })} />
                 </Setting>
                 {d.allowed && (
@@ -99,12 +98,12 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
                                 d.account && given
                                     ? `It uses ${given.name}'s login, from the server.`
                                     : o.accounts.length === 0
-                                      ? "Give the server an AniList login first (from a device that's logged in: Settings › Other devices › this server)."
+                                      ? "Give the server an AniList login first, from a logged-in device's Settings › Other devices."
                                       : on
                                         ? `It's logged in to ${on.name}'s account itself.`
                                         : d.user
-                                          ? "It's logged in to an AniList account the server has no login for."
-                                          : "It's not logged in to AniList: with this, it uses the login you pick, without logging in on it."
+                                          ? "It's logged in to an account the server has no login for."
+                                          : "It's not logged in to AniList. Turn on to use a login kept here."
                             }
                         >
                             <div className="flex items-center gap-2">
@@ -125,7 +124,7 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
                                 <Switch label={`Give ${d.name} an AniList login`} checked={d.account} disabled={o.accounts.length === 0} onChange={v => change(d, { account: v })} />
                             </div>
                         </Setting>
-                        <Setting label="Let it download here" help="Its downloads and torrents go onto the server, into its library, and it can upload files and folders into it.">
+                        <Setting label="Let it download here" help="Its downloads, torrents and uploads are saved in the server's library.">
                             <Switch label={`Let ${d.name} download here`} checked={d.downloads} onChange={v => change(d, { downloads: v })} />
                         </Setting>
                         <ParentalSetting d={d} />
@@ -139,7 +138,7 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
 function ParentalSetting({ d }: { d: HubDevice }) {
     const [open, setOpen] = useState(false)
     return (
-        <Setting label="Parental controls" help={d.parental ? "On: what it may watch is limited, and what it watches is kept here." : "Block 18+ anime, genres or titles on it, or allow only some; see what it watched."}>
+        <Setting label="Parental controls" help={d.parental ? "What it can watch is limited, and its history is kept here." : "Limit what it can watch and see its history."}>
             <div className="flex items-center gap-2">
                 {d.parental && <Badge tone="green">On</Badge>}
                 <Button size="sm" icon={<ShieldCheck className="size-4" />} onClick={() => setOpen(true)}>

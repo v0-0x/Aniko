@@ -28,7 +28,7 @@ export default function LibraryPage() {
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Library tools</h1>
-                    <p className="mt-1 text-muted">Fix matches and episode numbers, find missing episodes, and make room.</p>
+                    <p className="mt-1 text-muted">Fix matches, find missing episodes and free up space.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button icon={<FolderSync className="size-4" />} loading={scanning} onClick={() => scan.mutate(false)}>
@@ -89,13 +89,13 @@ function MissingEpisodes() {
     if (!rows.length)
         return (
             <EmptyState icon={<CircleCheck className="size-6" />} title="Nothing missing">
-                Every anime in your library has its episodes from the first one there to the last, and the newest aired.
+                No gaps, and no newer episodes to get.
             </EmptyState>
         )
     return (
         <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">
-                Episodes between the first and the last one in your library that aren't there, and those aired since (for the anime you're watching). Download them with ani-cli, subbed or dubbed, or find torrents.
+                Gaps in your library, and episodes aired since for anime you're watching.
             </p>
             <div className="card divide-y divide-line">
                 {rows.map(({ item, missing }) => (
@@ -141,7 +141,7 @@ function MissingRow({ item, missing }: { item: CollectionItem; missing: Missing 
                             Download
                         </Button>
                     ) : (
-                        <Tooltip content="ani-cli isn't installed (Settings › Programs)">
+                        <Tooltip content="ani-cli isn't installed. See Settings › Programs.">
                             <span>
                                 <Button size="sm" icon={<Download className="size-4" />} disabled>
                                     Download

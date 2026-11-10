@@ -81,7 +81,7 @@ export default function MangaLibrary({ status }: { status: Status }) {
                         {!chosen && <Badge>Default</Badge>}
                     </div>
                     <p className="border-t border-line px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-                        Chapters sent from the devices land here, a folder per series with its cover and details. Manga already in the old folder stay there when you change it: move them over yourself.
+                        Chapters sent from devices are saved here. Changing the folder doesn't move manga already in the old one.
                     </p>
                 </Panel>
                 <Panel title="Manga on the server">
@@ -105,7 +105,7 @@ export default function MangaLibrary({ status }: { status: Status }) {
                         <BookOpen className="size-8 text-muted" />
                         <p className="font-medium">No manga on the server yet</p>
                         <p className="text-sm text-muted">
-                            In the Aniko app on a device that uses this server, open a manga, press Download, set <b>Save on</b> to this server and pick the chapters. They're sent here with their cover and details, and every device can read them.
+                            In Aniko on a device, open a manga, press Download and set <b>Save on</b> to this server.
                         </p>
                     </div>
                 ) : (
