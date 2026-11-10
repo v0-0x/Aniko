@@ -612,7 +612,7 @@ func (a *App) Shutdown() {
 	a.Update.Stop()
 	a.TorrentStream.Close()
 	a.HLS.Close()
-	a.Scanner.StopWatcher()
+	a.Scanner.Stop()
 	a.Discord.Clear()
 	a.Extensions.Shutdown()
 	// The background jobs end with ctx; what they write (the database, the

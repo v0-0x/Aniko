@@ -35,6 +35,15 @@ type Scanner struct {
 	// newMatcher makes the scan's matcher (tests replace it).
 	newMatcher func(threshold float64, outsideList bool) *Matcher
 
+	// What the scanner starts in the background (scans asked for by the
+	// watcher, a settings change or an upload, and what runs after a scan):
+	// Stop ends them and waits, so nothing writes once Aniko has stopped.
+	jobsMu  sync.Mutex
+	jobs    sync.WaitGroup
+	stopped bool
+	ctx     context.Context
+	cancel  context.CancelFunc
+
 	mu      sync.Mutex
 	running atomic.Bool
 	// progress: where the scan running is (Progress).
@@ -52,6 +61,7 @@ type Scanner struct {
 
 func NewScanner(store *Store, p *anilist.Platform, s *config.Store, hub *events.Hub) *Scanner {
 	sc := &Scanner{Store: store, platform: p, settings: s, hub: hub}
+	sc.ctx, sc.cancel = context.WithCancel(context.Background())
 	sc.newMatcher = func(threshold float64, outsideList bool) *Matcher { return NewMatcher(p, threshold, outsideList) }
 	return sc
 }
@@ -132,7 +142,7 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 		s.mu.Unlock()
 		// Files changed while we were busy: go again.
 		if s.rescan.Swap(false) {
-			go s.autoScan()
+			s.spawn(s.autoScan)
 		}
 	}()
 	s.running.Store(true)
@@ -279,7 +289,7 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 	s.hub.Publish(events.ScanDone, ScanDonePayload{ScanResult: res})
 	s.hub.Publish(events.LibraryUpdated, nil)
 	if s.OnScanned != nil {
-		go s.OnScanned()
+		s.spawn(s.OnScanned)
 	}
 	if s.OnNewFiles != nil && len(added) > 0 && len(byPath) > 0 {
 		// A file that went from one place to another (a folder renamed) isn't
@@ -297,7 +307,7 @@ func (s *Scanner) Scan(ctx context.Context, opts ScanOptions) (res *ScanResult, 
 			}
 		}
 		if len(fresh) > 0 {
-			go s.OnNewFiles(fresh)
+			s.spawn(func() { s.OnNewFiles(fresh) })
 		}
 	}
 	return res, nil
@@ -431,11 +441,44 @@ func (s *Scanner) ForgetGone() {
 
 // ScanSoon starts an incremental scan in the background, or queues one if a
 // scan is already running.
-func (s *Scanner) ScanSoon() { go s.autoScan() }
+func (s *Scanner) ScanSoon() { s.spawn(s.autoScan) }
+
+// spawn runs fn in the background, unless the scanner has stopped.
+func (s *Scanner) spawn(fn func()) {
+	s.jobsMu.Lock()
+	if s.stopped {
+		s.jobsMu.Unlock()
+		return
+	}
+	s.jobs.Add(1)
+	s.jobsMu.Unlock()
+	go func() {
+		defer s.jobs.Done()
+		fn()
+	}()
+}
+
+// Stop ends the watcher and the background scans, and waits for them and
+// for what runs after a scan (a few seconds at most): they write the
+// database and the data folder, which are about to close.
+func (s *Scanner) Stop() {
+	s.StopWatcher()
+	s.jobsMu.Lock()
+	s.stopped = true
+	s.jobsMu.Unlock()
+	s.cancel()
+	done := make(chan struct{})
+	go func() { s.jobs.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		log.Printf("library: background scans still running after 10s")
+	}
+}
 
 // autoScan runs an incremental scan for the folder watcher.
 func (s *Scanner) autoScan() {
-	if _, err := s.Scan(context.Background(), ScanOptions{}); err != nil {
+	if _, err := s.Scan(s.ctx, ScanOptions{}); err != nil {
 		if errors.Is(err, ErrScanRunning) {
 			s.rescan.Store(true)
 			return
@@ -553,7 +596,7 @@ func (s *Scanner) StartWatcher() {
 				ticker = time.NewTicker(pollEvery)
 				poll = ticker.C
 			case <-poll:
-				go s.autoScan()
+				s.spawn(s.autoScan)
 			case <-stop:
 				_ = w.Close()
 				return
@@ -588,7 +631,7 @@ func (s *Scanner) StartWatcher() {
 					}
 				})
 			case <-trigger:
-				go s.autoScan()
+				s.spawn(s.autoScan)
 			case err := <-w.Errors:
 				if err != nil {
 					log.Printf("library watcher: %v", err)
