@@ -1,10 +1,17 @@
-import { ListChecks, Search } from "lucide-react"
+import { ArrowDownUp, Check, ListChecks, Search } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
-import { EmptyState, ErrorState, Input, Select, Tabs } from "@/components/ui"
+import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Tabs } from "@/components/ui"
 import { useRawList } from "@/lib/queries"
 import { LIST_STATUS, LIST_STATUS_MANGA, title } from "@/lib/utils"
+
+const SORTS = [
+    { value: "updated", label: "Last updated" },
+    { value: "title", label: "Title" },
+    { value: "score", label: "Score" },
+    { value: "progress", label: "Progress" },
+]
 
 export default function ListsPage() {
     const [type, setType] = useState<"ANIME" | "MANGA">("ANIME")
@@ -48,31 +55,33 @@ export default function ListsPage() {
 
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-[1.75rem] font-semibold tracking-tight">My lists</h1>
-                    <p className="mt-1 text-muted">Everything on your {type === "ANIME" ? "anime" : "manga"} list.</p>
-                </div>
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+                <h1 className="text-[1.75rem] font-semibold tracking-tight">My lists</h1>
                 <Tabs value={type} onChange={setType} tabs={[{ value: "ANIME", label: "Anime" }, { value: "MANGA", label: "Manga" }]} />
             </div>
+            {/* One row: which list, a title filter, and the order in a menu. */}
             <div className="mb-8 flex flex-wrap items-center gap-3">
                 <Tabs value={status} onChange={setStatus} tabs={Object.entries(labels).map(([k, v]) => ({ value: k, label: v, count: byStatus[k]?.length ?? 0 }))} />
-                <div className="ml-auto flex flex-wrap gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-2 sm:ml-auto sm:flex-none">
                     {/* Input's className only sizes the inner <input> (its own wrapper is w-full): size it from outside. */}
-                    <div className="w-56 shrink-0">
-                        <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter…" icon={<Search className="size-4" />} />
+                    <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
+                        <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter…" aria-label="Filter by title" icon={<Search className="size-4" />} className="rounded-xl" />
                     </div>
-                    <Select
-                        className="w-44 shrink-0"
-                        value={sort}
-                        onChange={setSort}
-                        options={[
-                            { value: "updated", label: "Last updated" },
-                            { value: "title", label: "Title" },
-                            { value: "score", label: "Score" },
-                            { value: "progress", label: "Progress" },
-                        ]}
-                    />
+                    <Dropdown>
+                        <DropdownTrigger asChild>
+                            <IconButton label={`Sort: ${SORTS.find(o => o.value === sort)?.label ?? "Last updated"}`} variant="subtle" className="rounded-xl">
+                                <ArrowDownUp className="size-4" />
+                            </IconButton>
+                        </DropdownTrigger>
+                        <DropdownContent>
+                            <DropdownLabel>Sort by</DropdownLabel>
+                            {SORTS.map(o => (
+                                <DropdownItem key={o.value} icon={sort === o.value ? <Check /> : <span className="block size-4" />} onSelect={() => setSort(o.value)}>
+                                    {o.label}
+                                </DropdownItem>
+                            ))}
+                        </DropdownContent>
+                    </Dropdown>
                 </div>
             </div>
             {isLoading ? (

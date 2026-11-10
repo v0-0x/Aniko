@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Compass, Info, Play, RefreshCw, Star } from "lucide-react"
+import { ChevronLeft, ChevronRight, Compass, Play, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
@@ -10,7 +10,7 @@ import { useStore } from "@/lib/store"
 import { holidayStore } from "@/lib/themes"
 import { HolidayIcon } from "@/components/HolidayBadge"
 import type { Media } from "@/lib/types"
-import { banner, cleanDescription, cn, formatLabel, GENRES, SEASONS, seasonLabel, title } from "@/lib/utils"
+import { banner, cn, formatLabel, GENRES, SEASONS, seasonLabel, title } from "@/lib/utils"
 
 // The season after the given one: Fall 2026 -> Winter 2027.
 function seasonAfter(season: string, year: number) {
@@ -46,10 +46,11 @@ export default function DiscoverPage() {
         )
 
     const next = data ? seasonAfter(data.season, data.year) : undefined
-    const rows: { key: keyof NonNullable<typeof data>; title: string; subtitle?: string; more: string }[] = [
+    // The season is named in the heading itself, not on a line under it.
+    const rows: { key: keyof NonNullable<typeof data>; title: string; more: string }[] = [
         { key: "trending", title: "Trending now", more: "/search?sort=TRENDING_DESC" },
-        { key: "thisSeason", title: `Popular this season`, subtitle: data ? seasonLabel(data.season, data.year) : "", more: seasonSearch(data?.season, data?.year) },
-        { key: "nextSeason", title: "Upcoming next season", subtitle: next ? seasonLabel(next.season, next.year) : "", more: seasonSearch(next?.season, next?.year) },
+        { key: "thisSeason", title: data ? `Popular in ${seasonLabel(data.season, data.year)}` : "Popular this season", more: seasonSearch(data?.season, data?.year) },
+        { key: "nextSeason", title: next ? `Coming in ${seasonLabel(next.season, next.year)}` : "Coming next season", more: seasonSearch(next?.season, next?.year) },
         { key: "popular", title: "All-time popular", more: "/search?sort=POPULARITY_DESC" },
         { key: "topRated", title: "Top rated", more: "/search?sort=SCORE_DESC" },
     ]
@@ -60,17 +61,10 @@ export default function DiscoverPage() {
 
     return (
         <div className="min-h-full pb-24">
-            {isLoading ? <Skeleton className="h-[440px] rounded-none" /> : featured[i] && <Featured media={featured[i]} index={i} count={featured.length} onIndex={setI} onHold={setHold} />}
+            {isLoading ? <Skeleton className="h-[clamp(340px,50vh,540px)] rounded-none max-sm:h-[440px]" /> : featured[i] && <Featured media={featured[i]} index={i} count={featured.length} onIndex={setI} onHold={setHold} />}
             {/* Without a hero banner there is nothing to overlap. */}
             <div className={cn("relative z-10 flex flex-col gap-10 px-6 md:px-8 xl:px-10", hero ? "-mt-14" : "pt-8")}>
                 <PluginSlot slot="after-discover-screen-header" />
-                <ChipRow label="More genres">
-                    {genres.map(g => (
-                        <Link key={g} to={`/search?genre=${encodeURIComponent(g)}`} className="flex h-8 shrink-0 items-center rounded-full bg-white/[0.06] px-3.5 text-[13px] font-medium text-fg/80 transition-colors hover:bg-white/[0.1] hover:text-fg">
-                            {g}
-                        </Link>
-                    ))}
-                </ChipRow>
                 {shown.length === 0 && (
                     <EmptyState
                         icon={<Compass className="size-6" />}
@@ -96,7 +90,7 @@ export default function DiscoverPage() {
                             action={
                                 picks.more && (
                                     <Link to={picks.more} className="text-[13px] font-medium text-muted transition-colors hover:text-fg">
-                                        See more
+                                        See all
                                     </Link>
                                 )
                             }
@@ -108,15 +102,14 @@ export default function DiscoverPage() {
                     <section key={r.key}>
                         <SectionHeader
                             title={r.title}
-                            subtitle={r.subtitle}
                             action={
                                 <Link to={r.more} className="text-[13px] font-medium text-muted transition-colors hover:text-fg">
-                                    See more
+                                    See all
                                 </Link>
                             }
                         />
                         {isLoading ? (
-                            <div className="flex gap-4">
+                            <div className="flex gap-4 overflow-hidden">
                                 {Array.from({ length: 7 }).map((_, k) => (
                                     <div key={k} className="w-[160px] shrink-0">
                                         <MediaCardSkeleton />
@@ -128,51 +121,48 @@ export default function DiscoverPage() {
                         )}
                     </section>
                 ))}
+                {/* Last: the rows above are what most come for. */}
+                {genres.length > 0 && (
+                    <section>
+                        <SectionHeader title="Genres" />
+                        <ChipRow label="More genres">
+                            {genres.map(g => (
+                                <Link key={g} to={`/search?genre=${encodeURIComponent(g)}`} className="flex h-9 shrink-0 items-center rounded-xl border border-white/10 bg-white/[0.045] px-4 text-[13px] font-medium text-fg/80 transition-colors hover:bg-white/[0.09] hover:text-fg">
+                                    {g}
+                                </Link>
+                            ))}
+                        </ChipRow>
+                    </section>
+                )}
             </div>
         </div>
     )
 }
 
 function Featured({ media, index, count, onIndex, onHold }: { media: Media; index: number; count: number; onIndex: (i: number) => void; onHold: (on: boolean) => void }) {
-    const desc = cleanDescription(media.description)
+    // One line: score, format, season, then its first genres.
+    const facts = [media.meanScore ? `${media.meanScore}%` : "", formatLabel(media.format), seasonLabel(media.season, media.seasonYear), media.genres?.slice(0, 3).join(", ") ?? ""].filter(Boolean)
     return (
         <div
-            className="relative h-[440px] overflow-hidden"
+            className="relative h-[clamp(340px,50vh,540px)] overflow-hidden max-sm:h-[440px]"
             onFocus={() => onHold(true)}
             onBlur={e => !e.currentTarget.contains(e.relatedTarget as Node | null) && onHold(false)}
         >
             <img key={media.id} src={banner(media)} alt="" className="absolute inset-0 size-full object-cover fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
-            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-bg/5" />
-            <div className="absolute inset-0 bg-gradient-to-r from-bg/90 via-bg/40 to-transparent" />
-            <div key={media.id + "t"} className="absolute bottom-24 left-6 max-w-2xl rise-in md:left-8 xl:left-10">
+            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-bg/5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/25 to-transparent" />
+            <div key={media.id + "t"} className="absolute inset-x-0 bottom-24 max-w-3xl px-6 rise-in md:px-8 xl:px-10">
                 <p className="text-sm font-medium text-white/65">Trending #{index + 1}</p>
-                <h1 className="mt-1.5 text-4xl leading-[1.1] font-semibold tracking-tight text-white md:text-[2.75rem]">{title(media)}</h1>
-                <div className="mt-3 flex flex-wrap items-center gap-x-2 text-sm text-white/75">
-                    {media.meanScore && (
-                        <>
-                            <span className="flex items-center gap-1 font-medium text-white">
-                                <Star className="size-3.5 fill-amber-300 text-amber-300" /> {media.meanScore}%
-                            </span>
-                            <span className="text-white/30">·</span>
-                        </>
-                    )}
-                    <span>{formatLabel(media.format)}</span>
-                    <span className="text-white/30">·</span>
-                    <span>{seasonLabel(media.season, media.seasonYear)}</span>
-                    {!!media.genres?.length && <span className="text-white/30">·</span>}
-                    <span className="text-white/55">{media.genres?.slice(0, 3).join(", ")}</span>
-                </div>
-                {desc && <p className="mt-3 line-clamp-2 max-w-xl text-[15px] leading-relaxed text-white/65">{desc}</p>}
-                <div className="mt-5 flex gap-2.5">
+                <h1 className="mt-1.5 line-clamp-2 text-4xl leading-[1.1] font-semibold tracking-tight text-white md:text-[2.75rem]">{title(media)}</h1>
+                <p className="mt-2 line-clamp-1 text-[15px] text-white/80">{facts.join(" · ")}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
                     <Link to={`/entry?id=${media.id}`}>
-                        <Button variant="white" size="lg" icon={<Play className="size-4 fill-current" />}>
+                        <Button variant="white" icon={<Play className="size-4 fill-current" />}>
                             Watch now
                         </Button>
                     </Link>
-                    <Link to={`/entry?id=${media.id}&tab=details`}>
-                        <Button variant="ghost" size="lg" className="glass text-white hover:bg-black/70 hover:text-white" icon={<Info className="size-4" />}>
-                            Details
-                        </Button>
+                    <Link to={`/entry?id=${media.id}&tab=details`} className="focus-ring inline-flex h-9 items-center rounded-lg bg-white/10 px-3.5 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20">
+                        Details
                     </Link>
                 </div>
             </div>

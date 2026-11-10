@@ -1,14 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Pencil, Play, Plus, Rss, Trash2 } from "lucide-react"
+import { MoreVertical, Pencil, Play, Plus, Rss, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { MediaPicker } from "@/components/MediaPicker"
-import { Badge, Button, Dialog, EmptyState, Field, IconButton, Input, Select, Switch } from "@/components/ui"
+import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useAutoRules, useSaveSettings, useStatus } from "@/lib/queries"
 import type { AutoRule, Media } from "@/lib/types"
-import { cover, relativeTime, title } from "@/lib/utils"
+import { cn, cover, relativeTime, title } from "@/lib/utils"
 
 export default function AutoDownloaderPage() {
     const { data: rules, isLoading } = useAutoRules()
@@ -37,61 +37,44 @@ export default function AutoDownloaderPage() {
 
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-[1.75rem] font-semibold tracking-tight">Auto downloader</h1>
-                    <p className="mt-1 max-w-2xl text-muted">Sends new episodes of airing shows to your torrent client.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                <h1 className="text-[1.75rem] font-semibold tracking-tight">Auto downloader</h1>
+                <div className="flex items-center gap-2">
                     {settings && (
-                        <label className="flex items-center gap-3 rounded-xl border border-line bg-surface-1 px-4 py-2">
-                            <span className="text-sm font-medium">Enabled</span>
+                        <label className="mr-1 flex items-center gap-2.5 text-sm text-muted">
+                            Enabled
                             <Switch checked={settings.torrent.autoDownloader} onChange={v => save.mutate({ ...settings, torrent: { ...settings.torrent, autoDownloader: v } })} />
                         </label>
                     )}
-                    <Button icon={<Play className="size-4" />} loading={running} onClick={run}>
-                        Check now
-                    </Button>
-                    <Button
-                        variant="primary"
-                        icon={<Plus className="size-4" />}
-                        onClick={newRule}
-                    >
+                    <IconButton label="Check now" icon={<Play className="size-4" />} loading={running} onClick={run} />
+                    <Button variant="primary" icon={<Plus className="size-4" />} onClick={newRule}>
                         New rule
                     </Button>
                 </div>
             </div>
             {settings?.torrent.defaultClient === "none" && (
-                <div className="mb-6 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-200">
+                <p className="mb-8 rounded-xl bg-amber-500/10 p-4 text-sm text-amber-200">
                     No torrent client yet. <Link to="/settings?tab=torrents" className="underline">Set one up</Link> first.
-                </div>
+                </p>
             )}
             {!isLoading && (rules ?? []).length === 0 && (
-                <EmptyState
-                    icon={<Rss className="size-6" />}
-                    title="No rules yet"
-                    action={
-                        <Button variant="primary" icon={<Plus className="size-4" />} onClick={newRule}>
-                            New rule
-                        </Button>
-                    }
-                >
-                    Add a rule for each airing anime you follow.
+                <EmptyState icon={<Rss className="size-6" />} title="No rules yet">
+                    A rule sends an airing anime's new episodes to your torrent client.
                 </EmptyState>
             )}
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="grid gap-2 lg:grid-cols-2">
                 {(rules ?? []).map(r => (
                     <RuleCard key={r.id} rule={r} onEdit={() => setEditing(r)} />
                 ))}
             </div>
             {(items ?? []).length > 0 && (
-                <section className="mt-12">
-                    <h2 className="mb-4 text-lg font-semibold tracking-tight">Recently grabbed</h2>
-                    <div className="card divide-y divide-line">
+                <section className="mt-8">
+                    <h2 className="mb-3 text-sm font-medium text-muted">Recently grabbed</h2>
+                    <div className="card py-1.5">
                         {items!.slice(0, 30).map(i => (
-                            <div key={i.key} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+                            <div key={i.key} className="flex items-center justify-between gap-4 px-4 py-2 text-sm">
                                 <span className="truncate">{i.title}</span>
-                                <span className="shrink-0 text-subtle">{relativeTime(i.createdAt)}</span>
+                                <span className="shrink-0 text-muted">{relativeTime(i.createdAt)}</span>
                             </div>
                         ))}
                     </div>
@@ -122,30 +105,33 @@ function RuleCard({ rule, onEdit }: { rule: AutoRule; onEdit: () => void }) {
             toast.error(e.message)
         }
     }
+    const name = media?.media ? title(media.media) : rule.title
+    const facts = [...rule.releaseGroups, ...rule.resolutions.map(r => `${r}p`), rule.episodeType === "all" ? "All episodes" : "New episodes"]
     return (
-        <div className="card flex items-center gap-4 p-3 pr-4">
-            {media?.media && <img src={cover(media.media, "thumb")} alt="" className="h-20 w-14 rounded-lg object-cover" />}
-            <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{media?.media ? title(media.media) : rule.title}</p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                    {rule.releaseGroups.map(g => (
-                        <Badge key={g} tone="brand">
-                            {g}
-                        </Badge>
-                    ))}
-                    {rule.resolutions.map(r => (
-                        <Badge key={r}>{r}p</Badge>
-                    ))}
-                    <Badge>{rule.episodeType === "all" ? "All episodes" : "New episodes"}</Badge>
-                </div>
+        <div className="card flex items-center gap-4 p-3 fade-in">
+            {media?.media && <img src={cover(media.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />}
+            <div className={cn("min-w-0 flex-1 transition-opacity", !rule.enabled && "opacity-60")}>
+                <p className="truncate font-medium">{name}</p>
+                <p className="mt-0.5 truncate text-sm text-muted">{facts.join(" · ")}</p>
             </div>
-            <Switch checked={rule.enabled} onChange={toggle} />
-            <IconButton label="Edit" onClick={onEdit}>
-                <Pencil className="size-4" />
-            </IconButton>
-            <IconButton label="Delete" onClick={del}>
-                <Trash2 className="size-4" />
-            </IconButton>
+            <div className="flex shrink-0 items-center gap-2">
+                <Switch checked={rule.enabled} onChange={toggle} label={`Rule for ${name} enabled`} />
+                <Dropdown>
+                    <DropdownTrigger asChild>
+                        <IconButton aria-label="More">
+                            <MoreVertical className="size-4" />
+                        </IconButton>
+                    </DropdownTrigger>
+                    <DropdownContent>
+                        <DropdownItem icon={<Pencil />} onSelect={onEdit}>
+                            Edit
+                        </DropdownItem>
+                        <DropdownItem danger icon={<Trash2 />} onSelect={del}>
+                            Delete
+                        </DropdownItem>
+                    </DropdownContent>
+                </Dropdown>
+            </div>
         </div>
     )
 }
@@ -198,7 +184,7 @@ function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) 
                 <Field label="Comparison title" help="The title used in torrent names.">
                     <Input value={r.title} onChange={e => setR({ ...r, title: e.target.value })} />
                 </Field>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Release groups" help="Comma separated, e.g. SubsPlease, Erai-raws">
                         <Input defaultValue={r.releaseGroups.join(", ")} onChange={e => setR({ ...r, releaseGroups: list(e.target.value) })} />
                     </Field>

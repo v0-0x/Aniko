@@ -5,7 +5,7 @@ import { Cleanup } from "@/components/library/Cleanup"
 import { LibraryFolders } from "@/components/library/LibraryFolders"
 import { MissingDownloadDialog, useAniCliDownloads, useDownloading } from "@/components/library/MissingDownload"
 import { AllFiles, Ignored, Unmatched } from "@/components/library/LibraryTools"
-import { Badge, Button, EmptyState, Tabs, Tooltip } from "@/components/ui"
+import { Badge, EmptyState, IconButton, Tabs, Tooltip } from "@/components/ui"
 import { useCollection, useScan } from "@/lib/queries"
 import { scanStore, useStore } from "@/lib/store"
 import { formatRanges, type Missing, missingEpisodes } from "@/lib/missing"
@@ -25,18 +25,11 @@ export default function LibraryPage() {
     const scanning = useStore(scanStore, s => s.running)
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-[1.75rem] font-semibold tracking-tight">Library tools</h1>
-                    <p className="mt-1 text-muted">Fix matches, find missing episodes and free up space.</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <Button icon={<FolderSync className="size-4" />} loading={scanning} onClick={() => scan.mutate(false)}>
-                        Scan for new files
-                    </Button>
-                    <Button icon={<RefreshCw className="size-4" />} onClick={() => scan.mutate(true)} disabled={scanning}>
-                        Re-match everything
-                    </Button>
+            <div className="mb-8 flex items-center justify-between gap-4">
+                <h1 className="text-[1.75rem] font-semibold tracking-tight">Library tools</h1>
+                <div className="flex shrink-0 gap-1">
+                    <IconButton label="Scan for new files" icon={<FolderSync className="size-4" />} loading={scanning} onClick={() => scan.mutate(false)} />
+                    <IconButton label="Re-match everything" icon={<RefreshCw className="size-4" />} onClick={() => scan.mutate(true)} disabled={scanning} />
                 </div>
             </div>
             <Tabs
@@ -93,15 +86,10 @@ function MissingEpisodes() {
             </EmptyState>
         )
     return (
-        <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted">
-                Gaps in your library, and episodes aired since for anime you're watching.
-            </p>
-            <div className="card divide-y divide-line">
-                {rows.map(({ item, missing }) => (
-                    <MissingRow key={item.media.id} item={item} missing={missing} />
-                ))}
-            </div>
+        <div className="flex flex-col gap-2">
+            {rows.map(({ item, missing }) => (
+                <MissingRow key={item.media.id} item={item} missing={missing} />
+            ))}
         </div>
     )
 }
@@ -115,8 +103,8 @@ function MissingRow({ item, missing }: { item: CollectionItem; missing: Missing 
     const first = missing.gaps[0] ?? missing.newer[0]
     const busy = [...missing.gaps, ...missing.newer].filter(n => downloading.has(n)).length
     return (
-        <div className="flex flex-wrap items-center gap-4 px-4 py-3">
-            <img src={cover(item.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-md object-cover" />
+        <div className="card flex items-center gap-4 p-3 fade-in">
+            <img src={cover(item.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
             <div className="min-w-0 flex-1">
                 <Link to={`/entry?id=${item.media.id}`} className="block truncate font-medium hover:underline">
                     {title(item.media)}
@@ -127,32 +115,32 @@ function MissingRow({ item, missing }: { item: CollectionItem; missing: Missing 
                     </p>
                 )}
                 {missing.newer.length > 0 && <p className="mt-0.5 text-sm text-muted">Aired since your last one: {formatRanges(missing.newer)}</p>}
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
                 {busy > 0 && (
-                    <Link to="/downloads" className="focus-ring rounded-full">
+                    <Link to="/downloads" className="focus-ring mt-1.5 inline-flex rounded-full">
                         <Badge tone="blue">Downloading {busy}</Badge>
                     </Link>
                 )}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
                 {aniCli.loaded &&
                     aniCli.enabled &&
                     (aniCli.installed ? (
-                        <Button size="sm" variant="primary" icon={<Download className="size-4" />} onClick={() => setOpen(true)}>
-                            Download
-                        </Button>
+                        <IconButton label="Download" onClick={() => setOpen(true)}>
+                            <Download className="size-4" />
+                        </IconButton>
                     ) : (
                         <Tooltip content="ani-cli isn't installed. See Settings › Programs.">
                             <span>
-                                <Button size="sm" icon={<Download className="size-4" />} disabled>
-                                    Download
-                                </Button>
+                                <IconButton aria-label="Download" disabled>
+                                    <Download className="size-4" />
+                                </IconButton>
                             </span>
                         </Tooltip>
                     ))}
                 <Link to={`/entry?id=${item.media.id}&tab=torrents&episode=${first}`}>
-                    <Button size="sm" icon={<Magnet className="size-4" />}>
-                        Find torrents
-                    </Button>
+                    <IconButton label="Find torrents">
+                        <Magnet className="size-4" />
+                    </IconButton>
                 </Link>
             </div>
             {open && <MissingDownloadDialog media={item.media} missing={missing} open={open} onOpenChange={setOpen} />}

@@ -1,4 +1,4 @@
-import { RefreshCw, Check, CheckCheck, ChevronDown, FolderOpen, FolderSearch, FolderSync, HardDrive, Info, LayoutGrid, List as ListIcon, Play, Search, Settings2, Share2, Upload } from "lucide-react"
+import { RefreshCw, Check, CheckCheck, ChevronDown, FolderOpen, FolderSearch, FolderSync, HardDrive, Info, LayoutGrid, List as ListIcon, Play, Search, Share2, SlidersHorizontal, Upload } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "@/lib/toast"
@@ -6,7 +6,7 @@ import { EpisodeCard } from "@/components/EpisodeCard"
 import { Carousel, MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
 import { UploadDialog, useUploadTargets } from "@/components/UploadDialog"
-import { Badge, Button, EmptyState, IconButton, Input, Progress, Select, Tabs, Tooltip } from "@/components/ui"
+import { Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Input, Progress, Tabs, Tooltip } from "@/components/ui"
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { usePlay } from "@/lib/play"
@@ -63,6 +63,17 @@ function typeOf(g: Group): TypeFilter {
     const f = g.item.media.format
     return f === "MOVIE" ? "MOVIE" : f === "OVA" || f === "ONA" || f === "SPECIAL" || f === "MUSIC" ? "EXTRA" : "TV"
 }
+
+const SORTS: { value: SortKey; label: string }[] = [
+    { value: "added", label: "Recently added" },
+    { value: "title", label: "Title" },
+    { value: "unwatched", label: "Most unwatched" },
+    { value: "episodes", label: "Most episodes" },
+    { value: "size", label: "Largest on disk" },
+]
+
+// A menu row's mark: a tick on the one that's chosen.
+const tick = (on: boolean) => (on ? <Check /> : <span className="block size-4" />)
 
 const uniq = (xs: (string | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))]
 
@@ -229,50 +240,63 @@ export default function LocalLibraryPage() {
     const [uploading, setUploading] = useState(false)
     const canUpload = !!uploads.data?.length
     const uploadButton = canUpload && (
-        <Button icon={<Upload className="size-4" />} onClick={() => setUploading(true)}>
-            Upload
-        </Button>
+        <IconButton label="Upload" variant="subtle" className="rounded-xl" onClick={() => setUploading(true)}>
+            <Upload className="size-4" />
+        </IconButton>
     )
+    // The one line under the title: whose library it is, and how much is in it.
+    const summary = [
+        host ? `Shared by ${host.host.name}${host.host.online ? "" : ", not answering"}` : "",
+        !loading && groups.length > 0 ? `${groups.length} anime · ${totals.episodes} ${totals.episodes === 1 ? "episode" : "episodes"} · ${formatBytes(totals.size)}` : "",
+    ]
+        .filter(Boolean)
+        .join(" · ")
+    // Kinds of anime in what's shown: the choice is only offered with more than one.
+    const types = TYPES.filter(t => t.value !== "ALL" && typeCounts[t.value])
 
     return (
         <div className="min-h-full pb-24">
             {canUpload && <UploadDialog open={uploading} onOpenChange={setUploading} target={host?.host.id} />}
-            <header className="border-b border-line px-6 pt-8 pb-7 md:px-8 xl:px-10">
-                <div className="flex flex-wrap items-end justify-between gap-6">
-                    <div>
-                        <h1 className="text-[1.75rem] font-semibold tracking-tight">Local library</h1>
-                        <p className="mt-1 text-muted">
-                            {host ? `Shared by ${host.host.name}${host.host.online ? "" : ", not answering"}.` : "Anime downloaded on this computer."}
-                        </p>
-                        {!!coll?.incomplete && (
-                            <p className="mt-2 flex items-center gap-2 text-[13px] text-muted">
-                                <RefreshCw className="size-3.5 shrink-0 animate-spin" />
-                                {coll.incomplete} {coll.incomplete === 1 ? "anime is" : "anime are"} still being looked up on AniList.
-                            </p>
+            <header className="flex flex-col gap-5 px-6 pt-8 md:px-8 xl:px-10">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="min-w-0 truncate text-[1.75rem] font-semibold tracking-tight">Local library</h1>
+                    {/* The library's tools are in the sidebar: not repeated here. */}
+                    <div className="flex shrink-0 items-center gap-2">
+                        {uploadButton}
+                        {!host && !off && trusted && libraryDir && (
+                            <IconButton label="Open library folder" variant="subtle" className="rounded-xl" onClick={() => openFolder(libraryDir)}>
+                                <FolderOpen className="size-4" />
+                            </IconButton>
+                        )}
+                        {!host && !off && (
+                            <Tooltip content="Scan for new files">
+                                <Button variant="primary" className="rounded-xl" loading={scanning || scan.isPending} icon={<FolderSync className="size-4" />} onClick={() => scan.mutate(false)}>
+                                    {scanning ? "Scanning…" : "Scan"}
+                                </Button>
+                            </Tooltip>
                         )}
                     </div>
-                    {host && uploadButton}
-                    {!host && off && uploadButton}
-                    {!host && !off && (
-                        <div className="flex items-center gap-2">
-                            {uploadButton}
-                            {trusted && libraryDir && (
-                                <IconButton label="Open library folder" variant="subtle" onClick={() => openFolder(libraryDir)}>
-                                    <FolderOpen className="size-4" />
-                                </IconButton>
-                            )}
-                            <IconButton label="Library tools (fix matches, ignored files)" variant="subtle" onClick={() => navigate("/library")}>
-                                <Settings2 className="size-4" />
-                            </IconButton>
-                            <Button variant="primary" loading={scanning || scan.isPending} icon={<FolderSync className="size-4" />} onClick={() => scan.mutate(false)}>
-                                {scanning ? "Scanning…" : "Scan for new files"}
-                            </Button>
-                        </div>
-                    )}
                 </div>
+                {(summary || !!coll?.incomplete || (!host && !!coll?.unmatchedCount)) && (
+                    <div className="-mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted">
+                        {summary && <p className="tabular-nums">{summary}</p>}
+                        {!!coll?.incomplete && (
+                            <p className="flex items-center gap-2">
+                                <RefreshCw className="size-3.5 shrink-0 animate-spin" />
+                                {coll.incomplete} still being looked up
+                            </p>
+                        )}
+                        {!host && !!coll?.unmatchedCount && (
+                            <Link to="/library?tab=unmatched" className="flex items-center gap-1.5 text-amber-200 transition-colors hover:text-amber-100">
+                                <FolderSearch className="size-4" />
+                                {coll.unmatchedCount} unmatched {coll.unmatchedCount === 1 ? "file" : "files"}
+                            </Link>
+                        )}
+                    </div>
+                )}
                 {!!shared?.length && (!off || shared.length > 1) && (
                     <Tabs
-                        className="mt-6"
+                        className="self-start"
                         value={host ? host.host.id : "local"}
                         onChange={setSource}
                         tabs={[
@@ -281,20 +305,9 @@ export default function LocalLibraryPage() {
                         ]}
                     />
                 )}
-                <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3">
-                    <Stat label="Anime" value={loading ? "…" : String(groups.length)} />
-                    <Stat label="Episodes" value={loading ? "…" : String(totals.episodes)} />
-                    <Stat label={host ? "Size" : "On disk"} value={loading ? "…" : formatBytes(totals.size)} />
-                    {!host && !!coll?.unmatchedCount && (
-                        <Link to="/library?tab=unmatched" className="flex items-center gap-2 rounded-lg bg-amber-400/10 px-3 py-2 text-sm text-amber-200 transition-colors hover:bg-amber-400/15">
-                            <FolderSearch className="size-4" />
-                            {coll.unmatchedCount} unmatched {coll.unmatchedCount === 1 ? "file" : "files"}. Fix
-                        </Link>
-                    )}
-                </div>
             </header>
 
-            <div className="flex flex-col gap-10 px-6 pt-8 md:px-8 xl:px-10">
+            <div className="flex flex-col gap-8 px-6 pt-8 md:px-8 xl:px-10">
                 {error && <EmptyState title="Couldn't load your library">{(error as Error).message}</EmptyState>}
 
                 {scanning && groups.length === 0 && (
@@ -329,7 +342,7 @@ export default function LocalLibraryPage() {
                             </Button>
                         }
                     >
-                        No other device is sharing a library right now. Turn this one back on in Settings › Local library.
+                        No other device is sharing one right now.
                     </EmptyState>
                 )}
 
@@ -390,41 +403,51 @@ export default function LocalLibraryPage() {
 
                 {(loading || groups.length > 0) && (
                     <section>
+                        {/* One row: the list they're on, a title filter, and the rest (kind, order, view) in one menu. */}
                         <div className="mb-6 flex flex-wrap items-center gap-3">
-                            <Tabs value={activeFilter} onChange={setFilter} tabs={STATUS_TABS.filter(t => t.value === "ALL" || counts[t.value]).map(t => ({ ...t, count: counts[t.value] ?? 0 }))} />
-                            <div className="ml-auto flex flex-wrap items-center gap-3">
-                                <div className="w-60 shrink-0">
-                                    <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter by title…" icon={<Search className="size-4" />} />
+                            <Tabs value={activeFilter} onChange={setFilter} tabs={STATUS_TABS.filter(t => t.value === "ALL" || counts[t.value])} />
+                            <div className="flex min-w-0 flex-1 items-center gap-2 sm:ml-auto sm:flex-none">
+                                <div className="min-w-0 flex-1 sm:w-60 sm:flex-none">
+                                    <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter by title…" aria-label="Filter by title" icon={<Search className="size-4" />} className="rounded-xl" />
                                 </div>
-                                {/* Only with more than one kind there. */}
-                                {TYPES.filter(t => t.value !== "ALL" && typeCounts[t.value]).length > 1 && (
-                                    <Select
-                                        className="w-56 shrink-0"
-                                        value={activeType}
-                                        onChange={v => setType(v as TypeFilter)}
-                                        options={TYPES.filter(t => t.value === "ALL" || typeCounts[t.value]).map(t => ({ value: t.value, label: `${t.label} (${typeCounts[t.value] ?? 0})` }))}
-                                    />
-                                )}
-                                <Select
-                                    className="w-48 shrink-0"
-                                    value={sort}
-                                    onChange={v => setSort(v as SortKey)}
-                                    options={[
-                                        { value: "added", label: "Recently added" },
-                                        { value: "title", label: "Title" },
-                                        { value: "unwatched", label: "Most unwatched" },
-                                        { value: "episodes", label: "Most episodes" },
-                                        { value: "size", label: "Largest on disk" },
-                                    ]}
-                                />
-                                <Tabs
-                                    value={view}
-                                    onChange={setView}
-                                    tabs={[
-                                        { value: "grid", label: <LayoutGrid className="size-4" aria-label="Grid" /> },
-                                        { value: "list", label: <ListIcon className="size-4" aria-label="List" /> },
-                                    ]}
-                                />
+                                <Dropdown>
+                                    <DropdownTrigger asChild>
+                                        <IconButton label="Type, sort and view" variant="subtle" className={cn("rounded-xl", activeType !== "ALL" && "text-brand-strong")}>
+                                            <SlidersHorizontal className="size-4" />
+                                        </IconButton>
+                                    </DropdownTrigger>
+                                    <DropdownContent>
+                                        {/* Only with more than one kind there. */}
+                                        {types.length > 1 && (
+                                            <>
+                                                <DropdownLabel>Type</DropdownLabel>
+                                                {TYPES.filter(t => t.value === "ALL" || typeCounts[t.value]).map(t => (
+                                                    <DropdownItem key={t.value} icon={tick(activeType === t.value)} onSelect={() => setType(t.value)}>
+                                                        {t.label}
+                                                        <span className="ml-auto pl-4 text-xs text-subtle tabular-nums">{typeCounts[t.value] ?? 0}</span>
+                                                    </DropdownItem>
+                                                ))}
+                                                <DropdownSeparator />
+                                            </>
+                                        )}
+                                        <DropdownLabel>Sort by</DropdownLabel>
+                                        {SORTS.map(o => (
+                                            <DropdownItem key={o.value} icon={tick(sort === o.value)} onSelect={() => setSort(o.value)}>
+                                                {o.label}
+                                            </DropdownItem>
+                                        ))}
+                                        <DropdownSeparator />
+                                        <DropdownLabel>View</DropdownLabel>
+                                        <DropdownItem icon={<LayoutGrid />} onSelect={() => setView("grid")}>
+                                            Grid
+                                            {view === "grid" && <Check className="ml-auto size-4 text-muted" />}
+                                        </DropdownItem>
+                                        <DropdownItem icon={<ListIcon />} onSelect={() => setView("list")}>
+                                            List
+                                            {view !== "grid" && <Check className="ml-auto size-4 text-muted" />}
+                                        </DropdownItem>
+                                    </DropdownContent>
+                                </Dropdown>
                             </div>
                         </div>
 
@@ -466,15 +489,6 @@ export default function LocalLibraryPage() {
     )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-    return (
-        <div>
-            <p className="text-xs text-subtle">{label}</p>
-            <p className="text-lg font-semibold tabular-nums">{value}</p>
-        </div>
-    )
-}
-
 function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trusted: boolean; onOpen: (path: string) => void; onPlay: (f: LocalFile) => void }) {
     const [open, setOpen] = useState(false)
     const m = g.item.media
@@ -486,63 +500,49 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
 
     return (
         <div className="card overflow-hidden">
-            <div className="flex items-center gap-4 p-3 pr-4">
+            {/* On a phone the actions go under the text. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
                 <Link to={entryUrl(m)} className="shrink-0">
-                    <img src={cover(m, "thumb")} alt="" loading="lazy" className="h-24 w-16 rounded-lg object-cover ring-1 ring-line" style={{ backgroundColor: m.coverImage?.color || undefined }} />
+                    <img src={cover(m, "thumb")} alt="" loading="lazy" className="h-24 w-16 rounded-xl object-cover ring-1 ring-white/10" style={{ backgroundColor: m.coverImage?.color || undefined }} />
                 </Link>
                 <div className="min-w-0 flex-1">
                     <Link to={entryUrl(m)} className="line-clamp-1 text-[15px] font-semibold hover:underline">
                         {title(m)}
                     </Link>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
-                        <span>{formatLabel(m.format)}</span>
-                        {m.seasonYear && <span>· {m.seasonYear}</span>}
-                        {le ? <span>· {LIST_STATUS[le.status] ?? le.status}</span> : <span>· Not on your list</span>}
-                        {le && total > 0 && !isMovie && (
-                            <span>
-                                · watched {le.progress}/{total}
-                            </span>
-                        )}
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <Badge tone="brand">
-                            <HardDrive className="mr-1 size-3" />
+                    <p className="mt-1 text-[13px] text-muted">
+                        {[formatLabel(m.format), m.seasonYear, le ? (LIST_STATUS[le.status] ?? le.status) : "Not on your list", le && total > 0 && !isMovie ? `watched ${le.progress}/${total}` : ""].filter(Boolean).join(" · ")}
+                    </p>
+                    {/* What's on disk, as one line of words. */}
+                    <p className="mt-1.5 text-[13px] text-subtle">
+                        <span className="text-fg/85">
                             {isMovie ? "Movie" : `Ep ${episodeRanges(g.episodes)}`}
-                            {!isMovie && total > 0 && <span className="ml-1 opacity-70">({g.episodes.length}/{total})</span>}
-                        </Badge>
-                        {extras > 0 && <Badge>+{extras} extras</Badge>}
-                        {g.unwatched > 0 && <Badge tone="green">{g.unwatched} unwatched</Badge>}
-                        {g.resolutions.slice(0, 2).map(r => (
-                            <Badge key={r}>{r}</Badge>
-                        ))}
-                        {g.releaseGroups.slice(0, 2).map(r => (
-                            <Badge key={r} tone="blue">
-                                {r}
-                            </Badge>
-                        ))}
-                        <span className="text-xs text-subtle">
-                            {formatBytes(g.size)} · added {relativeTime(g.latest)}
+                            {!isMovie && total > 0 && ` (${g.episodes.length}/${total})`}
                         </span>
-                    </div>
+                        {g.unwatched > 0 && <span className="text-brand-strong"> · {g.unwatched} unwatched</span>}
+                        {[extras > 0 ? `+${extras} extras` : "", ...g.resolutions.slice(0, 2), ...g.releaseGroups.slice(0, 2), formatBytes(g.size), `added ${relativeTime(g.latest)}`]
+                            .filter(Boolean)
+                            .map(x => ` · ${x}`)
+                            .join("")}
+                    </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
                     {g.next && (
-                        <Button variant="primary" size="sm" icon={<Play className="size-4 fill-current" />} onClick={() => onPlay(g.next!)}>
+                        <Button size="sm" className="rounded-xl" icon={<Play className="size-4 fill-current" />} onClick={() => onPlay(g.next!)}>
                             {isMovie ? "Play" : `Ep ${g.next.episode}`}
                         </Button>
                     )}
                     {trusted && g.dir && (
-                        <IconButton label="Open folder" variant="subtle" size="sm" onClick={() => onOpen(g.dir)}>
+                        <IconButton label="Open folder" size="sm" className="rounded-xl" onClick={() => onOpen(g.dir)}>
                             <FolderOpen className="size-4" />
                         </IconButton>
                     )}
-                    <IconButton label={open ? "Hide files" : "Show files"} variant="subtle" size="sm" onClick={() => setOpen(!open)}>
+                    <IconButton label={open ? "Hide files" : "Show files"} size="sm" className="rounded-xl" onClick={() => setOpen(!open)}>
                         <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
                     </IconButton>
                 </div>
             </div>
             {open && (
-                <div className="border-t border-line bg-surface-1/50">
+                <div className="bg-black/20 py-1">
                     {g.files.map(f => {
                         const watched = le?.status === "COMPLETED" || (f.kind === "main" && (le?.progress ?? 0) >= f.episode)
                         return (

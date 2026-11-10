@@ -1,25 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, ArrowDown, ArrowUp, FolderOpen, Magnet, Pause, Play, Plus, Power, Settings2, Trash2 } from "lucide-react"
+import { AlertTriangle, FolderOpen, Magnet, MoreVertical, Pause, Play, Plus, Power, Settings2, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "@/lib/toast"
-import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Progress, Tabs } from "@/components/ui"
+import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Progress, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus, useTorrentList } from "@/lib/queries"
 import type { Torrent } from "@/lib/types"
 import { cn, formatBytes, formatSpeed, timeUntil } from "@/lib/utils"
-
-const stateTone: Record<string, "green" | "blue" | "amber" | "red" | "gray" | "brand"> = {
-    downloading: "brand",
-    seeding: "green",
-    completed: "green",
-    paused: "gray",
-    stalled: "amber",
-    checking: "blue",
-    queued: "gray",
-    metadata: "blue",
-    error: "red",
-}
 
 export default function TorrentsPage() {
     const { data: status } = useStatus()
@@ -70,11 +58,11 @@ export default function TorrentsPage() {
 
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                <div className="min-w-0">
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Torrents</h1>
-                    <p className="mt-1 flex items-center gap-2 text-muted">
-                        <span className={cn("size-2 rounded-full", clientStatus?.connected ? "bg-emerald-400" : "bg-rose-400")} />
+                    <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted tabular-nums">
+                        <span className={cn("size-2 shrink-0 rounded-full", clientStatus?.connected ? "bg-emerald-400" : "bg-rose-400")} />
                         {hostDown
                             ? `${host} doesn't answer`
                             : host && clientName === "none"
@@ -82,26 +70,16 @@ export default function TorrentsPage() {
                               : clientName === "none" || !clientName
                                 ? "No torrent client configured"
                                 : clientStatus?.connected
-                                  ? `${clientLabel} ${clientStatus.version}${on}`
+                                  ? `${clientLabel} ${clientStatus.version}${on} · ↓ ${formatSpeed(down)} · ↑ ${formatSpeed(up)}`
                                   : clientStatus?.needsAuth
                                     ? `${clientLabel}${on} is running but needs ${host ? "its" : "your"} login`
                                     : `${clientLabel}${on} is not reachable`}
                     </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    {clientStatus?.connected && (
-                        <div className="flex items-center gap-4 rounded-xl border border-line bg-surface-1 px-4 py-2 text-sm tabular-nums">
-                            <span className="flex items-center gap-1.5 text-brand-strong">
-                                <ArrowDown className="size-4" /> {formatSpeed(down)}
-                            </span>
-                            <span className="flex items-center gap-1.5 text-emerald-300">
-                                <ArrowUp className="size-4" /> {formatSpeed(up)}
-                            </span>
-                        </div>
-                    )}
+                <div className="flex items-center gap-2">
                     {!clientStatus?.connected && clientName && clientName !== "none" && clientStatus?.needsAuth && !host && (
                         <Button variant="primary" icon={<Settings2 className="size-4" />} onClick={() => navigate("/settings?tab=torrents")}>
-                            Fix login in settings
+                            Fix login
                         </Button>
                     )}
                     {!clientStatus?.connected && clientName && clientName !== "none" && !clientStatus?.needsAuth && (
@@ -109,9 +87,14 @@ export default function TorrentsPage() {
                             Start client
                         </Button>
                     )}
-                    <Button icon={<Plus className="size-4" />} onClick={() => setAddOpen(true)} disabled={hostDown || !clientName || clientName === "none"}>
-                        Add magnet
-                    </Button>
+                    {/* The page's one filled button, when there's a client to add to. */}
+                    {clientStatus?.connected ? (
+                        <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setAddOpen(true)} disabled={hostDown || !clientName || clientName === "none"}>
+                            Add magnet
+                        </Button>
+                    ) : (
+                        <IconButton label="Add magnet" icon={<Plus className="size-4" />} onClick={() => setAddOpen(true)} disabled={hostDown || !clientName || clientName === "none"} />
+                    )}
                 </div>
             </div>
 
@@ -157,7 +140,7 @@ export default function TorrentsPage() {
                     {isLoading && <div className="card h-40 shimmer" />}
                     {!isLoading && listError && !list && <ErrorState title="Couldn't read the torrent list" error={listError} retrying={listFetching} onRetry={() => refetchList()} />}
                     {!isLoading && !(listError && !list) && torrents.length === 0 && <EmptyState icon={<Magnet className="size-6" />} title="No torrents" />}
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2">
                         {torrents.map(t => (
                             <TorrentRow key={t.hash} t={t} onAction={a => act([t.hash], a)} canOpen={status?.client !== "lan" && !host} />
                         ))}
@@ -171,54 +154,49 @@ export default function TorrentsPage() {
 
 function TorrentRow({ t, onAction, canOpen }: { t: Torrent; onAction: (a: string) => void; canOpen: boolean }) {
     const paused = t.state === "paused" || t.state === "completed"
+    const facts = [
+        `${Math.floor(t.progress * 100)}%`,
+        formatBytes(t.size),
+        `↓ ${formatSpeed(t.downSpeed)}`,
+        `↑ ${formatSpeed(t.upSpeed)}`,
+        `${t.seeds} seeds`,
+        `${t.peers} peers`,
+        t.eta > 0 && t.progress < 1 && `ETA ${timeUntil(t.eta)}`,
+        `Ratio ${t.ratio.toFixed(2)}`,
+    ].filter(Boolean)
     return (
-        <div className="card flex items-center gap-5 p-4 transition hover:border-line-strong">
+        <div className="card flex items-center gap-3 p-4 fade-in">
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-3">
-                    <p className="truncate font-medium" title={t.name}>
-                        {t.name}
-                    </p>
-                    <Badge tone={stateTone[t.state] ?? "gray"} className="capitalize">
-                        {t.state}
-                    </Badge>
-                </div>
-                <div className="mt-3 flex items-center gap-4">
-                    <Progress value={t.progress} className="h-1.5" barClassName={t.progress >= 1 ? "bg-emerald-400" : undefined} />
-                    <span className="w-12 shrink-0 text-right text-sm font-semibold tabular-nums">{Math.floor(t.progress * 100)}%</span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-subtle tabular-nums">
-                    <span>{formatBytes(t.size)}</span>
-                    <span className="flex items-center gap-1">
-                        <ArrowDown className="size-3" /> {formatSpeed(t.downSpeed)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <ArrowUp className="size-3" /> {formatSpeed(t.upSpeed)}
-                    </span>
-                    <span>
-                        {t.seeds} seeds · {t.peers} peers
-                    </span>
-                    {t.eta > 0 && t.progress < 1 && <span>ETA {timeUntil(t.eta)}</span>}
-                    <span>Ratio {t.ratio.toFixed(2)}</span>
-                </div>
+                <p className="truncate font-medium" title={t.name}>
+                    {t.name}
+                </p>
+                <p className="mt-0.5 text-sm text-muted tabular-nums">
+                    <span className={cn("capitalize", t.state === "error" && "text-rose-300", t.state === "stalled" && "text-amber-200")}>{t.state}</span>
+                    {" · "}
+                    {facts.join(" · ")}
+                </p>
+                <Progress value={t.progress} className="mt-2.5" barClassName={t.progress >= 1 ? "bg-emerald-400" : undefined} />
             </div>
             <div className="flex shrink-0 items-center gap-1">
                 <IconButton label={paused ? "Resume" : "Pause"} onClick={() => onAction(paused ? "resume" : "pause")}>
                     {paused ? <Play className="size-4" /> : <Pause className="size-4" />}
                 </IconButton>
-                {canOpen && (
-                    <IconButton label="Open folder" onClick={() => onAction("open")}>
-                        <FolderOpen className="size-4" />
-                    </IconButton>
-                )}
                 <Dropdown>
                     <DropdownTrigger asChild>
-                        <button className="grid size-10 place-items-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-rose-300" aria-label="Remove">
-                            <Trash2 className="size-4" />
-                        </button>
+                        <IconButton aria-label="More">
+                            <MoreVertical className="size-4" />
+                        </IconButton>
                     </DropdownTrigger>
                     <DropdownContent>
-                        <DropdownItem onSelect={() => onAction("remove")}>Remove torrent (keep files)</DropdownItem>
-                        <DropdownItem danger onSelect={() => confirm("Remove this torrent and delete its downloaded files?") && onAction("removeData")}>
+                        {canOpen && (
+                            <DropdownItem icon={<FolderOpen />} onSelect={() => onAction("open")}>
+                                Open folder
+                            </DropdownItem>
+                        )}
+                        <DropdownItem icon={<Trash2 />} onSelect={() => onAction("remove")}>
+                            Remove torrent (keep files)
+                        </DropdownItem>
+                        <DropdownItem danger icon={<Trash2 />} onSelect={() => confirm("Remove this torrent and delete its downloaded files?") && onAction("removeData")}>
                             Remove torrent and delete files
                         </DropdownItem>
                     </DropdownContent>
