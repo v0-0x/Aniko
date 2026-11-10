@@ -396,6 +396,16 @@ function installShellHeader() {
         if (token) details.requestHeaders["X-Kumo-Shell"] = token
         cb({ requestHeaders: details.requestHeaders })
     })
+    // The player's screenshots (PNG from a blob:) go straight to Pictures/Aniko, no Save dialog.
+    session.defaultSession.on("will-download", (_e, item) => {
+        if (!item.getURL().startsWith("blob:") || !item.getFilename().toLowerCase().endsWith(".png")) return
+        const dir = path.join(app.getPath("pictures"), "Aniko")
+        fs.mkdirSync(dir, { recursive: true })
+        item.setSavePath(path.join(dir, item.getFilename()))
+        item.once("done", (_ev, state) => {
+            if (state === "completed" && Notification.isSupported()) new Notification({ title: "Screenshot saved", body: item.getFilename() }).show()
+        })
+    })
 }
 
 // A page of Aniko's: at its address (the one it had when it started, or the

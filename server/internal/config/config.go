@@ -139,6 +139,8 @@ type PlaybackSettings struct {
 	SkipIntroAniSkip    bool    `json:"skipIntroAniSkip"`   // openings
 	SkipOutroAniSkip    bool    `json:"skipOutroAniSkip"`   // endings
 	SkipRecapAniSkip    bool    `json:"skipRecapAniSkip"`   // recaps (and previews)
+	// Up next skips filler episodes (MyAnimeList's marks, through Jikan).
+	SkipFiller bool `json:"skipFiller"`
 }
 
 type MpvSettings struct {

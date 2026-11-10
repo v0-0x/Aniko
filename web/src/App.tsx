@@ -40,6 +40,7 @@ const ListsPage = lazy(() => import("./pages/Lists"))
 const StatsPage = lazy(() => import("./pages/Stats"))
 const TorrentsPage = lazy(() => import("./pages/Torrents"))
 const DownloadsPage = lazy(() => import("./pages/Downloads"))
+const PlaylistsPage = lazy(() => import("./pages/Playlists"))
 const AutoDownloaderPage = lazy(() => import("./pages/AutoDownloader"))
 const LibraryPage = lazy(() => import("./pages/Library"))
 const LocalLibraryPage = lazy(() => import("./pages/LocalLibrary"))
@@ -205,6 +206,7 @@ function AnikoApp() {
                                 <Route path="/server" element={<ServerPage />} />
                                 <Route path="/torrent-list" element={<TorrentsPage />} />
                                 <Route path="/downloads" element={<DownloadsPage />} />
+                                <Route path="/playlists" element={<PlaylistsPage />} />
                                 <Route path="/auto-downloader" element={<AutoDownloaderPage />} />
                                 <Route path="/library" element={<LibraryPage />} />
                                 <Route path="/local" element={<LocalLibraryPage />} />

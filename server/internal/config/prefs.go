@@ -23,6 +23,7 @@ type SharedPrefs struct {
 		SkipIntroAniSkip   bool   `json:"skipIntroAniSkip"`
 		SkipOutroAniSkip   bool   `json:"skipOutroAniSkip"`
 		SkipRecapAniSkip   bool   `json:"skipRecapAniSkip"`
+		SkipFiller         bool   `json:"skipFiller"`
 	} `json:"playback"`
 }
 
@@ -35,6 +36,7 @@ func (s Settings) SharedPrefs() SharedPrefs {
 	p.UI.ShowEpisodeTitle, p.UI.BlurUnwatched = u.ShowEpisodeTitle, u.BlurUnwatched
 	p.Playback.AutoPlayNext, p.Playback.PreferredAudioLang, p.Playback.PreferredSubLang = pb.AutoPlayNext, pb.PreferredAudioLang, pb.PreferredSubLang
 	p.Playback.SkipIntroAniSkip, p.Playback.SkipOutroAniSkip, p.Playback.SkipRecapAniSkip = pb.SkipIntroAniSkip, pb.SkipOutroAniSkip, pb.SkipRecapAniSkip
+	p.Playback.SkipFiller = pb.SkipFiller
 	return p
 }
 
@@ -47,5 +49,6 @@ func (s Settings) WithSharedPrefs(p SharedPrefs) Settings {
 	u.ShowEpisodeTitle, u.BlurUnwatched = p.UI.ShowEpisodeTitle, p.UI.BlurUnwatched
 	pb.AutoPlayNext, pb.PreferredAudioLang, pb.PreferredSubLang = p.Playback.AutoPlayNext, p.Playback.PreferredAudioLang, p.Playback.PreferredSubLang
 	pb.SkipIntroAniSkip, pb.SkipOutroAniSkip, pb.SkipRecapAniSkip = p.Playback.SkipIntroAniSkip, p.Playback.SkipOutroAniSkip, p.Playback.SkipRecapAniSkip
+	pb.SkipFiller = p.Playback.SkipFiller
 	return s
 }

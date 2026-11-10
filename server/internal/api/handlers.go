@@ -363,9 +363,14 @@ type playLocalBody struct {
 }
 
 func (s *Server) episodeTitle(ctx context.Context, mediaID, episode int, fallback string) string {
-	media, err := s.app.Platform.MediaLite(ctx, mediaID)
-	if err != nil {
-		return fallback
+	// What's kept here first, even old: playing a downloaded episode
+	// mustn't wait on AniList (offline, it can take a while to fail).
+	media := s.app.Platform.CachedLite(mediaID)
+	if media == nil {
+		var err error
+		if media, err = s.app.Platform.MediaLite(ctx, mediaID); err != nil {
+			return fallback
+		}
 	}
 	if media.Format == "MOVIE" {
 		return media.PreferredTitle()
@@ -1009,6 +1014,16 @@ func (s *Server) saveRule(r *http.Request) (any, error) {
 		return nil, err
 	}
 	return s.app.AutoDL.SaveRule(rule)
+}
+
+// testRule runs a rule's search and pick without grabbing anything.
+func (s *Server) testRule(r *http.Request) (any, error) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	out, err := s.app.AutoDL.DryRun(r.Context(), id)
+	if errors.Is(err, torrent.ErrNoRule) {
+		return nil, notFound("No such rule")
+	}
+	return out, err
 }
 
 // ---------------------------------------------------------------------------

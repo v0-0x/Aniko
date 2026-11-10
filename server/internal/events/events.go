@@ -22,6 +22,9 @@ const (
 	PluginUI         = "plugin-ui"
 	SettingsUpdated  = "settings-updated"
 	UpdateStatus     = "update-status"
+	// AniListPending: how many list changes wait for AniList to answer
+	// ({count}).
+	AniListPending = "anilist-pending"
 )
 
 type Event struct {

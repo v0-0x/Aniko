@@ -36,6 +36,7 @@ func (s *Server) routes() {
 	s.noteRoutes()
 	s.cleanupRoutes()
 	s.backupRoutes()
+	s.playlistRoutes()
 
 	// --- core
 	m.HandleFunc("GET /api/status", h(s.status))
@@ -85,6 +86,8 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/anime/{id}/entry", h(s.deleteEntry))
 	// Watch order (experimental): a franchise's story and release order.
 	m.HandleFunc("GET /api/anime/{id}/watch-order", h(s.watchOrder))
+	// Filler and recap episodes (MyAnimeList, through Jikan).
+	m.HandleFunc("GET /api/anime/{id}/filler", h(s.filler))
 	m.HandleFunc("PUT /api/watch-order/{key}", h(s.putWatchOrder))
 	m.HandleFunc("DELETE /api/watch-order/{key}", h(s.deleteWatchOrder))
 	m.HandleFunc("POST /api/watch-order/{key}/report", h(s.reportWatchOrder))
@@ -294,6 +297,7 @@ func (s *Server) routes() {
 		id, _ := strconv.Atoi(r.PathValue("id"))
 		return nil, s.app.AutoDL.DeleteRule(id)
 	}))
+	m.HandleFunc("POST /api/autodownloader/rules/{id}/test", h(s.testRule))
 	m.HandleFunc("POST /api/autodownloader/run", h(func(r *http.Request) (any, error) {
 		n, err := s.app.AutoDL.Run(r.Context())
 		return map[string]int{"added": n}, err
@@ -472,6 +476,8 @@ func (s *Server) status(r *http.Request) (any, error) {
 		"asleep": s.app.Share.Asleep(),
 		// Share with a new one, update one (Home).
 		"devicePrompts": prompts,
+		// List changes waiting for AniList to answer (the sidebar's account).
+		"anilistPending": s.app.Platform.PendingCount(),
 		// Kept awake now: another device is playing this computer's files.
 		"keptAwake":    s.app.Awake.Active(),
 		"client":       kind,

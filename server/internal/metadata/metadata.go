@@ -82,6 +82,9 @@ type Service struct {
 	// fetching: the anime being fetched in the background (Cached).
 	mu       sync.Mutex
 	fetching map[int]bool
+	// fillerWait: the anime (by MAL id) whose filler is being fetched,
+	// closed when it's done (Filler).
+	fillerWait map[int]chan struct{}
 }
 
 func NewService(d *db.DB) *Service { return &Service{db: d} }

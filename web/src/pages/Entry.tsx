@@ -8,6 +8,8 @@ import {
     FolderOpen,
     HardDrive,
     Info,
+    ListEnd,
+    ListPlus,
     Magnet,
     MonitorPlay,
     MoreHorizontal,
@@ -30,10 +32,13 @@ import { PluginActions, PluginSlot, usePluginDropdownActions } from "@/component
 import { sendPluginEvent } from "@/components/plugins/PluginRenderer"
 import { Badge, Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, Skeleton, Tabs, Tooltip } from "@/components/ui"
 import { WatchOrder } from "@/components/WatchOrder"
+import { AddToPlaylistDialog } from "@/components/PlaylistDialog"
 import { api } from "@/lib/api"
 import { formatRanges, missingEpisodes } from "@/lib/missing"
 import { usePlay } from "@/lib/play"
-import { fetchLanguageMode, useEntry, useEpisodeMarker, useLanguageMode, useStatus } from "@/lib/queries"
+import { fetchLanguageMode, useEntry, useEpisodeMarker, useFiller, useLanguageMode, useStatus } from "@/lib/queries"
+import { fillerFact } from "@/lib/filler"
+import type { PlaylistItem } from "@/lib/playlist"
 import type { EntryView, Probe } from "@/lib/types"
 import { banner, cleanDescription, cn, cover, formatBytes, formatDuration, formatLabel, img, otherTitle, readLocal, scoreColor, seasonLabel, statusLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
 import { tv } from "@/lib/tv"
@@ -273,8 +278,11 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
     const { playLocal, localPlayer, remote } = usePlay()
     const { data: status } = useStatus()
     const marker = useEpisodeMarker(entry.media, entry.listEntry)
+    const { data: filler } = useFiller(entry.media.id)
     const [showAll, setShowAll] = useState(false)
     const [adding, setAdding] = useState(false)
+    // Episodes on their way to a playlist (its dialog open).
+    const [toPlaylist, setToPlaylist] = useState<PlaylistItem[] | null>(null)
     const media = entry.media
 
     const withFiles = entry.episodes.filter(e => e.hasFile)
@@ -283,6 +291,17 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
     const hosts = [...new Set(withFiles.map(e => e.file?.hostName).filter((h): h is string => !!h))]
     const list = showAll ? entry.episodes : withFiles
     const specials = [...(entry.specials ?? []), ...(entry.others ?? [])]
+    // An episode with its file, as a playlist item.
+    const playlistItem = (ep: EntryView["episodes"][number]): PlaylistItem | null =>
+        ep.file ? { mediaId: media.id, episode: ep.number, title: title(media), image: ep.image || cover(media), play: { kind: "local", path: ep.file.path } } : null
+    const lastFile = withFiles.reduce((m, e) => Math.max(m, e.number), 0)
+    // This episode and the ones after it with files.
+    const restOf = (from: number) =>
+        withFiles
+            .filter(e => e.number >= from)
+            .sort((a, b) => a.number - b.number)
+            .map(playlistItem)
+            .filter((x): x is PlaylistItem => !!x)
 
     // Files on this computer, or shared with it by another Aniko.
     if (entry.localCount + (entry.sharedCount ?? 0) === 0) {
@@ -349,8 +368,9 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                             number={ep.number}
                             epLabel={media.format === "MOVIE" ? false : undefined}
                             title={media.format === "MOVIE" ? title(media) : ep.title || undefined}
-                            // Length · air date · the file's size and quality.
+                            // Filler or recap · length · air date · the file's size and quality.
                             facts={[
+                                fillerFact(ep.number, filler),
                                 !!ep.runtime && `${ep.runtime}m`,
                                 ep.airDate,
                                 ep.file && formatBytes(ep.file.size),
@@ -396,6 +416,16 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                                             Find torrents
                                         </DropdownItem>
                                     )}
+                                    {ep.file && (
+                                        <DropdownItem icon={<ListPlus />} onSelect={() => setToPlaylist([playlistItem(ep)!])}>
+                                            Add to playlist…
+                                        </DropdownItem>
+                                    )}
+                                    {ep.file && ep.number < lastFile && (
+                                        <DropdownItem icon={<ListEnd />} onSelect={() => setToPlaylist(restOf(ep.number))}>
+                                            Add the rest of the season…
+                                        </DropdownItem>
+                                    )}
                                     <DropdownItem icon={<CheckCheck />} onSelect={() => marker.mark(ep.number, !ep.watched)}>
                                         {ep.watched ? "Mark as unwatched" : "Mark as watched (and everything before)"}
                                     </DropdownItem>
@@ -426,6 +456,7 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
             )}
             {entry.metadataNote && <p className="text-xs text-subtle">{entry.metadataNote}</p>}
             <WatchOrder mediaId={media.id} />
+            <AddToPlaylistDialog items={toPlaylist} onClose={() => setToPlaylist(null)} />
         </div>
     )
 }

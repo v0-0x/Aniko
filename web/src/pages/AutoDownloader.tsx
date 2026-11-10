@@ -1,14 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { MoreVertical, Pencil, Play, Plus, Rss, Trash2 } from "lucide-react"
+import { FlaskConical, MoreVertical, Pencil, Play, Plus, Rss, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { MediaPicker } from "@/components/MediaPicker"
-import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Switch } from "@/components/ui"
+import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Spinner, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useAutoRules, useSaveSettings, useStatus } from "@/lib/queries"
 import type { AutoRule, Media } from "@/lib/types"
-import { cn, cover, relativeTime, title } from "@/lib/utils"
+import { cn, cover, formatBytes, relativeTime, title } from "@/lib/utils"
 
 export default function AutoDownloaderPage() {
     const { data: rules, isLoading } = useAutoRules()
@@ -16,6 +16,7 @@ export default function AutoDownloaderPage() {
     const save = useSaveSettings()
     const { data: items } = useQuery({ queryKey: ["auto-items"], queryFn: () => api.get<{ key: string; title: string; createdAt: number }[]>("/api/autodownloader/items") })
     const [editing, setEditing] = useState<AutoRule | null>(null)
+    const [testing, setTesting] = useState<{ rule: AutoRule; name: string } | null>(null)
     const [running, setRunning] = useState(false)
     const qc = useQueryClient()
     const settings = status?.settings
@@ -64,7 +65,7 @@ export default function AutoDownloaderPage() {
             )}
             <div className="grid gap-2 lg:grid-cols-2">
                 {(rules ?? []).map(r => (
-                    <RuleCard key={r.id} rule={r} onEdit={() => setEditing(r)} />
+                    <RuleCard key={r.id} rule={r} onEdit={() => setEditing(r)} onTest={name => setTesting({ rule: r, name })} />
                 ))}
             </div>
             {(items ?? []).length > 0 && (
@@ -81,11 +82,12 @@ export default function AutoDownloaderPage() {
                 </section>
             )}
             {editing && <RuleDialog rule={editing} onClose={() => setEditing(null)} />}
+            {testing && <TestDialog rule={testing.rule} name={testing.name} onClose={() => setTesting(null)} />}
         </div>
     )
 }
 
-function RuleCard({ rule, onEdit }: { rule: AutoRule; onEdit: () => void }) {
+function RuleCard({ rule, onEdit, onTest }: { rule: AutoRule; onEdit: () => void; onTest: (name: string) => void }) {
     const qc = useQueryClient()
     const { data: media } = useQuery({ queryKey: ["entry-lite", rule.mediaId], queryFn: () => api.get<{ media: Media }>(`/api/anime/${rule.mediaId}`), staleTime: 3600_000 })
     const toggle = async (enabled: boolean) => {
@@ -107,6 +109,7 @@ function RuleCard({ rule, onEdit }: { rule: AutoRule; onEdit: () => void }) {
     }
     const name = media?.media ? title(media.media) : rule.title
     const facts = [...rule.releaseGroups, ...rule.resolutions.map(r => `${r}p`), rule.episodeType === "all" ? "All episodes" : "New episodes"]
+    if (rule.delayMinutes) facts.push(`Waits ${rule.delayMinutes} min`)
     return (
         <div className="card flex items-center gap-4 p-3 fade-in">
             {media?.media && <img src={cover(media.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />}
@@ -126,6 +129,9 @@ function RuleCard({ rule, onEdit }: { rule: AutoRule; onEdit: () => void }) {
                         <DropdownItem icon={<Pencil />} onSelect={onEdit}>
                             Edit
                         </DropdownItem>
+                        <DropdownItem icon={<FlaskConical />} onSelect={() => onTest(name)}>
+                            Test
+                        </DropdownItem>
                         <DropdownItem danger icon={<Trash2 />} onSelect={del}>
                             Delete
                         </DropdownItem>
@@ -144,6 +150,7 @@ function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) 
     const qc = useQueryClient()
     const { data: providers } = useQuery({ queryKey: ["torrent-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/torrents/providers") })
     const list = (s: string) => s.split(",").map(x => x.trim()).filter(Boolean)
+    const num = (s: string) => Math.max(0, Math.floor(Number(s)) || 0)
     const save = async () => {
         if (!r.mediaId) return toast.error("Pick an anime first")
         setBusy(true)
@@ -185,14 +192,26 @@ function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) 
                     <Input value={r.title} onChange={e => setR({ ...r, title: e.target.value })} />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Release groups" help="Comma separated, e.g. SubsPlease, Erai-raws">
+                    <Field label="Release groups" help="Preferred first, e.g. SubsPlease, Erai-raws">
                         <Input defaultValue={r.releaseGroups.join(", ")} onChange={e => setR({ ...r, releaseGroups: list(e.target.value) })} />
                     </Field>
-                    <Field label="Resolutions" help="e.g. 1080, 720">
+                    <Field label="Resolutions" help="Preferred first, e.g. 1080, 720">
                         <Input defaultValue={r.resolutions.join(", ")} onChange={e => setR({ ...r, resolutions: list(e.target.value) })} />
                     </Field>
                     <Field label="Must contain" help="Extra words, comma separated">
                         <Input defaultValue={r.additionalTerms.join(", ")} onChange={e => setR({ ...r, additionalTerms: list(e.target.value) })} />
+                    </Field>
+                    <Field label="Must not contain" help="Comma separated">
+                        <Input defaultValue={(r.excludeTerms ?? []).join(", ")} onChange={e => setR({ ...r, excludeTerms: list(e.target.value) })} />
+                    </Field>
+                    <Field label="Size (MB)">
+                        <div className="flex gap-2">
+                            <Input type="number" min={0} placeholder="Min" aria-label="Minimum size (MB)" value={r.minSizeMb || ""} onChange={e => setR({ ...r, minSizeMb: num(e.target.value) })} />
+                            <Input type="number" min={0} placeholder="Max" aria-label="Maximum size (MB)" value={r.maxSizeMb || ""} onChange={e => setR({ ...r, maxSizeMb: num(e.target.value) })} />
+                        </div>
+                    </Field>
+                    <Field label="Wait before grabbing" help="Minutes, for a preferred release">
+                        <Input type="number" min={0} placeholder="0" value={r.delayMinutes || ""} onChange={e => setR({ ...r, delayMinutes: num(e.target.value) })} />
                     </Field>
                     <Field label="Minimum seeders">
                         <Input type="number" min={0} value={r.minSeeders} onChange={e => setR({ ...r, minSeeders: Number(e.target.value) })} />
@@ -220,6 +239,64 @@ function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) 
                     setMediaTitle(title(m))
                 }}
             />
+        </Dialog>
+    )
+}
+
+// What a rule's run would do now (POST /api/autodownloader/rules/{id}/test).
+type Candidate = { episode: number; name: string; group: string; resolution: string; seeders: number; size: number; grab: boolean; reason?: string }
+
+function TestDialog({ rule, name, onClose }: { rule: AutoRule; name: string; onClose: () => void }) {
+    const { data, error, isFetching, refetch } = useQuery({
+        queryKey: ["auto-test", rule.id],
+        queryFn: () => api.post<Candidate[]>(`/api/autodownloader/rules/${rule.id}/test`),
+        gcTime: 0,
+        retry: false,
+    })
+    const grabs = (data ?? []).filter(c => c.grab).length
+    return (
+        <Dialog
+            open
+            onOpenChange={v => !v && onClose()}
+            title={`Test: ${name}`}
+            description={data && (grabs ? `Would grab ${grabs}` : "Nothing to grab")}
+            className="w-[min(94vw,620px)]"
+            footer={
+                <>
+                    <Button variant="ghost" loading={isFetching} onClick={() => refetch()}>
+                        Again
+                    </Button>
+                    <Button variant="primary" onClick={onClose}>
+                        Close
+                    </Button>
+                </>
+            }
+        >
+            {isFetching && !data ? (
+                <div className="grid place-items-center py-10">
+                    <Spinner />
+                </div>
+            ) : error ? (
+                <p className="text-sm text-rose-300">{(error as Error).message}</p>
+            ) : (data ?? []).length === 0 ? (
+                <p className="text-sm text-muted">No results</p>
+            ) : (
+                <ul className="-mx-2 flex flex-col">
+                    {data!.map((c, i) => (
+                        <li key={i} tabIndex={0} className={cn("focus-ring flex items-start gap-3 rounded-lg px-2 py-2", !c.grab && "opacity-70")}>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm [overflow-wrap:anywhere]">{c.name}</p>
+                                <p className="mt-0.5 text-xs text-muted">
+                                    {[c.episode > 0 && `Ep ${c.episode}`, c.group, c.resolution, `${c.seeders} seeders`, c.size > 0 && formatBytes(c.size)].filter(Boolean).join(" · ")}
+                                </p>
+                            </div>
+                            <Badge tone={c.grab ? "green" : "gray"} className="mt-0.5 shrink-0">
+                                {c.grab ? "Grab" : c.reason}
+                            </Badge>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </Dialog>
     )
 }

@@ -6,7 +6,8 @@ import { api, qs } from "@/lib/api"
 import { usePlay } from "@/lib/play"
 import { installHint, installSource } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms } from "@/lib/programs"
-import { useEpisodeMarker, useLanguageMode, useOnlineProviders, useStatus, useStreamEpisodes, useStreamModes } from "@/lib/queries"
+import { useEpisodeMarker, useFiller, useLanguageMode, useOnlineProviders, useStatus, useStreamEpisodes, useStreamModes } from "@/lib/queries"
+import { fillerFact } from "@/lib/filler"
 import type { EntryView } from "@/lib/types"
 import { cn, formatDuration, readLocal, writeLocal } from "@/lib/utils"
 import { EpisodeCard, WatchedToggle } from "../EpisodeCard"
@@ -21,6 +22,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     // Sub/dub is remembered per anime on the server (also used by "continue
     // watching", the next-episode button and local files).
     const language = useLanguageMode(media.id)
+    const { data: filler } = useFiller(media.id)
     const wantDub = language.mode ? language.mode === "dub" : settings?.aniCli.defaultMode === "dub" || !!settings?.onlineStream.preferDub
     const setDub = (d: boolean) => language.set(d ? "dub" : "sub")
     const prov = providers?.find(p => p.id === provider)
@@ -195,7 +197,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                             image={ep.image}
                             number={ep.number}
                             title={ep.title || undefined}
-                            facts={[!!ep.runtime && `${ep.runtime}m`, ep.airDate, dub ? "Dub" : "Sub", ep.resumeAt > 0 && `at ${formatDuration(ep.resumeAt)}`]}
+                            facts={[fillerFact(ep.number, filler), !!ep.runtime && `${ep.runtime}m`, ep.airDate, dub ? "Dub" : "Sub", ep.resumeAt > 0 && `at ${formatDuration(ep.resumeAt)}`]}
                             watched={ep.watched}
                             resumeAt={ep.resumeAt}
                             progress={ep.duration ? ep.resumeAt / ep.duration : 0}

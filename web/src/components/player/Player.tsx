@@ -31,12 +31,14 @@ import { api, ApiError, qs } from "@/lib/api"
 import { nativeVideo, nativeVideoAvailable, nativeVideoOn, setNativeVideo } from "@/lib/nativeVideo"
 import { forgetNoPicture, markNoPicture, pictureState, prefersHls, randomId, setSoftwareVideo, softwareVideo, videoCaps, videoFormat } from "@/lib/playback"
 import { canPip, closeMini, expandMini, openMini } from "@/lib/pip"
-import { useSettings } from "@/lib/queries"
+import { nextNonFiller } from "@/lib/filler"
+import { isItem, playlistNext, playlistStore } from "@/lib/playlist"
+import { useFiller, useSettings } from "@/lib/queries"
 import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
 import { formatDelay, setSubDelay, subDelay, subLine, subStyleStore, subStyleVars } from "@/lib/subtitles"
 import type { EntryView, EpisodeView, Probe, StreamSource, TorrentStreamStatus, TrackPrefs } from "@/lib/types"
 import { android, androidApp, move, tv } from "@/lib/tv"
-import { cn, formatBytes, formatDuration, img, readLocal, title as animeTitle } from "@/lib/utils"
+import { cn, formatBytes, formatDuration, img, readLocal, title as animeTitle, writeLocal } from "@/lib/utils"
 import { parseVTT, type Cue } from "@/lib/vtt"
 import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger } from "../ui"
 import { NativeSubtitles } from "./NativeSubtitles"
@@ -51,6 +53,18 @@ const skipName = (s: Skip, length: number) =>
     s.type === "ed" || s.type === "mixed-ed" ? "ending" : s.type === "recap" ? (length > 0 && s.start > length / 2 ? "preview" : "recap") : "opening"
 // Skipped once each: an episode can have two of a kind (a recap and a preview).
 const skipKey = (s: Skip) => `${s.type}@${Math.round(s.start)}`
+
+// A source from here, or a blob: (hls.js's, its data fetched with CORS):
+// one Web Audio can take (volume boost).
+const sameOrigin = (src: string) => {
+    if (!src) return true
+    if (src.startsWith("blob:")) return true
+    try {
+        return new URL(src, location.href).origin === location.origin
+    } catch {
+        return false
+    }
+}
 
 const langNames: Record<string, string> = {
     jpn: "Japanese", ja: "Japanese", eng: "English", en: "English", spa: "Spanish", es: "Spanish", fre: "French", fra: "French", fr: "French",
@@ -183,7 +197,15 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const [time, setTime] = useState(0) // absolute time
     const [duration, setDuration] = useState(0)
     const [buffered, setBuffered] = useState(0)
-    const [volume, setVolume] = useState(() => Number(readLocal("aniko-volume") ?? 1))
+    // Volume boost: the volume goes to 300% (Web Audio, see boostTo). Only
+    // for a source from here (or a blob: hls.js's): another site's, without
+    // CORS, would go silent through Web Audio (see onLoadStart).
+    const [boost, setBoost] = useState(() => readLocal("aniko-volume-boost") === "1")
+    const [boostOk, setBoostOk] = useState(true)
+    const maxVolume = boost && boostOk ? 3 : 1
+    const [volume, setVolume] = useState(() => Math.min(readLocal("aniko-volume-boost") === "1" ? 3 : 1, Number(readLocal("aniko-volume") ?? 1)))
+    const [stats, setStats] = useState(() => readLocal("aniko-player-stats") === "1")
+    const [anime4k, setAnime4k] = useState(() => readLocal("aniko-anime4k") === "1")
     const [muted, setMuted] = useState(false)
     const [rate, setRate] = useState(1)
     const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement)
@@ -195,7 +217,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     // Previews on the seek bar (local files): off for this episode after a
     // few fail (no ffmpeg where the file is, say).
     const [thumbFails, setThumbFails] = useState(0)
-    const [nextEp, setNextEp] = useState<{ path?: string; episode: number } | null>(null)
     // The show's episodes (the Episodes panel, where another one is picked).
     const [episodes, setEpisodes] = useState<EpisodeView[] | null>(null)
     // An episode without its own picture shows the show's.
@@ -208,6 +229,33 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const [resumedFrom, setResumedFrom] = useState(0)
     // The "Up next" card put away for this episode (and no playing on).
     const [upNextOff, setUpNextOff] = useState(false)
+    // The next episode: the one after this that plays here (a file for a
+    // file, aired for a stream). With Skip filler on, the next one that
+    // isn't filler, once MyAnimeList's list is known.
+    const skipFiller = !!settings?.playback.skipFiller
+    const { data: filler } = useFiller(skipFiller ? req.mediaId : 0)
+    const nextEp = useMemo(() => {
+        if (!episodes) return null
+        const num = skipFiller && filler?.filler.length ? nextNonFiller(req.episode, episodes.map(x => x.number), filler.filler) : req.episode + 1
+        const n = num === undefined ? undefined : episodes.find(x => x.number === num)
+        if (!n) return null
+        const fillerSkipped = n.number > req.episode + 1
+        if (req.kind === "local") return n.file ? { path: n.file.path, episode: n.number, fillerSkipped } : null
+        return n.aired ? { episode: n.number, fillerSkipped } : null
+    }, [episodes, filler, skipFiller, req])
+    // Played from a playlist (lib/playlist): it decides what's next, not
+    // the show (nor Skip filler).
+    const listPos = useStore(playlistStore)
+    const inList = listPos && isItem(req, listPos.items[listPos.index]) ? listPos : null
+    const listNext = inList?.items[inList.index + 1]
+    // What plays next, as Up next says it.
+    const upNext = inList
+        ? listNext
+            ? { title: listNext.title, line: `Episode ${listNext.episode}` }
+            : null
+        : nextEp
+          ? { title: `Episode ${nextEp.episode}`, line: nextEp.fillerSkipped ? "Filler skipped" : "" }
+          : null
 
     const startAt = useRef(0)
     // Where the episode was opened to start (resume or ?start), checked once
@@ -231,6 +279,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         if (on) forgetNoPicture()
         return on
     })
+    // Anime4K (WebGPU) draws the video on a canvas over it: computers only.
+    const anime4kHere = !tv && !mini && !native && typeof navigator !== "undefined" && "gpu" in navigator
+    const anime4kOn = anime4k && anime4kHere
     // Safari and iPhone/iPad get converted files as HLS (see lib/playback).
     const hlsMode = useMemo(() => prefersHls(), [])
     const allCaps = useMemo(() => {
@@ -390,20 +441,25 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     if (startAt.current > 30 && !handed) setResumedFrom(startAt.current)
                     applyStreamSubs(sorted[si], handed?.sub)
                 }
-                // Next episode
+                // The show's episodes (the next one is picked from them: nextEp).
                 api.get<EntryView>(`/api/anime/${mediaId}`)
                     .then(e => {
                         if (cancelled) return
                         setEpisodes(e.episodes)
                         setShowArt(e.media.bannerImage || e.media.coverImage?.large || "")
-                        const n = e.episodes.find(x => x.number === episode + 1)
-                        if (!n) return
-                        if (req.kind === "local") n.file && setNextEp({ path: n.file.path, episode: n.number })
-                        else if (n.aired) setNextEp({ episode: n.number })
                     })
                     .catch(() => {})
             } catch (e: any) {
-                if (!cancelled) setError(e.message || String(e))
+                if (cancelled) return
+                // A playlist's file that can't play any more (gone):
+                // skipped, on to the next item.
+                const p = playlistStore.get()
+                const it = p?.items[p.index]
+                if (it && req.kind === "local" && isItem(req, it)) {
+                    toast.warning(`Skipped ${it.title} · Episode ${it.episode}: ${e instanceof ApiError && e.status === 404 ? "file not found" : e.message || "can't play"}`)
+                    if (playlistNext()) return
+                }
+                setError(e.message || String(e))
             } finally {
                 if (!cancelled) setLoading(false)
             }
@@ -418,11 +474,32 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     // On a TV, a dub starts without them.
     const applyStreamSubs = (src?: StreamSource, handed?: string) => {
         const opts: SubOption[] = (src?.subtitles ?? []).map((s, i) => ({ key: `s${i}`, label: s.language || `Subtitle ${i + 1}`, lang: s.language, title: s.language, index: i, url: s.url }))
-        setSubs(opts)
+        setSubs([...opts, ...fileSubs.current])
         const def = opts.find((_, i) => src?.subtitles[i].isDefault) ?? opts.find(o => /eng/i.test(o.lang))
         if (handed && (handed === "off" || opts.some(o => o.key === handed))) setSubKey(handed)
         else if (tv && dubbed.current) setSubKey("off")
         else setSubKey(pickSub(opts, prefsRef.current, settings?.playback.preferredSubLang ?? "", undefined, def?.key))
+    }
+
+    // Subtitle files loaded by hand (Load file…): for this episode, as WebVTT
+    // the player reads like the others.
+    const fileSubs = useRef<SubOption[]>([])
+    const subFileInput = useRef<HTMLInputElement>(null)
+    useEffect(() => () => fileSubs.current.forEach(s => URL.revokeObjectURL(s.url)), [])
+    const loadSubFile = async (file: File) => {
+        try {
+            const text = await file.text()
+            const cues = /\.(ass|ssa)$/i.test(file.name) ? parseASS(text) : parseVTT(text)
+            if (!cues.length) throw new Error("no cues")
+            const n = fileSubs.current.length
+            const url = URL.createObjectURL(new Blob([toVTT(cues)], { type: "text/vtt" }))
+            const opt: SubOption = { key: `f${n}`, label: file.name, lang: "", title: file.name, index: 2000 + n, url }
+            fileSubs.current = [...fileSubs.current, opt]
+            setSubs(s => [...s, opt])
+            changeSub(opt.key, false)
+        } catch {
+            toast.error("Couldn't read that subtitle file")
+        }
     }
 
     // ------------------------------------------------------------ video src
@@ -513,7 +590,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
             // Android's player, behind the page: HLS and all, from where asked.
             const nv = nativeVideo(v)
             nv.open(videoSrc, { start: resume, hls: isHls })
-            v.volume = volume
+            v.volume = Math.min(1, volume)
             v.playbackRate = rate
             v.play().catch(() => {})
             return () => nv.close()
@@ -575,7 +652,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 v.addEventListener("loadedmetadata", onMeta, { once: true })
             }
         }
-        v.volume = volume
+        v.volume = Math.min(1, volume)
         v.playbackRate = rate
         // Not allowed to play by itself: the play button shows, not the spinner.
         v.play().catch(e => e?.name === "NotAllowedError" && setStarted(true))
@@ -752,9 +829,10 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 /* ignore bad cue */
             }
         }
-        // Over Android's player, the page draws them (NativeSubtitles).
-        tr.mode = native ? "hidden" : "showing"
-    }, [cues, base, videoKey, delay, subStyle, native])
+        // Over Android's player, the page draws them (NativeSubtitles); and
+        // over Anime4K's canvas.
+        tr.mode = native || anime4kOn ? "hidden" : "showing"
+    }, [cues, base, videoKey, delay, subStyle, native, anime4kOn])
     // Subtitles earlier or later (z / x, or the subtitles menu): kept for the
     // anime.
     const moveSubs = (by: number) => {
@@ -973,7 +1051,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         }
         saveTrackPrefs({ audio: i, mode })
     }
-    const changeSub = (key: string) => {
+    const changeSub = (key: string, save = true) => {
         // To or from an image track: the stream is made again, with the
         // subtitles drawn on (converted) or without, from where it is.
         const next = subs.find(s => s.key === key)
@@ -985,7 +1063,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
             if (next?.bitmap) setMethod("transcode")
         }
         setSubKey(key)
-        saveTrackPrefs({ sub: key })
+        if (save) saveTrackPrefs({ sub: key })
     }
     const changeSource = (i: number) => {
         const v = videoRef.current
@@ -1000,13 +1078,16 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     }
     // The next episode. finished: this one counts as watched to the end (it
     // ended, or Up next was taken in its ending); else where it's at is saved.
+    // In a playlist, its next item.
     const playNext = (finished = false) => {
-        if (!nextEp) return
+        if (!upNext) return
         if (!finished) report(true)
         else if (!ended.current) {
             ended.current = true
             report(true, true)
         }
+        if (inList) return void playlistNext()
+        if (!nextEp) return
         if (req.kind === "local" && nextEp.path) playerStore.set({ kind: "local", path: nextEp.path, mediaId, episode: nextEp.episode })
         else if (req.kind === "stream") playerStore.set({ ...req, episode: nextEp.episode })
     }
@@ -1063,6 +1144,109 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         }
     }
 
+    // Volume above 100%: the video's sound through a gain (Web Audio). The
+    // context is made once, the first time it goes above 100%; a video
+    // element can be routed only once, and stays routed.
+    const audioGraph = useRef<{ ctx: AudioContext; gain: GainNode; el?: HTMLVideoElement; src?: MediaElementAudioSourceNode } | null>(null)
+    const boostTo = (v: HTMLVideoElement, level: number) => {
+        const g = audioGraph.current
+        if (native || !boostOk || (level <= 1.001 && g?.el !== v)) return
+        try {
+            let graph = g
+            if (!graph) {
+                const ctx = new AudioContext()
+                const gain = ctx.createGain()
+                gain.connect(ctx.destination)
+                graph = audioGraph.current = { ctx, gain }
+            }
+            if (graph.el !== v) {
+                graph.src?.disconnect()
+                graph.src = graph.ctx.createMediaElementSource(v)
+                graph.src.connect(graph.gain)
+                graph.el = v
+            }
+            graph.gain.gain.value = Math.max(1, level)
+            if (graph.ctx.state === "suspended") graph.ctx.resume().catch(() => {})
+        } catch {
+            toast.error("Volume boost isn't available here", { id: "volume-boost" })
+        }
+    }
+    useEffect(() => () => void audioGraph.current?.ctx.close().catch(() => {}), [])
+    // A source boost can't take: back to 100% at most.
+    useEffect(() => {
+        if (!boostOk) setVolume(x => Math.min(1, x))
+    }, [boostOk])
+    const toggleBoost = () => {
+        const on = !boost
+        setBoost(on)
+        writeLocal("aniko-volume-boost", on ? "1" : "0")
+        if (!on) setVolume(x => Math.min(1, x))
+    }
+    const toggleStats = () => {
+        const on = !stats
+        setStats(on)
+        writeLocal("aniko-player-stats", on ? "1" : "0")
+    }
+    const toggleAnime4k = (on = !anime4k) => {
+        setAnime4k(on)
+        writeLocal("aniko-anime4k", on ? "1" : "0")
+    }
+    // The frame showing, as a PNG: "<title> - Ep N - mm-ss.png", downloaded.
+    const screenshot = () => {
+        const v = videoRef.current
+        if (!v || native || !v.videoWidth) return void toast.error("No picture to capture")
+        const c = document.createElement("canvas")
+        c.width = v.videoWidth
+        c.height = v.videoHeight
+        try {
+            c.getContext("2d")!.drawImage(v, 0, 0)
+            const at = Math.max(0, Math.floor(where(v)))
+            const show = (title || "Aniko").replace(/\s+—\s+Episode\s+\d+.*$/, "")
+            const name = `${show} - Ep ${episode} - ${String(Math.floor(at / 60)).padStart(2, "0")}-${String(at % 60).padStart(2, "0")}.png`.replace(/[\\/:*?"<>|]+/g, " ")
+            c.toBlob(blob => {
+                if (!blob) return void toast.error("Couldn't capture this video")
+                const a = document.createElement("a")
+                a.href = URL.createObjectURL(blob)
+                a.download = name
+                a.click()
+                setTimeout(() => URL.revokeObjectURL(a.href), 10_000)
+                toast.success("Screenshot saved", { id: "screenshot" })
+            }, "image/png")
+        } catch {
+            // A frame from another site (no CORS) taints the canvas.
+            toast.error("This source can't be captured")
+        }
+    }
+
+    // Anime4K: the video drawn through Mode A on a canvas over it (the video
+    // still plays the sound and keeps the time). Made again for a new source
+    // or size; put away when switched off, or when it fails.
+    const anime4kCanvas = useRef<HTMLCanvasElement>(null)
+    const [anime4kSize, setAnime4kSize] = useState("")
+    useEffect(() => {
+        const v = videoRef.current
+        const c = anime4kCanvas.current
+        if (!anime4kOn || !v || !c || !videoSrc) return
+        let gone = false
+        let stop: (() => void) | null = null
+        const fail = () => {
+            if (gone) return
+            gone = true
+            stop?.()
+            toast.error("Anime4K isn't available here")
+            toggleAnime4k(false)
+        }
+        startAnime4K(v, c, () => gone, fail).then(s => (gone ? s() : (stop = s)), fail)
+        const onResize = () => setAnime4kSize(`${v.videoWidth}x${v.videoHeight}`)
+        v.addEventListener("resize", onResize)
+        return () => {
+            gone = true
+            v.removeEventListener("resize", onResize)
+            stop?.()
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [anime4kOn, videoSrc, videoKey, anime4kSize])
+
     // AniSkip's times are recorded on one version of the episode and land on
     // random scenes in a longer or shorter one: ask for the ones that fit
     // this one's length, once it's known.
@@ -1103,8 +1287,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const videoLength = Number.isFinite(duration) ? duration : 0
     const endingSkip = skippable.find(s => skipName(s, length) === "ending")
     const upNextAt = endingSkip && endingSkip.start > videoLength / 2 && !settings?.playback.skipOutroAniSkip ? endingSkip.start : videoLength - 15
-    const showUpNext = !!nextEp && videoLength > 60 && started && !upNextOff && time >= upNextAt && time < videoLength
-    const autoNext = !!settings?.playback.autoPlayNext
+    const showUpNext = !!upNext && videoLength > 60 && started && !upNextOff && time >= upNextAt && time < videoLength
+    // A playlist plays on by itself.
+    const autoNext = !!settings?.playback.autoPlayNext || !!inList
     const countdown = Math.max(0, Math.ceil(videoLength - time))
     // Gone back before it (rewound, also once it ended): it's shown, and
     // plays on, again.
@@ -1196,7 +1381,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     seekBy(10)
                     break
                 case "ArrowUp":
-                    setVolume(x => Math.min(1, x + 0.05))
+                    setVolume(x => Math.min(maxVolume, x + 0.05))
                     break
                 case "ArrowDown":
                     setVolume(x => Math.max(0, x - 0.05))
@@ -1212,8 +1397,16 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 case "m":
                     setMuted(m => !m)
                     break
+                // s skips the opening; Shift+S takes a screenshot (not Caps
+                // Lock's S: that still skips).
                 case "s":
-                    if (currentSkip) seekTo(currentSkip.end)
+                case "S":
+                    if (e.shiftKey && e.key.toLowerCase() === "s") screenshot()
+                    else if (currentSkip) seekTo(currentSkip.end)
+                    break
+                case "i":
+                case "I":
+                    toggleStats()
                     break
                 case "z":
                     if (subKey !== "off") moveSubs(-0.1)
@@ -1284,8 +1477,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     useEffect(() => {
         const v = videoRef.current
         if (!v) return
-        v.volume = volume
+        v.volume = Math.min(1, volume)
         v.muted = muted
+        boostTo(v, volume)
         try {
             localStorage.setItem("aniko-volume", String(volume))
         } catch {
@@ -1362,6 +1556,29 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const thumbSrc = thumbs && thumbStep !== null ? `/api/local/thumb${qs({ path: req.path, t: thumbStep })}` : ""
     const aspect = probe?.video?.[0]?.width && probe.video[0].height ? probe.video[0].width / probe.video[0].height : 16 / 9
     const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2
+    const statsRows: [string, string][] = stats
+        ? [
+              ["Source", req.kind === "local" ? (req.path.split(/[\\/]/).pop() ?? req.path) : [sources[sourceIdx]?.server, sources[sourceIdx]?.quality || "auto"].filter(Boolean).join(" · ")],
+              [
+                  "Play",
+                  req.kind === "local"
+                      ? method === "direct"
+                          ? "Direct play"
+                          : `Converted (${method}${stream?.hls ? ", HLS" : ""}${software && method === "transcode" ? ", software" : ""})`
+                      : hlsRef.current
+                        ? "Stream (HLS)"
+                        : "Stream",
+              ],
+              [
+                  "Codec",
+                  req.kind === "local"
+                      ? [probe?.video?.[0]?.codec, probe?.audio?.[audioIndex]?.codec].filter(Boolean).join(" / ").toUpperCase() || "–"
+                      : hlsRef.current?.levels?.[hlsRef.current.currentLevel]?.codecSet || "–",
+              ],
+              ...(volume > 1 ? [["Volume", `${Math.round(volume * 100)}%`] as [string, string]] : []),
+              ...(anime4kOn ? [["Anime4K", "Mode A"] as [string, string]] : []),
+          ]
+        : []
 
     return (
         <div
@@ -1387,6 +1604,8 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 onPlay={() => {
                     setPaused(false)
                     poke()
+                    // Volume boost made before Aniko could play sound.
+                    if (audioGraph.current?.ctx.state === "suspended") audioGraph.current.ctx.resume().catch(() => {})
                 }}
                 onPause={() => {
                     setPaused(true)
@@ -1407,6 +1626,14 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     setStarted(true)
                 }}
                 onCanPlay={() => setBuffering(false)}
+                onLoadStart={e => {
+                    const v = e.currentTarget
+                    const ok = sameOrigin(v.currentSrc)
+                    setBoostOk(ok)
+                    // Routed through Web Audio for an earlier source: this
+                    // one would be silent there. A new video element.
+                    if (!ok && audioGraph.current?.el === v) setVideoKey(k => k + 1)
+                }}
                 onTimeUpdate={e => {
                     const v = e.currentTarget
                     if (v.currentTime > 0) expected.current = absTime(v)
@@ -1447,7 +1674,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     }
                     ended.current = true
                     report(true, true)
-                    if (settings?.playback.autoPlayNext && nextEp && !upNextOff) playNext(true)
+                    if (autoNext && upNext && !upNextOff) playNext(true)
                 }}
                 onError={() => {
                     const v = videoRef.current
@@ -1492,7 +1719,20 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 }}
             />
 
-            {native && <NativeSubtitles video={videoRef} cues={cues} base={base} delay={delay} style={subStyle} lifted={controls && !mini} />}
+            {anime4kOn && <canvas ref={anime4kCanvas} className="pointer-events-none absolute inset-0 size-full object-contain" />}
+            {(native || anime4kOn) && <NativeSubtitles video={videoRef} cues={cues} base={base} delay={delay} style={subStyle} lifted={controls && !mini} />}
+            {stats && <StatsOverlay video={videoRef} rows={statsRows} mini={mini} />}
+            <input
+                ref={subFileInput}
+                type="file"
+                accept=".srt,.vtt,.ass,.ssa"
+                hidden
+                onChange={e => {
+                    const f = e.target.files?.[0]
+                    e.target.value = ""
+                    if (f) loadSubFile(f)
+                }}
+            />
             {(loading || buffering || !started) && !error && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
                     <div className="flex flex-col items-center gap-3">
@@ -1651,8 +1891,8 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     <CtrlButton small={mini} onClick={() => seekBy(10)} label="Forward 10s (l)">
                         <RotateCw className={mini ? "size-4" : "size-5"} />
                     </CtrlButton>
-                    {nextEp && (
-                        <CtrlButton small={mini} onClick={() => playNext()} label="Next episode (n)">
+                    {upNext && (
+                        <CtrlButton small={mini} onClick={() => playNext()} label={inList ? "Next in playlist (n)" : "Next episode (n)"}>
                             <SkipForward className={mini ? "size-4" : "size-5"} />
                         </CtrlButton>
                     )}
@@ -1669,7 +1909,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             hidden={mini}
                             type="range"
                             min={0}
-                            max={1}
+                            max={maxVolume}
                             step={0.01}
                             value={muted ? 0 : volume}
                             onChange={e => {
@@ -1701,6 +1941,15 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                         {s.bitmap ? (req.kind !== "local" ? " (mpv only)" : probe?.noBurn ? ` (${probe.noBurn})` : " (drawn on by the server)") : ""}
                                     </DropdownItem>
                                 ))}
+                                {!tv && (
+                                    <>
+                                        <DropdownSeparator />
+                                        <DropdownItem onSelect={() => subFileInput.current?.click()}>
+                                            <Picked on={false} />
+                                            Load file…
+                                        </DropdownItem>
+                                    </>
+                                )}
                                 {subKey !== "off" && (
                                     <>
                                         <DropdownSeparator />
@@ -1817,6 +2066,29 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                             <DropdownSeparator />
                                         </>
                                     )}
+                                    {!native && boostOk && (
+                                        <DropdownItem onSelect={toggleBoost}>
+                                            <Picked on={boost} />
+                                            Volume boost
+                                        </DropdownItem>
+                                    )}
+                                    <DropdownItem onSelect={toggleStats}>
+                                        <Picked on={stats} />
+                                        Stats (i)
+                                    </DropdownItem>
+                                    {anime4kHere && (
+                                        <DropdownItem onSelect={() => toggleAnime4k()}>
+                                            <Picked on={anime4k} />
+                                            Anime4K
+                                        </DropdownItem>
+                                    )}
+                                    {!native && (
+                                        <DropdownItem onSelect={screenshot}>
+                                            <Picked on={false} />
+                                            Screenshot (S)
+                                        </DropdownItem>
+                                    )}
+                                    <DropdownSeparator />
                                     <DropdownLabel>Speed</DropdownLabel>
                                     {[0.75, 1, 1.25, 1.5, 2].map(r => (
                                         <DropdownItem key={r} onSelect={() => setRate(r)}>
@@ -1860,10 +2132,11 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                         <FastForward className={cn("fill-black", mini ? "size-3.5" : "size-4")} /> Skip {skipWhat}
                     </button>
                 )}
-                {showUpNext && nextEp && (
+                {showUpNext && upNext && (
                     <div data-tv-skip className={cn("bg-black/80 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur rise-in", mini ? "w-52 rounded-xl p-2.5" : "w-72 rounded-2xl p-4")}>
                         <p className="text-xs font-medium tracking-wide text-white/60 uppercase">Up next</p>
-                        <p className={cn("mt-0.5 font-semibold", mini && "text-sm")}>Episode {nextEp.episode}</p>
+                        <p className={cn("mt-0.5 truncate font-semibold", mini && "text-sm")}>{upNext.title}</p>
+                        {upNext.line && <p className={cn("mt-0.5 truncate text-white/80", mini ? "text-xs" : "text-sm")}>{upNext.line}</p>}
                         <p className={cn("mt-0.5 text-white/70 tabular-nums", mini ? "text-xs" : "text-sm")}>{autoNext ? (countdown <= 10 ? `Playing in ${countdown}s` : "Plays when this one ends") : "Ready"}</p>
                         <div className={cn("flex gap-2", mini ? "mt-2" : "mt-3")}>
                             <button
@@ -2204,5 +2477,170 @@ function TorrentProgress({ id }: { id: string }) {
         <p className="rounded-full bg-black/50 px-3 py-1 text-[13px] text-white/85 tabular-nums">
             Torrent · {data.peers} {data.peers === 1 ? "peer" : "peers"} · {formatBytes(data.speed)}/s · {pct}% here
         </p>
+    )
+}
+
+// Anime4K's Mode A (restore, then upscale ×2; for 720p–1080p video shown at
+// 1080p) from the video onto the canvas, each frame the video shows.
+// Resolves with what stops it; failed calls it on a lost device or error.
+async function startAnime4K(video: HTMLVideoElement, canvas: HTMLCanvasElement, cancelled: () => boolean, failed: () => void): Promise<() => void> {
+    const none = () => {}
+    const { ModeA } = await import("anime4k-webgpu")
+    if (video.readyState < 2) await new Promise(r => video.addEventListener("loadeddata", r, { once: true }))
+    const adapter = await navigator.gpu.requestAdapter()
+    if (!adapter) throw new Error("no WebGPU adapter")
+    const device = await adapter.requestDevice()
+    if (cancelled()) {
+        device.destroy()
+        return none
+    }
+    const w = video.videoWidth
+    const h = video.videoHeight
+    // 1080p output (at least the video's own size), same shape as the video.
+    const scale = Math.max(1, 1080 / h)
+    canvas.width = Math.round(w * scale)
+    canvas.height = Math.round(h * scale)
+    const ctx = canvas.getContext("webgpu")
+    if (!ctx || !w || !h) {
+        device.destroy()
+        throw new Error("no WebGPU canvas")
+    }
+    const format = navigator.gpu.getPreferredCanvasFormat()
+    ctx.configure({ device, format, alphaMode: "premultiplied" })
+    const input = device.createTexture({
+        size: [w, h, 1],
+        format: "rgba16float",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+    const mode = new ModeA({ device, inputTexture: input, nativeDimensions: { width: w, height: h }, targetDimensions: { width: canvas.width, height: canvas.height } })
+    // Its output, drawn over the whole canvas.
+    const module = device.createShaderModule({
+        code: `
+struct V { @builtin(position) pos: vec4f, @location(0) uv: vec2f }
+@vertex fn vs(@builtin(vertex_index) i: u32) -> V {
+    let p = array(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+    var o: V;
+    o.pos = vec4f(p[i], 0.0, 1.0);
+    o.uv = vec2f((p[i].x + 1.0) * 0.5, (1.0 - p[i].y) * 0.5);
+    return o;
+}
+@group(0) @binding(0) var s: sampler;
+@group(0) @binding(1) var t: texture_2d<f32>;
+@fragment fn fs(v: V) -> @location(0) vec4f { return textureSample(t, s, v.uv); }`,
+    })
+    const pipeline = device.createRenderPipeline({
+        layout: "auto",
+        vertex: { module, entryPoint: "vs" },
+        fragment: { module, entryPoint: "fs", targets: [{ format }] },
+        primitive: { topology: "triangle-list" },
+    })
+    const bind = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: device.createSampler({ magFilter: "linear", minFilter: "linear" }) },
+            { binding: 1, resource: mode.getOutputTexture().createView() },
+        ],
+    })
+    let stopped = false
+    let handle = 0
+    const stop = () => {
+        if (stopped) return
+        stopped = true
+        if (handle) video.cancelVideoFrameCallback(handle)
+        ctx.unconfigure()
+        device.destroy()
+    }
+    device.lost.then(() => !stopped && failed())
+    device.onuncapturederror = () => !stopped && failed()
+    const frame = () => {
+        if (stopped) return
+        try {
+            device.queue.copyExternalImageToTexture({ source: video }, { texture: input }, [w, h])
+            const enc = device.createCommandEncoder()
+            mode.pass(enc)
+            const pass = enc.beginRenderPass({ colorAttachments: [{ view: ctx.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: "clear", storeOp: "store" }] })
+            pass.setPipeline(pipeline)
+            pass.setBindGroup(0, bind)
+            pass.draw(3)
+            pass.end()
+            device.queue.submit([enc.finish()])
+        } catch {
+            return failed()
+        }
+        handle = video.requestVideoFrameCallback(frame)
+    }
+    frame()
+    return stop
+}
+
+// An .ass/.ssa file's lines as cues: their text, italics and bold kept,
+// the rest of their styling (positions, effects, drawings) dropped.
+function parseASS(text: string): Cue[] {
+    const cues: Cue[] = []
+    let fields: string[] = []
+    const time = (s: string) => {
+        const [h, m, sec] = s.trim().split(":")
+        return Number(h) * 3600 + Number(m) * 60 + Number(sec)
+    }
+    for (const line of text.replace(/\r/g, "").split("\n")) {
+        if (/^Format:/i.test(line)) fields = line.slice(7).split(",").map(f => f.trim().toLowerCase())
+        if (!/^Dialogue:/i.test(line) || !fields.length) continue
+        const parts = line.slice(9).split(",")
+        const values = [...parts.slice(0, fields.length - 1), parts.slice(fields.length - 1).join(",")]
+        const get = (k: string) => values[fields.indexOf(k)] ?? ""
+        const raw = get("text")
+        if (/\{[^}]*\\p[1-9]/.test(raw)) continue
+        const body = raw
+            .replace(/\{([^}]*)\}/g, (_, tags: string) =>
+                (tags.match(/\\[ib][01]/g) ?? []).map(t => (t[2] === "1" ? `<${t[1]}>` : `</${t[1]}>`)).join(""),
+            )
+            .replace(/\\N/gi, "\n")
+            .replace(/\\h/g, " ")
+            .trim()
+        const start = time(get("start"))
+        const end = time(get("end"))
+        if (body && isFinite(start) && isFinite(end)) cues.push({ start, end, text: body })
+    }
+    return cues.sort((a, b) => a.start - b.start)
+}
+
+// Cues as a WebVTT file (what the player loads its subtitles from).
+function toVTT(cues: Cue[]): string {
+    const ts = (t: number) => {
+        const ms = Math.round(t * 1000)
+        const p = (n: number, l = 2) => String(n).padStart(l, "0")
+        return `${p(Math.floor(ms / 3600000))}:${p(Math.floor(ms / 60000) % 60)}:${p(Math.floor(ms / 1000) % 60)}.${p(ms % 1000, 3)}`
+    }
+    const clean = (s: string) => s.replace(/\{\\[^}]*\}/g, "").replace(/\n{2,}/g, "\n").replace(/-->/g, "→").trim()
+    return "WEBVTT\n\n" + cues.map(c => `${ts(c.start)} --> ${ts(c.end)}\n${clean(c.text)}`).filter(c => !c.endsWith("\n")).join("\n\n") + "\n"
+}
+
+// "Stats for nerds": what plays and how, small in the top-left corner.
+function StatsOverlay({ video, rows, mini }: { video: React.RefObject<HTMLVideoElement | null>; rows: [string, string][]; mini: boolean }) {
+    const [, tick] = useState(0)
+    useEffect(() => {
+        const t = setInterval(() => tick(n => n + 1), 1000)
+        return () => clearInterval(t)
+    }, [])
+    const v = video.current
+    const q = v && "getVideoPlaybackQuality" in v ? v.getVideoPlaybackQuality() : null
+    let ahead = 0
+    if (v) for (let i = 0; i < v.buffered.length; i++) if (v.buffered.start(i) <= v.currentTime + 0.5 && v.buffered.end(i) > v.currentTime) ahead = v.buffered.end(i) - v.currentTime
+    const all: [string, string][] = [
+        ...rows,
+        ["Size", v?.videoWidth ? `${v.videoWidth}×${v.videoHeight}` : "–"],
+        ["Dropped", q ? `${q.droppedVideoFrames} / ${q.totalVideoFrames}` : "–"],
+        ["Buffer", `${ahead.toFixed(1)}s`],
+        ["Speed", `${v?.playbackRate ?? 1}×`],
+    ]
+    return (
+        <div className={cn("pointer-events-none absolute z-20 max-w-[calc(100%-1rem)] rounded-lg bg-black/70 px-3 py-2 font-mono text-[11px] leading-[1.5] text-white/90", mini ? "top-11 left-2" : "top-24 left-6")}>
+            {all.map(([k, val]) => (
+                <div key={k} className="truncate whitespace-pre">
+                    <span className="text-white/50">{k.padEnd(8)}</span>
+                    {val}
+                </div>
+            ))}
+        </div>
     )
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/v0-0x/Aniko/server/internal/anikohub"
 	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/playlist"
 	"github.com/v0-0x/Aniko/server/internal/share"
 	"github.com/v0-0x/Aniko/server/internal/watchorder"
 )
@@ -38,7 +39,9 @@ func (a *App) wireBlobs() {
 	a.Share.Blobs = map[string]share.BlobHooks{
 		"lists":       {Own: a.listsBlob, Apply: a.applyListsBlob},
 		"watch-order": {Own: a.watchOrderBlob, Apply: a.applyWatchOrderBlob},
+		playlist.Kind: {Own: a.Playlists.Blob, Apply: a.Playlists.Apply},
 	}
+	a.Playlists.OnChange = func() { a.Share.BlobChanged(playlist.Kind) }
 	a.Platform.LocalListChanged = func(mediaID int, deleted bool) {
 		key := strconv.Itoa(mediaID)
 		gone := a.kvMap(listsGoneKey)

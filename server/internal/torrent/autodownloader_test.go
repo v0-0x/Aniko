@@ -251,3 +251,132 @@ func TestAutoDownloaderSendsElsewhere(t *testing.T) {
 		t.Fatalf("here: %d %v", n, err)
 	}
 }
+
+func kaijuResults(t *testing.T, list ...SearchResult) []*SearchResult {
+	t.Helper()
+	var out []*SearchResult
+	for _, x := range list {
+		r := x
+		enrich(&r)
+		out = append(out, &r)
+	}
+	return out
+}
+
+func reasonOf(out []Candidate, name string) (string, bool) {
+	for _, c := range out {
+		if c.Name == name {
+			return c.Reason, c.Grab
+		}
+	}
+	return "missing", false
+}
+
+// Excluded words (any case) and size limits skip a release; an unknown size
+// passes.
+func TestAutoDownloaderExcludeAndSize(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	defer srv.Close()
+	a := newTestAutoDownloader(t, srv)
+	const mb = 1 << 20
+	results := kaijuResults(t,
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 01 (1080p) [HEVC].mkv", Seeders: 90, Size: 800 * mb},
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 01 (1080p) [AAAA0001].mkv", Seeders: 10, Size: 1200 * mb},
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 02 (1080p) [AAAA0002].mkv", Seeders: 10, Size: 100 * mb},
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 03 (1080p) [AAAA0003].mkv", Seeders: 10, Size: 5000 * mb},
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 04 (1080p) [AAAA0004].mkv", Seeders: 10},
+	)
+	rule := &Rule{ID: 1, MediaID: 42, EpisodeType: "all", ExcludeTerms: []string{"hevc"}, MinSizeMB: 500, MaxSizeMB: 2000}
+	p := &plan{media: &anilist.Media{ID: 42}, title: "Kaiju No. 8", have: map[int]bool{}, results: results}
+	best, out := a.choose(rule, p, time.Now(), true)
+	if len(best) != 2 || best[1] != results[1] || best[4] != results[4] {
+		t.Fatalf("picked %v", best)
+	}
+	for name, want := range map[string]string{results[0].Name: "Has hevc", results[2].Name: "Too small", results[3].Name: "Too large"} {
+		if got, _ := reasonOf(out, name); got != want {
+			t.Errorf("%s: %q, want %q", name, got, want)
+		}
+	}
+	// Zero values: no limits (old rules).
+	if best := a.pick(&Rule{ID: 1, MediaID: 42, EpisodeType: "all"}, p.media, p.title, 0, nil, results); len(best) != 4 || best[1] != results[0] {
+		t.Fatalf("no limits: picked %d", len(best))
+	}
+}
+
+// With a delay an episode waits until its first release has been out that
+// long, then the preferred one is taken; a release with no date waits from
+// when a run first saw it.
+func TestAutoDownloaderDelay(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	defer srv.Close()
+	a := newTestAutoDownloader(t, srv)
+	now := time.Now()
+	ago := func(m int) string { return now.Add(-time.Duration(m) * time.Minute).Format(time.RFC3339) }
+	results := kaijuResults(t,
+		SearchResult{Name: "[Erai-raws] Kaiju No. 8 - 01 [1080p]", Seeders: 90, Date: ago(70)},
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 01 (1080p) [AAAA0001].mkv", Seeders: 5, Date: ago(10)},
+		SearchResult{Name: "[Erai-raws] Kaiju No. 8 - 02 [1080p]", Seeders: 90, Date: ago(10)},
+		SearchResult{Name: "[Erai-raws] Kaiju No. 8 - 03 [1080p]", Seeders: 90},
+	)
+	rule := &Rule{ID: 1, MediaID: 42, EpisodeType: "all", ReleaseGroups: []string{"SubsPlease", "Erai-raws"}, DelayMinutes: 60}
+	p := &plan{media: &anilist.Media{ID: 42}, title: "Kaiju No. 8", have: map[int]bool{}, results: results}
+	best, out := a.choose(rule, p, now, true)
+	if len(best) != 1 || best[1] != results[1] {
+		t.Fatalf("picked %v", best)
+	}
+	if got, _ := reasonOf(out, results[0].Name); got != "Worse release" {
+		t.Errorf("episode 1 Erai-raws: %q", got)
+	}
+	if got, _ := reasonOf(out, results[2].Name); got != "Waiting (50 min)" {
+		t.Errorf("episode 2: %q", got)
+	}
+	if got, _ := reasonOf(out, results[3].Name); got != "Waiting (60 min)" {
+		t.Errorf("episode 3: %q", got)
+	}
+	// An hour later both are out long enough.
+	if best, _ := a.choose(rule, p, now.Add(61*time.Minute), true); len(best) != 3 || best[3] != results[3] {
+		t.Fatalf("an hour later: picked %d", len(best))
+	}
+	// No delay: at once.
+	rule.DelayMinutes = 0
+	if best, _ := a.choose(rule, p, now, true); len(best) != 3 {
+		t.Fatalf("no delay: picked %d", len(best))
+	}
+}
+
+// A test run says what would be grabbed, and why the rest isn't, without
+// fetching a magnet, adding a torrent or noting anything.
+func TestAutoDownloaderTestRun(t *testing.T) {
+	var adds int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v2/torrents/add" {
+			adds++
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	a := newTestAutoDownloader(t, srv)
+	if _, err := a.SaveRule(Rule{MediaID: 42}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.DryRun(context.Background(), 99); err != ErrNoRule {
+		t.Fatalf("unknown rule: %v", err)
+	}
+	results := kaijuResults(t,
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 01 (1080p) [AAAA0001].mkv", Seeders: 10, Size: 1 << 30, MagnetLink: "magnet:?xt=urn:btih:1"},
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 02 (1080p) [AAAA0002].mkv", Seeders: 10, MagnetLink: "magnet:?xt=urn:btih:2"},
+		SearchResult{Name: "[SubsPlease] Kaiju No. 8 - 01 (720p) [AAAA0011].mkv", Seeders: 10},
+	)
+	prov := &countingProvider{}
+	rule := &Rule{ID: 1, MediaID: 42, EpisodeType: "all", Resolutions: []string{"1080"}, DelayMinutes: 30}
+	p := &plan{media: &anilist.Media{ID: 42}, title: "Kaiju No. 8", have: map[int]bool{}, prov: prov, results: results}
+	results[0].Date = time.Now().Add(-time.Hour).Format(time.RFC3339)
+	_, out := a.choose(rule, p, time.Now(), false)
+	if len(out) != 3 || !out[0].Grab || out[0].Episode != 1 || out[0].Group != "SubsPlease" || out[0].Resolution != "1080p" || out[0].Size != 1<<30 ||
+		out[1].Reason != "Other resolution" || out[2].Grab || out[2].Reason != "Waiting (30 min)" {
+		t.Fatalf("test run: %+v", out)
+	}
+	if prov.calls != 0 || adds != 0 || a.seen(episodeKey(42, 1)) || len(a.firstSeen) != 0 {
+		t.Fatalf("the test run left a trace: %d magnets, %d adds, first seen %v", prov.calls, adds, a.firstSeen)
+	}
+}

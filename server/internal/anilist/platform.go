@@ -62,6 +62,11 @@ type Platform struct {
 
 	// social keeps the profile page's answers a moment (social.go).
 	social socialCache
+
+	// pendingMu serialises changes to the changes kept for AniList, syncMu
+	// their sending (pending.go).
+	pendingMu sync.Mutex
+	syncMu    sync.Mutex
 }
 
 const (
@@ -362,13 +367,15 @@ func (p *Platform) collection(ctx context.Context, mediaType string, maxAge time
 		return nil, false, err
 	}
 
+	// The changes still waiting for AniList show in it.
+	shown := p.withPending(st.viewer.ID, mediaType, got)
 	p.mu.Lock()
 	// After a logout or login the result belongs to another session, and
 	// after a list update it may predate the update: return it, but don't
 	// cache it.
 	current := p.session == st.session && p.versions[mediaType] == st.version
 	if current {
-		p.collections[mediaType] = got
+		p.collections[mediaType] = shown
 		p.fetchedAt[mediaType] = time.Now()
 	}
 	p.mu.Unlock()
@@ -379,7 +386,7 @@ func (p *Platform) collection(ctx context.Context, mediaType string, maxAge time
 	for _, e := range got.Entries() {
 		p.db.SetCache(liteKey(e.MediaID), e.Media, 24*time.Hour)
 	}
-	return got, false, nil
+	return shown, false, nil
 }
 
 // invalidateLocked marks the cached collection of a media type as outdated:
@@ -405,7 +412,7 @@ func (p *Platform) loadSavedCollection(userID int, mediaType string) *Collection
 	if !p.db.GetStaleCache(collectionKey(mediaType), &s) || s.UserID != userID {
 		return nil
 	}
-	return s.Collection
+	return p.withPending(userID, mediaType, s.Collection)
 }
 
 var listNames = map[string]string{
@@ -731,14 +738,36 @@ func (p *Platform) UpdateEntry(ctx context.Context, u EntryUpdate) error {
 	}
 	mt := typeOr(media.Type)
 	if session, v := p.state(); v != nil {
-		saved, err := p.client.SaveEntry(ctx, u)
+		// A change still waiting for AniList goes with this one, which is
+		// newer: sent later on its own, it could undo this.
+		send := u
+		pend := p.pendingFor(v.ID, u.MediaID)
+		if pend != nil && !pend.Delete {
+			send = pend.Update.merge(u)
+		}
+		saved, err := p.client.SaveEntry(ctx, send)
 		if err != nil {
 			if errors.Is(err, ErrUnauthorized) {
 				p.expire(session)
+				return err
 			}
-			return err
+			if !Unreachable(err) {
+				return err
+			}
+			// AniList can't be reached: kept, and sent when it answers
+			// (RunPendingSync); the list shows it meanwhile.
+			if kerr := p.keepPending(v.ID, media, mt, u, false); kerr != nil {
+				return fmt.Errorf("%w (and it couldn't be kept for later: %v)", err, kerr)
+			}
+			p.patchCachedEntry(session, mt, media, u, nil)
+			p.hub.Publish(events.CollectionUpdate, map[string]any{"mediaId": u.MediaID})
+			return nil
 		}
-		p.patchCachedEntry(session, mt, media, u, saved)
+		if pend != nil {
+			_ = p.dropPending(pend)
+			p.publishPending(v.ID)
+		}
+		p.patchCachedEntry(session, mt, media, send, saved)
 		p.hub.Publish(events.CollectionUpdate, map[string]any{"mediaId": u.MediaID})
 		return nil
 	}
@@ -893,14 +922,35 @@ func (p *Platform) DeleteEntry(ctx context.Context, mediaID int) error {
 		return errors.New("your AniList login changed, please try again")
 	}
 	e := c.Find(mediaID)
-	if e == nil {
+	pend := p.pendingFor(v.ID, mediaID)
+	if e == nil && pend == nil {
 		return nil
 	}
-	if err := p.client.DeleteEntry(ctx, e.ID); err != nil {
-		if errors.Is(err, ErrUnauthorized) {
+	// With a change still waiting for AniList (the entry may only exist
+	// here), the delete waits with it: sent in its place.
+	var sendErr error
+	if pend == nil {
+		sendErr = p.client.DeleteEntry(ctx, e.ID)
+	}
+	if sendErr != nil {
+		if errors.Is(sendErr, ErrUnauthorized) {
 			p.expire(session)
+			return sendErr
 		}
-		return err
+		if !Unreachable(sendErr) {
+			return sendErr
+		}
+	}
+	if pend != nil || sendErr != nil {
+		if media == nil {
+			media = &Media{ID: mediaID, Type: mt}
+		}
+		if kerr := p.keepPending(v.ID, media, mt, EntryUpdate{MediaID: mediaID}, true); kerr != nil {
+			if sendErr == nil {
+				return kerr
+			}
+			return fmt.Errorf("%w (and it couldn't be kept for later: %v)", sendErr, kerr)
+		}
 	}
 	p.mu.Lock()
 	if p.session == session {

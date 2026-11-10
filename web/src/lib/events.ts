@@ -63,6 +63,8 @@ export function connectEvents(qc: QueryClient) {
                 qc.invalidateQueries({ queryKey: ["collection"] })
                 qc.invalidateQueries({ queryKey: ["entry"] })
                 qc.invalidateQueries({ queryKey: ["list"] })
+                // Playlists taken from a hub (another device's).
+                qc.invalidateQueries({ queryKey: ["playlists"] })
                 // Manga lists and the list entry on a manga's page; not the
                 // chapters or pages, which providers would send again.
                 qc.invalidateQueries({ queryKey: ["manga", "collection"] })
@@ -74,6 +76,10 @@ export function connectEvents(qc: QueryClient) {
                 break
             case "settings-updated":
                 qc.invalidateQueries({ queryKey: ["status"] })
+                break
+            case "anilist-pending":
+                // List changes made while AniList couldn't be reached, not sent yet.
+                qc.setQueryData<Status>(["status"], old => (old ? { ...old, anilistPending: p?.count ?? 0 } : old))
                 break
             case "playback-status":
                 playbackStore.set(p)

@@ -402,9 +402,9 @@ func randomDigits(n int) string {
 // ------------------------------------------------------------------ blobs
 
 // BlobKinds are what devices keep in step through a hub as Blobs, besides
-// their settings: the local list (the devices on no AniList account) and
-// their watch-order edits.
-var BlobKinds = []string{"lists", "watch-order"}
+// their settings: the local list (the devices on no AniList account),
+// their watch-order edits and their playlists.
+var BlobKinds = []string{"lists", "watch-order", "playlists"}
 
 // Blob is a set of items (a list's entries, a franchise's edited order) by
 // key, each with when it changed ("at", ms) and whether it was removed

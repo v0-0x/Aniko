@@ -13,6 +13,7 @@ import {
     HardDrive,
     Home,
     ListChecks,
+    ListVideo,
     LogIn,
     LogOut,
     Magnet,
@@ -117,6 +118,7 @@ export function useNavGroups(): { label: string; items: NavItem[] }[] {
             items: [
                 { to: "/library", label: "Library tools", icon: <FolderSearch />, badge: coll?.unmatchedCount ?? 0 },
                 { to: "/extensions", label: "Extensions", icon: <Puzzle /> },
+                { to: "/playlists", label: "Playlists", icon: <ListVideo /> },
                 { to: "/stats", label: "Stats", icon: <ChartColumn /> },
                 // Your mediaserver, when this device uses one.
                 ...(hasServer ? [{ to: "/server", label: "Server", icon: <ServerIcon /> }] : []),
@@ -215,6 +217,9 @@ export function Sidebar() {
     const folds = wide && !classic
     const showRest = !folds || moreOpen || rest.some(isActive)
     const restBadge = rest.reduce((n, i) => n + (i.badge ?? 0), 0)
+
+    // List changes made while AniList couldn't be reached, not sent yet.
+    const waiting = status?.user ? (status.anilistPending ?? 0) : 0
 
     const logout = async () => {
         await api.post("/api/auth/logout")
@@ -369,7 +374,9 @@ export function Sidebar() {
                             {wide && (
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-[13px] font-medium">{status?.user ? status.user.name : "Not logged in"}</span>
-                                    <span className="block truncate text-[11px] text-subtle">{status?.user ? "AniList" : "Log in to sync"}</span>
+                                    <span className="block truncate text-[11px] text-subtle" title={waiting ? `${waiting} change${waiting === 1 ? "" : "s"} waiting for AniList` : undefined}>
+                                        {status?.user ? (waiting ? `${waiting} change${waiting === 1 ? "" : "s"} to sync` : "AniList") : "Log in to sync"}
+                                    </span>
                                 </span>
                             )}
                         </button>

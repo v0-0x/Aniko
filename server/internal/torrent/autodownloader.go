@@ -32,6 +32,27 @@ type Rule struct {
 	EpisodeType     string   `json:"episodeType"` // recent | all
 	MinSeeders      int      `json:"minSeeders"`
 	Provider        string   `json:"provider"`
+	// A release whose name has any of these is skipped.
+	ExcludeTerms []string `json:"excludeTerms"`
+	// Size limits in MB (0: none).
+	MinSizeMB int `json:"minSizeMb"`
+	MaxSizeMB int `json:"maxSizeMb"`
+	// How long to wait after an episode's first release appears, so that a
+	// preferred one (a group or resolution listed earlier) can show up.
+	DelayMinutes int `json:"delayMinutes"`
+}
+
+// Candidate is a search result as a rule's test run sees it: grabbed, or
+// skipped and why.
+type Candidate struct {
+	Episode    int    `json:"episode"`
+	Name       string `json:"name"`
+	Group      string `json:"group"`
+	Resolution string `json:"resolution"`
+	Seeders    int    `json:"seeders"`
+	Size       int64  `json:"size"`
+	Grab       bool   `json:"grab"`
+	Reason     string `json:"reason,omitempty"`
 }
 
 type AutoItem struct {
@@ -48,6 +69,10 @@ type AutoDownloader struct {
 	files    *library.Store
 	hub      *events.Hub
 	mu       sync.Mutex
+	// firstSeen: when a run first saw a release that has no publish date
+	// (for DelayMinutes), by infohash or name.
+	seenMu    sync.Mutex
+	firstSeen map[string]time.Time
 	// Send, when set, sends a release where this Aniko's downloads go (the
 	// computer a TV's go to), and reports whether it did; else it goes to
 	// the torrent client here.
@@ -162,13 +187,33 @@ func (a *AutoDownloader) Run(ctx context.Context) (int, error) {
 	return added, nil
 }
 
+// plan is what a rule's run works from.
+type plan struct {
+	media    *anilist.Media
+	title    string
+	progress int
+	have     map[int]bool
+	prov     Provider
+	results  []*SearchResult
+}
+
 func (a *AutoDownloader) runRule(ctx context.Context, r *Rule, coll *anilist.Collection) (int, error) {
+	p, err := a.prepare(ctx, r, coll)
+	if err != nil {
+		return 0, err
+	}
+	best, _ := a.choose(r, p, time.Now(), true)
+	return a.grab(ctx, r, p.media, p.prov, best)
+}
+
+// prepare searches for a rule's releases.
+func (a *AutoDownloader) prepare(ctx context.Context, r *Rule, coll *anilist.Collection) (*plan, error) {
 	progress := 0
 	if r.EpisodeType != "all" {
 		if coll == nil {
 			// Without the progress every missing episode would look new,
 			// including the ones already watched.
-			return 0, errors.New("the anime list couldn't be loaded to check progress")
+			return nil, errors.New("the anime list couldn't be loaded to check progress")
 		}
 		if e := coll.Find(r.MediaID); e != nil {
 			progress = e.Progress
@@ -176,17 +221,17 @@ func (a *AutoDownloader) runRule(ctx context.Context, r *Rule, coll *anilist.Col
 	}
 	media, err := a.platform.MediaLite(ctx, r.MediaID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	title := util.FirstNonEmpty(r.Title, media.Title.Romaji, media.Title.English)
 	if util.NormalizeTitle(title) == "" {
 		// Every release would match an empty title.
-		return 0, errors.New("the rule has no title to look for")
+		return nil, errors.New("the rule has no title to look for")
 	}
 	files, err := a.files.ByMedia(r.MediaID)
 	if err != nil {
 		// Without the library, episodes already on disk would be grabbed again.
-		return 0, err
+		return nil, err
 	}
 	have := map[int]bool{}
 	for _, f := range files {
@@ -196,7 +241,7 @@ func (a *AutoDownloader) runRule(ctx context.Context, r *Rule, coll *anilist.Col
 	}
 	prov, err := a.torrents.Provider(util.FirstNonEmpty(r.Provider, "nyaa"))
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	query := searchText(title)
 	if len(r.ReleaseGroups) == 1 {
@@ -207,62 +252,211 @@ func (a *AutoDownloader) runRule(ctx context.Context, r *Rule, coll *anilist.Col
 	}
 	results, err := prov.Search(ctx, query)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return a.grab(ctx, r, media, prov, a.pick(r, media, title, progress, have, results))
+	return &plan{media: media, title: title, progress: progress, have: have, prov: prov, results: results}, nil
 }
 
-// pick chooses a release for each episode the rule wants: among the ones
-// that match, the one with the most seeders.
+// DryRun runs a rule's search and pick without grabbing or recording
+// anything: what it would grab, and why it skips the rest.
+func (a *AutoDownloader) DryRun(ctx context.Context, id int) ([]Candidate, error) {
+	rules, err := a.Rules()
+	if err != nil {
+		return nil, err
+	}
+	var r *Rule
+	for _, x := range rules {
+		if x.ID == id {
+			r = x
+		}
+	}
+	if r == nil {
+		return nil, ErrNoRule
+	}
+	var coll *anilist.Collection
+	if r.EpisodeType != "all" {
+		if coll, err = a.platform.Collection(ctx, "ANIME", false); err != nil {
+			return nil, err
+		}
+	}
+	p, err := a.prepare(ctx, r, coll)
+	if err != nil {
+		return nil, err
+	}
+	_, out := a.choose(r, p, time.Now(), false)
+	return out, nil
+}
+
+// ErrNoRule: the rule asked for doesn't exist.
+var ErrNoRule = errors.New("no such rule")
+
+// pick chooses a release for each episode the rule wants.
 func (a *AutoDownloader) pick(r *Rule, media *anilist.Media, title string, progress int, have map[int]bool, results []*SearchResult) map[int]*SearchResult {
+	best, _ := a.choose(r, &plan{media: media, title: title, progress: progress, have: have, results: results}, time.Now(), true)
+	return best
+}
+
+// choose picks a release for each episode the rule wants: among the ones
+// that match, the one whose group and resolution come first in the rule,
+// then the one with the most seeders. With a delay, an episode waits until
+// its first release has been out that long. It also returns every result
+// with what became of it; remember is false for a test run, which leaves
+// no trace.
+func (a *AutoDownloader) choose(r *Rule, p *plan, now time.Time, remember bool) (map[int]*SearchResult, []Candidate) {
 	best := map[int]*SearchResult{}
-	limit := episodeLimit(media, time.Now())
-	for _, res := range results {
-		if res.IsBatch || res.EpisodeNumber <= 0 || res.Seeders < r.MinSeeders {
-			continue
-		}
-		md := habari.Parse(res.Name)
-		if util.Similarity(md.Title, title) < 0.75 && !strings.Contains(util.NormalizeTitle(res.Name), util.NormalizeTitle(title)) {
-			continue
-		}
-		if len(r.ReleaseGroups) > 0 && !containsFold(r.ReleaseGroups, res.ReleaseGroup) {
-			continue
-		}
-		if len(r.Resolutions) > 0 {
-			ok := false
-			for _, want := range r.Resolutions {
-				if strings.TrimSuffix(normRes(want), "p") == strings.TrimSuffix(res.Resolution, "p") {
-					ok = true
-				}
-			}
-			if !ok {
-				continue
-			}
-		}
-		missingTerm := false
-		for _, term := range r.AdditionalTerms {
-			if term != "" && !strings.Contains(strings.ToLower(res.Name), strings.ToLower(term)) {
-				missingTerm = true
-			}
-		}
-		if missingTerm {
+	first := map[int]time.Time{}
+	out := make([]Candidate, len(p.results))
+	limit := episodeLimit(p.media, now)
+	for i, res := range p.results {
+		out[i] = Candidate{Episode: res.EpisodeNumber, Name: res.Name, Group: res.ReleaseGroup, Resolution: res.Resolution, Seeders: res.Seeders, Size: res.Size}
+		if out[i].Reason = a.skip(r, p, limit, res); out[i].Reason != "" {
 			continue
 		}
 		ep := res.EpisodeNumber
-		if limit > 0 && ep > limit {
-			continue
+		if r.DelayMinutes > 0 {
+			if at := a.appeared(res, now, remember); first[ep].IsZero() || at.Before(first[ep]) {
+				first[ep] = at
+			}
 		}
-		if r.EpisodeType != "all" && ep <= progress {
-			continue
-		}
-		if have[ep] || a.seen(episodeKey(r.MediaID, ep)) {
-			continue
-		}
-		if cur, ok := best[ep]; !ok || res.Seeders > cur.Seeders {
+		if cur, ok := best[ep]; !ok || better(r, res, cur) {
 			best[ep] = res
 		}
 	}
-	return best
+	delay := time.Duration(r.DelayMinutes) * time.Minute
+	waiting := map[int]string{}
+	for ep := range best {
+		if left := first[ep].Add(delay).Sub(now); delay > 0 && left > 0 {
+			waiting[ep] = fmt.Sprintf("Waiting (%d min)", int(left.Minutes()+0.999))
+			delete(best, ep)
+		}
+	}
+	for i, res := range p.results {
+		switch ep := res.EpisodeNumber; {
+		case out[i].Reason != "":
+		case waiting[ep] != "":
+			out[i].Reason = waiting[ep]
+		case best[ep] == res:
+			out[i].Grab = true
+		default:
+			out[i].Reason = "Worse release"
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Episode != out[j].Episode {
+			return out[i].Episode < out[j].Episode
+		}
+		return out[i].Grab && !out[j].Grab
+	})
+	return best, out
+}
+
+// skip says why the rule skips a result, or "" when it matches.
+func (a *AutoDownloader) skip(r *Rule, p *plan, limit int, res *SearchResult) string {
+	name := strings.ToLower(res.Name)
+	switch {
+	case res.IsBatch:
+		return "Batch"
+	case res.EpisodeNumber <= 0:
+		return "No episode number"
+	case res.Seeders < r.MinSeeders:
+		return "Too few seeders"
+	}
+	md := habari.Parse(res.Name)
+	if util.Similarity(md.Title, p.title) < 0.75 && !strings.Contains(util.NormalizeTitle(res.Name), util.NormalizeTitle(p.title)) {
+		return "Other title"
+	}
+	if len(r.ReleaseGroups) > 0 && !containsFold(r.ReleaseGroups, res.ReleaseGroup) {
+		return "Other group"
+	}
+	if len(r.Resolutions) > 0 && resRank(r, res) == len(r.Resolutions) {
+		return "Other resolution"
+	}
+	for _, term := range r.AdditionalTerms {
+		if term != "" && !strings.Contains(name, strings.ToLower(term)) {
+			return "Missing " + term
+		}
+	}
+	for _, term := range r.ExcludeTerms {
+		if term != "" && strings.Contains(name, strings.ToLower(term)) {
+			return "Has " + term
+		}
+	}
+	// An unknown size (0) passes.
+	const mb = 1 << 20
+	if r.MinSizeMB > 0 && res.Size > 0 && res.Size < int64(r.MinSizeMB)*mb {
+		return "Too small"
+	}
+	if r.MaxSizeMB > 0 && res.Size > int64(r.MaxSizeMB)*mb {
+		return "Too large"
+	}
+	ep := res.EpisodeNumber
+	switch {
+	case limit > 0 && ep > limit:
+		return "Not out yet"
+	case r.EpisodeType != "all" && ep <= p.progress:
+		return "Watched"
+	case p.have[ep]:
+		return "In library"
+	case a.seen(episodeKey(r.MediaID, ep)):
+		return "Already grabbed"
+	}
+	return ""
+}
+
+// better reports whether res beats cur: a group, then a resolution, listed
+// earlier in the rule, then more seeders.
+func better(r *Rule, res, cur *SearchResult) bool {
+	if a, b := groupRank(r, res), groupRank(r, cur); a != b {
+		return a < b
+	}
+	if a, b := resRank(r, res), resRank(r, cur); a != b {
+		return a < b
+	}
+	return res.Seeders > cur.Seeders
+}
+
+func groupRank(r *Rule, res *SearchResult) int {
+	for i, g := range r.ReleaseGroups {
+		if strings.EqualFold(g, res.ReleaseGroup) {
+			return i
+		}
+	}
+	return len(r.ReleaseGroups)
+}
+
+func resRank(r *Rule, res *SearchResult) int {
+	for i, want := range r.Resolutions {
+		if strings.TrimSuffix(normRes(want), "p") == strings.TrimSuffix(res.Resolution, "p") {
+			return i
+		}
+	}
+	return len(r.Resolutions)
+}
+
+// appeared is when a release came out: its publish date, or else when a
+// run first saw it (now, the first time; a test run doesn't note it).
+func (a *AutoDownloader) appeared(res *SearchResult, now time.Time, remember bool) time.Time {
+	if t, err := time.Parse(time.RFC3339, res.Date); err == nil {
+		return t
+	}
+	key := util.FirstNonEmpty(res.InfoHash, res.Name)
+	a.seenMu.Lock()
+	defer a.seenMu.Unlock()
+	if t, ok := a.firstSeen[key]; ok {
+		return t
+	}
+	if remember {
+		if a.firstSeen == nil {
+			a.firstSeen = map[string]time.Time{}
+		}
+		for k, t := range a.firstSeen {
+			if now.Sub(t) > 7*24*time.Hour {
+				delete(a.firstSeen, k)
+			}
+		}
+		a.firstSeen[key] = now
+	}
+	return now
 }
 
 // episodeLimit returns the last episode number that can be out (0: unknown).

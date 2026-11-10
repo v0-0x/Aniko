@@ -2,6 +2,7 @@ import { keepPreviousData, type QueryClient, useInfiniteQuery, useMutation, useQ
 import { useEffect } from "react"
 import { toast } from "@/lib/toast"
 import { api, qs } from "./api"
+import type { Filler } from "./filler"
 import { setUpdateLater } from "./store"
 import { installIfWanted, wantInstall } from "./tv"
 import type {
@@ -338,6 +339,18 @@ export function useStreamModes(provider: string, mediaId: number, enabled = true
         enabled: enabled && mediaId > 0 && !!provider,
         retry: false,
         staleTime: 30 * 60_000,
+    })
+}
+
+// Filler and recap episodes (MyAnimeList, through Jikan): empty lists when
+// unknown. They rarely change, and the server keeps them for days.
+export function useFiller(mediaId: number) {
+    return useQuery({
+        queryKey: ["filler", mediaId],
+        queryFn: () => api.get<Filler>(`/api/anime/${mediaId}/filler`),
+        enabled: mediaId > 0,
+        staleTime: 6 * 60 * 60_000,
+        select: f => ({ filler: f?.filler ?? [], recap: f?.recap ?? [] }),
     })
 }
 

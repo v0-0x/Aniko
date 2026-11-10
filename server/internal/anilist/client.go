@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -118,19 +119,27 @@ func (c *Client) query(ctx context.Context, query string, vars map[string]any, o
 
 		var gr gqlResponse
 		if err := json.Unmarshal(raw, &gr); err != nil {
-			return fmt.Errorf("anilist: bad response (%s)", resp.Status)
+			return &StatusError{Status: resp.StatusCode, Msg: "bad response (" + resp.Status + ")"}
 		}
+		noData := gr.Data == nil || string(gr.Data) == "null"
 		if len(gr.Errors) > 0 {
 			msg := gr.Errors[0].Message
 			if gr.Errors[0].Status == 401 || resp.StatusCode == 401 || strings.Contains(strings.ToLower(msg), "invalid token") {
 				return ErrUnauthorized
 			}
-			if gr.Data == nil || string(gr.Data) == "null" {
-				return fmt.Errorf("anilist: %s", msg)
+			if noData {
+				status := gr.Errors[0].Status
+				if status == 0 {
+					status = resp.StatusCode
+				}
+				return &StatusError{Status: status, Msg: msg}
 			}
 		}
 		if resp.StatusCode == 401 {
 			return ErrUnauthorized
+		}
+		if resp.StatusCode >= 500 && noData {
+			return &StatusError{Status: resp.StatusCode, Msg: "bad response (" + resp.Status + ")"}
 		}
 		if out != nil {
 			return json.Unmarshal(gr.Data, out)
@@ -138,6 +147,34 @@ func (c *Client) query(ctx context.Context, query string, vars map[string]any, o
 		return nil
 	}
 	return errRateLimited // not reached: the last attempt always returns
+}
+
+// StatusError is an error AniList answered with: Status is the one it gave
+// the error, else the HTTP status of the answer.
+type StatusError struct {
+	Status int
+	Msg    string
+}
+
+func (e *StatusError) Error() string { return "anilist: " + e.Msg }
+
+// Unreachable reports an error of AniList not answering, or not able to
+// just now: no network, a timeout, the request cut off, its servers failing
+// (5xx) or its limit on requests. The same request may work later. Anything
+// else it answered (a 4xx: a bad request, an entry it doesn't have) won't.
+func Unreachable(err error) bool {
+	if err == nil || errors.Is(err, ErrUnauthorized) {
+		return false
+	}
+	var se *StatusError
+	if errors.As(err, &se) {
+		return se.Status >= 500 || se.Status == http.StatusRequestTimeout || se.Status == http.StatusTooManyRequests
+	}
+	// No answer: http.Client.Do fails with a *url.Error (DNS, refused,
+	// reset, TLS, timeout), waiting with the context's error.
+	var ue *url.Error
+	return errors.Is(err, errRateLimited) || errors.As(err, &ue) ||
+		errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
 }
 
 // retryAfter is how long AniList asks us to wait after a 429: Retry-After

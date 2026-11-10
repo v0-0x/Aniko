@@ -34,6 +34,7 @@ import (
 	"github.com/v0-0x/Aniko/server/internal/metadata"
 	"github.com/v0-0x/Aniko/server/internal/notify"
 	"github.com/v0-0x/Aniko/server/internal/player"
+	"github.com/v0-0x/Aniko/server/internal/playlist"
 	"github.com/v0-0x/Aniko/server/internal/share"
 	"github.com/v0-0x/Aniko/server/internal/stream"
 	"github.com/v0-0x/Aniko/server/internal/torrent"
@@ -65,6 +66,7 @@ type App struct {
 	TorrentStream *torrentstream.Engine
 	HLS           *stream.HLS
 	Share         *share.Service
+	Playlists     *playlist.Store
 	Manga         *manga.Service
 	Discord       *discord.Client
 	Images        *images.Cache
@@ -195,7 +197,7 @@ func New(dataDir string, opts ...Options) (*App, error) {
 	exits := lifecycle.NewExits()
 
 	a := &App{
-		DB: d, Settings: settings, Hub: hub, Platform: platform, Meta: meta, Files: files, Scanner: scanner,
+		DB: d, Playlists: playlist.New(d), Settings: settings, Hub: hub, Platform: platform, Meta: meta, Files: files, Scanner: scanner,
 		Library: lib, History: hist, Player: pl, AniCli: ani, Downloads: dls, Torrents: torrents,
 		AutoDL:     torrent.NewAutoDownloader(d, torrents, platform, files, hub),
 		Extensions: exts, Stream: stream.NewService(d, exts, ani, platform), Local: stream.NewLocal(settings, files, d),
@@ -563,6 +565,8 @@ func (a *App) Start() {
 	a.background(func() { a.Notify.Run(a.ctx) })
 	a.background(func() { a.MangaDL.Run(a.ctx) })
 	a.background(a.purgeTrash)
+	// List changes made while AniList couldn't be reached, sent when it can.
+	a.background(func() { a.Platform.RunPendingSync(a.ctx) })
 	a.background(func() {
 		a.AutoDL.Loop(a.ctx, func() (bool, time.Duration) {
 			cfg := a.Settings.Get()

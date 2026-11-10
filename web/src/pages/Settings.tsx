@@ -1792,6 +1792,9 @@ function PlaybackSection({ draft, set }: SectionProps) {
                 <Row label="Auto play next episode">
                     <Switch checked={p.autoPlayNext} onChange={v => set("playback", { autoPlayNext: v })} />
                 </Row>
+                <Row label="Skip filler" help="Up next goes past episodes MyAnimeList marks as filler">
+                    <Switch checked={!!p.skipFiller} onChange={v => set("playback", { skipFiller: v })} />
+                </Row>
                 <Row label="Skip openings automatically" help="Uses AniSkip timestamps">
                     <Switch checked={p.skipIntroAniSkip} onChange={v => set("playback", { skipIntroAniSkip: v })} />
                 </Row>

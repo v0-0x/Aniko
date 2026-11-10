@@ -598,8 +598,11 @@ func (s *Service) TakeHubBlob(c Caller, kind string, b anikohub.Blob) (anikohub.
 }
 
 func kindName(kind string) string {
-	if kind == "lists" {
+	switch kind {
+	case "lists":
 		return "list"
+	case "playlists":
+		return "playlists"
 	}
 	return "watch order"
 }
@@ -639,9 +642,13 @@ func (s *Service) syncBlobs(ctx context.Context, p *peer, hubAt map[string]int64
 		if !ok {
 			continue
 		}
+		// A hub from before this kind: it doesn't keep it.
+		at, known := hubAt[kind]
+		if !known && hubAt != nil {
+			continue
+		}
 		synced = true
 		own := h.Own()
-		at := hubAt[kind]
 		switch {
 		case own.UpdatedAt > at && len(own.Items) > 0:
 			var merged anikohub.Blob

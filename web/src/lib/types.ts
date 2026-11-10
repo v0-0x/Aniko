@@ -201,6 +201,7 @@ export type Settings = {
         skipIntroAniSkip: boolean
         skipOutroAniSkip: boolean
         skipRecapAniSkip?: boolean
+        skipFiller?: boolean
     }
     mpv: { path: string; socket: string; extraArgs: string; fullscreen: boolean }
     transcode: { ffmpegPath: string; ffprobePath: string; mode: string; hwAccel: string; vaapiNode: string; preset: string }
@@ -297,6 +298,7 @@ export type Status = {
     // Aniko is older than this one, "newer": this one is).
     devicePrompts?: DevicePrompt[] | null
     keptAwake?: boolean // another device is playing this computer's files, so it stays awake
+    anilistPending?: number // list changes waiting for AniList to answer (made offline)
     webUiForced: boolean
     setupRunning?: boolean // Windows: the window installing Aniko's programs is open
     settings: Settings
@@ -566,6 +568,11 @@ export type AutoRule = {
     episodeType: "recent" | "all"
     minSeeders: number
     provider: string
+    // Optional: older rules don't have them (null or 0: off).
+    excludeTerms?: string[] | null
+    minSizeMb?: number
+    maxSizeMb?: number
+    delayMinutes?: number
 }
 
 // Where reading a manga stopped (GET /api/manga/{id}/position).
