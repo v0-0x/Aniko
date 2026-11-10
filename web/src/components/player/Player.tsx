@@ -5,7 +5,7 @@ import {
     Captions,
     Check,
     FastForward,
-    Gauge,
+    SlidersHorizontal,
     Languages,
     ListVideo,
     Loader2,
@@ -1577,14 +1577,18 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
             <div
                 data-tv-controls="bottom"
                 className={cn(
-                    "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300",
-                    mini ? "px-3 pt-10 pb-1.5" : "px-6 pt-20 pb-5",
+                    "absolute transition-opacity duration-300",
+                    // The small window keeps the plain strip; the player's
+                    // controls are a glass panel floating over the picture.
+                    mini
+                        ? "inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-10 pb-1.5"
+                        : "inset-x-3 bottom-3 mx-auto max-w-5xl rounded-2xl bg-black/60 px-4 pt-3 pb-2 shadow-[0_16px_48px_-12px_rgb(0_0_0/0.8)] ring-1 ring-white/10 backdrop-blur-xl sm:inset-x-6 sm:bottom-5 sm:px-5",
                     controls || paused ? "opacity-100" : "pointer-events-none opacity-0",
                 )}
             >
                 {/* scrubber */}
                 <div
-                    className={cn("group/seek relative cursor-pointer", mini ? "mb-1 h-4" : "mb-3 h-5")}
+                    className={cn("group/seek relative cursor-pointer", mini ? "mb-1 h-4" : "mb-1.5 h-5")}
                     onMouseMove={e => {
                         const r = e.currentTarget.getBoundingClientRect()
                         setHoverTime({ x: e.clientX - r.left, t: ((e.clientX - r.left) / r.width) * total })
@@ -1630,9 +1634,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     )}
                 </div>
 
-                <div className={cn("flex items-center text-white", mini ? "gap-0.5" : "gap-2")}>
-                    <CtrlButton small={mini} onClick={togglePlay} label={paused ? "Play (k)" : "Pause (k)"}>
-                        {paused ? <Play className={cn("fill-white", mini ? "size-5" : "size-6")} /> : <Pause className={cn("fill-white", mini ? "size-5" : "size-6")} />}
+                <div className={cn("flex items-center text-white", mini ? "gap-0.5" : "gap-0.5 sm:gap-2")}>
+                    <CtrlButton small={mini} onClick={togglePlay} label={paused ? "Play (k)" : "Pause (k)"} className={mini ? undefined : "mr-1 bg-white text-black hover:bg-white/85"}>
+                        {paused ? <Play className={mini ? "size-5 fill-white" : "size-5 translate-x-px fill-black"} /> : <Pause className={mini ? "size-5 fill-white" : "size-5 fill-black"} />}
                     </CtrlButton>
                     {!mini && (
                         // Not on a phone, where the buttons wouldn't fit across (its
@@ -1675,11 +1679,11 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             className="w-0 accent-white opacity-0 transition-all duration-200 group-hover/vol:w-24 group-hover/vol:opacity-100"
                         />
                     </div>
-                    <span className={cn("font-medium text-white/85 tabular-nums", mini ? "ml-1 text-xs" : "ml-2 text-sm")}>
+                    <span className={cn("font-medium whitespace-nowrap text-white/85 tabular-nums", mini ? "ml-1 text-xs" : "ml-1 text-sm sm:ml-2")}>
                         {formatDuration(time)} <span className="text-white/45">/ {formatDuration(total)}</span>
                     </span>
 
-                    <div className="ml-auto flex items-center gap-1">
+                    <div className="ml-auto flex items-center gap-0 sm:gap-1">
                         {/* subtitles */}
                         <Dropdown>
                             <DropdownTrigger asChild>
@@ -1689,10 +1693,10 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             </DropdownTrigger>
                             <DropdownContent className="z-[90] max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto">
                                 <DropdownLabel>Subtitles</DropdownLabel>
-                                <DropdownItem onSelect={() => changeSub("off")}>{subKey === "off" ? "● " : ""}Off</DropdownItem>
+                                <DropdownItem onSelect={() => changeSub("off")}><Picked on={subKey === "off"} />Off</DropdownItem>
                                 {subs.map(s => (
                                     <DropdownItem key={s.key} onSelect={() => changeSub(s.key)} disabled={s.bitmap && (req.kind !== "local" || !!probe?.noBurn)}>
-                                        {subKey === s.key ? "● " : ""}
+                                        <Picked on={subKey === s.key} />
                                         {s.label}
                                         {s.bitmap ? (req.kind !== "local" ? " (mpv only)" : probe?.noBurn ? ` (${probe.noBurn})` : " (drawn on by the server)") : ""}
                                     </DropdownItem>
@@ -1734,7 +1738,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                     <DropdownLabel>Audio</DropdownLabel>
                                     {(probe?.audio ?? []).map((a, i) => (
                                         <DropdownItem key={i} onSelect={() => changeAudio(i)}>
-                                            {audioIndex === i ? "● " : ""}
+                                            <Picked on={audioIndex === i} />
                                             {[langName(a.language), a.title, a.codec?.toUpperCase(), a.channels ? `${a.channels}ch` : ""].filter(Boolean).join(" · ") || `Track ${i + 1}`}
                                         </DropdownItem>
                                     ))}
@@ -1746,7 +1750,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             <Dropdown>
                                 <DropdownTrigger asChild>
                                     <button className="grid size-10 place-items-center rounded-full hover:bg-white/15" aria-label="Settings">
-                                        <Gauge className="size-5" />
+                                        <SlidersHorizontal className="size-5" />
                                     </button>
                                 </DropdownTrigger>
                                 <DropdownContent className="z-[90] max-h-[min(24rem,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto">
@@ -1755,7 +1759,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                             <DropdownLabel>Source</DropdownLabel>
                                             {sources.map((s, i) => (
                                                 <DropdownItem key={i} onSelect={() => changeSource(i)}>
-                                                    {sourceIdx === i ? "● " : ""}
+                                                    <Picked on={sourceIdx === i} />
                                                     {[s.server, s.quality, s.label].filter(Boolean).join(" · ")}
                                                 </DropdownItem>
                                             ))}
@@ -1816,7 +1820,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                     <DropdownLabel>Speed</DropdownLabel>
                                     {[0.75, 1, 1.25, 1.5, 2].map(r => (
                                         <DropdownItem key={r} onSelect={() => setRate(r)}>
-                                            {rate === r ? "● " : ""}
+                                            <Picked on={rate === r} />
                                             {r}×
                                         </DropdownItem>
                                     ))}
@@ -1938,6 +1942,12 @@ async function fetchable(src: string): Promise<Fetchable> {
 
 // An empty picture (a transparent pixel): the video's poster.
 const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+
+// The mark before a menu's choices: a check on the one in use, the same
+// room on the others so their names line up.
+function Picked({ on }: { on: boolean }) {
+    return <span className="mr-1.5 inline-grid w-4 shrink-0 place-items-center align-[-2px]">{on && <Check className="size-4 text-brand-strong" />}</span>
+}
 
 const CtrlButton = forwardRef<HTMLButtonElement, { children: React.ReactNode; onClick: () => void; label: string; small?: boolean; className?: string }>(function CtrlButton(
     { children, onClick, label, small, className },

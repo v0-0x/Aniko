@@ -8,6 +8,7 @@ import (
 	"testing/fstest"
 
 	"fmt"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
 	"github.com/v0-0x/Aniko/server/internal/anilist"
 	"github.com/v0-0x/Aniko/server/internal/app"
 	"github.com/v0-0x/Aniko/server/internal/watchorder"
@@ -190,5 +191,45 @@ func TestListsFollowTheHub(t *testing.T) {
 	var e watchorder.Edit
 	if ok, _ := a.app.DB.GetKV(watchorder.EditKey(300), &e); ok {
 		t.Fatal("an edit came to a device that turned it off")
+	}
+}
+
+// The app's Server page: a device the hub shares with is told how the
+// server is doing (no devices, no names); one it doesn't share with isn't.
+func TestServerPage(t *testing.T) {
+	const local = "127.0.0.1:5000"
+	hub, hubSrv := hubSharingServer(t)
+	hub.app.Sampler = anikohub.NewSampler()
+	d, _ := sharingServer(t)
+	addr := strings.TrimPrefix(hubSrv.URL, "http://")
+	if w := do(d, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {
+		t.Fatalf("connect: %d %s", w.Code, w.Body)
+	}
+	eventually(t, "the hub to list the device", func() bool { _, ok := peerIn(hub, d); return ok })
+	servers := func() []serverView {
+		var out []serverView
+		w := do(d, "GET", "/api/servers", local, "", nil)
+		if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &out) != nil {
+			t.Fatalf("servers: %d %s", w.Code, w.Body)
+		}
+		return out
+	}
+	// Not shared with yet: no server on the page.
+	if got := servers(); len(got) != 0 {
+		t.Fatalf("before sharing: %+v", got)
+	}
+	if err := hub.app.Share.SetAllowed(d.app.Share.ID(), true); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the hub's library", func() bool {
+		do(d, "GET", "/api/sharing?refresh=1", local, "", nil)
+		return len(d.app.Share.Libraries()) == 1
+	})
+	got := servers()
+	if len(got) != 1 || got[0].State == nil || got[0].State.Name != hub.app.Share.Name() || got[0].State.System.Cores == 0 {
+		t.Fatalf("the server: %+v", got)
+	}
+	if w := do(d, "GET", "/api/peer/hub/status", local, "", nil); w.Code == http.StatusOK {
+		t.Fatalf("an app answers as a server: %s", w.Body)
 	}
 }

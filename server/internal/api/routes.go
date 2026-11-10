@@ -30,6 +30,7 @@ func (s *Server) routes() {
 	s.torrentStreamRoutes()
 	s.uploadRoutes()
 	s.hubRoutes()
+	s.serverPageRoutes()
 	s.sideRoutes()
 	s.parentalRoutes()
 	s.noteRoutes()

@@ -107,10 +107,8 @@ const (
 	// Version3Base: the same for 3.0.0 (desktop/package.json's
 	// anikoVersionBase since 3.0).
 	Version3Base = 222
-	// previewBranch is where 3.0's changes land while it's a preview.
-	previewBranch = "3.0"
-	maxChanges    = 30
-	maxLogLines   = 20
+	maxChanges   = 30
+	maxLogLines  = 20
 	// failureFile keeps why an update failed after Aniko had quit for it
 	// (in CacheDir), for the next run to show.
 	failureFile = "last-failure.txt"
@@ -559,13 +557,9 @@ func (c *Checker) checkBranch(ctx context.Context, g *github) (result, error) {
 	if repo.DefaultBranch == "" {
 		return result{}, errors.New("GitHub didn't say which branch is the repository's main one")
 	}
-	// While this version is a preview, its changes land on its own branch
-	// (previewBranch), which is gone once it's the default branch's.
 	branch := repo.DefaultBranch
-	head, err := g.commit(ctx, previewBranch)
-	if err == nil {
-		branch = previewBranch
-	} else if head, err = g.commit(ctx, branch); err != nil {
+	head, err := g.commit(ctx, branch)
+	if err != nil {
 		return result{}, err
 	}
 	latest := &Version{Commit: head.SHA, Date: head.Commit.Committer.Date, URL: head.HTMLURL, Beta: true}
