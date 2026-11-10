@@ -84,7 +84,8 @@ export function useNavGroups(): { label: string; items: NavItem[] }[] {
     const torrentCount = useStore(torrentCountStore)
     const settings = status?.settings
     const { data: sharing } = useSharing(!!settings?.sharing?.enabled)
-    const hasServer = !!sharing?.peers?.some(p => p.role === "hub" && p.shares)
+    // Only while one is connected: it shares with this device and answers.
+    const hasServer = !!sharing?.peers?.some(p => p.role === "hub" && p.shares && p.online)
     const activeDownloads = (downloads ?? []).filter(d => ["queued", "resolving", "downloading"].includes(d.status)).length
 
     // Three groups: finding and watching anime (what's used most, first),
