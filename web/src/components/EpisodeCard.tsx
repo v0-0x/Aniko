@@ -22,6 +22,7 @@ type Props = {
     // under "Ep N · title"; without them the subtitle is that line.
     facts?: React.ReactNode[]
     epLabel?: string | false // "Ep N" before the title (with facts); false for none
+    tag?: string // "Filler" or "Recap": a tag on the picture's top left
     // Menu items for a "…" button by the title: always there, as a TV and a
     // phone can't hover.
     menu?: React.ReactNode
@@ -30,7 +31,7 @@ type Props = {
     className?: string
 }
 
-export function EpisodeCard({ image, number, title, subtitle, runtime, watched, hasFile, progress, resumeAt, aired = true, blur, large, onClick, actions, facts, epLabel, menu, onRemove, onInfo, className }: Props) {
+export function EpisodeCard({ image, number, title, subtitle, runtime, watched, hasFile, progress, resumeAt, aired = true, blur, large, onClick, actions, facts, epLabel, tag, menu, onRemove, onInfo, className }: Props) {
     const classic = useClassic()
     const label = facts && epLabel !== false ? epLabel ?? `Ep ${number}` : ""
     const shown = (facts ?? []).filter(f => f !== undefined && f !== null && f !== false && f !== "")
@@ -114,6 +115,9 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                             </Tooltip>
                         )}
                     </div>
+                )}
+                {tag && (
+                    <span className={cn("absolute top-2 left-2 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase shadow-md shadow-black/40", tag === "Filler" ? "bg-amber-400 text-neutral-950" : "bg-sky-400 text-neutral-950")}>{tag}</span>
                 )}
                 {!facts && resumeAt !== undefined && resumeAt > 0 && (
                     <span className="absolute right-2 bottom-2.5 flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums">

@@ -368,9 +368,9 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                             number={ep.number}
                             epLabel={media.format === "MOVIE" ? false : undefined}
                             title={media.format === "MOVIE" ? title(media) : ep.title || undefined}
-                            // Filler or recap · length · air date · the file's size and quality.
+                            tag={fillerFact(ep.number, filler)}
+                            // Length · air date · the file's size and quality.
                             facts={[
-                                fillerFact(ep.number, filler),
                                 !!ep.runtime && `${ep.runtime}m`,
                                 ep.airDate,
                                 ep.file && formatBytes(ep.file.size),

@@ -197,7 +197,8 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                             image={ep.image}
                             number={ep.number}
                             title={ep.title || undefined}
-                            facts={[fillerFact(ep.number, filler), !!ep.runtime && `${ep.runtime}m`, ep.airDate, dub ? "Dub" : "Sub", ep.resumeAt > 0 && `at ${formatDuration(ep.resumeAt)}`]}
+                            tag={fillerFact(ep.number, filler)}
+                            facts={[!!ep.runtime && `${ep.runtime}m`, ep.airDate, dub ? "Dub" : "Sub", ep.resumeAt > 0 && `at ${formatDuration(ep.resumeAt)}`]}
                             watched={ep.watched}
                             resumeAt={ep.resumeAt}
                             progress={ep.duration ? ep.resumeAt / ep.duration : 0}
