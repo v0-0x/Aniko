@@ -7,6 +7,21 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 47,
+        title: "A new logo and look",
+        changes: [
+            {
+                title: "Meet the cat",
+                text: "Aniko's logo is a cat now: the A with ears, whiskers and a tail.",
+            },
+            {
+                title: "New colors and rounder shapes",
+                text: "Plum with pink and mint, rounded titles and buttons. The colors from before are the Graphite theme.",
+                to: "/settings?tab=appearance",
+            },
+        ],
+    },
+    {
         id: 46,
         title: "Aniko 3.0",
         changes: [

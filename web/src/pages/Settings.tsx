@@ -1124,14 +1124,15 @@ function TvSizeRow() {
     )
 }
 
-const ACCENTS = ["#7c6cf2", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#e879f9", "#38bdf8", "#a3e635"]
+// Not #7c6cf2: saved by every install before 3.0.32 as its default, it stands for "the theme's own" (lib/themes.ts).
+const ACCENTS = ["#ff7eb6", "#8b7cf6", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#38bdf8", "#a3e635"]
 const ACCENT_NAMES: Record<string, string> = {
-    "#7c6cf2": "violet",
+    "#ff7eb6": "pink",
+    "#8b7cf6": "violet",
     "#5b8cff": "blue",
     "#22c3a6": "teal",
-    "#f2557a": "pink",
+    "#f2557a": "rose",
     "#f59e0b": "amber",
-    "#e879f9": "orchid",
     "#38bdf8": "sky",
     "#a3e635": "lime",
 }

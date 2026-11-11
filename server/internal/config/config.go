@@ -282,7 +282,7 @@ type UISettings struct {
 // ColorThemes and Holidays are the values UISettings takes (their colors are
 // in web/src/lib/themes.ts).
 var (
-	ColorThemes = []string{"aniko", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black"}
+	ColorThemes = []string{"aniko", "graphite", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black"}
 	Holidays    = []string{"newyear", "valentine", "sakura", "summer", "halloween", "christmas"}
 )
 
@@ -352,7 +352,7 @@ func Defaults() Settings {
 		Anilist:      AnilistSettings{ClientID: DefaultAnilistClient, HideAdult: true},
 		Server:       ServerSettings{Host: "127.0.0.1", Port: DefaultPort, WebUI: true},
 		UI: UISettings{
-			AccentColor:      "#7c6cf2",
+			AccentColor:      "#ff7eb6",
 			BannerType:       "episode",
 			CardSize:         "md",
 			ShowEpisodeTitle: true,

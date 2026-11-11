@@ -348,7 +348,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                                 <Button variant="white" icon={<Play className="size-4 fill-current" />} onClick={() => play(item)}>
                                     {started ? "Resume" : `Play episode ${item.episode}`}
                                 </Button>
-                                <Link to={`/entry?id=${item.media.id}`} className="focus-ring inline-flex h-9 items-center rounded-lg bg-white/10 px-3.5 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20">
+                                <Link to={`/entry?id=${item.media.id}`} className="focus-ring inline-flex h-9 items-center rounded-full bg-white/10 px-4 font-display text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20">
                                     Details
                                 </Link>
                             </div>

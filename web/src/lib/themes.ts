@@ -11,10 +11,14 @@ import { createStore, useStore } from "./store"
 // (surface 1-4) and the grey text, as in index.css.
 type Palette = { frame: string; bg: string; s1: string; s2: string; s3: string; s4: string; muted: string; subtle: string }
 
-export type ColorTheme = { id: string; name: string; accent: string; palette: Palette }
+// glow: two more colors in the window's light (the accent alone without).
+export type ColorTheme = { id: string; name: string; accent: string; palette: Palette; glow?: [string, string] }
 
 export const COLOR_THEMES: ColorTheme[] = [
-    { id: "aniko", name: "Aniko", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#111113", s1: "#161618", s2: "#1c1c1f", s3: "#232326", s4: "#2b2b2f", muted: "#a1a1a8", subtle: "#707077" } },
+    // Aniko's own (3.0.32): plum, with the logo's pink, mint and butter.
+    { id: "aniko", name: "Aniko", accent: "#ff7eb6", glow: ["#7ce0d6", "#ffd86b"], palette: { frame: "#100b1a", bg: "#171024", s1: "#1e162e", s2: "#261c39", s3: "#2f2445", s4: "#392c52", muted: "#b5a8c6", subtle: "#80738f" } },
+    // Aniko's colors before that, and the classic look's.
+    { id: "graphite", name: "Graphite", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#111113", s1: "#161618", s2: "#1c1c1f", s3: "#232326", s4: "#2b2b2f", muted: "#a1a1a8", subtle: "#707077" } },
     { id: "midnight", name: "Midnight", accent: "#5b8cff", palette: { frame: "#070a12", bg: "#0c111c", s1: "#111827", s2: "#172033", s3: "#1e2940", s4: "#26334d", muted: "#9aa4b8", subtle: "#6b7488" } },
     { id: "forest", name: "Forest", accent: "#34d399", palette: { frame: "#070b09", bg: "#0c120f", s1: "#111a15", s2: "#16211b", s3: "#1c2a22", s4: "#23342a", muted: "#9fb0a6", subtle: "#6d7f74" } },
     { id: "sakura", name: "Sakura", accent: "#f472b6", palette: { frame: "#0d0709", bg: "#140c10", s1: "#1b1116", s2: "#22161c", s3: "#2a1c23", s4: "#33222b", muted: "#b39aa6", subtle: "#7f6872" } },
@@ -102,9 +106,25 @@ export type ThemeChoice = { colorTheme?: string; accentColor?: string; seasonal?
 // holiday (its glow, the sidebar's decoration and its animation), and
 // whether in the classic look (before 2.0).
 export function resolveTheme(ui: ThemeChoice | undefined, now = new Date()) {
-    const theme = colorTheme(ui?.colorTheme)
+    const classic = !!ui?.classicLook
+    // The classic look keeps the colors it had (Graphite's), where the theme
+    // is the default one.
+    const theme = colorTheme(classic && (ui?.colorTheme || "aniko") === "aniko" ? "graphite" : ui?.colorTheme)
+    // The accent every install had saved as its default before 3.0.32 isn't
+    // a choice: the theme's own shows.
+    const own = ui?.accentColor && !(theme.id === "aniko" && ui.accentColor.toLowerCase() === OLD_ACCENT) ? ui.accentColor : ""
     const holiday = activeHoliday(ui?.seasonal ?? "auto", now)
-    return { theme, holiday, accent: holiday?.accent ?? (ui?.accentColor || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true), classic: !!ui?.classicLook }
+    return { theme, holiday, accent: holiday?.accent ?? (own || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true), classic }
+}
+
+const OLD_ACCENT = "#7c6cf2"
+
+// Text on the accent: dark on a light one (pink, amber, cyan), white on the rest.
+function onAccent(hex: string) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+    if (!m) return "#ffffff"
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255).map(c => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.36 ? "#1b1426" : "#ffffff"
 }
 
 const CACHE_KEY = "aniko-theme"
@@ -119,6 +139,11 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
     const lean = (color: string, pct: number) => (t.holiday && !t.classic ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
     const vars: Record<string, string> = {
         "--brand": t.accent,
+        "--on-brand": onAccent(t.accent),
+        // The window's other lights: the theme's, not under a holiday's tint
+        // ("" takes them away: the accent alone).
+        "--glow-2": (!t.holiday && !t.classic && t.theme.glow?.[0]) || "",
+        "--glow-3": (!t.holiday && !t.classic && t.theme.glow?.[1]) || "",
         "--frame": lean(p.frame, 12),
         "--bg": lean(p.bg, 8),
         "--surface-1": lean(p.s1, 7),

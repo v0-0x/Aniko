@@ -1,29 +1,34 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
+@import "@fontsource/zen-maru-gothic/latin-700.css";
+@import "@fontsource/zen-maru-gothic/latin-900.css";
 
 /* Runtime tokens: the colors and the accent change with Settings › User
    Interface (lib/themes.ts sets them).
    The window is --frame: the sidebar sits on it, the pages on --bg, a panel
    inset in it. */
 :root {
-    --brand: #7c6cf2;
-    --frame: #0a0a0b;
-    --bg: #111113;
-    --surface-1: #161618;
-    --surface-2: #1c1c1f;
-    --surface-3: #232326;
-    --surface-4: #2b2b2f;
+    --brand: #ff7eb6;
+    --on-brand: #1b1426; /* text on the accent */
+    --frame: #100b1a;
+    --bg: #171024;
+    --surface-1: #1e162e;
+    --surface-2: #261c39;
+    --surface-3: #2f2445;
+    --surface-4: #392c52;
     --line: rgb(255 255 255 / 0.06);
     --line-strong: rgb(255 255 255 / 0.1);
     --text: #ececee;
-    --muted: #a1a1a8;
-    --subtle: #707077;
+    --muted: #b5a8c6;
+    --subtle: #80738f;
     --ease: cubic-bezier(0.2, 0, 0, 1);
     color-scheme: dark;
 }
 
 @theme inline {
     --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+    /* Titles, buttons and the sidebar: rounded, like the logo (Latin only: other scripts fall to the next). */
+    --font-display: "Zen Maru Gothic", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
 
     --color-brand: var(--brand);
     --color-brand-soft: color-mix(in oklab, var(--brand) 16%, transparent);
@@ -429,9 +434,9 @@ html.tv .glass {
    those parts are built with. */
 html:not([data-look="classic"]) .app-frame {
     background:
-        radial-gradient(1000px 700px at 6% -10%, color-mix(in oklab, var(--brand) 42%, transparent), transparent 62%),
-        radial-gradient(900px 700px at 104% 108%, color-mix(in oklab, var(--brand) 30%, transparent), transparent 60%),
-        radial-gradient(700px 520px at 62% 38%, color-mix(in oklab, var(--brand) 12%, transparent), transparent 65%),
+        radial-gradient(1000px 700px at 6% -10%, color-mix(in oklab, var(--brand) 34%, transparent), transparent 62%),
+        radial-gradient(900px 700px at 104% 108%, color-mix(in oklab, var(--glow-2, var(--brand)) 30%, transparent), transparent 60%),
+        radial-gradient(700px 520px at 62% 38%, color-mix(in oklab, var(--glow-3, var(--brand)) 12%, transparent), transparent 65%),
         var(--frame);
 }
 html:not([data-look="classic"]) .page-backdrop {
@@ -447,13 +452,24 @@ html:not([data-look="classic"]) #main-scroll {
         0 18px 50px -24px rgb(0 0 0 / 0.8),
         inset 0 1px 0 rgb(255 255 255 / 0.05);
 }
+/* A card is a sticker: a thicker edge, rounder, a solid shadow under it. */
 html:not([data-look="classic"]) .card {
-    background: rgb(255 255 255 / 0.045);
-    border-color: rgb(255 255 255 / 0.09);
-    border-radius: 1rem;
+    background: rgb(255 255 255 / 0.05);
+    border: 1.5px solid rgb(255 255 255 / 0.1);
+    border-radius: 1.25rem;
     box-shadow:
         inset 0 1px 0 rgb(255 255 255 / 0.07),
-        0 10px 30px -18px rgb(0 0 0 / 0.6);
+        0 3px 0 rgb(0 0 0 / 0.24);
+}
+/* Titles in the logo's rounded type. */
+html:not([data-look="classic"]) :is(h1, h2, h3) {
+    font-family: "Zen Maru Gothic", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+/* Text on the accent reads on a light one too (pink, amber, cyan). */
+html:not([data-look="classic"]) .bg-brand {
+    color: var(--on-brand);
 }
 /* Menus, dialogs and popovers: the same glass, a little denser to read on. */
 html:not([data-look="classic"]) [role="menu"],

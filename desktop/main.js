@@ -491,9 +491,10 @@ function windowBounds() {
 // What the window shows while Aniko's server starts (a first start can take
 // a few seconds), and if its page didn't load: in the app's colors.
 function waitingPage(text) {
+    // Aniko's logo (packaging/icons/aniko.svg).
     const logo =
-        '<svg viewBox="0 0 64 64" width="56" height="56"><rect width="64" height="64" rx="15" fill="#e2e2e6"/><path d="M24.5 15.5V48.5M41 28 24.5 42M31.5 36.2 41.5 48.5" fill="none" stroke="#141416" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-    const html = `<!doctype html><meta charset="utf-8"><title>Aniko</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0b;color:#a1a1a8;font:14px system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none"><div style="display:grid;justify-items:center;gap:18px">${logo}<div>${text}</div></div></body>`
+        '<svg viewBox="0 0 64 64" width="64" height="64"><path d="M59.86 59.86C59.27 60.45 58.63 60.95 57.87 61.4C57.12 61.85 56.31 62.23 55.33 62.56C54.36 62.88 53.35 63.15 52.01 63.36C50.66 63.58 50.57 63.74 47.24 63.84C43.9 63.95 37.08 64 32 64C26.92 64 20.1 63.95 16.76 63.84C13.43 63.74 13.34 63.58 11.99 63.36C10.65 63.15 9.64 62.88 8.67 62.56C7.69 62.23 6.88 61.85 6.13 61.4C5.37 60.95 4.73 60.45 4.14 59.86C3.55 59.27 3.05 58.63 2.6 57.87C2.15 57.12 1.77 56.31 1.44 55.33C1.12 54.36 0.85 53.35 0.64 52.01C0.42 50.66 0.26 50.57 0.16 47.24C0.05 43.9 0 37.08 0 32C0 26.92 0.05 20.1 0.16 16.76C0.26 13.43 0.42 13.34 0.64 11.99C0.85 10.65 1.12 9.64 1.44 8.67C1.77 7.69 2.15 6.88 2.6 6.13C3.05 5.37 3.55 4.73 4.14 4.14C4.73 3.55 5.37 3.05 6.13 2.6C6.88 2.15 7.69 1.77 8.67 1.44C9.64 1.12 10.65 0.85 11.99 0.64C13.34 0.42 13.43 0.26 16.76 0.16C20.1 0.05 26.92 0 32 0C37.08 0 43.9 0.05 47.24 0.16C50.57 0.26 50.66 0.42 52.01 0.64C53.35 0.85 54.36 1.12 55.33 1.44C56.31 1.77 57.12 2.15 57.87 2.6C58.63 3.05 59.27 3.55 59.86 4.14C60.45 4.73 60.95 5.37 61.4 6.13C61.85 6.88 62.23 7.69 62.56 8.67C62.88 9.64 63.15 10.65 63.36 11.99C63.58 13.34 63.74 13.43 63.84 16.76C63.95 20.1 64 26.92 64 32C64 37.08 63.95 43.9 63.84 47.24C63.74 50.57 63.58 50.66 63.36 52.01C63.15 53.35 62.88 54.36 62.56 55.33C62.23 56.31 61.85 57.12 61.4 57.87C60.95 58.63 60.45 59.27 59.86 59.86Z" fill="#2A1D45"/><g transform="translate(-1.6 0)"><path d="M45 46.5C54.5 49.5 59.4 44.6 57.4 38.8 55.8 34.2 57.2 31 60.2 29.6" fill="none" stroke="#FFF1DC" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M23.5 10.5 29.6 18.4H34.4L40.5 10.5 50.5 49H41L32 39.5 23 49H13.5Z" fill="#FFF1DC" stroke="#FFF1DC" stroke-width="5" stroke-linejoin="round"/><path d="M24.2 14.6 27.2 18.6 23.2 19.4ZM39.8 14.6 36.8 18.6 40.8 19.4ZM19.9 35.4a2.5 1.4 0 1 0 5 0 2.5 1.4 0 1 0-5 0ZM39.1 35.4a2.5 1.4 0 1 0 5 0 2.5 1.4 0 1 0-5 0Z" fill="#FF8FB1"/><path d="M30.9 33.9h2.2l-1.1 1.3Z" fill="#FF8FB1" stroke="#FF8FB1" stroke-width=".9" stroke-linejoin="round"/><path d="M24.4 31.4q2.4-3 4.8 0M34.8 31.4q2.4-3 4.8 0" fill="none" stroke="#2A1D45" stroke-width="1.7" stroke-linecap="round"/><path d="M29.2 36.3q1.4 1.9 2.8 0 1.4 1.9 2.8 0" fill="none" stroke="#2A1D45" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.6 32.6 11.4 31.5M15.2 36 11 36.7M48.4 32.6 51.6 31.5M48.8 36 52 36.7" fill="none" stroke="#FFF1DC" stroke-width="1.5" stroke-linecap="round"/></g><path d="M54 5.82Q54.7 9.8 58.68 10.5 54.7 11.2 54 15.18 53.3 11.2 49.32 10.5 53.3 9.8 54 5.82Z" fill="#7CE0D6"/></svg>'
+    const html = `<!doctype html><meta charset="utf-8"><title>Aniko</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#100b1a;color:#b5a8c6;font:14px system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none"><div style="display:grid;justify-items:center;gap:18px">${logo}<div>${text}</div></div></body>`
     return "data:text/html;charset=utf-8," + encodeURIComponent(html)
 }
 
@@ -517,7 +518,7 @@ function createWindow(page = "", waiting = false) {
         minWidth: 960,
         minHeight: 620,
         title: "Aniko",
-        backgroundColor: "#0a0a0b",
+        backgroundColor: "#100b1a",
         autoHideMenuBar: true,
         show: false,
         icon: windowIcon(),
@@ -1010,7 +1011,7 @@ function wentToBackground() {
 // unlocked. Not while the player, the manga reader or Settings are open, so
 // nothing is lost.
 const PARK_AFTER = 5 * 60_000
-const PARKED_PAGE = "data:text/html,<body style='background:%230a0a0b'></body>"
+const PARKED_PAGE = "data:text/html,<body style='background:%23100b1a'></body>"
 let lockTimer = null
 let parkedUrl = null
 

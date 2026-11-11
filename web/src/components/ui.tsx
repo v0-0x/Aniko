@@ -16,9 +16,11 @@ type ButtonVariant = "primary" | "white" | "subtle" | "ghost" | "outline" | "dan
 type ButtonSize = "xs" | "sm" | "md" | "lg"
 
 const variants: Record<ButtonVariant, string> = {
-    // The accent, flat, with a faint light along its top edge.
-    primary: "bg-brand text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14)] hover:bg-[color-mix(in_oklab,var(--brand)_88%,white)]",
-    white: "bg-white text-neutral-950 hover:bg-white/90",
+    // The accent as a chunky pill: a solid edge under it, pressed down when
+    // pressed. Its text dark or white, whichever reads on the accent.
+    primary:
+        "bg-brand font-bold text-[color:var(--on-brand)] shadow-[0_3px_0_color-mix(in_oklab,var(--brand)_60%,black)] hover:bg-[color-mix(in_oklab,var(--brand)_88%,white)] active:translate-y-[2px] active:shadow-[0_1px_0_color-mix(in_oklab,var(--brand)_60%,black)]",
+    white: "bg-white font-bold text-neutral-950 shadow-[0_3px_0_#b9b1c9] hover:bg-white/90 active:translate-y-[2px] active:shadow-[0_1px_0_#b9b1c9]",
     subtle: "bg-white/[0.065] text-fg hover:bg-white/[0.1]",
     ghost: "text-muted hover:text-fg hover:bg-white/[0.06]",
     outline: "border border-line-strong text-fg hover:bg-white/[0.05]",
@@ -26,10 +28,10 @@ const variants: Record<ButtonVariant, string> = {
     success: "bg-emerald-500/12 text-emerald-300 hover:bg-emerald-500/20",
 }
 const sizes: Record<ButtonSize, string> = {
-    xs: "h-7 px-2.5 text-xs gap-1.5 rounded-md",
-    sm: "h-8 px-3 text-[13px] gap-1.5 rounded-lg",
-    md: "h-9 px-3.5 text-sm gap-2 rounded-[9px]",
-    lg: "h-11 px-5 text-[15px] gap-2 rounded-[10px]",
+    xs: "h-7 px-3 text-xs gap-1.5 rounded-full font-display",
+    sm: "h-8 px-3.5 text-[13px] gap-1.5 rounded-full font-display",
+    md: "h-9 px-4 text-sm gap-2 rounded-full font-display",
+    lg: "h-11 px-6 text-[15px] gap-2 rounded-full font-display",
 }
 // The classic look's (before 2.0): flat, a little squarer.
 const classicVariants: Record<ButtonVariant, string> = {
@@ -111,7 +113,7 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
                     className={cn(
                         classic
                             ? "h-9 w-full rounded-lg border border-line bg-white/[0.035] px-3 text-sm text-fg placeholder:text-subtle"
-                            : "h-9 w-full rounded-[9px] border border-line bg-white/[0.035] px-3 text-sm text-fg placeholder:text-subtle",
+                            : "h-9 w-full rounded-full border border-line bg-white/[0.035] px-4 text-sm text-fg placeholder:text-subtle",
                         classic
                             ? "transition-[border-color,background-color] outline-none hover:border-line-strong focus:border-brand/70 focus:bg-white/[0.05] disabled:opacity-60"
                             : "transition-[border-color,background-color,box-shadow] outline-none hover:border-line-strong focus:border-brand/60 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)] disabled:opacity-60",
@@ -167,7 +169,7 @@ export function Select({
                 className={
                     classic
                         ? "h-9 w-full cursor-pointer appearance-none rounded-lg border border-line bg-white/[0.035] pr-9 pl-3 text-sm text-fg outline-none transition-[border-color] hover:border-line-strong focus:border-brand/70 disabled:opacity-60"
-                        : "h-9 w-full cursor-pointer appearance-none rounded-[9px] border border-line bg-white/[0.035] pr-9 pl-3 text-sm text-fg outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)] disabled:opacity-60"
+                        : "h-9 w-full cursor-pointer appearance-none rounded-full border border-line bg-white/[0.035] pr-9 pl-4 text-sm text-fg outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)] disabled:opacity-60"
                 }
             >
                 {options.map(o => (
@@ -366,7 +368,7 @@ export function Tabs<T extends string>({
         <div
             className={cn(
                 "no-scrollbar inline-flex max-w-full gap-0.5 overflow-x-auto",
-                classic ? "rounded-lg bg-white/[0.04] p-0.5" : "rounded-[10px] bg-white/[0.04] p-[3px]",
+                classic ? "rounded-lg bg-white/[0.04] p-0.5" : "rounded-full bg-white/[0.04] p-[3px]",
                 className,
             )}
         >
@@ -376,7 +378,7 @@ export function Tabs<T extends string>({
                     onClick={() => onChange(t.value)}
                     className={cn(
                         "focus-ring flex h-7 items-center gap-1.5 px-3 text-[13px] font-medium whitespace-nowrap transition-[background-color,color,box-shadow] [&_svg]:size-3.5",
-                        classic ? "rounded-md" : "rounded-[7px]",
+                        classic ? "rounded-md" : "rounded-full font-display",
                         value === t.value ? (classic ? "bg-white/[0.1] text-fg" : "bg-white/[0.1] text-fg shadow-[0_1px_2px_rgb(0_0_0/0.3)]") : "text-muted hover:text-fg",
                     )}
                 >
