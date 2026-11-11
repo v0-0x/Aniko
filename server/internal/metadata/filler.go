@@ -39,8 +39,8 @@ const jikanMaxPages = 40
 // jikanTries: how often one page is asked for before the fetch fails.
 const jikanTries = 3
 
-func fillerKey(malID int) string     { return "jikan-filler:" + strconv.Itoa(malID) }
-func fillerMissKey(malID int) string { return "jikan-filler-miss:" + strconv.Itoa(malID) }
+func fillerKey(malID int) string     { return "filler2:" + strconv.Itoa(malID) } // 2: Anime Filler List too (an empty answer kept before it is dropped)
+func fillerMissKey(malID int) string { return "filler2-miss:" + strconv.Itoa(malID) }
 
 // fillerMissFor: after Jikan fails for an anime, it isn't asked again for
 // a while.
@@ -50,7 +50,7 @@ const fillerMissFor = 15 * time.Minute
 // what's kept, else from Jikan (pages one at a time, the fetch shared by
 // whoever asks meanwhile). airing keeps it a day, a finished show a week.
 // Failures give empty lists (or a stale copy) with the error.
-func (s *Service) Filler(ctx context.Context, malID int, airing bool) (Filler, error) {
+func (s *Service) Filler(ctx context.Context, malID int, airing bool, titles ...string) (Filler, error) {
 	empty := Filler{Filler: []int{}, Recap: []int{}}
 	if malID <= 0 {
 		return empty, nil
@@ -111,7 +111,10 @@ func (s *Service) Filler(ctx context.Context, malID int, airing bool) (Filler, e
 		}()
 		fctx, cancel := context.WithTimeout(base, 2*time.Minute)
 		defer cancel()
-		got, err := fetchFiller(fctx, malID)
+		got, err := fetchFillerList(fctx, titles)
+		if err != nil {
+			got, err = fetchFiller(fctx, malID)
+		}
 		if err != nil {
 			s.db.SetCache(fillerMissKey(malID), true, fillerMissFor)
 		} else {

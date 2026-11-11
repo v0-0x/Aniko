@@ -17,7 +17,9 @@ func (s *Server) filler(r *http.Request) (any, error) {
 		return nil, err
 	}
 	malID, airing := 0, false
+	var titles []string
 	if media, err := s.app.Platform.MediaLite(r.Context(), id); err == nil && media != nil {
+		titles = append([]string{media.Title.English, media.Title.Romaji}, media.Synonyms...)
 		if media.IDMal != nil {
 			malID = *media.IDMal
 		}
@@ -32,7 +34,7 @@ func (s *Server) filler(r *http.Request) (any, error) {
 	if malID <= 0 {
 		return empty, nil
 	}
-	f, err := s.app.Meta.Filler(r.Context(), malID, airing)
+	f, err := s.app.Meta.Filler(r.Context(), malID, airing, titles...)
 	if err != nil {
 		log.Printf("filler: anime %d (MAL %d): %v", id, malID, err)
 	}
