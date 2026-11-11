@@ -349,7 +349,8 @@ export function useFiller(mediaId: number) {
         queryKey: ["filler", mediaId],
         queryFn: () => api.get<Filler>(`/api/anime/${mediaId}/filler`),
         enabled: mediaId > 0,
-        staleTime: 6 * 60 * 60_000,
+        // Nothing yet (a long show still being fetched, or Jikan busy): ask again soon.
+        staleTime: q => (q.state.data?.filler?.length || q.state.data?.recap?.length ? 6 * 60 * 60_000 : 2 * 60_000),
         select: f => ({ filler: f?.filler ?? [], recap: f?.recap ?? [] }),
     })
 }

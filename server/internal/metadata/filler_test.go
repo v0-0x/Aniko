@@ -90,8 +90,8 @@ func TestFillerFailure(t *testing.T) {
 	if _, err := s.Filler(context.Background(), 21, true); err != nil {
 		t.Errorf("second ask after a failure: %v (want none, not asked)", err)
 	}
-	if n := atomic.LoadInt32(hits); n != 1 {
-		t.Errorf("%d requests, want 1 (the failure remembered)", n)
+	if n := atomic.LoadInt32(hits); n != jikanTries {
+		t.Errorf("%d requests, want %d (tried again, then the failure remembered)", n, jikanTries)
 	}
 	// No MAL id: nothing asked.
 	if f, err := s.Filler(context.Background(), 0, false); err != nil || len(f.Filler) != 0 || f.Filler == nil {

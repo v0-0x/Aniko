@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"sync"
@@ -34,6 +35,9 @@ var jikanGate struct {
 
 // jikanMaxPages caps a fetch (100 episodes a page: enough for any show).
 const jikanMaxPages = 40
+
+// jikanTries: how often one page is asked for before the fetch fails.
+const jikanTries = 3
 
 func fillerKey(malID int) string     { return "jikan-filler:" + strconv.Itoa(malID) }
 func fillerMissKey(malID int) string { return "jikan-filler-miss:" + strconv.Itoa(malID) }
@@ -146,8 +150,21 @@ func fetchFiller(ctx context.Context, malID int) (Filler, error) {
 	out := Filler{Filler: []int{}, Recap: []int{}}
 	for page := 1; page <= jikanMaxPages; page++ {
 		var resp jikanEpisodes
-		if err := jikanGet(ctx, fmt.Sprintf("%s/anime/%d/episodes?page=%d", jikanAPI, malID, page), &resp); err != nil {
-			return Filler{Filler: []int{}, Recap: []int{}}, err
+		// Jikan often answers a busy 429 or 5xx: a long show's dozen pages
+		// would rarely all get through on the first try.
+		var err error
+		for try := 0; try < jikanTries; try++ {
+			if try > 0 {
+				if err := sleepCtx(ctx, time.Duration(try)*2*jikanPause); err != nil {
+					return Filler{Filler: []int{}, Recap: []int{}}, err
+				}
+			}
+			if err = jikanGet(ctx, fmt.Sprintf("%s/anime/%d/episodes?page=%d", jikanAPI, malID, page), &resp); err == nil {
+				break
+			}
+		}
+		if err != nil {
+			return Filler{Filler: []int{}, Recap: []int{}}, fmt.Errorf("page %d: %w", page, err)
 		}
 		for _, e := range resp.Data {
 			if e.MalID <= 0 {
@@ -166,7 +183,19 @@ func fetchFiller(ctx context.Context, malID int) (Filler, error) {
 	}
 	sort.Ints(out.Filler)
 	sort.Ints(out.Recap)
+	log.Printf("filler: MAL %d: %d filler, %d recap", malID, len(out.Filler), len(out.Recap))
 	return out, nil
+}
+
+func sleepCtx(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // jikanGet is one request to Jikan, in its turn.
