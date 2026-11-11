@@ -37,7 +37,7 @@ ffmpeg, ffprobe, yt-dlp and ani-cli for your Mac (Apple silicon or Intel) into
 Aniko's own folder, `~/Library/Application Support/Aniko/bin`, in a Terminal
 window: no Homebrew, no password. ffmpeg comes from
 [Martin Riedl's builds](https://ffmpeg.martin-riedl.de) (and
-[evermeet.cx](https://evermeet.cx/ffmpeg/) on Intel), yt-dlp and ani-cli from
+[ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) on GitHub when that site fails), yt-dlp and ani-cli from
 their GitHub projects.
 
 mpv, the external player, is optional (Aniko's own player doesn't need it). On

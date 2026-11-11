@@ -68,19 +68,18 @@ from_zip() {
 }
 
 # ffmpeg_tool gets ffmpeg or ffprobe: Martin Riedl's static builds, for both
-# kinds of Mac, then evermeet.cx's for Intel Macs.
+# kinds of Mac, then ffmpeg-static's on GitHub (evermeet.cx's answer 410
+# since 2026-11).
 ffmpeg_tool() {
 	a=arm64
 	[ "$arch" = x86_64 ] && a=amd64
 	if fetch "https://ffmpeg.martin-riedl.de/redirect/latest/macos/$a/release/$1.zip" "$tmp/$1.zip" && from_zip "$tmp/$1.zip" "$1"; then
 		return 0
 	fi
-	if [ "$arch" = x86_64 ]; then
-		u=https://evermeet.cx/ffmpeg/getrelease/zip
-		[ "$1" = ffprobe ] && u=https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip
-		fetch "$u" "$tmp/$1.zip" && from_zip "$tmp/$1.zip" "$1" && return 0
-	fi
-	return 1
+	g=arm64
+	[ "$arch" = x86_64 ] && g=x64
+	fetch "https://github.com/eugeneware/ffmpeg-static/releases/latest/download/$1-darwin-$g.gz" "$tmp/$1.gz" &&
+		gunzip -f "$tmp/$1.gz" && put "$tmp/$1" "$1"
 }
 
 clear 2>/dev/null
