@@ -205,7 +205,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const maxVolume = boost && boostOk ? 3 : 1
     const [volume, setVolume] = useState(() => Math.min(readLocal("aniko-volume-boost") === "1" ? 3 : 1, Number(readLocal("aniko-volume") ?? 1)))
     const [stats, setStats] = useState(() => readLocal("aniko-player-stats") === "1")
-    const [anime4k, setAnime4k] = useState(() => readLocal("aniko-anime4k") === "1")
     const [muted, setMuted] = useState(false)
     const [rate, setRate] = useState(1)
     const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement)
@@ -279,9 +278,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         if (on) forgetNoPicture()
         return on
     })
-    // Anime4K (WebGPU) draws the video on a canvas over it: computers only.
-    const anime4kHere = !tv && !mini && !native && typeof navigator !== "undefined" && "gpu" in navigator
-    const anime4kOn = anime4k && anime4kHere
     // Safari and iPhone/iPad get converted files as HLS (see lib/playback).
     const hlsMode = useMemo(() => prefersHls(), [])
     const allCaps = useMemo(() => {
@@ -829,10 +825,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 /* ignore bad cue */
             }
         }
-        // Over Android's player, the page draws them (NativeSubtitles); and
-        // over Anime4K's canvas.
-        tr.mode = native || anime4kOn ? "hidden" : "showing"
-    }, [cues, base, videoKey, delay, subStyle, native, anime4kOn])
+        // Over Android's player, the page draws them (NativeSubtitles).
+        tr.mode = native ? "hidden" : "showing"
+    }, [cues, base, videoKey, delay, subStyle, native])
     // Subtitles earlier or later (z / x, or the subtitles menu): kept for the
     // anime.
     const moveSubs = (by: number) => {
@@ -1187,10 +1182,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         setStats(on)
         writeLocal("aniko-player-stats", on ? "1" : "0")
     }
-    const toggleAnime4k = (on = !anime4k) => {
-        setAnime4k(on)
-        writeLocal("aniko-anime4k", on ? "1" : "0")
-    }
     // The frame showing, as a PNG: "<title> - Ep N - mm-ss.png", downloaded.
     const screenshot = () => {
         const v = videoRef.current
@@ -1218,34 +1209,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         }
     }
 
-    // Anime4K: the video drawn through Mode A on a canvas over it (the video
-    // still plays the sound and keeps the time). Made again for a new source
-    // or size; put away when switched off, or when it fails.
-    const anime4kCanvas = useRef<HTMLCanvasElement>(null)
-    const [anime4kSize, setAnime4kSize] = useState("")
-    useEffect(() => {
-        const v = videoRef.current
-        const c = anime4kCanvas.current
-        if (!anime4kOn || !v || !c || !videoSrc) return
-        let gone = false
-        let stop: (() => void) | null = null
-        const fail = () => {
-            if (gone) return
-            gone = true
-            stop?.()
-            toast.error("Anime4K isn't available here")
-            toggleAnime4k(false)
-        }
-        startAnime4K(v, c, () => gone, fail).then(s => (gone ? s() : (stop = s)), fail)
-        const onResize = () => setAnime4kSize(`${v.videoWidth}x${v.videoHeight}`)
-        v.addEventListener("resize", onResize)
-        return () => {
-            gone = true
-            v.removeEventListener("resize", onResize)
-            stop?.()
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [anime4kOn, videoSrc, videoKey, anime4kSize])
 
     // AniSkip's times are recorded on one version of the episode and land on
     // random scenes in a longer or shorter one: ask for the ones that fit
@@ -1576,7 +1539,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                       : hlsRef.current?.levels?.[hlsRef.current.currentLevel]?.codecSet || "–",
               ],
               ...(volume > 1 ? [["Volume", `${Math.round(volume * 100)}%`] as [string, string]] : []),
-              ...(anime4kOn ? [["Anime4K", "Mode A"] as [string, string]] : []),
           ]
         : []
 
@@ -1719,8 +1681,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 }}
             />
 
-            {anime4kOn && <canvas ref={anime4kCanvas} className="pointer-events-none absolute inset-0 size-full object-contain" />}
-            {(native || anime4kOn) && <NativeSubtitles video={videoRef} cues={cues} base={base} delay={delay} style={subStyle} lifted={controls && !mini} />}
+            {native && <NativeSubtitles video={videoRef} cues={cues} base={base} delay={delay} style={subStyle} lifted={controls && !mini} />}
             {stats && <StatsOverlay video={videoRef} rows={statsRows} mini={mini} />}
             <input
                 ref={subFileInput}
@@ -2076,12 +2037,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                                         <Picked on={stats} />
                                         Stats (i)
                                     </DropdownItem>
-                                    {anime4kHere && (
-                                        <DropdownItem onSelect={() => toggleAnime4k()}>
-                                            <Picked on={anime4k} />
-                                            Anime4K
-                                        </DropdownItem>
-                                    )}
                                     {!native && (
                                         <DropdownItem onSelect={screenshot}>
                                             <Picked on={false} />
@@ -2478,99 +2433,6 @@ function TorrentProgress({ id }: { id: string }) {
             Torrent · {data.peers} {data.peers === 1 ? "peer" : "peers"} · {formatBytes(data.speed)}/s · {pct}% here
         </p>
     )
-}
-
-// Anime4K's Mode A (restore, then upscale ×2; for 720p–1080p video shown at
-// 1080p) from the video onto the canvas, each frame the video shows.
-// Resolves with what stops it; failed calls it on a lost device or error.
-async function startAnime4K(video: HTMLVideoElement, canvas: HTMLCanvasElement, cancelled: () => boolean, failed: () => void): Promise<() => void> {
-    const none = () => {}
-    const { ModeA } = await import("anime4k-webgpu")
-    if (video.readyState < 2) await new Promise(r => video.addEventListener("loadeddata", r, { once: true }))
-    const adapter = await navigator.gpu.requestAdapter()
-    if (!adapter) throw new Error("no WebGPU adapter")
-    const device = await adapter.requestDevice()
-    if (cancelled()) {
-        device.destroy()
-        return none
-    }
-    const w = video.videoWidth
-    const h = video.videoHeight
-    // 1080p output (at least the video's own size), same shape as the video.
-    const scale = Math.max(1, 1080 / h)
-    canvas.width = Math.round(w * scale)
-    canvas.height = Math.round(h * scale)
-    const ctx = canvas.getContext("webgpu")
-    if (!ctx || !w || !h) {
-        device.destroy()
-        throw new Error("no WebGPU canvas")
-    }
-    const format = navigator.gpu.getPreferredCanvasFormat()
-    ctx.configure({ device, format, alphaMode: "premultiplied" })
-    const input = device.createTexture({
-        size: [w, h, 1],
-        format: "rgba16float",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-    })
-    const mode = new ModeA({ device, inputTexture: input, nativeDimensions: { width: w, height: h }, targetDimensions: { width: canvas.width, height: canvas.height } })
-    // Its output, drawn over the whole canvas.
-    const module = device.createShaderModule({
-        code: `
-struct V { @builtin(position) pos: vec4f, @location(0) uv: vec2f }
-@vertex fn vs(@builtin(vertex_index) i: u32) -> V {
-    let p = array(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
-    var o: V;
-    o.pos = vec4f(p[i], 0.0, 1.0);
-    o.uv = vec2f((p[i].x + 1.0) * 0.5, (1.0 - p[i].y) * 0.5);
-    return o;
-}
-@group(0) @binding(0) var s: sampler;
-@group(0) @binding(1) var t: texture_2d<f32>;
-@fragment fn fs(v: V) -> @location(0) vec4f { return textureSample(t, s, v.uv); }`,
-    })
-    const pipeline = device.createRenderPipeline({
-        layout: "auto",
-        vertex: { module, entryPoint: "vs" },
-        fragment: { module, entryPoint: "fs", targets: [{ format }] },
-        primitive: { topology: "triangle-list" },
-    })
-    const bind = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            { binding: 0, resource: device.createSampler({ magFilter: "linear", minFilter: "linear" }) },
-            { binding: 1, resource: mode.getOutputTexture().createView() },
-        ],
-    })
-    let stopped = false
-    let handle = 0
-    const stop = () => {
-        if (stopped) return
-        stopped = true
-        if (handle) video.cancelVideoFrameCallback(handle)
-        ctx.unconfigure()
-        device.destroy()
-    }
-    device.lost.then(() => !stopped && failed())
-    device.onuncapturederror = () => !stopped && failed()
-    const frame = () => {
-        if (stopped) return
-        try {
-            device.queue.copyExternalImageToTexture({ source: video }, { texture: input }, [w, h])
-            const enc = device.createCommandEncoder()
-            mode.pass(enc)
-            const pass = enc.beginRenderPass({ colorAttachments: [{ view: ctx.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: "clear", storeOp: "store" }] })
-            pass.setPipeline(pipeline)
-            pass.setBindGroup(0, bind)
-            pass.draw(3)
-            pass.end()
-            device.queue.submit([enc.finish()])
-        } catch {
-            return failed()
-        }
-        handle = video.requestVideoFrameCallback(frame)
-    }
-    frame()
-    return stop
 }
 
 // An .ass/.ssa file's lines as cues: their text, italics and bold kept,
