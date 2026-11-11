@@ -164,6 +164,21 @@ type fetchResponse struct {
 	body       []byte
 }
 
+// anilistRead: a plugin reading AniList's API, which takes even a read as a
+// POST. Only a query with no login of its own: with a token of its own and
+// a mutation, a plugin could write the user's data to its own account.
+func (f *Fetcher) anilistRead(u *url.URL, method string, fr fetchRequest) bool {
+	if method != http.MethodPost || f.ReadOnlyDomains == nil || !strings.EqualFold(u.Hostname(), "graphql.anilist.co") {
+		return false
+	}
+	for k := range fr.headers {
+		if strings.EqualFold(k, "Authorization") || strings.EqualFold(k, "Cookie") {
+			return false
+		}
+	}
+	return !strings.Contains(strings.ToLower(string(fr.body)), "mutation")
+}
+
 func (f *Fetcher) Do(ctx context.Context, fr fetchRequest) (*fetchResponse, error) {
 	u, err := url.Parse(fr.url)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
@@ -173,7 +188,7 @@ func (f *Fetcher) Do(ctx context.Context, fr fetchRequest) (*fetchResponse, erro
 	if method == "" {
 		method = http.MethodGet
 	}
-	if err := f.allowed(u, method); err != nil {
+	if err := f.allowed(u, method); err != nil && !f.anilistRead(u, method, fr) {
 		return nil, err
 	}
 	client := f.follow

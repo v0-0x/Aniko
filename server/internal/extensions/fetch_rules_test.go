@@ -30,6 +30,21 @@ func TestPluginFetchRules(t *testing.T) {
 			t.Errorf("%s %s: %v", c.method, c.url, err)
 		}
 	}
+	// AniList's GraphQL: a query by POST, never a mutation or with a login.
+	al, _ := url.Parse("https://graphql.anilist.co/")
+	for _, c := range []struct {
+		body    string
+		headers map[string]string
+		ok      bool
+	}{
+		{`{"query":"query { Media(id: 21) { id } }"}`, nil, true},
+		{`{"query":"mutation { UpdateUser(about: \"x\") { id } }"}`, nil, false},
+		{`{"query":"query { Viewer { id } }"}`, map[string]string{"authorization": "Bearer t"}, false},
+	} {
+		if got := f.allowed(al, "POST") == nil || f.anilistRead(al, "POST", fetchRequest{body: []byte(c.body), headers: c.headers}); got != c.ok {
+			t.Errorf("AniList POST %s %v: allowed %v", c.body, c.headers, got)
+		}
+	}
 	// Without network access asked for: only reading the common ones.
 	none := NewPluginFetcher(nil, builtinPluginDomains)
 	if u, _ := url.Parse("https://api.example.com/x"); none.allowed(u, "GET") == nil {
