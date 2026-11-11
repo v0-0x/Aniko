@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, CheckCheck, Download, MonitorPlay, MoreHorizontal, Play, RefreshCw, Search, Terminal, Wand2 } from "lucide-react"
+import { AlertTriangle, CheckCheck, Download, ListEnd, ListPlus, MonitorPlay, MoreHorizontal, Play, RefreshCw, Search, Terminal, Wand2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, qs } from "@/lib/api"
@@ -8,8 +8,10 @@ import { installHint, installSource } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms } from "@/lib/programs"
 import { useEpisodeMarker, useFiller, useLanguageMode, useOnlineProviders, useStatus, useStreamEpisodes, useStreamModes } from "@/lib/queries"
 import { fillerFact } from "@/lib/filler"
+import type { PlaylistItem } from "@/lib/playlist"
+import { AddToPlaylistDialog } from "../PlaylistDialog"
 import type { EntryView } from "@/lib/types"
-import { cn, formatDuration, readLocal, writeLocal } from "@/lib/utils"
+import { cn, cover, formatDuration, readLocal, title, writeLocal } from "@/lib/utils"
 import { EpisodeCard, WatchedToggle } from "../EpisodeCard"
 import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Skeleton, Tooltip } from "../ui"
 
@@ -37,6 +39,8 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     const modesKnown = !supportsDub || !!modes || !!modesError
     const [matchOpen, setMatchOpen] = useState(false)
     const [dlOpen, setDlOpen] = useState(false)
+    // Episodes on their way to a playlist (its dialog open): played from this provider, sub or dub as now.
+    const [toPlaylist, setToPlaylist] = useState<PlaylistItem[] | null>(null)
     const { playStream, streamPlayer, remote } = usePlay()
     const marker = useEpisodeMarker(media, entry.listEntry)
     const qc = useQueryClient()
@@ -89,6 +93,8 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     ].filter((n): n is string => !!n)
     const download = (n: number) => api.post("/api/onlinestream/download", { provider, mediaId: media.id, episodes: [n], dub }).catch(err => toast.error(err.message))
 
+    const streamItem = (ep: (typeof episodes)[number]): PlaylistItem => ({ mediaId: media.id, episode: ep.number, title: title(media), image: ep.image || cover(media), play: { kind: "stream", provider, dub } })
+    const lastEp = episodes.reduce((m, e) => Math.max(m, e.number), 0)
     return (
         <div className="flex flex-col gap-6">
             {/* The source and the version in one row; the rest in its menu. */}
@@ -189,6 +195,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                 </EmptyState>
             )}
 
+            <AddToPlaylistDialog items={toPlaylist} onClose={() => setToPlaylist(null)} />
             {episodes.length > 0 && (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-x-5 gap-y-6">
                     {episodes.map(ep => (
@@ -229,6 +236,14 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                                     {!remote && (
                                         <DropdownItem icon={<MonitorPlay />} onSelect={() => playStream(provider, media.id, ep.number, dub, { player: streamPlayer() === "mpv" ? "builtin" : "mpv" })}>
                                             Play in {otherPlayer}
+                                        </DropdownItem>
+                                    )}
+                                    <DropdownItem icon={<ListPlus />} onSelect={() => setToPlaylist([streamItem(ep)])}>
+                                        Add to playlist…
+                                    </DropdownItem>
+                                    {ep.number < lastEp && (
+                                        <DropdownItem icon={<ListEnd />} onSelect={() => setToPlaylist(episodes.filter(e => e.number >= ep.number).sort((a, b) => a.number - b.number).map(streamItem))}>
+                                            Add the rest of the season…
                                         </DropdownItem>
                                     )}
                                     <DropdownItem icon={<Download />} onSelect={() => download(ep.number)}>

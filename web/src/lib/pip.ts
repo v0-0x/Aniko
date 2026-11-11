@@ -9,6 +9,7 @@
 // Aniko's window.
 
 import { desktop } from "./api"
+import { adoptPlaylist } from "./playlist"
 import { playerStore, type PlayerRequest } from "./store"
 import { tv } from "./tv"
 
@@ -30,7 +31,8 @@ export function asRequest(x: unknown): PlayerRequest | null {
 // The episode the /mini page was opened with.
 export function miniRequest(): PlayerRequest | null {
     try {
-        return asRequest(JSON.parse(decodeURIComponent(location.hash.slice(1))))
+        const r = asRequest(JSON.parse(decodeURIComponent(location.hash.slice(1))))
+        return r && adoptPlaylist(r)
     } catch {
         return null
     }
@@ -54,7 +56,7 @@ export function takeHandedPlay() {
     const d = desktop()
     const play = (x: unknown) => {
         const r = asRequest(x)
-        if (r) playerStore.set(r)
+        if (r) playerStore.set(adoptPlaylist(r))
     }
     d?.onPlay?.(play)
     d?.takePendingPlay?.().then(play, () => {})

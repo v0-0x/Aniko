@@ -994,7 +994,8 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const handOver = (): PlayerRequest => {
         const tracks = { audio: audioIndex, sub: subKey, source: sourceIdx }
         const start = Math.max(0, where() - 1)
-        return req.kind === "local" ? { kind: "local", path: req.path, mediaId, episode, start, tracks } : { ...req, start, tracks }
+        const playlist = inList ?? undefined // a playlist carries on in the other window
+        return req.kind === "local" ? { kind: "local", path: req.path, mediaId, episode, start, tracks, playlist } : { ...req, start, tracks, playlist }
     }
     const toPip = async () => {
         const v = videoRef.current

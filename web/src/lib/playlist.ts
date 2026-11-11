@@ -56,6 +56,15 @@ playerStore.subscribe(() => {
     if (p && !isItem(playerStore.get(), p.items[p.index])) playlistStore.set(null)
 })
 
+// A handed-over episode (lib/pip.ts) with its playlist: the playlist taken
+// up here, the episode without it.
+export function adoptPlaylist(req: PlayerRequest): PlayerRequest {
+    const { playlist, ...rest } = req
+    const ok = playlist && Array.isArray(playlist.items) && Number.isInteger(playlist.index) && isItem(rest as PlayerRequest, playlist.items[playlist.index])
+    playlistStore.set(ok ? playlist : null)
+    return rest as PlayerRequest
+}
+
 // Plays a playlist from an item.
 export function playPlaylist(p: Playlist, index = 0) {
     const it = p.items[index]
