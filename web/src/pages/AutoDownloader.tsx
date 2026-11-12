@@ -66,7 +66,7 @@ export default function AutoDownloaderPage() {
                 </EmptyState>
             )}
             {/* This look: rows on hairlines, not a box each. */}
-            <div className={cn("grid lg:grid-cols-2", classic ? "gap-2" : (rules ?? []).length > 0 && "gap-x-8 border-t border-line")}>
+            <div className={cn("grid lg:grid-cols-2", classic ? "gap-2" : cn("grid-cols-1 gap-x-8", (rules ?? []).length > 0 && "border-t border-line"))}>
                 {(rules ?? []).map(r => (
                     <RuleCard key={r.id} rule={r} onEdit={() => setEditing(r)} onTest={name => setTesting({ rule: r, name })} />
                 ))}

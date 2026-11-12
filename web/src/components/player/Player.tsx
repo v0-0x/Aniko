@@ -36,6 +36,7 @@ import { isItem, playlistNext, playlistStore } from "@/lib/playlist"
 import { useFiller, useSettings } from "@/lib/queries"
 import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
 import { formatDelay, setSubDelay, subDelay, subLine, subStyleStore, subStyleVars } from "@/lib/subtitles"
+import { useClassic } from "@/lib/themes"
 import type { EntryView, EpisodeView, Probe, StreamSource, TorrentStreamStatus, TrackPrefs } from "@/lib/types"
 import { android, androidApp, move, tv } from "@/lib/tv"
 import { cn, formatBytes, formatDuration, img, readLocal, title as animeTitle, writeLocal } from "@/lib/utils"
@@ -197,6 +198,10 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const [skips, setSkips] = useState<Skip[]>([])
 
     const [paused, setPaused] = useState(true)
+    // This look's player (the classic one keeps 3.0's floating panel): a
+    // mark in the middle for a moment when Play or Pause is pressed.
+    const classic = useClassic()
+    const [mark, setMark] = useState<{ play: boolean; n: number } | null>(null)
     const [time, setTime] = useState(0) // absolute time
     const [duration, setDuration] = useState(0)
     const [buffered, setBuffered] = useState(0)
@@ -983,6 +988,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const togglePlay = () => {
         const v = videoRef.current
         if (!v) return
+        setMark({ play: v.paused, n: Date.now() })
         if (v.paused) v.play().catch(() => {})
         else v.pause()
     }
@@ -1698,6 +1704,13 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     if (f) loadSubFile(f)
                 }}
             />
+            {/* Corner marks around the picture while it's paused, like a viewfinder's (index.css). */}
+            {!classic && !mini && <div aria-hidden className={cn("stage-marks", paused && started && !error ? "opacity-100" : "opacity-0")} />}
+            {mark && !classic && started && !error && (
+                <div key={mark.n} aria-hidden onAnimationEnd={() => setMark(null)} className="player-mark pointer-events-none absolute inset-0 grid place-items-center">
+                    <span className={cn("grid place-items-center bg-black/55 text-white", mini ? "size-11" : "size-16")}>{mark.play ? <Play className={cn("fill-white", mini ? "size-5" : "size-7")} /> : <Pause className={cn("fill-white", mini ? "size-5" : "size-7")} />}</span>
+                </div>
+            )}
             {(loading || buffering || !started) && !error && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
                     <div className="flex flex-col items-center gap-3">
@@ -1759,19 +1772,19 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 </div>
             )}
             <div data-tv-controls="top" hidden={mini} className={cn("absolute inset-x-0 top-0 flex items-center gap-4 bg-gradient-to-b from-black/80 to-transparent px-6 pt-5 pb-14 transition-opacity duration-300", controls || paused ? "opacity-100" : "pointer-events-none opacity-0")}>
-                <button onClick={close} className="grid size-10 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20" aria-label="Close player">
+                <button onClick={close} className={cn("grid size-10 place-items-center text-white", classic ? "rounded-full bg-white/10 backdrop-blur hover:bg-white/20" : "-ml-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white")} aria-label="Close player">
                     <ArrowLeft className="size-5" />
                 </button>
                 <div className="min-w-0">
-                    <p className="truncate text-lg font-semibold text-white">{title}</p>
+                    <p className={cn("truncate text-lg font-semibold text-white", !classic && "font-display tracking-tight")}>{title}</p>
                     {req.kind === "local" && probe && (
-                        <p className="text-xs text-white/60">
+                        <p className={classic ? "text-xs text-white/60" : "label mt-0.5 text-[10px] text-white/55"}>
                             {method === "direct" ? "Direct play" : method === "remux" ? "Direct stream (remuxed)" : "Transcoding"} · {probe.video?.[0]?.codec?.toUpperCase()}{" "}
                             {probe.video?.[0]?.height ? `${probe.video[0].height}p` : ""}
                         </p>
                     )}
                     {req.kind === "stream" && sources[sourceIdx] && (
-                        <p className="text-xs text-white/60">
+                        <p className={classic ? "text-xs text-white/60" : "label mt-0.5 text-[10px] text-white/55"}>
                             {sources[sourceIdx].server} · {sources[sourceIdx].quality || "auto"}
                         </p>
                     )}
@@ -1784,16 +1797,22 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 className={cn(
                     "absolute transition-opacity duration-300",
                     // The small window keeps the plain strip; the player's
-                    // controls are a glass panel floating over the picture.
+                    // controls are a glass panel floating over the picture,
+                    // in the middle (this look's with square corners and no
+                    // edge).
                     mini
                         ? "inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-10 pb-1.5"
-                        : "inset-x-3 bottom-3 mx-auto max-w-5xl rounded-2xl bg-black/60 px-4 pt-3 pb-2 shadow-[0_16px_48px_-12px_rgb(0_0_0/0.8)] ring-1 ring-white/10 backdrop-blur-xl sm:inset-x-6 sm:bottom-5 sm:px-5",
+                        : classic
+                          ? "inset-x-3 bottom-3 mx-auto max-w-5xl rounded-2xl bg-black/60 px-4 pt-3 pb-2 shadow-[0_16px_48px_-12px_rgb(0_0_0/0.8)] ring-1 ring-white/10 backdrop-blur-xl sm:inset-x-6 sm:bottom-5 sm:px-5"
+                          : "inset-x-3 bottom-3 mx-auto max-w-5xl bg-black/65 px-4 pt-3 pb-2 backdrop-blur-xl sm:inset-x-6 sm:bottom-5 sm:px-5",
                     controls || paused ? "opacity-100" : "pointer-events-none opacity-0",
                 )}
             >
-                {/* scrubber */}
+                {/* scrubber; in this look the time so far and the time left at its ends */}
+                <div className={cn(!classic && !mini && "mb-1.5 flex items-center gap-3")}>
+                {!classic && !mini && <span className="min-w-11 shrink-0 text-xs whitespace-nowrap text-white/90 tabular-nums">{formatDuration(time)}</span>}
                 <div
-                    className={cn("group/seek relative cursor-pointer", mini ? "mb-1 h-4" : "mb-1.5 h-5")}
+                    className={cn("group/seek relative cursor-pointer", mini ? "mb-1 h-4" : classic ? "mb-1.5 h-5" : "h-5 min-w-0 flex-1")}
                     onMouseMove={e => {
                         const r = e.currentTarget.getBoundingClientRect()
                         setHoverTime({ x: e.clientX - r.left, t: ((e.clientX - r.left) / r.width) * total })
@@ -1837,6 +1856,8 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             <div className="rounded-md bg-black/80 px-2 py-1 text-xs font-medium text-white tabular-nums">{formatDuration(previewAt)}</div>
                         </div>
                     )}
+                </div>
+                {!classic && !mini && <span className="min-w-11 shrink-0 text-right text-xs whitespace-nowrap text-white/55 tabular-nums">-{formatDuration(Math.max(0, total - time))}</span>}
                 </div>
 
                 <div className={cn("flex items-center text-white", mini ? "gap-0.5" : "gap-0.5 sm:gap-2")}>
@@ -1884,7 +1905,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             className="w-0 accent-white opacity-0 transition-all duration-200 group-hover/vol:w-24 group-hover/vol:opacity-100"
                         />
                     </div>
-                    <span className={cn("font-medium whitespace-nowrap text-white/85 tabular-nums", mini ? "ml-1 text-xs" : "ml-1 text-sm sm:ml-2")}>
+                    <span hidden={!classic && !mini} className={cn("font-medium whitespace-nowrap text-white/85 tabular-nums", mini ? "ml-1 text-xs" : "ml-1 text-sm sm:ml-2")}>
                         {formatDuration(time)} <span className="text-white/45">/ {formatDuration(total)}</span>
                     </span>
 

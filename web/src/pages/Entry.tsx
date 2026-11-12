@@ -454,6 +454,25 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
                                 facts={[sp.kind === "nc" ? "Opening / ending" : "Special", sp.file && formatBytes(sp.file.size), sp.file?.parsed?.resolution]}
                                 hasFile
                                 onClick={() => sp.file && playLocal(sp.file.path, media.id, 0)}
+                                menu={
+                                    sp.file && (
+                                        <>
+                                            <DropdownLabel>
+                                                <span className="block max-w-72 truncate" title={sp.file.name}>
+                                                    {sp.file.name}
+                                                </span>
+                                            </DropdownLabel>
+                                            <DropdownItem icon={<Play />} onSelect={() => playLocal(sp.file!.path, media.id, 0)}>
+                                                Play
+                                            </DropdownItem>
+                                            {!remote && (
+                                                <DropdownItem icon={<MonitorPlay />} onSelect={() => playLocal(sp.file!.path, media.id, 0, { player: localPlayer() === "mpv" ? "builtin" : "mpv" })}>
+                                                    Play in {localPlayer() === "mpv" ? "in-app player" : "mpv"}
+                                                </DropdownItem>
+                                            )}
+                                        </>
+                                    )
+                                }
                             />
                         ))}
                     </div>

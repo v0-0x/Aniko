@@ -113,7 +113,7 @@ export function QuickSearch() {
                                 key={m.id}
                                 onMouseEnter={() => setSel(i)}
                                 onClick={() => go(entryUrl(m))}
-                                className={cn("flex w-full items-center gap-4 rounded-xl p-2 text-left transition", sel === i ? (classic ? "bg-white/[0.07]" : "bg-white/[0.06] shadow-[inset_2px_0_0_0_var(--text)]") : "")}
+                                className={cn("flex w-full items-center gap-4 rounded-xl p-2 text-left transition", sel === i ? (classic ? "bg-white/[0.07]" : "bg-fg/[0.07]") : "")}
                             >
                                 <img src={cover(m, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
                                 <div className="min-w-0 flex-1">

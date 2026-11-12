@@ -166,7 +166,7 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                                     </p>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-1">
-                                    <Button size="sm" variant={tv ? "white" : "subtle"} onClick={() => download([r])} loading={sending && chosen.length === 0}>
+                                    <Button size="sm" variant={tv && classic ? "white" : "subtle"} onClick={() => download([r])} loading={sending && chosen.length === 0}>
                                         Download
                                     </Button>
                                     {(canStream || r.link || r.magnetLink) && (

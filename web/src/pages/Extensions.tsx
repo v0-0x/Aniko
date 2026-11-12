@@ -43,7 +43,7 @@ const TYPES: Record<string, { label: string; icon: React.ReactNode }> = {
 const openLink = (url: string) => window.open(url, "_blank", "noopener,noreferrer")
 
 // The extensions, in columns: in this look rows on hairlines, not a box each.
-const grid = (classic: boolean) => cn("grid lg:grid-cols-2 2xl:grid-cols-3", classic ? "gap-2" : "gap-x-8 border-t border-line")
+const grid = (classic: boolean) => cn("grid lg:grid-cols-2 2xl:grid-cols-3", classic ? "gap-2" : "grid-cols-1 gap-x-8 border-t border-line")
 const row = (classic: boolean) => cn("flex items-center gap-3 fade-in", classic ? "card p-3" : "border-b border-line py-3")
 
 export default function ExtensionsPage() {
@@ -348,7 +348,7 @@ function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpe
             <div className="flex flex-col gap-5 text-sm">
                 <div>
                     <p className={classic ? "mb-2 font-semibold" : "label mb-2 text-muted"}>Requested access</p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className={cn("flex flex-wrap", classic ? "gap-1.5" : "gap-x-3 gap-y-1")}>
                         {scopes.length ? scopes.map(s => <Badge key={s} tone={s.includes("token") || s === "system" ? "amber" : "gray"}>{s}</Badge>) : <span className="text-muted">Nothing special</span>}
                     </div>
                 </div>
@@ -536,7 +536,7 @@ function MarketRow({ e }: { e: MarketEntry }) {
                     </p>
                 )}
                 {(!e.supported || needs) && (
-                    <div className="mt-1 flex flex-wrap gap-1.5">
+                    <div className={cn("mt-1 flex flex-wrap", classic ? "gap-1.5" : "gap-x-3 gap-y-1")}>
                         {!e.supported && <Badge tone="amber">Not supported</Badge>}
                         {needs && (
                             <span className="min-w-0" title={`Aniko doesn't support ${e.unsupported!.join(", ")}. Parts of this plugin won't work.`}>

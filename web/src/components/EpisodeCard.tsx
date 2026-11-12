@@ -1,7 +1,7 @@
 import { Check, CheckCheck, Clock, HardDrive, Info, Minus, MoreHorizontal, Play } from "lucide-react"
 import { useClassic } from "@/lib/themes"
 import { cn, formatDuration, img } from "@/lib/utils"
-import { Dropdown, DropdownContent, DropdownTrigger, Tooltip } from "./ui"
+import { Dropdown, DropdownContent, DropdownTrigger, Tooltip, useContextMenu } from "./ui"
 
 type Props = {
     image?: string
@@ -35,11 +35,14 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
     const classic = useClassic()
     const label = facts && epLabel !== false ? epLabel ?? `Ep ${number}` : ""
     const shown = (facts ?? []).filter(f => f !== undefined && f !== null && f !== false && f !== "")
+    // A right-click anywhere on it opens the menu its "⋯" does.
+    const context = useContextMenu(menu)
     return (
         <div
             role="button"
             tabIndex={0}
             data-tv-card
+            onContextMenu={context.onContextMenu}
             onClick={e => {
                 // Menus open in portals outside the card, but React still
                 // bubbles their clicks up to here: "Play in mpv" from the
@@ -53,7 +56,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 e.preventDefault()
                 onClick?.()
             }}
-            className={cn("group/ep focus-ring flex cursor-pointer flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !aired && "cursor-default opacity-50", className)}
+            className={cn("group/ep focus-ring relative flex cursor-pointer flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !aired && "cursor-default opacity-50", className)}
         >
             <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-lg" : "on-dark rounded-sm")}>
                 {image ? (
@@ -167,6 +170,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                     </div>
                 )}
             </div>
+            {context.node}
         </div>
     )
 }

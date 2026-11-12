@@ -86,7 +86,7 @@ export default function SchedulePage() {
                                 </span>
                             </h2>
                             {/* This look: rows on hairlines, not a box each. */}
-                            <div className={cn("grid md:grid-cols-2 2xl:grid-cols-3", classic ? "gap-2" : "gap-x-8 border-t border-line")}>
+                            <div className={cn("grid md:grid-cols-2 2xl:grid-cols-3", classic ? "gap-2" : "grid-cols-1 gap-x-8 border-t border-line")}>
                                 {d.items.map(it => {
                                     const aired = it.airingAt < now
                                     // What airs and where it stands in the list, on one line.

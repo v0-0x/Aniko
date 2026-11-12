@@ -499,7 +499,7 @@ export function MangaReader({
                     {view !== mode && <p className="truncate text-xs text-white/50">Shown as one long strip</p>}
                 </div>
                 {view !== "long-strip" && spread.length > 0 && (
-                    <span className="px-2 pt-2 text-[13px] text-white/60 tabular-nums">
+                    <span className="px-2 pt-2 text-[13px] whitespace-nowrap text-white/60 tabular-nums">
                         {spread.map(i => i + 1).join("–")} / {total}
                     </span>
                 )}

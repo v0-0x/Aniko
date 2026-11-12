@@ -4,7 +4,8 @@ import { Link } from "react-router-dom"
 import type { ListEntry, Media } from "@/lib/types"
 import { airedEpisodes, cn, cover, entryUrl, formatLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
 import { useClassic } from "@/lib/themes"
-import { Dropdown, DropdownContent, DropdownTrigger, IconButton } from "./ui"
+import { ListCardMenu } from "./ListCardMenu"
+import { Dropdown, DropdownContent, DropdownTrigger, IconButton, useContextMenu } from "./ui"
 
 type Props = {
     media: Media
@@ -42,7 +43,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
     const label = classic ? "rounded bg-black/70" : "rounded-sm bg-black/75"
 
     const card = (
-        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !menu && className)}>
+        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]")}>
             {/* Lifted a little under the pointer (not on a TV: it's slow at it). */}
             <div
                 className={cn(
@@ -87,7 +88,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                             "absolute flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100 [@media(pointer:coarse)]:opacity-100",
                             classic ? "top-2 right-2" : "top-3.5 right-3.5",
                             label,
-                            menu && (classic ? "right-10" : "right-11"), // next to the menu button
+                            classic ? "right-10" : "right-11", // next to the menu button
                         )}
                     >
                         <Star className="size-3 fill-amber-300 text-amber-300" />
@@ -123,12 +124,11 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
             </div>
         </Link>
     )
-    return menu ? (
-        <CardMenu menu={menu} className={className}>
+    // Without one of its own: the list menu every anime and manga card gets.
+    return (
+        <CardMenu menu={menu ?? <ListCardMenu media={media.mediaListEntry || !listEntry ? media : { ...media, mediaListEntry: { id: 0, repeat: 0, ...listEntry } }} />} className={className}>
             {card}
         </CardMenu>
-    ) : (
-        card
     )
 }
 
@@ -137,42 +137,12 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
 // pointer. Both are next to the card's link, not in it, so using them never
 // opens the anime.
 function CardMenu({ menu, className, children }: { menu: React.ReactNode; className?: string; children: React.ReactNode }) {
-    const [at, setAt] = useState<{ x: number; y: number } | null>(null) // in the card
-    const focused = useRef<Element | null>(null)
+    const context = useContextMenu(menu)
     const classic = useClassic()
     return (
-        <div
-            className={cn("group/card relative", className)}
-            onContextMenu={e => {
-                e.preventDefault()
-                // React also brings right-clicks in the open menu (a portal) here.
-                if (!e.currentTarget.contains(e.target as Node)) return
-                const r = e.currentTarget.getBoundingClientRect()
-                const x = e.clientX - r.left
-                const y = e.clientY - r.top
-                focused.current = document.activeElement
-                // Opened with the menu key there may be no pointer in the card.
-                setAt(x >= 0 && y >= 0 && x <= r.width && y <= r.height ? { x, y } : { x: r.width / 2, y: r.height / 3 })
-            }}
-        >
+        <div className={cn("group/card relative", className)} onContextMenu={context.onContextMenu}>
             {children}
-            <Dropdown open={!!at} onOpenChange={v => !v && setAt(null)} modal={false}>
-                <DropdownTrigger asChild>
-                    <span aria-hidden className="pointer-events-none absolute" style={{ left: at?.x, top: at?.y }} />
-                </DropdownTrigger>
-                <DropdownContent
-                    align="start"
-                    sideOffset={2}
-                    // Focus goes back where it was (the card, after the menu
-                    // key), unless something else took it (a dialog, a click).
-                    onCloseAutoFocus={e => {
-                        e.preventDefault()
-                        if (document.activeElement === document.body && focused.current instanceof HTMLElement) focused.current.focus()
-                    }}
-                >
-                    {menu}
-                </DropdownContent>
-            </Dropdown>
+            {context.node}
             <Dropdown>
                 <DropdownTrigger asChild>
                     <IconButton

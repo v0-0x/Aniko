@@ -1,8 +1,9 @@
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
-import { BookmarkCheck, BookmarkPlus, BookmarkX } from "lucide-react"
+import { BookmarkCheck, BookmarkPlus, BookmarkX, ExternalLink } from "lucide-react"
 import { toast } from "@/lib/toast"
 import { api } from "@/lib/api"
 import type { Media } from "@/lib/types"
+import { tv } from "@/lib/tv"
 import { LIST_STATUS, LIST_STATUS_MANGA, title } from "@/lib/utils"
 import { DropdownItem, DropdownLabel, DropdownSeparator } from "./ui"
 
@@ -19,8 +20,9 @@ function cacheEntry(qc: QueryClient, mediaId: number, entry: Entry) {
     qc.setQueriesData({ queryKey: ["search"] }, (old: { media?: Media[] | null } | undefined) => (old?.media ? { ...old, media: old.media.map(fix) } : old))
 }
 
-// The right-click (or "⋯") menu of anime and manga cards (Discover, Search,
-// Manga): puts one on your Planning list, or takes it off it again.
+// The right-click (or "⋯") menu of anime and manga cards, wherever one has
+// no menu of its own: puts it on your Planning list, or takes it off it
+// again, and opens it on AniList.
 export function ListCardMenu({ media }: { media: Media }) {
     const qc = useQueryClient()
     const entry = media.mediaListEntry
@@ -72,6 +74,15 @@ export function ListCardMenu({ media }: { media: Media }) {
                     <DropdownSeparator />
                     <DropdownItem icon={<BookmarkX />} onSelect={takeOff}>
                         Remove from your list
+                    </DropdownItem>
+                </>
+            )}
+            {/* A TV has no browser to open it in. */}
+            {!tv && (
+                <>
+                    <DropdownSeparator />
+                    <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(`https://anilist.co/${media.type === "MANGA" ? "manga" : "anime"}/${media.id}`, "_blank", "noopener")}>
+                        View on AniList
                     </DropdownItem>
                 </>
             )}

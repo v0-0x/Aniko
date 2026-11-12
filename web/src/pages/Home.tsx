@@ -1,4 +1,4 @@
-import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Play, FolderOpen, FolderSync, HardDrive, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, Sparkles, X } from "lucide-react"
+import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Info, Minus, Play, FolderOpen, FolderSync, HardDrive, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, RotateCcw, Sparkles, X } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { EpisodeCard } from "@/components/EpisodeCard"
@@ -410,6 +410,7 @@ function useContinuePlay() {
 
 function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: number) => void }) {
     const play = useContinuePlay()
+    const { playLocal } = usePlay()
     const navigate = useNavigate()
     const qc = useQueryClient()
     const ref = useRef<HTMLDivElement>(null)
@@ -507,6 +508,26 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
                         onClick={() => play(it)}
                         onRemove={() => remove(it, i)}
                         onInfo={() => navigate(`/entry?id=${it.media.id}`)}
+                        // On a right-click, and under its "⋯".
+                        menu={
+                            <>
+                                <DropdownItem icon={<Play />} onSelect={() => play(it)}>
+                                    {it.resumeAt > 0 ? "Resume" : "Play"}
+                                </DropdownItem>
+                                {it.hasFile && it.filePath && it.resumeAt > 0 && (
+                                    <DropdownItem icon={<RotateCcw />} onSelect={() => playLocal(it.filePath!, it.media.id, it.episode, { start: 0 })}>
+                                        Play from the beginning
+                                    </DropdownItem>
+                                )}
+                                <DropdownItem icon={<Info />} onSelect={() => navigate(`/entry?id=${it.media.id}`)}>
+                                    Anime page
+                                </DropdownItem>
+                                <DropdownSeparator />
+                                <DropdownItem icon={<Minus />} onSelect={() => remove(it, i)}>
+                                    Remove from Continue watching
+                                </DropdownItem>
+                            </>
+                        }
                     />
                 </div>
             ))}

@@ -93,7 +93,14 @@ export function WatchPicker({ open, onOpenChange }: { open: boolean; onOpenChang
                     </p>
                 ) : (
                     <div key={m.id} className="flex gap-5 rise-in">
-                        <img src={cover(m)} alt="" className="aspect-[2/3] w-32 shrink-0 rounded-lg object-cover shadow-xl sm:w-40" />
+                        {classic ? (
+                            <img src={cover(m)} alt="" className="aspect-[2/3] w-32 shrink-0 rounded-lg object-cover shadow-xl sm:w-40" />
+                        ) : (
+                            // marks: this look's corner marks on the cover (index.css).
+                            <div className="marks w-32 shrink-0 self-start sm:w-40">
+                                <img src={cover(m)} alt="" className="aspect-[2/3] w-full rounded-lg object-cover" />
+                            </div>
+                        )}
                         <div className="flex min-w-0 flex-1 flex-col gap-2">
                             <h3 className="text-lg leading-snug font-semibold">{title(m)}</h3>
                             <p className="text-sm text-muted">

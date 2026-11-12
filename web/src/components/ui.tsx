@@ -380,9 +380,9 @@ export function Tabs<T extends string>({
                         )}
                         <span
                             className={cn(
-                                "absolute inset-x-0 -bottom-px bg-brand",
-                                // The line under the open one: drawn out from its middle.
-                                classic ? cn("h-0.5 rounded-full transition-opacity", value === t.value ? "opacity-100" : "opacity-0") : cn("h-px origin-center transition-transform duration-300 ease-out", value === t.value ? "scale-x-100" : "scale-x-0"),
+                                "absolute inset-x-0 bg-brand",
+                                // The line under the open one: drawn out from its middle (inside the row, which cuts off what's under it).
+                                classic ? cn("-bottom-px h-0.5 rounded-full transition-opacity", value === t.value ? "opacity-100" : "opacity-0") : cn("bottom-0 h-px origin-center transition-transform duration-300 ease-out", value === t.value ? "scale-x-100" : "scale-x-0"),
                             )}
                         />
                     </button>
@@ -555,6 +555,47 @@ export function DropdownContent({
             </DropdownPrimitive.Content>
         </DropdownPrimitive.Portal>
     )
+}
+
+// A menu at the pointer for a right-click on something (a TV's Menu key
+// right-clicks what the remote is on, lib/tv). onContextMenu goes on the
+// element, which must be positioned (relative), and node inside it. With no
+// menu both do nothing.
+export function useContextMenu(menu: React.ReactNode) {
+    const [at, setAt] = useState<{ x: number; y: number } | null>(null) // in the element
+    const focused = useRef<Element | null>(null)
+    const onContextMenu = (e: React.MouseEvent<HTMLElement>) => {
+        if (!menu) return
+        e.preventDefault()
+        // React also brings right-clicks in the open menu (a portal) here.
+        if (!e.currentTarget.contains(e.target as Node)) return
+        const r = e.currentTarget.getBoundingClientRect()
+        const x = e.clientX - r.left
+        const y = e.clientY - r.top
+        focused.current = document.activeElement
+        // Opened with the menu key there may be no pointer in it.
+        setAt(x >= 0 && y >= 0 && x <= r.width && y <= r.height ? { x, y } : { x: r.width / 2, y: r.height / 3 })
+    }
+    const node = menu ? (
+        <Dropdown open={!!at} onOpenChange={v => !v && setAt(null)} modal={false}>
+            <DropdownTrigger asChild>
+                <span aria-hidden className="pointer-events-none absolute" style={{ left: at?.x, top: at?.y }} />
+            </DropdownTrigger>
+            <DropdownContent
+                align="start"
+                sideOffset={2}
+                // Focus goes back where it was (the card, after the menu
+                // key), unless something else took it (a dialog, a click).
+                onCloseAutoFocus={e => {
+                    e.preventDefault()
+                    if (document.activeElement === document.body && focused.current instanceof HTMLElement) focused.current.focus()
+                }}
+            >
+                {menu}
+            </DropdownContent>
+        </Dropdown>
+    ) : null
+    return { onContextMenu, node }
 }
 
 export function DropdownItem({

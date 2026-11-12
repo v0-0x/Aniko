@@ -63,7 +63,7 @@ export default function TorrentsPage() {
             <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                 <div className="min-w-0">
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Torrents</h1>
-                    <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted tabular-nums">
+                    <p className={cn("mt-1 flex items-center gap-x-2 text-sm text-muted tabular-nums", classic && "flex-wrap")}>
                         <span className={cn("size-2 shrink-0 rounded-full", clientStatus?.connected ? "bg-emerald-400" : "bg-rose-400")} />
                         {hostDown
                             ? `${host} doesn't answer`
