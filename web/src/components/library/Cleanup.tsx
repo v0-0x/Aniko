@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Copy, HardDrive, Trash2, Undo2 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { Button, EmptyState, Select } from "@/components/ui"
+import { Button, ContextArea, DropdownItem, EmptyState, Select } from "@/components/ui"
 import { api } from "@/lib/api"
 import { formatRanges } from "@/lib/missing"
 import { useStatus } from "@/lib/queries"
@@ -322,7 +322,17 @@ function TrashList({ items, bytes, readOnly, onChange }: { items: TrashItem[]; b
             ) : (
                 <div className="card divide-y divide-line">
                     {items.map(it => (
-                        <div key={it.id} className="flex items-center gap-4 px-4 py-2.5 text-sm">
+                        <ContextArea
+                            key={it.id}
+                            menu={
+                                !readOnly && (
+                                    <DropdownItem icon={<Undo2 />} disabled={!!busy} onSelect={() => restore([it.id])}>
+                                        Put back
+                                    </DropdownItem>
+                                )
+                            }
+                            className="flex items-center gap-4 px-4 py-2.5 text-sm"
+                        >
                             <span className="min-w-0 flex-1 truncate" title={it.path}>
                                 {it.name}
                             </span>
@@ -334,7 +344,7 @@ function TrashList({ items, bytes, readOnly, onChange }: { items: TrashItem[]; b
                                     Put back
                                 </Button>
                             )}
-                        </div>
+                        </ContextArea>
                     ))}
                 </div>
             )}

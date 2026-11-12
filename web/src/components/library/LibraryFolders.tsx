@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, ChevronDown, EyeOff, Folder, FolderOpen, Link2, Link2Off, Search } from "lucide-react"
+import { AlertTriangle, ChevronDown, EyeOff, Folder, FolderOpen, Link2, Link2Off, List, Search } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "@/lib/toast"
@@ -7,7 +7,7 @@ import { api } from "@/lib/api"
 import { useCollection, useLibraryFiles, useLibraryFolders, useStatus } from "@/lib/queries"
 import type { FolderInfo, LocalFile, Media } from "@/lib/types"
 import { cn, cover, formatBytes, plural, title } from "@/lib/utils"
-import { Badge, Button, EmptyState, IconButton, Input, Tooltip } from "../ui"
+import { Badge, Button, ContextArea, DropdownItem, DropdownSeparator, EmptyState, IconButton, Input, Tooltip } from "../ui"
 import { MatchDialog, naturalCompare } from "./MatchDialog"
 
 export type LibraryFolder = {
@@ -256,10 +256,41 @@ function FolderRow({
     const selected = f.files.filter(x => sel.has(x.path))
     const primary = f.matches.length === 1 ? media.get(f.matches[0].mediaId) : undefined
     const hasFiles = f.files.length > 0
+    // A right-click on the folder: what its buttons do.
+    const menu = (
+        <>
+            <DropdownItem icon={<Link2 />} disabled={preparing} onSelect={onMatchFolder}>
+                {f.matches.length === 0 ? "Match…" : "Change match…"}
+            </DropdownItem>
+            {f.matches.length > 0 && (
+                <DropdownItem icon={<Link2Off />} onSelect={() => onUnmatch(f.files)}>
+                    Unmatch folder
+                </DropdownItem>
+            )}
+            {hasFiles && (
+                <DropdownItem icon={<List />} onSelect={() => setOpen(!open)}>
+                    {open ? "Hide files" : "Show files"}
+                </DropdownItem>
+            )}
+            {trusted && (
+                <DropdownItem icon={<FolderOpen />} onSelect={() => openFolder(f.dir)}>
+                    Open folder
+                </DropdownItem>
+            )}
+            {hasFiles && (
+                <>
+                    <DropdownSeparator />
+                    <DropdownItem icon={<EyeOff />} onSelect={() => onIgnore(f.files)}>
+                        Ignore folder
+                    </DropdownItem>
+                </>
+            )}
+        </>
+    )
 
     return (
         <div className="card overflow-hidden">
-            <div className="flex flex-wrap items-center gap-3 p-3 pr-4">
+            <ContextArea menu={menu} className="flex flex-wrap items-center gap-3 p-3 pr-4">
                 <button onClick={() => hasFiles && setOpen(!open)} className={cn("flex min-w-0 flex-1 items-center gap-3 text-left", !hasFiles && "cursor-default")}>
                     <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05] text-muted">
                         <Folder className="size-5" />
@@ -332,7 +363,7 @@ function FolderRow({
                         </IconButton>
                     )}
                 </div>
-            </div>
+            </ContextArea>
 
             {open && hasFiles && (
                 <div className="border-t border-line bg-surface-1/50">
@@ -352,8 +383,26 @@ function FolderRow({
                     )}
                     {f.files.map(x => {
                         const m = x.mediaId > 0 ? media.get(x.mediaId) : undefined
+                        // A right-click on a file: the selection's buttons, for this one.
+                        const fileMenu = (
+                            <>
+                                <DropdownItem icon={<Link2 />} onSelect={() => onMatch([x])}>
+                                    Match…
+                                </DropdownItem>
+                                {x.mediaId > 0 && (
+                                    <DropdownItem icon={<Link2Off />} onSelect={() => onUnmatch([x])}>
+                                        Unmatch
+                                    </DropdownItem>
+                                )}
+                                <DropdownSeparator />
+                                <DropdownItem icon={<EyeOff />} onSelect={() => onIgnore([x])}>
+                                    Ignore
+                                </DropdownItem>
+                            </>
+                        )
                         return (
-                            <label key={x.path} className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm transition hover:bg-white/[0.03]">
+                            <ContextArea key={x.path} menu={fileMenu}>
+                            <label className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm transition hover:bg-white/[0.03]">
                                 <input
                                     type="checkbox"
                                     checked={sel.has(x.path)}
@@ -374,6 +423,7 @@ function FolderRow({
                                     <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums">{x.kind === "nc" ? "OP/ED" : x.kind === "special" ? "Special" : x.episode ? `Ep ${x.episode}` : "—"}</span>
                                 </Tooltip>
                             </label>
+                            </ContextArea>
                         )
                     })}
                 </div>
@@ -385,7 +435,16 @@ function FolderRow({
 // A folder with nothing to match, and why.
 function ProblemRow({ folder: f, trusted }: { folder: LibraryFolder; trusted: boolean }) {
     return (
-        <div className="card flex items-center gap-3 p-3 pr-4">
+        <ContextArea
+            menu={
+                trusted && (
+                    <DropdownItem icon={<FolderOpen />} onSelect={() => openFolder(f.dir)}>
+                        Open folder
+                    </DropdownItem>
+                )
+            }
+            className="card flex items-center gap-3 p-3 pr-4"
+        >
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-300">
                 <AlertTriangle className="size-5" />
             </span>
@@ -400,7 +459,7 @@ function ProblemRow({ folder: f, trusted }: { folder: LibraryFolder; trusted: bo
                     <FolderOpen className="size-4" />
                 </IconButton>
             )}
-        </div>
+        </ContextArea>
     )
 }
 

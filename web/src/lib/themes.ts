@@ -34,26 +34,26 @@ const dark = (bg: string, s: [string, string, string, string], text: string, mut
 // This look's themes: one ink on one ground. Black and White first, then a
 // few quiet ones.
 export const COLOR_THEMES: ColorTheme[] = [
-    { id: "black", name: "Black", accent: "#ededed", palette: dark("#0a0a0a", ["#111111", "#171717", "#1f1f1f", "#292929"], "#ededed", "#9a9a9a", "#6e6e6e") },
+    { id: "black", name: "Black", accent: "#ededed", palette: dark("#0a0a0a", ["#111111", "#171717", "#1f1f1f", "#292929"], "#ededed", "#9a9a9a", "#7b7b7b") },
     {
         id: "white",
         name: "White",
         accent: "#111111",
         light: true,
-        palette: { ...dark("#f6f6f4", ["#efefec", "#e8e8e4", "#dfdfda", "#d3d3cd"], "#111111", "#5c5c5c", "#85857f", "0 0 0"), line: "rgb(0 0 0 / 0.1)", lineStrong: "rgb(0 0 0 / 0.22)" },
+        palette: { ...dark("#f6f6f4", ["#efefec", "#e8e8e4", "#dfdfda", "#d3d3cd"], "#111111", "#5c5c5c", "#70706b", "0 0 0"), line: "rgb(0 0 0 / 0.1)", lineStrong: "rgb(0 0 0 / 0.22)" },
     },
-    { id: "graphite", name: "Graphite", accent: "#e6e6e8", palette: dark("#18181a", ["#1e1e21", "#252528", "#2c2c30", "#353539"], "#e6e6e8", "#a0a0a7", "#74747b") },
+    { id: "graphite", name: "Graphite", accent: "#e6e6e8", palette: dark("#18181a", ["#1e1e21", "#252528", "#2c2c30", "#353539"], "#e6e6e8", "#a0a0a7", "#828288") },
     {
         id: "paper",
         name: "Paper",
         accent: "#2a2620",
         light: true,
-        palette: { ...dark("#f3eee3", ["#ebe5d8", "#e3dccd", "#d9d1c0", "#cdc4b1"], "#2a2620", "#6b6456", "#8f8575", "42 38 32"), line: "rgb(42 38 32 / 0.12)", lineStrong: "rgb(42 38 32 / 0.26)" },
+        palette: { ...dark("#f3eee3", ["#ebe5d8", "#e3dccd", "#d9d1c0", "#cdc4b1"], "#2a2620", "#6b6456", "#72695c", "42 38 32"), line: "rgb(42 38 32 / 0.12)", lineStrong: "rgb(42 38 32 / 0.26)" },
     },
-    { id: "phosphor", name: "Phosphor", accent: "#8dfab4", palette: dark("#07100b", ["#0b1610", "#101d15", "#15251b", "#1b2e22"], "#dff5e6", "#86ab93", "#5b7c67", "141 250 180") },
-    { id: "amber", name: "Amber", accent: "#ffc86b", palette: dark("#110c05", ["#171108", "#1e160b", "#261c0f", "#2f2313"], "#f5e9d3", "#ad9973", "#7d6d50", "255 200 107") },
-    { id: "ice", name: "Ice", accent: "#a9d8ff", palette: dark("#070c12", ["#0b121a", "#101923", "#15212d", "#1b2a38"], "#e1edf7", "#8a9fb3", "#5f7286", "169 216 255") },
-    { id: "rose", name: "Rose", accent: "#ff9ec0", palette: dark("#120a0d", ["#180d12", "#1f1218", "#27171f", "#301d27"], "#f7e4ea", "#b08f9b", "#80646e", "255 158 192") },
+    { id: "phosphor", name: "Phosphor", accent: "#8dfab4", palette: dark("#07100b", ["#0b1610", "#101d15", "#15251b", "#1b2e22"], "#dff5e6", "#86ab93", "#63836f", "141 250 180") },
+    { id: "amber", name: "Amber", accent: "#ffc86b", palette: dark("#110c05", ["#171108", "#1e160b", "#261c0f", "#2f2313"], "#f5e9d3", "#ad9973", "#8a7b5e", "255 200 107") },
+    { id: "ice", name: "Ice", accent: "#a9d8ff", palette: dark("#070c12", ["#0b121a", "#101923", "#15212d", "#1b2a38"], "#e1edf7", "#8a9fb3", "#6b7d90", "169 216 255") },
+    { id: "rose", name: "Rose", accent: "#ff9ec0", palette: dark("#120a0d", ["#180d12", "#1f1218", "#27171f", "#301d27"], "#f7e4ea", "#b08f9b", "#8f757e", "255 158 192") },
 ]
 
 // The classic look's (before 2.0), as they were (3.0.32's plum was never

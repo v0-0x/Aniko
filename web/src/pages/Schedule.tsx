@@ -1,20 +1,31 @@
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, Info } from "lucide-react"
 import { useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { ListCardMenu } from "@/components/ListCardMenu"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
-import { Button, EmptyState, ErrorState, Skeleton, Tabs } from "@/components/ui"
-import { useSchedule } from "@/lib/queries"
+import { Button, ContextArea, DropdownItem, DropdownSeparator, EmptyState, ErrorState, Skeleton, Tabs } from "@/components/ui"
+import { useRawList, useSchedule } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
-import type { ScheduleItem } from "@/lib/types"
+import type { ListEntry, ScheduleItem } from "@/lib/types"
 import { cn, cover, formatLabel, LIST_STATUS, readLocal, timeUntil, title, writeLocal } from "@/lib/utils"
 
 export default function SchedulePage() {
     const classic = useClassic()
     const { data, isLoading, error, refetch, isFetching } = useSchedule(8)
     const [filter, setFilter] = useState<"mine" | "all">(() => (readLocal("aniko-schedule-filter") as "mine" | "all") || "mine")
+    const navigate = useNavigate()
+    // Your list's entries, for a row's menu (and so a change made from it
+    // shows at once; the schedule's own listStatus is as old as the schedule).
+    const { data: list } = useRawList("ANIME")
+    const entries = useMemo(() => {
+        const m = new Map<number, ListEntry>()
+        for (const l of list?.lists ?? []) for (const e of l.entries) m.set(e.mediaId, e)
+        return m
+    }, [list])
+    const statusOf = (i: ScheduleItem) => (list ? (entries.get(i.media.id)?.status ?? "") : i.listStatus)
 
     const days = useMemo(() => {
-        const items = (data ?? []).filter(i => filter === "all" || i.listStatus)
+        const items = (data ?? []).filter(i => filter === "all" || statusOf(i))
         const map = new Map<string, ScheduleItem[]>()
         for (const it of items) {
             const d = new Date(it.airingAt * 1000)
@@ -23,7 +34,8 @@ export default function SchedulePage() {
             map.get(key)!.push(it)
         }
         return [...map.entries()].map(([k, v]) => ({ date: new Date(k), items: v }))
-    }, [data, filter])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data, filter, list, entries])
 
     const today = new Date().toDateString()
     const now = Date.now() / 1000
@@ -90,9 +102,26 @@ export default function SchedulePage() {
                                 {d.items.map(it => {
                                     const aired = it.airingAt < now
                                     // What airs and where it stands in the list, on one line.
-                                    const facts = [`Episode ${it.episode}${it.media.episodes ? ` / ${it.media.episodes}` : ""}`, formatLabel(it.media.format), it.listStatus && LIST_STATUS[it.listStatus]].filter(Boolean)
+                                    const facts = [`Episode ${it.episode}${it.media.episodes ? ` / ${it.media.episodes}` : ""}`, formatLabel(it.media.format), statusOf(it) && LIST_STATUS[statusOf(it)]].filter(Boolean)
+                                    const entry = entries.get(it.media.id)
+                                    // A right-click on the row: its page, and the list menu a card has. That one needs the
+                                    // entry itself (its progress and score, to undo a change): not while it's unknown.
+                                    const menu = (
+                                        <>
+                                            <DropdownItem icon={<Info />} onSelect={() => navigate(`/entry?id=${it.media.id}`)}>
+                                                Anime page
+                                            </DropdownItem>
+                                            {list && (entry || !it.listStatus) && (
+                                                <>
+                                                    <DropdownSeparator />
+                                                    <ListCardMenu media={{ ...it.media, mediaListEntry: entry ? { id: entry.id, status: entry.status, progress: entry.progress, score: entry.score, repeat: entry.repeat } : null }} />
+                                                </>
+                                            )}
+                                        </>
+                                    )
                                     return (
-                                        <Link key={it.id} to={`/entry?id=${it.media.id}`} className={cn("focus-ring flex items-center gap-4 transition", classic ? "card p-3 hover:border-line-strong" : "border-b border-line py-3 hover:border-fg/45", aired && "opacity-60")}>
+                                        <ContextArea key={it.id} menu={menu}>
+                                        <Link to={`/entry?id=${it.media.id}`} className={cn("focus-ring flex items-center gap-4 transition", classic ? "card p-3 hover:border-line-strong" : "border-b border-line py-3 hover:border-fg/45", aired && "opacity-60")}>
                                             <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-medium">{title(it.media)}</p>
@@ -103,6 +132,7 @@ export default function SchedulePage() {
                                                 <p className="mt-0.5 text-xs text-subtle">{aired ? "Aired" : `in ${timeUntil(it.airingAt - now)}`}</p>
                                             </div>
                                         </Link>
+                                        </ContextArea>
                                     )
                                 })}
                             </div>

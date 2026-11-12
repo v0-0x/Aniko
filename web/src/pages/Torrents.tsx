@@ -3,7 +3,7 @@ import { AlertTriangle, FolderOpen, Magnet, MoreVertical, Pause, Play, Plus, Pow
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "@/lib/toast"
-import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Progress, Tabs } from "@/components/ui"
+import { Button, ContextArea, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Progress, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus, useTorrentList } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
@@ -168,8 +168,24 @@ function TorrentRow({ t, onAction, canOpen }: { t: Torrent; onAction: (a: string
         `Ratio ${t.ratio.toFixed(2)}`,
     ].filter(Boolean)
     const classic = useClassic()
+    // The "⋯" button's items, and a right-click's on the row.
+    const menu = (
+        <>
+            {canOpen && (
+                <DropdownItem icon={<FolderOpen />} onSelect={() => onAction("open")}>
+                    Open folder
+                </DropdownItem>
+            )}
+            <DropdownItem icon={<Trash2 />} onSelect={() => onAction("remove")}>
+                Remove torrent (keep files)
+            </DropdownItem>
+            <DropdownItem danger icon={<Trash2 />} onSelect={() => confirm("Remove this torrent and delete its downloaded files?") && onAction("removeData")}>
+                Remove torrent and delete files
+            </DropdownItem>
+        </>
+    )
     return (
-        <div className={cn("flex items-center gap-3 fade-in", classic ? "card p-4" : "border-b border-line py-4")}>
+        <ContextArea menu={menu} className={cn("flex items-center gap-3 fade-in", classic ? "card p-4" : "border-b border-line py-4")}>
             <div className="min-w-0 flex-1">
                 <p className="truncate font-medium" title={t.name}>
                     {t.name}
@@ -191,22 +207,10 @@ function TorrentRow({ t, onAction, canOpen }: { t: Torrent; onAction: (a: string
                             <MoreVertical className="size-4" />
                         </IconButton>
                     </DropdownTrigger>
-                    <DropdownContent>
-                        {canOpen && (
-                            <DropdownItem icon={<FolderOpen />} onSelect={() => onAction("open")}>
-                                Open folder
-                            </DropdownItem>
-                        )}
-                        <DropdownItem icon={<Trash2 />} onSelect={() => onAction("remove")}>
-                            Remove torrent (keep files)
-                        </DropdownItem>
-                        <DropdownItem danger icon={<Trash2 />} onSelect={() => confirm("Remove this torrent and delete its downloaded files?") && onAction("removeData")}>
-                            Remove torrent and delete files
-                        </DropdownItem>
-                    </DropdownContent>
+                    <DropdownContent>{menu}</DropdownContent>
                 </Dropdown>
             </div>
-        </div>
+        </ContextArea>
     )
 }
 

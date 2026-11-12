@@ -57,7 +57,8 @@ export function PluginTrays() {
                 <Tooltip key={plugin.id + view.id} content={view.options.sidebar?.label || plugin.name} side="right">
                     <NavLink
                         to={`/webview?plugin=${encodeURIComponent(plugin.id)}&id=${encodeURIComponent(view.id)}`}
-                        className={({ isActive }) => cn("grid size-9 place-items-center rounded-lg transition-colors hover:bg-white/[0.06]", isActive && (classic ? "bg-white/[0.08]" : on))}
+                        // A plain string: the tooltip around it can't pass on a function, and the link then had no classes at all. The open page by aria-current.
+                        className={cn("grid size-9 place-items-center rounded-lg transition-colors hover:bg-white/[0.06]", classic ? "aria-[current=page]:bg-white/[0.08]" : "aria-[current=page]:shadow-[inset_0_-1.5px_0_0_var(--text)]")}
                     >
                         {plugin.icon ? <img src={plugin.icon} alt="" className="size-5 rounded object-contain" /> : <Puzzle className="size-[18px] stroke-[1.75] text-muted" />}
                     </NavLink>

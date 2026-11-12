@@ -1,8 +1,8 @@
-import { Download, RotateCcw, Trash2, X } from "lucide-react"
+import { Download, Info, RotateCcw, Trash2, X } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { toast } from "@/lib/toast"
-import { EmptyState, ErrorState, IconButton, Progress } from "@/components/ui"
+import { ContextArea, DropdownItem, DropdownSeparator, EmptyState, ErrorState, IconButton, Progress } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useDownloads, useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
@@ -157,8 +157,34 @@ function Row({ item, onCancel, onRetry, onRemove }: { item: DownloadItem; onCanc
         item.status === "downloading" && item.eta && `ETA ${item.eta}`,
     ].filter(Boolean)
     const classic = useClassic()
+    const navigate = useNavigate()
+    const canRetry = onRetry && (item.status === "failed" || item.status === "canceled")
+    // A right-click on the row: what its buttons do.
+    const menu = (
+        <>
+            <DropdownItem icon={<Info />} onSelect={() => navigate(`/entry?id=${item.mediaId}`)}>
+                Anime page
+            </DropdownItem>
+            {canRetry && (
+                <DropdownItem icon={<RotateCcw />} onSelect={onRetry}>
+                    Retry
+                </DropdownItem>
+            )}
+            {(onCancel || onRemove) && <DropdownSeparator />}
+            {onCancel && (
+                <DropdownItem icon={<X />} onSelect={onCancel}>
+                    Cancel
+                </DropdownItem>
+            )}
+            {onRemove && (
+                <DropdownItem icon={<Trash2 />} onSelect={onRemove}>
+                    Remove from list
+                </DropdownItem>
+            )}
+        </>
+    )
     return (
-        <div className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
+        <ContextArea menu={menu} className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
             <Link to={`/entry?id=${item.mediaId}`} className="focus-ring shrink-0 rounded-lg">
                 {item.image ? <img src={img(item.image)} alt="" className="h-16 w-11 rounded-lg object-cover" /> : <div className="h-16 w-11 rounded-lg bg-surface-3" />}
             </Link>
@@ -183,7 +209,7 @@ function Row({ item, onCancel, onRetry, onRemove }: { item: DownloadItem; onCanc
                         <X className="size-4" />
                     </IconButton>
                 )}
-                {onRetry && (item.status === "failed" || item.status === "canceled") && (
+                {canRetry && (
                     <IconButton label="Retry" onClick={onRetry}>
                         <RotateCcw className="size-4" />
                     </IconButton>
@@ -194,6 +220,6 @@ function Row({ item, onCancel, onRetry, onRemove }: { item: DownloadItem; onCanc
                     </IconButton>
                 )}
             </div>
-        </div>
+        </ContextArea>
     )
 }

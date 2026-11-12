@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { BookOpen, Download, HardDrive, Loader2, RotateCw, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Badge, Button, Dialog, EmptyState, Input, Select } from "@/components/ui"
+import { Badge, Button, ContextArea, Dialog, DropdownItem, DropdownSeparator, EmptyState, Input, Select } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 // media server's; downloaded ones read without the provider.
 
 const active = (j: MangaDownload) => j.state === "queued" || j.state === "downloading" || j.state === "sending"
+export { active as mangaDownloadActive }
 
 export function useMangaLocal(mediaId: number) {
     return useQuery({
@@ -49,6 +50,17 @@ function useTargets() {
     return { servers, preferred: preferred?.id ?? "" }
 }
 
+// Sends one chapter to download: the row's button, and its right-click menu.
+export function useChapterDownload(mediaId: number, provider: string) {
+    const qc = useQueryClient()
+    const { preferred } = useTargets()
+    return (chapter: MangaChapter, title: string) =>
+        api
+            .post<{ added: number }>("/api/manga-downloads", { mediaId, title, provider, target: preferred, chapters: [{ id: chapter.id, chapter: chapter.chapter, title: chapter.title }] })
+            .then(() => qc.invalidateQueries({ queryKey: ["manga-downloads"] }))
+            .catch(e => toast.error(e.message))
+}
+
 // The chapter's download, on its row: downloaded (read from here), on its
 // way, or a button.
 export function ChapterDownload({
@@ -66,8 +78,7 @@ export function ChapterDownload({
     local?: LocalMangaChapter
     job?: MangaDownload
 }) {
-    const qc = useQueryClient()
-    const { preferred } = useTargets()
+    const download = useChapterDownload(mediaId, provider)
     if (local) {
         return (
             <span className="flex shrink-0 items-center gap-1 px-3 text-xs text-emerald-300" title={`Downloaded: ${local.pages} pages`}>
@@ -88,12 +99,7 @@ export function ChapterDownload({
             className="grid size-10 shrink-0 place-items-center rounded-lg text-muted hover:bg-white/[0.06] hover:text-fg"
             aria-label={`Download chapter ${chapter.chapter}`}
             title={job?.state === "failed" ? `Didn't download: ${job.error}` : `Download chapter ${chapter.chapter}`}
-            onClick={() =>
-                api
-                    .post<{ added: number }>("/api/manga-downloads", { mediaId, title, provider, target: preferred, chapters: [{ id: chapter.id, chapter: chapter.chapter, title: chapter.title }] })
-                    .then(() => qc.invalidateQueries({ queryKey: ["manga-downloads"] }))
-                    .catch(e => toast.error(e.message))
-            }
+            onClick={() => download(chapter, title)}
         >
             {job?.state === "failed" ? <RotateCw className="size-4 text-red-300" /> : <Download className="size-4" />}
         </button>
@@ -271,8 +277,24 @@ export function LocalChapters({ chapters, progress, read, onDelete }: { chapters
         <div className="card divide-y divide-line">
             {[...chapters].reverse().map(c => {
                 const done = parseFloat(c.chapter) <= progress
+                // A right-click on the row: what its buttons do.
+                const menu = (
+                    <>
+                        <DropdownItem icon={<BookOpen />} onSelect={() => read(c)}>
+                            Read
+                        </DropdownItem>
+                        {onDelete && (
+                            <>
+                                <DropdownSeparator />
+                                <DropdownItem danger icon={<Trash2 />} onSelect={() => onDelete(c)}>
+                                    Delete chapter {c.chapter}
+                                </DropdownItem>
+                            </>
+                        )}
+                    </>
+                )
                 return (
-                    <div key={c.file} className={cn("flex items-center", done && "opacity-50")}>
+                    <ContextArea key={c.file} menu={menu} className={cn("flex items-center", done && "opacity-50")}>
                         <button onClick={() => read(c)} className="flex min-w-0 flex-1 items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-white/[0.03]">
                             <div className="min-w-0">
                                 <p className="truncate font-medium">{c.title || `Chapter ${c.chapter}`}</p>
@@ -287,7 +309,7 @@ export function LocalChapters({ chapters, progress, read, onDelete }: { chapters
                                 <Trash2 className="size-4" />
                             </button>
                         )}
-                    </div>
+                    </ContextArea>
                 )
             })}
         </div>

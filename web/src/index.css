@@ -22,7 +22,7 @@
     --line-strong: rgb(255 255 255 / 0.2);
     --text: #ededed;
     --muted: #9a9a9a;
-    --subtle: #6e6e6e;
+    --subtle: #7b7b7b;
     --ease: cubic-bezier(0.2, 0, 0, 1);
     /* Titles, and the small capital labels (buttons, the sidebar, counts). */
     --display-face: "Space Grotesk Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
@@ -742,7 +742,7 @@ html[data-scheme="light"] .on-dark {
     --line-strong: rgb(255 255 255 / 0.2);
     --text: #ededed;
     --muted: #9a9a9a;
-    --subtle: #6e6e6e;
+    --subtle: #7b7b7b;
     color: var(--text);
 }
 

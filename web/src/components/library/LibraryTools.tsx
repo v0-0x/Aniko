@@ -3,7 +3,7 @@ import { EyeOff, FileVideo, Link2, Link2Off, Lock, Search, Undo2, Wand2 } from "
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { MediaPicker } from "@/components/MediaPicker"
-import { Badge, Button, EmptyState, IconButton, Input, Select } from "@/components/ui"
+import { Badge, Button, ContextArea, DropdownItem, DropdownSeparator, EmptyState, IconButton, Input, Select } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useCollection, useLibraryFiles, useUnmatched } from "@/lib/queries"
 import { toast } from "@/lib/toast"
@@ -58,7 +58,21 @@ export function Unmatched() {
                 const chosen = paths.filter(p => selected.has(p))
                 return (
                     <div key={g.dir} className="card overflow-hidden">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-white/[0.02] px-5 py-4">
+                        <ContextArea
+                            // A right-click on the folder: what its buttons do.
+                            menu={
+                                <>
+                                    <DropdownItem icon={<Wand2 />} onSelect={() => setPicking({ paths: chosen.length ? chosen : paths, title: g.title })}>
+                                        Match {chosen.length ? `${chosen.length} selected` : "all"}
+                                    </DropdownItem>
+                                    <DropdownSeparator />
+                                    <DropdownItem icon={<EyeOff />} onSelect={() => ignore(chosen.length ? chosen : paths)}>
+                                        Ignore
+                                    </DropdownItem>
+                                </>
+                            }
+                            className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-white/[0.02] px-5 py-4"
+                        >
                             <div className="min-w-0">
                                 <p className="truncate text-lg font-semibold">{g.title}</p>
                                 <p className="truncate text-xs text-subtle">{g.dir}</p>
@@ -71,10 +85,25 @@ export function Unmatched() {
                                     Ignore
                                 </Button>
                             </div>
-                        </div>
+                        </ContextArea>
                         <div className="divide-y divide-line">
                             {g.files.map(f => (
-                                <label key={f.path} className="flex cursor-pointer items-center gap-4 px-5 py-2.5 text-sm hover:bg-white/[0.02]">
+                                <ContextArea
+                                    key={f.path}
+                                    // A right-click on a file: the folder's buttons, for this one.
+                                    menu={
+                                        <>
+                                            <DropdownItem icon={<Wand2 />} onSelect={() => setPicking({ paths: [f.path], title: g.title })}>
+                                                Match…
+                                            </DropdownItem>
+                                            <DropdownSeparator />
+                                            <DropdownItem icon={<EyeOff />} onSelect={() => ignore([f.path])}>
+                                                Ignore
+                                            </DropdownItem>
+                                        </>
+                                    }
+                                >
+                                <label className="flex cursor-pointer items-center gap-4 px-5 py-2.5 text-sm hover:bg-white/[0.02]">
                                     <input
                                         type="checkbox"
                                         checked={selected.has(f.path)}
@@ -94,6 +123,7 @@ export function Unmatched() {
                                     {f.parsed.releaseGroup && <Badge tone="brand">{f.parsed.releaseGroup}</Badge>}
                                     <span className="w-20 text-right text-xs text-subtle">{formatBytes(f.size)}</span>
                                 </label>
+                                </ContextArea>
                             ))}
                         </div>
                     </div>
@@ -243,7 +273,15 @@ export function Ignored() {
             </div>
             <div className="card divide-y divide-line">
                 {files.map(f => (
-                    <div key={f.path} className={cn("flex items-center gap-4 px-4 py-2.5 text-sm")}>
+                    <ContextArea
+                        key={f.path}
+                        menu={
+                            <DropdownItem icon={<Undo2 />} onSelect={() => restore([f.path])}>
+                                Restore
+                            </DropdownItem>
+                        }
+                        className={cn("flex items-center gap-4 px-4 py-2.5 text-sm")}
+                    >
                         <FileVideo className="size-4 text-subtle" />
                         <span className="min-w-0 flex-1 truncate" title={f.path}>
                             {f.name}
@@ -251,7 +289,7 @@ export function Ignored() {
                         <Button size="xs" variant="ghost" onClick={() => restore([f.path])}>
                             Restore
                         </Button>
-                    </div>
+                    </ContextArea>
                 ))}
             </div>
         </div>

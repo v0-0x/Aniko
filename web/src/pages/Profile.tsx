@@ -1,10 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { ExternalLink, Heart, LogIn, MessageSquareText, RefreshCw, UserCheck, UserPlus, UsersRound } from "lucide-react"
+import { ExternalLink, Heart, Info, LogIn, MessageSquareText, RefreshCw, UserCheck, UserPlus, UserRound, UsersRound } from "lucide-react"
 import { useRef, useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { ListCardMenu } from "@/components/ListCardMenu"
 import { LoginDialog } from "@/components/LoginDialog"
 import { MediaCard, MediaGrid } from "@/components/MediaCard"
-import { Button, EmptyState, ErrorState, IconButton, Skeleton, Tabs } from "@/components/ui"
+import { Button, ContextArea, DropdownItem, EmptyState, ErrorState, IconButton, Skeleton, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
 import { useActivity, useCollection, useProfile, useStatus } from "@/lib/queries"
@@ -330,8 +331,33 @@ function ActivityRow({ activity: a, showUser }: { activity: Activity; showUser: 
     }
     const text = a.kind === "text" ? plainText(a.text ?? "") : ""
     const replies = `${a.replyCount} ${a.replyCount === 1 ? "reply" : "replies"}`
+    const navigate = useNavigate()
+    // A right-click on the row: what it and its links do.
+    const menu = (
+        <>
+            <DropdownItem icon={<Heart />} onSelect={like}>
+                {liked ? "Unlike" : "Like"}
+            </DropdownItem>
+            {a.media && (
+                <DropdownItem icon={<Info />} onSelect={() => navigate(entryUrl(a.media!))}>
+                    {a.media.type === "MANGA" ? "Manga page" : "Anime page"}
+                </DropdownItem>
+            )}
+            {showUser && (
+                <DropdownItem icon={<UserRound />} onSelect={() => navigate(`/profile?user=${encodeURIComponent(a.user.name)}`)}>
+                    {a.user.name}'s profile
+                </DropdownItem>
+            )}
+            {/* A TV has no browser to open it in. */}
+            {!tv && a.siteUrl && (
+                <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(a.siteUrl, "_blank", "noopener,noreferrer")}>
+                    View on AniList
+                </DropdownItem>
+            )}
+        </>
+    )
     return (
-        <div className={cn("flex items-center gap-3.5", classic ? "card p-3" : "border-b border-line py-3")}>
+        <ContextArea menu={menu} className={cn("flex items-center gap-3.5", classic ? "card p-3" : "border-b border-line py-3")}>
             {a.media ? (
                 <Link to={entryUrl(a.media)} className="focus-ring shrink-0 rounded-lg" aria-label={title(a.media)}>
                     <img src={cover(a.media, "thumb")} alt="" loading="lazy" className="h-16 w-11 rounded-lg object-cover" />
@@ -398,7 +424,7 @@ function ActivityRow({ activity: a, showUser }: { activity: Activity; showUser: 
                 <Heart className={cn("size-4", liked && "fill-current")} />
                 {likes > 0 && likes}
             </button>
-        </div>
+        </ContextArea>
     )
 }
 
@@ -452,7 +478,8 @@ function WatchingNow() {
                     const total = it.media.episodes ?? 0
                     const progress = it.listEntry?.progress ?? 0
                     return (
-                        <Link key={it.media.id} to={entryUrl(it.media)} className="focus-ring flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]">
+                        <ContextArea key={it.media.id} menu={listMenu(it)}>
+                        <Link to={entryUrl(it.media)} className="focus-ring flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]">
                             <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded-md object-cover" />
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-[13.5px] font-medium">{title(it.media)}</p>
@@ -467,11 +494,18 @@ function WatchingNow() {
                                 )}
                             </div>
                         </Link>
+                        </ContextArea>
                     )
                 })}
             </div>
         </section>
     )
+}
+
+// The right-click menu of a row of your own list: the one its card has.
+function listMenu(it: CollectionItem) {
+    const e = it.listEntry
+    return <ListCardMenu media={it.media.mediaListEntry || !e ? it.media : { ...it.media, mediaListEntry: { id: e.id, status: e.status, progress: e.progress, score: e.score, repeat: e.repeat } }} />
 }
 
 // The anime finished most recently (the date on AniList, else when the
@@ -503,13 +537,15 @@ function Completed() {
                     const when = d?.year ? new Date(d.year, (d.month ?? 1) - 1, d.day ?? 1).toLocaleDateString(undefined, d.month ? { month: "short", year: "numeric" } : { year: "numeric" }) : ""
                     const eps = it.media.episodes ? `${it.media.episodes} episode${it.media.episodes === 1 ? "" : "s"}` : ""
                     return (
-                        <Link key={it.media.id} to={entryUrl(it.media)} className="focus-ring flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]">
+                        <ContextArea key={it.media.id} menu={listMenu(it)}>
+                        <Link to={entryUrl(it.media)} className="focus-ring flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]">
                             <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded-md object-cover" />
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-[13.5px] font-medium">{title(it.media)}</p>
                                 <p className={cn("truncate text-muted", classic ? "text-xs tabular-nums" : "font-mono text-[11px]")}>{[when && `Finished ${when}`, eps, score > 0 && `Scored ${(score / 10).toFixed(score % 10 ? 1 : 0)}`].filter(Boolean).join(" · ") || "Completed"}</p>
                             </div>
                         </Link>
+                        </ContextArea>
                     )
                 })}
             </div>

@@ -9,7 +9,7 @@ import { useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import type { EntryView, TorrentResult } from "@/lib/types"
 import { cn, copyText, relativeTime } from "@/lib/utils"
-import { Button, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Switch } from "../ui"
+import { Button, ContextArea, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Switch } from "../ui"
 
 // episode: the one to look for first (a missing one), else the next to watch.
 export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; episode?: number }) {
@@ -140,8 +140,39 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                             r.formattedSize,
                             r.date && relativeTime(new Date(r.date).getTime() / 1000),
                         ].filter(Boolean)
+                        // The "⋯" button's items, and a right-click's on the row.
+                        const menu = (canStream || r.link || r.magnetLink) && (
+                            <>
+                                {canStream && (
+                                    <DropdownItem icon={<Play />} onSelect={() => stream(r, "builtin")}>
+                                        Stream
+                                    </DropdownItem>
+                                )}
+                                {canStream && !tv && !remote && (
+                                    <DropdownItem icon={<MonitorPlay />} onSelect={() => stream(r, "mpv")}>
+                                        Stream in mpv
+                                    </DropdownItem>
+                                )}
+                                {r.link && (
+                                    <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(r.link, "_blank", "noopener,noreferrer")}>
+                                        Open page
+                                    </DropdownItem>
+                                )}
+                                {r.magnetLink && (
+                                    <DropdownItem
+                                        icon={<Copy />}
+                                        onSelect={async () => {
+                                            if (await copyText(r.magnetLink)) toast.success("Magnet link copied")
+                                            else toast.error("Couldn't copy the magnet link: the browser blocked the clipboard")
+                                        }}
+                                    >
+                                        Copy magnet
+                                    </DropdownItem>
+                                )}
+                            </>
+                        )
                         return (
-                            <div key={k} className={cn("flex items-center gap-3 p-3 transition-colors", classic && "card", isSel && (classic ? "bg-brand-soft" : "shadow-[inset_2px_0_0_0_var(--text)]"))}>
+                            <ContextArea key={k} menu={menu} className={cn("flex items-center gap-3 p-3 transition-colors", classic && "card", isSel && (classic ? "bg-brand-soft" : "shadow-[inset_2px_0_0_0_var(--text)]"))}>
                                 <input
                                     type="checkbox"
                                     aria-label={`Select ${r.name}`}
@@ -169,45 +200,18 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                                     <Button size="sm" variant={tv && classic ? "white" : "subtle"} onClick={() => download([r])} loading={sending && chosen.length === 0}>
                                         Download
                                     </Button>
-                                    {(canStream || r.link || r.magnetLink) && (
+                                    {menu && (
                                         <Dropdown>
                                             <DropdownTrigger asChild>
                                                 <IconButton size="sm" aria-label={`More for ${r.name}`}>
                                                     <MoreHorizontal className="size-4" />
                                                 </IconButton>
                                             </DropdownTrigger>
-                                            <DropdownContent>
-                                                {canStream && (
-                                                    <DropdownItem icon={<Play />} onSelect={() => stream(r, "builtin")}>
-                                                        Stream
-                                                    </DropdownItem>
-                                                )}
-                                                {canStream && !tv && !remote && (
-                                                    <DropdownItem icon={<MonitorPlay />} onSelect={() => stream(r, "mpv")}>
-                                                        Stream in mpv
-                                                    </DropdownItem>
-                                                )}
-                                                {r.link && (
-                                                    <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(r.link, "_blank", "noopener,noreferrer")}>
-                                                        Open page
-                                                    </DropdownItem>
-                                                )}
-                                                {r.magnetLink && (
-                                                    <DropdownItem
-                                                        icon={<Copy />}
-                                                        onSelect={async () => {
-                                                            if (await copyText(r.magnetLink)) toast.success("Magnet link copied")
-                                                            else toast.error("Couldn't copy the magnet link: the browser blocked the clipboard")
-                                                        }}
-                                                    >
-                                                        Copy magnet
-                                                    </DropdownItem>
-                                                )}
-                                            </DropdownContent>
+                                            <DropdownContent>{menu}</DropdownContent>
                                         </Dropdown>
                                     )}
                                 </div>
-                            </div>
+                            </ContextArea>
                         )
                     })}
                 </div>

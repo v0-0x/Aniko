@@ -6,7 +6,7 @@ import { EpisodeCard } from "@/components/EpisodeCard"
 import { Carousel, MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
 import { UploadDialog, useUploadTargets } from "@/components/UploadDialog"
-import { Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Input, Progress, Tabs, Tooltip } from "@/components/ui"
+import { Button, ContextArea, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Input, Progress, Tabs, Tooltip } from "@/components/ui"
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { usePlay } from "@/lib/play"
@@ -391,6 +391,17 @@ export default function LocalLibraryPage() {
                                         hasFile
                                         watched={allWatched}
                                         onClick={() => playLocal(play.path, m.id, play.episode)}
+                                        // On a right-click, and under its "⋯".
+                                        menu={
+                                            <>
+                                                <DropdownItem icon={<Play />} onSelect={() => playLocal(play.path, m.id, play.episode)}>
+                                                    Play
+                                                </DropdownItem>
+                                                <DropdownItem icon={<Info />} onSelect={() => navigate(entryUrl(m))}>
+                                                    Anime page
+                                                </DropdownItem>
+                                            </>
+                                        }
                                         actions={
                                             <IconButton label="Open anime page" variant="ghost" size="xs" className="bg-black/70 text-white hover:bg-black/85 hover:text-white" onClick={e => (e.stopPropagation(), navigate(entryUrl(m)))}>
                                                 <Info className="size-3.5" />
@@ -480,7 +491,7 @@ export default function LocalLibraryPage() {
                             // This look: rows on hairlines, not a box each.
                             <div className={cn("flex flex-col", classic ? "gap-3" : "border-t border-line")}>
                                 {shown.map(g => (
-                                    <LibraryRow key={g.item.media.id} group={g} trusted={trusted && !host} onOpen={openFolder} onPlay={f => playLocal(f.path, f.mediaId, f.episode)} />
+                                    <LibraryRow key={g.item.media.id} group={g} trusted={trusted && !host} onOpen={openFolder} onPlay={f => playLocal(f.path, f.mediaId, f.episode)} menu={host ? undefined : libraryMenu.menu(g.item.media)} />
                                 ))}
                             </div>
                         )}
@@ -492,8 +503,10 @@ export default function LocalLibraryPage() {
     )
 }
 
-function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trusted: boolean; onOpen: (path: string) => void; onPlay: (f: LocalFile) => void }) {
+// menu: the grid card's menu for the same anime (its local files), after the row's own items.
+function LibraryRow({ group: g, trusted, onOpen, onPlay, menu }: { group: Group; trusted: boolean; onOpen: (path: string) => void; onPlay: (f: LocalFile) => void; menu?: React.ReactNode }) {
     const [open, setOpen] = useState(false)
+    const navigate = useNavigate()
     const m = g.item.media
     const le = g.item.listEntry
     const total = totalEpisodes(m)
@@ -501,11 +514,40 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
     const extras = g.files.length - g.files.filter(f => f.kind === "main").length
     const marker = useEpisodeMarker(m, le)
     const classic = useClassic()
+    // A right-click on the row: what its buttons do, then the card's menu.
+    const rowMenu = (
+        <>
+            {g.next && (
+                <DropdownItem icon={<Play />} onSelect={() => onPlay(g.next!)}>
+                    {isMovie ? "Play" : `Play episode ${g.next.episode}`}
+                </DropdownItem>
+            )}
+            <DropdownItem icon={<Info />} onSelect={() => navigate(entryUrl(m))}>
+                Anime page
+            </DropdownItem>
+            <DropdownItem icon={<ListIcon />} onSelect={() => setOpen(!open)}>
+                {open ? "Hide files" : "Show files"}
+            </DropdownItem>
+            {menu ? (
+                <>
+                    <DropdownSeparator />
+                    {menu}
+                </>
+            ) : (
+                trusted &&
+                g.dir && (
+                    <DropdownItem icon={<FolderOpen />} onSelect={() => onOpen(g.dir)}>
+                        Open folder
+                    </DropdownItem>
+                )
+            )}
+        </>
+    )
 
     return (
         <div className={classic ? "card overflow-hidden" : "border-b border-line"}>
             {/* On a phone the actions go under the text. */}
-            <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-3", classic ? "p-4" : "py-4")}>
+            <ContextArea menu={rowMenu} className={cn("flex flex-wrap items-center gap-x-4 gap-y-3", classic ? "p-4" : "py-4")}>
                 <Link to={entryUrl(m)} className="shrink-0">
                     <img src={cover(m, "thumb")} alt="" loading="lazy" className="h-24 w-16 rounded-xl object-cover ring-1 ring-white/10" style={{ backgroundColor: m.coverImage?.color || undefined }} />
                 </Link>
@@ -544,13 +586,25 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
                         <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
                     </IconButton>
                 </div>
-            </div>
+            </ContextArea>
             {open && (
                 <div className={classic ? "bg-black/20 py-1" : "pb-2"}>
                     {g.files.map(f => {
                         const watched = le?.status === "COMPLETED" || (f.kind === "main" && (le?.progress ?? 0) >= f.episode)
+                        const fileMenu = (
+                            <>
+                                <DropdownItem icon={<Play />} onSelect={() => onPlay(f)}>
+                                    Play
+                                </DropdownItem>
+                                {f.kind === "main" && (
+                                    <DropdownItem icon={<CheckCheck />} disabled={marker.pending} onSelect={() => marker.mark(f.episode, !watched)}>
+                                        {watched ? "Mark as unwatched" : "Mark as watched"}
+                                    </DropdownItem>
+                                )}
+                            </>
+                        )
                         return (
-                            <div key={f.path} className={cn("group/file flex w-full items-center gap-3 py-2 text-sm transition hover:bg-white/[0.04]", classic ? "px-4" : "px-2")}>
+                            <ContextArea key={f.path} menu={fileMenu} className={cn("group/file flex w-full items-center gap-3 py-2 text-sm transition hover:bg-white/[0.04]", classic ? "px-4" : "px-2")}>
                                 <button onClick={() => onPlay(f)} title={f.path} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                                     <span className={cn("grid size-7 shrink-0 place-items-center text-muted transition", classic ? "rounded-full bg-white/[0.06] group-hover/file:bg-brand group-hover/file:text-white" : "group-hover/file:text-fg")}>
                                         <Play className="ml-0.5 size-3 fill-current" />
@@ -577,7 +631,7 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
                                         </button>
                                     </Tooltip>
                                 )}
-                            </div>
+                            </ContextArea>
                         )
                     })}
                     {g.dir && <p className={cn("truncate py-2 font-mono text-[11px] text-subtle", classic ? "px-4" : "px-2")}>{g.dir}</p>}

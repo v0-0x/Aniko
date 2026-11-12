@@ -25,7 +25,7 @@ import {
 import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
-import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger, EmptyState, Field, IconButton, Input, Popover, Select, Switch, Tabs } from "@/components/ui"
+import { Badge, Button, ContextArea, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger, EmptyState, Field, IconButton, Input, Popover, Select, Switch, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useExtensions, useMarketplace, useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
@@ -181,8 +181,44 @@ function InstalledRow({ ext, update, onChange }: { ext: ExtensionInfo; update?: 
     const on = ext.enabled && !needsGrant
     const facts = [`v${m.version}`, m.author, m.language === "typescript" ? "TS" : "JS", m.lang?.toUpperCase(), ext.running && "Running", update && `${update} available`].filter(Boolean)
     const notes = !ext.supported || !!ext.error || !!ext.configError || needsGrant
+    // View only from another device (the page's fieldset): no menu either.
+    const lan = useStatus().data?.client === "lan"
+    // The "⋯" button's items, and a right-click's on the row.
+    const menu = (
+        <>
+            {update && (
+                <DropdownItem icon={<ArrowUpCircle />} disabled={busy} onSelect={() => call(api.post(`/api/extensions/${m.id}/update`), `Updated to ${update}`)}>
+                    Update to {update}
+                </DropdownItem>
+            )}
+            {needsGrant && (
+                <DropdownItem icon={<ShieldCheck />} onSelect={() => setGrantOpen(true)}>
+                    Review permissions
+                </DropdownItem>
+            )}
+            {(m.userConfig?.fields?.length ?? 0) > 0 && (
+                <DropdownItem icon={<Settings2 />} onSelect={() => setCfgOpen(true)}>
+                    Configure
+                </DropdownItem>
+            )}
+            <DropdownItem icon={<FileText />} onSelect={() => setLogsOpen(true)}>
+                Logs
+            </DropdownItem>
+            {m.website && (
+                <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(m.website)}>
+                    Website
+                </DropdownItem>
+            )}
+            <DropdownSeparator />
+            <DropdownItem danger icon={<Trash2 />} disabled={busy} onSelect={() => confirm(`Uninstall ${m.name}?`) && call(api.del(`/api/extensions/${m.id}`), "Uninstalled")}>
+                Uninstall
+            </DropdownItem>
+        </>
+    )
     return (
-        <div className={row(classic)}>
+        // The dialogs stay outside the row: a right-click in one is its own.
+        <>
+        <ContextArea menu={lan ? null : menu} className={row(classic)}>
             <ExtIcon src={m.icon} className={cn("size-11 transition-opacity", !on && "opacity-60")} />
             <div className="min-w-0 flex-1">
                 <p className={cn("truncate font-medium transition-opacity", !on && "opacity-60")}>{m.name}</p>
@@ -214,41 +250,14 @@ function InstalledRow({ ext, update, onChange }: { ext: ExtensionInfo; update?: 
                             <MoreVertical className="size-4" />
                         </IconButton>
                     </DropdownTrigger>
-                    <DropdownContent>
-                        {update && (
-                            <DropdownItem icon={<ArrowUpCircle />} disabled={busy} onSelect={() => call(api.post(`/api/extensions/${m.id}/update`), `Updated to ${update}`)}>
-                                Update to {update}
-                            </DropdownItem>
-                        )}
-                        {needsGrant && (
-                            <DropdownItem icon={<ShieldCheck />} onSelect={() => setGrantOpen(true)}>
-                                Review permissions
-                            </DropdownItem>
-                        )}
-                        {(m.userConfig?.fields?.length ?? 0) > 0 && (
-                            <DropdownItem icon={<Settings2 />} onSelect={() => setCfgOpen(true)}>
-                                Configure
-                            </DropdownItem>
-                        )}
-                        <DropdownItem icon={<FileText />} onSelect={() => setLogsOpen(true)}>
-                            Logs
-                        </DropdownItem>
-                        {m.website && (
-                            <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(m.website)}>
-                                Website
-                            </DropdownItem>
-                        )}
-                        <DropdownSeparator />
-                        <DropdownItem danger icon={<Trash2 />} disabled={busy} onSelect={() => confirm(`Uninstall ${m.name}?`) && call(api.del(`/api/extensions/${m.id}`), "Uninstalled")}>
-                            Uninstall
-                        </DropdownItem>
-                    </DropdownContent>
+                    <DropdownContent>{menu}</DropdownContent>
                 </Dropdown>
             </div>
+        </ContextArea>
             <ConfigDialog open={cfgOpen} onOpenChange={setCfgOpen} ext={ext} onSaved={onChange} />
             <LogsDialog open={logsOpen} onOpenChange={setLogsOpen} id={m.id} />
             <GrantDialog open={grantOpen} onOpenChange={setGrantOpen} ext={ext} onDone={onChange} />
-        </div>
+        </>
     )
 }
 
@@ -524,8 +533,26 @@ function MarketRow({ e }: { e: MarketEntry }) {
         e.deprecatedTag && "Deprecated",
     ].filter(Boolean)
     const needs = (e.unsupported?.length ?? 0) > 0
+    // View only from another device (the page's fieldset): no menu either.
+    const lan = useStatus().data?.client === "lan"
+    // The "⋯" button's items, and a right-click's on the row.
+    const menu = (e.website || e.permalink) && (
+        <>
+            {e.website && (
+                <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(e.website)}>
+                    Website
+                </DropdownItem>
+            )}
+            {e.permalink && (
+                <DropdownItem icon={<ShieldCheck />} onSelect={() => openLink(e.permalink)}>
+                    VirusTotal scan{e.flags ? ` · ${e.flags}` : ""}
+                </DropdownItem>
+            )}
+        </>
+    )
     return (
-        <div className={row(classic)}>
+        <>
+        <ContextArea menu={lan ? null : menu} className={row(classic)}>
             <ExtIcon src={e.icon} className={cn("size-11", e.brokenTag && "opacity-60")} />
             <div className="min-w-0 flex-1">
                 <p className={cn("truncate font-medium", e.brokenTag && "opacity-60")}>{e.name}</p>
@@ -564,30 +591,20 @@ function MarketRow({ e }: { e: MarketEntry }) {
                         <span className="max-sm:sr-only">Install</span>
                     </Button>
                 )}
-                {(e.website || e.permalink) && (
+                {menu && (
                     <Dropdown>
                         <DropdownTrigger asChild>
                             <IconButton aria-label="More">
                                 <MoreVertical className="size-4" />
                             </IconButton>
                         </DropdownTrigger>
-                        <DropdownContent>
-                            {e.website && (
-                                <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(e.website)}>
-                                    Website
-                                </DropdownItem>
-                            )}
-                            {e.permalink && (
-                                <DropdownItem icon={<ShieldCheck />} onSelect={() => openLink(e.permalink)}>
-                                    VirusTotal scan{e.flags ? ` · ${e.flags}` : ""}
-                                </DropdownItem>
-                            )}
-                        </DropdownContent>
+                        <DropdownContent>{menu}</DropdownContent>
                     </Dropdown>
                 )}
             </div>
+        </ContextArea>
             {grant && <GrantDialog open onOpenChange={v => !v && setGrant(null)} ext={grant} onDone={() => qc.invalidateQueries({ queryKey: ["extensions"] })} />}
-        </div>
+        </>
     )
 }
 

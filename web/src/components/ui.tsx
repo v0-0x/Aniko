@@ -566,9 +566,15 @@ export function useContextMenu(menu: React.ReactNode) {
     const focused = useRef<Element | null>(null)
     const onContextMenu = (e: React.MouseEvent<HTMLElement>) => {
         if (!menu) return
+        // React also brings right-clicks in what's drawn elsewhere (the open
+        // menu, a dialog: portals) here: those keep the browser's own menu.
+        // So does a field to type in (paste).
+        const t = e.target as HTMLElement
+        if (!e.currentTarget.contains(t)) return
+        if (t.isContentEditable || t.tagName === "TEXTAREA" || (t instanceof HTMLInputElement && !["checkbox", "radio", "range", "button", "submit", "color", "file"].includes(t.type))) return
         e.preventDefault()
-        // React also brings right-clicks in the open menu (a portal) here.
-        if (!e.currentTarget.contains(e.target as Node)) return
+        // One menu: not also the one of a box this is in.
+        e.stopPropagation()
         const r = e.currentTarget.getBoundingClientRect()
         const x = e.clientX - r.left
         const y = e.clientY - r.top
@@ -596,6 +602,19 @@ export function useContextMenu(menu: React.ReactNode) {
         </Dropdown>
     ) : null
     return { onContextMenu, node }
+}
+
+// A row, a card or any box with a right-click menu: the same items its "⋯"
+// button shows (give both the same fragment). It's a positioned div; with
+// no menu, a plain one.
+export function ContextArea({ menu, className, children, ...props }: Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> & { menu: React.ReactNode }) {
+    const context = useContextMenu(menu)
+    return (
+        <div className={cn("relative", className)} onContextMenu={context.onContextMenu} {...props}>
+            {children}
+            {context.node}
+        </div>
+    )
 }
 
 export function DropdownItem({

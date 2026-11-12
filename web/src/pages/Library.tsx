@@ -1,11 +1,11 @@
-import { CircleCheck, Download, FolderSync, Magnet, RefreshCw } from "lucide-react"
+import { CircleCheck, Download, FolderSync, Info, Magnet, RefreshCw } from "lucide-react"
 import { useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Cleanup } from "@/components/library/Cleanup"
 import { LibraryFolders } from "@/components/library/LibraryFolders"
 import { MissingDownloadDialog, useAniCliDownloads, useDownloading } from "@/components/library/MissingDownload"
 import { AllFiles, Ignored, Unmatched } from "@/components/library/LibraryTools"
-import { Badge, EmptyState, IconButton, Tabs, Tooltip } from "@/components/ui"
+import { Badge, ContextArea, DropdownItem, EmptyState, IconButton, Tabs, Tooltip } from "@/components/ui"
 import { useCollection, useScan } from "@/lib/queries"
 import { scanStore, useStore } from "@/lib/store"
 import { useClassic } from "@/lib/themes"
@@ -117,8 +117,27 @@ function MissingRow({ item, missing }: { item: CollectionItem; missing: Missing 
     const downloading = useDownloading(item.media.id)
     const first = missing.gaps[0] ?? missing.newer[0]
     const busy = [...missing.gaps, ...missing.newer].filter(n => downloading.has(n)).length
+    const navigate = useNavigate()
+    // A right-click on the row: what its buttons do.
+    const menu = (
+        <>
+            {aniCli.loaded && aniCli.enabled && (
+                <DropdownItem icon={<Download />} disabled={!aniCli.installed} onSelect={() => setOpen(true)}>
+                    Download
+                </DropdownItem>
+            )}
+            <DropdownItem icon={<Magnet />} onSelect={() => navigate(`/entry?id=${item.media.id}&tab=torrents&episode=${first}`)}>
+                Find torrents
+            </DropdownItem>
+            <DropdownItem icon={<Info />} onSelect={() => navigate(`/entry?id=${item.media.id}`)}>
+                Anime page
+            </DropdownItem>
+        </>
+    )
     return (
-        <div className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
+        // The dialog stays outside the row: a right-click in it is its own.
+        <>
+        <ContextArea menu={menu} className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
             <img src={cover(item.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
             <div className="min-w-0 flex-1">
                 <Link to={`/entry?id=${item.media.id}`} className="block truncate font-medium hover:underline">
@@ -158,7 +177,8 @@ function MissingRow({ item, missing }: { item: CollectionItem; missing: Missing 
                     </IconButton>
                 </Link>
             </div>
+        </ContextArea>
             {open && <MissingDownloadDialog media={item.media} missing={missing} open={open} onOpenChange={setOpen} />}
-        </div>
+        </>
     )
 }

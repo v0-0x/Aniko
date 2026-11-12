@@ -19,6 +19,14 @@ export const RELEASES: Release[] = [
                 text: "Buttons and tabs are plain words. Point at one and it steps into brackets.",
             },
             {
+                title: "Right-click almost anything",
+                text: "Episodes, anime, downloads, torrents, playlists and library rows have a menu. On a TV, the Menu key opens it.",
+            },
+            {
+                title: "A tidier player",
+                text: "Time so far and time left sit at the ends of the bar, and corner marks show while it's paused.",
+            },
+            {
                 title: "Eight themes, two of them light",
                 text: "Black, White, Graphite, Paper, Phosphor, Amber, Ice and Rose. The classic look keeps its own.",
                 to: "/settings?tab=appearance",

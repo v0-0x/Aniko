@@ -4,9 +4,9 @@ import { useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { ListStatusButton, ProgressEditor, ScoreEditor } from "@/components/entry/ListEditor"
-import { ChapterDownload, DownloadDialog, DownloadsPanel, LocalChapters, useMangaDownloads, useMangaLocal, useSharedManga } from "@/components/MangaDownloads"
+import { ChapterDownload, DownloadDialog, DownloadsPanel, LocalChapters, mangaDownloadActive, useChapterDownload, useMangaDownloads, useMangaLocal, useSharedManga } from "@/components/MangaDownloads"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
-import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Skeleton } from "@/components/ui"
+import { Badge, Button, ContextArea, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Skeleton } from "@/components/ui"
 import { api, qs } from "@/lib/api"
 import { useMangaChapters, useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
@@ -38,6 +38,7 @@ export default function MangaEntryPage() {
     // And on the Anikos and servers this one uses.
     const { data: onServers } = useSharedManga(id)
     const { data: downloads } = useMangaDownloads()
+    const download = useChapterDownload(id, effective)
     const navigate = useNavigate()
     const qc = useQueryClient()
 
@@ -252,14 +253,28 @@ export default function MangaEntryPage() {
                             const done = parseFloat(c.chapter) <= progress
                             // One line of facts; the number is in the title when the chapter has none.
                             const line = [c.title && `Ch ${c.chapter}`, c.scanlator, c.language?.toUpperCase(), c.updatedAt, done && "Read"].filter(Boolean)
+                            const job = jobByNumber.get(c.chapter)
+                            // A right-click on the row: what its buttons do.
+                            const menu = (
+                                <>
+                                    <DropdownItem icon={<BookOpen />} onSelect={() => read(c)}>
+                                        Read
+                                    </DropdownItem>
+                                    {!localByNumber.has(c.chapter) && !(job && mangaDownloadActive(job)) && (
+                                        <DropdownItem icon={<Download />} onSelect={() => download(c, title(media))}>
+                                            Download
+                                        </DropdownItem>
+                                    )}
+                                </>
+                            )
                             return (
-                                <div key={c.id} className={cn("flex items-center pr-1", done && "opacity-50")}>
+                                <ContextArea key={c.id} menu={menu} className={cn("flex items-center pr-1", done && "opacity-50")}>
                                     <button onClick={() => read(c)} className="focus-ring min-w-0 flex-1 px-4 py-3 text-left transition hover:bg-white/[0.03]">
                                         <p className="truncate font-medium">{c.title || `Chapter ${c.chapter}`}</p>
                                         {line.length > 0 && <p className="mt-0.5 truncate text-xs text-subtle tabular-nums">{line.join(" · ")}</p>}
                                     </button>
-                                    <ChapterDownload mediaId={id} title={title(media)} provider={effective} chapter={c} local={localByNumber.get(c.chapter)} job={jobByNumber.get(c.chapter)} />
-                                </div>
+                                    <ChapterDownload mediaId={id} title={title(media)} provider={effective} chapter={c} local={localByNumber.get(c.chapter)} job={job} />
+                                </ContextArea>
                             )
                         })}
                     </div>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { MediaPicker } from "@/components/MediaPicker"
-import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Spinner, Switch } from "@/components/ui"
+import { Badge, Button, ContextArea, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Spinner, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useAutoRules, useSaveSettings, useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
@@ -117,8 +117,22 @@ function RuleCard({ rule, onEdit, onTest }: { rule: AutoRule; onEdit: () => void
     const name = media?.media ? title(media.media) : rule.title
     const facts = [...rule.releaseGroups, ...rule.resolutions.map(r => `${r}p`), rule.episodeType === "all" ? "All episodes" : "New episodes"]
     if (rule.delayMinutes) facts.push(`Waits ${rule.delayMinutes} min`)
+    // The "⋯" button's items, and a right-click's on the row.
+    const menu = (
+        <>
+            <DropdownItem icon={<Pencil />} onSelect={onEdit}>
+                Edit
+            </DropdownItem>
+            <DropdownItem icon={<FlaskConical />} onSelect={() => onTest(name)}>
+                Test
+            </DropdownItem>
+            <DropdownItem danger icon={<Trash2 />} onSelect={del}>
+                Delete
+            </DropdownItem>
+        </>
+    )
     return (
-        <div className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
+        <ContextArea menu={menu} className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
             {media?.media && <img src={cover(media.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />}
             <div className={cn("min-w-0 flex-1 transition-opacity", !rule.enabled && "opacity-60")}>
                 <p className="truncate font-medium">{name}</p>
@@ -132,20 +146,10 @@ function RuleCard({ rule, onEdit, onTest }: { rule: AutoRule; onEdit: () => void
                             <MoreVertical className="size-4" />
                         </IconButton>
                     </DropdownTrigger>
-                    <DropdownContent>
-                        <DropdownItem icon={<Pencil />} onSelect={onEdit}>
-                            Edit
-                        </DropdownItem>
-                        <DropdownItem icon={<FlaskConical />} onSelect={() => onTest(name)}>
-                            Test
-                        </DropdownItem>
-                        <DropdownItem danger icon={<Trash2 />} onSelect={del}>
-                            Delete
-                        </DropdownItem>
-                    </DropdownContent>
+                    <DropdownContent>{menu}</DropdownContent>
                 </Dropdown>
             </div>
-        </div>
+        </ContextArea>
     )
 }
 
