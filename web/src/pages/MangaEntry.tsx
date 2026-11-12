@@ -9,6 +9,7 @@ import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Skeleton } from "@/components/ui"
 import { api, qs } from "@/lib/api"
 import { useMangaChapters, useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { LocalMangaChapter, MangaChapter, MangaPosition, Media } from "@/lib/types"
 import { tv } from "@/lib/tv"
 import { banner, cleanDescription, cn, cover, formatLabel, otherTitle, scoreColor, statusLabel, title } from "@/lib/utils"
@@ -17,6 +18,7 @@ export default function MangaEntryPage() {
     const [params] = useSearchParams()
     const id = Number(params.get("id"))
     const { data: status } = useStatus()
+    const classic = useClassic()
     const { data: media, isLoading, error: mediaError, refetch: refetchMedia, isFetching: mediaFetching } = useQuery({ queryKey: ["manga", "media", id], queryFn: () => api.get<Media>(`/api/manga/${id}`), enabled: id > 0 })
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
     const [provider, setProvider] = useState<string>(() => localStorage.getItem(`aniko-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
@@ -118,7 +120,10 @@ export default function MangaEntryPage() {
                 <div className="relative z-10 px-6 pt-28 pb-8 md:px-8 xl:px-10">
                     <div className={cn("flex flex-col gap-6 rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:flex-row md:p-6", !tv && "backdrop-blur-2xl")}>
                         <div className="w-32 shrink-0 md:w-44">
-                            <img src={cover(media, "poster")} alt="" className="aspect-[2/3] w-full rounded-lg object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 fade-in" />
+                            {/* marks: this look's corner marks on the cover (index.css), as on the anime's page. */}
+                            <div className="marks">
+                                <img src={cover(media, "poster")} alt="" className="aspect-[2/3] w-full rounded-lg object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 fade-in" />
+                            </div>
                         </div>
                         <div className="flex min-w-0 flex-1 flex-col justify-end gap-4 fade-in">
                             <div>
@@ -224,7 +229,7 @@ export default function MangaEntryPage() {
                 {/* The provider lists nothing (offline, none installed): what's downloaded. */}
                 {chapters.length === 0 && !chLoading && localChapters.length > 0 && (
                     <>
-                        <p className="text-sm text-muted">Downloaded chapters</p>
+                        <p className={classic ? "text-sm text-muted" : "label text-muted"}>Downloaded chapters</p>
                         <LocalChapters chapters={localChapters} progress={progress} read={c => readLocal(c)} onDelete={deleteLocal} />
                     </>
                 )}

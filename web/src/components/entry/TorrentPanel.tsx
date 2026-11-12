@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast"
 import { api } from "@/lib/api"
 import { usePlay } from "@/lib/play"
 import { useStatus, useTorrentSearch } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import type { EntryView, TorrentResult } from "@/lib/types"
 import { cn, copyText, relativeTime } from "@/lib/utils"
@@ -12,6 +13,7 @@ import { Button, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, Empty
 
 // episode: the one to look for first (a missing one), else the next to watch.
 export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; episode?: number }) {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const settings = status?.settings
     const media = entry.media
@@ -100,8 +102,13 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
             </div>
 
             {chosen.length > 0 && (
-                <div className="sticky top-3 z-20 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-surface-2/95 py-2 pr-2 pl-4 shadow-lg shadow-black/40 backdrop-blur rise-in">
-                    <span className="text-sm tabular-nums">{chosen.length} selected</span>
+                <div
+                    className={cn(
+                        "sticky top-3 z-20 flex items-center justify-between gap-3 border py-2 pr-2 pl-4 rise-in",
+                        classic ? "rounded-xl border-white/10 bg-surface-2/95 shadow-lg shadow-black/40 backdrop-blur" : "rounded-sm border-line bg-bg",
+                    )}
+                >
+                    <span className={classic ? "text-sm tabular-nums" : "label"}>{chosen.length} selected</span>
                     <Button variant="primary" size="sm" loading={sending} icon={<ArrowDownToLine className="size-4" />} onClick={() => download(chosen)}>
                         Send to {settings?.torrent.defaultClient === "transmission" ? "Transmission" : "qBittorrent"}
                     </Button>
@@ -115,7 +122,7 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
             )}
 
             {results.length > 0 && (
-                <div className="flex flex-col gap-2">
+                <div className={classic ? "flex flex-col gap-2" : "flex flex-col divide-y divide-line border-y border-line"}>
                     {results.map(r => {
                         const k = key(r)
                         const isSel = selected.has(k)
@@ -134,7 +141,7 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                             r.date && relativeTime(new Date(r.date).getTime() / 1000),
                         ].filter(Boolean)
                         return (
-                            <div key={k} className={cn("card flex items-center gap-3 p-3 transition-colors", isSel && "bg-brand-soft")}>
+                            <div key={k} className={cn("flex items-center gap-3 p-3 transition-colors", classic && "card", isSel && (classic ? "bg-brand-soft" : "shadow-[inset_2px_0_0_0_var(--text)]"))}>
                                 <input
                                     type="checkbox"
                                     aria-label={`Select ${r.name}`}

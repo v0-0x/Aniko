@@ -16,18 +16,19 @@ type ButtonVariant = "primary" | "white" | "subtle" | "ghost" | "outline" | "dan
 type ButtonSize = "xs" | "sm" | "md" | "lg"
 
 // One thing is filled in: the main action, in the ink (the accent). The rest
-// are outlines, or only their words.
+// are words (index.css's word: brackets step in around them under the
+// pointer).
 const variants: Record<ButtonVariant, string> = {
     primary: "bg-brand text-[color:var(--on-brand)] hover:opacity-85",
     // On artwork: white whatever the accent.
     white: "bg-white text-black hover:opacity-85",
-    subtle: "border border-line-strong text-fg hover:border-fg/50 hover:bg-white/[0.05]",
-    ghost: "text-muted hover:text-fg hover:bg-white/[0.06]",
-    outline: "border border-line-strong text-fg hover:border-fg/50 hover:bg-white/[0.05]",
-    danger: "border border-rose-400/45 text-rose-300 hover:bg-rose-500/10",
-    success: "border border-emerald-400/45 text-emerald-300 hover:bg-emerald-500/10",
+    subtle: "word text-fg/85 hover:text-fg data-[state=open]:text-fg",
+    ghost: "word text-muted hover:text-fg data-[state=open]:text-fg",
+    outline: "word text-fg/85 hover:text-fg data-[state=open]:text-fg",
+    danger: "word text-rose-300 hover:text-rose-200",
+    success: "word text-emerald-300 hover:text-emerald-200",
 }
-// Their words in small capitals (index.css's label).
+// In small capitals (index.css's label).
 const sizes: Record<ButtonSize, string> = {
     xs: "label h-7 gap-1.5 rounded-sm px-2.5 text-[10px]",
     sm: "label h-8 gap-1.5 rounded-sm px-3 text-[10.5px]",
@@ -93,7 +94,7 @@ export const IconButton = forwardRef<HTMLButtonElement, ButtonProps & { label?: 
 ) {
     const dims = { xs: "size-7", sm: "size-8", md: "size-9", lg: "size-11" }[size]
     const btn = (
-        <Button ref={ref} variant={variant} size={size} className={cn(dims, "px-0", className)} aria-label={label} {...props}>
+        <Button ref={ref} variant={variant} size={size} className={cn(dims, "icon-only px-0", className)} aria-label={label} {...props}>
             {children}
         </Button>
     )
@@ -108,17 +109,17 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
         const classic = useClassic()
         return (
             <div className="relative w-full">
-                {icon && <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-subtle">{icon}</span>}
+                {icon && <span className={cn("pointer-events-none absolute top-1/2 -translate-y-1/2 text-subtle", classic ? "left-3" : "left-0.5")}>{icon}</span>}
                 <input
                     ref={ref}
                     className={cn(
                         classic
                             ? "h-9 w-full rounded-lg border border-line bg-white/[0.035] px-3 text-sm text-fg placeholder:text-subtle"
-                            : "h-9 w-full rounded-sm border border-line-strong bg-transparent px-3 text-sm text-fg placeholder:text-subtle",
+                            : "h-9 w-full rounded-none border-b border-line-strong bg-transparent px-0.5 text-sm text-fg placeholder:text-subtle",
                         classic
                             ? "transition-[border-color,background-color] outline-none hover:border-line-strong focus:border-brand/70 focus:bg-white/[0.05] disabled:opacity-60"
-                            : "transition-[border-color,background-color] outline-none hover:border-fg/45 focus:border-fg focus:bg-white/[0.03] disabled:opacity-60",
-                        icon && "pl-9",
+                            : "transition-[border-color] outline-none hover:border-fg/45 focus:border-fg disabled:opacity-60",
+                        icon && (classic ? "pl-9" : "pl-7"),
                         className,
                     )}
                     {...props}
@@ -139,7 +140,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttrib
             className={cn(
                 classic
                     ? "min-h-24 w-full rounded-lg border border-line bg-white/[0.035] px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color] hover:border-line-strong focus:border-brand/70"
-                    : "min-h-24 w-full rounded-sm border border-line-strong bg-transparent px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color] hover:border-fg/45 focus:border-fg",
+                    : "min-h-24 w-full rounded-sm border border-line bg-transparent px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color] hover:border-line-strong focus:border-fg",
                 className,
             )}
             {...props}
@@ -170,7 +171,7 @@ export function Select({
                 className={
                     classic
                         ? "h-9 w-full cursor-pointer appearance-none rounded-lg border border-line bg-white/[0.035] pr-9 pl-3 text-sm text-fg outline-none transition-[border-color] hover:border-line-strong focus:border-brand/70 disabled:opacity-60"
-                        : "h-9 w-full cursor-pointer appearance-none rounded-sm border border-line-strong bg-transparent pr-9 pl-3 text-sm text-fg outline-none transition-[border-color] hover:border-fg/45 focus:border-fg disabled:opacity-60"
+                        : "h-9 w-full cursor-pointer appearance-none rounded-none border-b border-line-strong bg-transparent pr-7 pl-0.5 text-sm text-fg outline-none transition-[border-color] hover:border-fg/45 focus:border-fg disabled:opacity-60"
                 }
             >
                 {options.map(o => (
@@ -179,7 +180,7 @@ export function Select({
                     </option>
                 ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-subtle" />
+            <ChevronDown className={cn("pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-subtle", classic ? "right-3" : "right-0.5")} />
         </div>
     )
 }
@@ -239,16 +240,16 @@ export function Badge({ children, className, tone = "gray" }: { children: React.
         }
         return <span className={cn("inline-flex h-5 items-center gap-1 rounded px-1.5 text-[11px] font-medium whitespace-nowrap", tones[tone], className)}>{children}</span>
     }
-    // Outlined, in small capitals.
+    // A word in small capitals, in its tone.
     const tones = {
-        gray: "border-line-strong text-muted",
-        brand: "border-brand/60 text-brand-strong",
-        green: "border-emerald-400/45 text-emerald-300",
-        amber: "border-amber-400/45 text-amber-300",
-        red: "border-rose-400/45 text-rose-300",
-        blue: "border-sky-400/45 text-sky-300",
+        gray: "text-muted",
+        brand: "text-brand-strong",
+        green: "text-emerald-300",
+        amber: "text-amber-300",
+        red: "text-rose-300",
+        blue: "text-sky-300",
     }
-    return <span className={cn("label inline-flex h-5 items-center gap-1 rounded-sm border px-1.5 text-[10px] whitespace-nowrap", tones[tone], className)}>{children}</span>
+    return <span className={cn("label inline-flex h-5 items-center gap-1 text-[10px] whitespace-nowrap", tones[tone], className)}>{children}</span>
 }
 
 export function Skeleton({ className }: { className?: string }) {
@@ -280,7 +281,7 @@ export function EmptyState({ icon, title, children, action }: { icon?: React.Rea
                 (classic ? (
                     <div className="mb-1 text-subtle [&_svg]:size-6 [&_svg]:stroke-[1.5]">{icon}</div>
                 ) : (
-                    <div className="mb-2 grid size-11 place-items-center border border-line-strong text-muted [&_svg]:size-5 [&_svg]:stroke-[1.4]">{icon}</div>
+                    <div className="mb-1 text-subtle [&_svg]:size-7 [&_svg]:stroke-[1.25]">{icon}</div>
                 ))}
             <h3 className="text-[15px] font-semibold">{title}</h3>
             {children && <div className="max-w-md text-sm text-muted">{children}</div>}
@@ -392,7 +393,7 @@ export function Tabs<T extends string>({
         <div
             className={cn(
                 "no-scrollbar inline-flex max-w-full gap-0.5 overflow-x-auto",
-                classic ? "rounded-lg bg-white/[0.04] p-0.5" : "gap-0 divide-x divide-line-strong border border-line-strong",
+                classic ? "rounded-lg bg-white/[0.04] p-0.5" : "gap-1",
                 className,
             )}
         >
@@ -400,16 +401,17 @@ export function Tabs<T extends string>({
                 <button
                     key={t.value}
                     onClick={() => onChange(t.value)}
+                    aria-pressed={value === t.value}
                     className={cn(
                         "focus-ring flex items-center gap-1.5 px-3 font-medium whitespace-nowrap transition-[background-color,color,box-shadow] [&_svg]:size-3.5",
-                        classic ? "h-7 rounded-md text-[13px]" : "label h-8 shrink-0 text-[10.5px]",
-                        // The chosen one: filled with the ink.
-                        value === t.value ? (classic ? "bg-white/[0.1] text-fg" : "bg-brand text-[color:var(--on-brand)]") : classic ? "text-muted hover:text-fg" : "text-muted hover:bg-white/[0.06] hover:text-fg",
+                        // This look: words, the chosen one in brackets (index.css's word).
+                        classic ? "h-7 rounded-md text-[13px]" : "word label h-8 shrink-0 text-[10.5px]",
+                        value === t.value ? (classic ? "bg-white/[0.1] text-fg" : "text-fg") : "text-muted hover:text-fg",
                     )}
                 >
                     {t.icon}
                     {t.label}
-                    {t.count !== undefined && <span className={cn("tabular-nums", classic ? "text-xs" : "text-[10px]", value === t.value ? (classic ? "text-muted" : "opacity-60") : "text-subtle")}>{t.count}</span>}
+                    {t.count !== undefined && <span className={cn("tabular-nums", classic ? "text-xs" : "text-[10px]", value === t.value ? "text-muted" : "text-subtle")}>{t.count}</span>}
                 </button>
             ))}
         </div>
@@ -647,6 +649,38 @@ export function Popover({
                 </PopoverPrimitive.Content>
             </PopoverPrimitive.Portal>
         </PopoverPrimitive.Root>
+    )
+}
+
+// A small switch of two or three words (sub / dub) a page builds itself:
+// its box, and each word. In this look they're words, the chosen one in
+// brackets: give it data-on too (index.css's word).
+export const switchBox = (classic: boolean) => cn("flex", classic ? "rounded-lg bg-white/[0.04] p-0.5" : "gap-0.5")
+export const switchItem = (classic: boolean, on: boolean) =>
+    cn("h-7 font-medium uppercase transition-colors", classic ? "rounded-md px-3 text-xs" : "word label px-2.5 text-[10px]", on ? (classic ? "bg-white/[0.1] text-fg" : "text-fg") : "text-muted hover:text-fg")
+
+// A link over artwork that looks like a button (a banner's Details), in
+// this look: a word in white.
+export const artButton = "word label focus-ring inline-flex h-9 items-center px-3.5 text-white/80 transition-colors hover:text-white"
+
+// One choice in a row of them (a genre, a filter): on, it's the one chosen.
+export function Chip({ on, className, children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { on?: boolean }) {
+    const classic = useClassic()
+    return (
+        <button
+            aria-pressed={!!on}
+            className={cn(
+                "h-8 shrink-0 font-medium transition-colors",
+                classic
+                    ? cn("rounded-full px-3.5 text-[13px]", on ? "bg-white text-neutral-950" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")
+                    : // A word; the chosen one in brackets.
+                      cn("word label focus-ring px-3 text-[10.5px]", on ? "text-fg" : "text-muted hover:text-fg"),
+                className,
+            )}
+            {...props}
+        >
+            {children}
+        </button>
     )
 }
 

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Button, EmptyState } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useCollection } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { CollectionItem } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -85,10 +86,11 @@ export default function StatsPage() {
 }
 
 function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+    const classic = useClassic()
     return (
         <div className="card min-w-0 px-4 py-4 sm:px-5">
-            <p className="truncate text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">{value}</p>
-            <p className="mt-1 truncate text-sm text-muted">{label}</p>
+            <p className={cn("truncate text-3xl font-semibold tracking-tight sm:text-4xl", classic ? "tabular-nums" : "font-display")}>{value}</p>
+            <p className={cn("truncate text-muted", classic ? "mt-1 text-sm" : "label mt-2")}>{label}</p>
             {sub && <p className="truncate text-xs text-subtle">{sub}</p>}
         </div>
     )
@@ -110,6 +112,7 @@ function ChartSection({ title, note, asTable, table, children }: { title: string
 
 // Episodes finished in Aniko, month by month: one series, in the accent.
 function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }) {
+    const classic = useClassic()
     const [hover, setHover] = useState<number | null>(null)
     const max = Math.max(0, ...months.map(m => m.episodes))
     const ticks = niceTicks(max)
@@ -118,7 +121,7 @@ function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }
     const empty = months.every(m => m.episodes === 0)
     const table = (
         <table className="w-full text-sm">
-            <thead className="text-left text-xs text-subtle">
+            <thead className={cn("text-left text-subtle", classic ? "text-xs" : "label text-[10px]")}>
                 <tr>
                     <th className="pb-2 font-medium">Month</th>
                     <th className="pb-2 text-right font-medium">Episodes</th>
@@ -145,9 +148,10 @@ function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }
                 // month stays clear of the title.
                 <div className="mt-14 flex gap-2 sm:gap-3">
                     {/* y axis: clean ticks, tabular so they line up */}
-                    <div className="relative h-48 w-6 shrink-0 sm:w-8 text-right text-[11px] text-subtle tabular-nums">
+                    <div className={cn("relative h-48 w-6 shrink-0 sm:w-8 text-right text-[11px] text-subtle", classic ? "tabular-nums" : "font-mono")}>
                         {ticks.map(t => (
-                            <span key={t} className="absolute right-0 -translate-y-1/2" style={{ bottom: `${(t / top) * 100}%` }}>
+                            // This look: on its line.
+                            <span key={t} className={cn("absolute right-0", classic ? "-translate-y-1/2" : "translate-y-1/2")} style={{ bottom: `${(t / top) * 100}%` }}>
                                 {t}
                             </span>
                         ))}
@@ -171,13 +175,14 @@ function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }
                                         onBlur={() => setHover(h => (h === i ? null : h))}
                                     >
                                         <div
-                                            className={cn("w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity", hover !== null && hover !== i && "opacity-60")}
+                                            className={cn("w-full max-w-6 bg-brand transition-opacity", classic && "rounded-t-[4px]", hover !== null && hover !== i && "opacity-60")}
                                             style={{ height: `${(m.episodes / top) * 100}%` }}
                                         />
                                         {hover === i && (
                                             <div
                                                 className={cn(
-                                                    "pointer-events-none absolute z-10 rounded-lg bg-surface-3 px-3 py-2 text-xs whitespace-nowrap shadow-xl ring-1 ring-white/10",
+                                                    "pointer-events-none absolute z-10 px-3 py-2 text-xs whitespace-nowrap",
+                                                    classic ? "rounded-lg bg-surface-3 shadow-xl ring-1 ring-white/10" : "border border-line-strong bg-bg",
                                                     i < 2 ? "left-0" : i > months.length - 3 ? "right-0" : "left-1/2 -translate-x-1/2",
                                                 )}
                                                 style={{ bottom: `calc(${(m.episodes / top) * 100}% + 8px)` }}
@@ -209,6 +214,7 @@ function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }
 // The genres of the anime on the list (not planned): one series, bars with
 // their count at the tip.
 function GenreBars({ genres, asTable }: { genres: [string, number][]; asTable: boolean }) {
+    const classic = useClassic()
     const max = Math.max(1, ...genres.map(g => g[1]))
     const table = (
         <table className="w-full text-sm">
@@ -232,7 +238,7 @@ function GenreBars({ genres, asTable }: { genres: [string, number][]; asTable: b
                         <div key={g} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 text-sm" title={`${g}: ${n} anime`}>
                             <span className="truncate text-muted">{g}</span>
                             <div className="flex items-center gap-2">
-                                <div className="h-4 rounded-r-[4px] bg-brand" style={{ width: `${(n / max) * 85}%` }} />
+                                <div className={cn("h-4 bg-brand", classic && "rounded-r-[4px]")} style={{ width: `${(n / max) * 85}%` }} />
                                 <span className="text-xs text-muted tabular-nums">{n}</span>
                             </div>
                         </div>
@@ -246,6 +252,7 @@ function GenreBars({ genres, asTable }: { genres: [string, number][]; asTable: b
 // The list by status: one bar of its parts, with a legend (and the counts in
 // it, so identity never rests on color alone).
 function StatusBar({ counts, asTable }: { counts: Map<string, number>; asTable: boolean }) {
+    const classic = useClassic()
     const parts = STATUSES.filter(s => (counts.get(s.status) ?? 0) > 0).map(s => ({ ...s, n: counts.get(s.status)! }))
     const total = parts.reduce((s, p) => s + p.n, 0)
     const [hover, setHover] = useState<string | null>(null)
@@ -273,7 +280,7 @@ function StatusBar({ counts, asTable }: { counts: Map<string, number>; asTable: 
                                 key={p.status}
                                 tabIndex={0}
                                 aria-label={`${p.label}: ${p.n}`}
-                                className={cn("outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-white/70", i === 0 && "rounded-l-[4px]", i === parts.length - 1 && "rounded-r-[4px]", hover && hover !== p.status && "opacity-50")}
+                                className={cn("outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-white/70", classic && i === 0 && "rounded-l-[4px]", classic && i === parts.length - 1 && "rounded-r-[4px]", hover && hover !== p.status && "opacity-50")}
                                 style={{ flexGrow: p.n, flexBasis: 0, minWidth: 3, background: p.color }}
                                 onPointerEnter={() => setHover(p.status)}
                                 onPointerLeave={() => setHover(null)}

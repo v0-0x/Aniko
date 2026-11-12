@@ -265,7 +265,7 @@ export function Sidebar() {
                             ? "bg-white/[0.08] text-fg"
                             : "text-muted hover:bg-white/[0.04] hover:text-fg"
                         : active
-                          ? cn("text-fg", !wide && "shadow-[inset_0_0_0_1px_var(--line-strong)]") // the open page: in brackets (index.css's nav-label); a box around the icon alone
+                          ? cn("text-fg", !wide && "shadow-[inset_0_-1px_0_var(--text)]") // the open page: in brackets (index.css's nav-label); a line under the icon alone
                           : "text-muted hover:text-fg",
                 )}
             >
@@ -357,7 +357,7 @@ export function Sidebar() {
                                     aria-label="Settings"
                                     className={cn(
                                         "focus-ring grid size-9 shrink-0 place-items-center rounded-sm transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:stroke-[1.5]",
-                                        location.pathname.startsWith("/settings") ? "text-fg shadow-[inset_0_0_0_1px_var(--line-strong)]" : "text-muted hover:text-fg",
+                                        location.pathname.startsWith("/settings") ? "text-fg shadow-[inset_0_-1px_0_var(--text)]" : "text-muted hover:text-fg",
                                     )}
                                 >
                                     <SettingsIcon />

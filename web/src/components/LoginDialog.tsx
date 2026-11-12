@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast"
 import { api, desktop } from "@/lib/api"
 import { loginStarted } from "@/lib/login"
 import { useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { androidApp, tv } from "@/lib/tv"
 import { Button, Dialog, Field, Input } from "./ui"
 
@@ -12,6 +13,7 @@ import { Button, Dialog, Field, Input } from "./ui"
 // so the token is either captured automatically by the desktop window or
 // pasted by the user.
 export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const [token, setToken] = useState("")
     const [busy, setBusy] = useState(false)
@@ -57,7 +59,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <div className="flex flex-col gap-5">
                 {/* A TV has no easy way to copy a token: the computer can share its login. */}
                 {androidApp && (
-                    <p className="rounded-lg border border-brand/30 bg-brand-soft p-4 text-sm text-fg/90">
+                    <p className={classic ? "rounded-lg border border-brand/30 bg-brand-soft p-4 text-sm text-fg/90" : "border-l border-line-strong pl-4 text-sm text-fg/90"}>
                         Easiest on a TV: on your computer's Aniko, open Settings › Other devices and turn on “Share my AniList account” next to this device.
                     </p>
                 )}
@@ -68,7 +70,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 )}
                 {manual && (
                     <>
-                        <div className="rounded-lg bg-white/[0.03] p-5">
+                        <div className={classic ? "rounded-lg bg-white/[0.03] p-5" : undefined}>
                             <p className="text-sm text-muted">
                                 {desktop()
                                     ? "Authorize Aniko in the login window that opens."
@@ -87,7 +89,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                                 onKeyDown={e => e.key === "Enter" && submit(token)}
                             />
                         </Field>
-                        <Button variant="white" loading={busy} disabled={!token.trim()} onClick={() => submit(token)}>
+                        <Button variant={classic ? "white" : "subtle"} loading={busy} disabled={!token.trim()} onClick={() => submit(token)}>
                             Log in
                         </Button>
                     </>

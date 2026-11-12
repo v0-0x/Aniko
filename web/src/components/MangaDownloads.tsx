@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import { Badge, Button, Dialog, EmptyState, Input, Select } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import { androidApp } from "@/lib/tv"
 import type { LocalMangaChapter, MangaChapter, MangaDownload, MangaSeries } from "@/lib/types"
@@ -222,6 +223,7 @@ export function DownloadDialog({
 
 // This manga's downloads that are on their way or failed.
 export function DownloadsPanel({ mediaId }: { mediaId: number }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const { data } = useMangaDownloads()
     const jobs = (data ?? []).filter(j => j.mediaId === mediaId && j.state !== "done")
@@ -238,7 +240,7 @@ export function DownloadsPanel({ mediaId }: { mediaId: number }) {
             .catch(e => toast.error(e.message))
     return (
         <div className="card flex flex-col gap-2 p-4">
-            <p className="text-sm font-medium">Downloading</p>
+            <p className={classic ? "text-sm font-medium" : "label text-muted"}>Downloading</p>
             <ul className="flex flex-col gap-1.5 text-sm">
                 {jobs.map(j => (
                     <li key={j.id} className="flex items-center gap-3">

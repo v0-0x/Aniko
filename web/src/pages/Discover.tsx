@@ -4,10 +4,10 @@ import { Link } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
 import { Carousel, MediaCard, MediaCardSkeleton } from "@/components/MediaCard"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
-import { Button, ChipRow, EmptyState, ErrorState, SectionHeader, Skeleton } from "@/components/ui"
+import { artButton, Button, ChipRow, EmptyState, ErrorState, SectionHeader, Skeleton } from "@/components/ui"
 import { useDiscover, useGenres, useSearch } from "@/lib/queries"
 import { useStore } from "@/lib/store"
-import { holidayStore } from "@/lib/themes"
+import { holidayStore, useClassic } from "@/lib/themes"
 import { HolidayIcon } from "@/components/HolidayBadge"
 import type { Media } from "@/lib/types"
 import { banner, cn, formatLabel, GENRES, SEASONS, seasonLabel, title } from "@/lib/utils"
@@ -140,6 +140,7 @@ export default function DiscoverPage() {
 }
 
 function Featured({ media, index, count, onIndex, onHold }: { media: Media; index: number; count: number; onIndex: (i: number) => void; onHold: (on: boolean) => void }) {
+    const classic = useClassic()
     // One line: score, format, season, then its first genres.
     const facts = [media.meanScore ? `${media.meanScore}%` : "", formatLabel(media.format), seasonLabel(media.season, media.seasonYear), media.genres?.slice(0, 3).join(", ") ?? ""].filter(Boolean)
     return (
@@ -152,7 +153,7 @@ function Featured({ media, index, count, onIndex, onHold }: { media: Media; inde
             <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-bg/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/25 to-transparent" />
             <div key={media.id + "t"} className="absolute inset-x-0 bottom-24 max-w-3xl px-6 rise-in md:px-8 xl:px-10">
-                <p className="text-sm font-medium text-white/65">Trending #{index + 1}</p>
+                <p className={cn(classic ? "text-sm font-medium" : "label", "text-white/65")}>Trending #{index + 1}</p>
                 <h1 className="mt-1.5 line-clamp-2 text-4xl leading-[1.1] font-semibold tracking-tight text-white md:text-[2.75rem]">{title(media)}</h1>
                 <p className="mt-2 line-clamp-1 text-[15px] text-white/80">{facts.join(" · ")}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -161,7 +162,7 @@ function Featured({ media, index, count, onIndex, onHold }: { media: Media; inde
                             Watch now
                         </Button>
                     </Link>
-                    <Link to={`/entry?id=${media.id}&tab=details`} className="focus-ring inline-flex h-9 items-center rounded-lg bg-white/10 px-3.5 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20">
+                    <Link to={`/entry?id=${media.id}&tab=details`} className={classic ? "focus-ring inline-flex h-9 items-center rounded-lg bg-white/10 px-3.5 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20" : artButton}>
                         Details
                     </Link>
                 </div>

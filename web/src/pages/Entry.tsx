@@ -30,7 +30,7 @@ import { TorrentPanel } from "@/components/entry/TorrentPanel"
 import { Carousel, MediaCard } from "@/components/MediaCard"
 import { PluginActions, PluginSlot, usePluginDropdownActions } from "@/components/plugins/PluginSlot"
 import { sendPluginEvent } from "@/components/plugins/PluginRenderer"
-import { Badge, Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, Skeleton, Tabs, Tooltip } from "@/components/ui"
+import { Badge, Button, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, Skeleton, switchBox, switchItem, Tabs, Tooltip } from "@/components/ui"
 import { WatchOrder } from "@/components/WatchOrder"
 import { AddToPlaylistDialog } from "@/components/PlaylistDialog"
 import { api } from "@/lib/api"
@@ -39,6 +39,7 @@ import { usePlay } from "@/lib/play"
 import { fetchLanguageMode, useEntry, useEpisodeMarker, useFiller, useLanguageMode, useStatus } from "@/lib/queries"
 import { fillerFact } from "@/lib/filler"
 import type { PlaylistItem } from "@/lib/playlist"
+import { useClassic } from "@/lib/themes"
 import type { EntryView, Probe } from "@/lib/types"
 import { banner, cleanDescription, cn, cover, formatBytes, formatDuration, formatLabel, img, otherTitle, readLocal, scoreColor, seasonLabel, statusLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
 import { tv } from "@/lib/tv"
@@ -128,6 +129,7 @@ export default function EntryPage() {
 }
 
 function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void }) {
+    const classic = useClassic()
     const media = entry.media
     const { data: status } = useStatus()
     const { playLocal, playStream } = usePlay()
@@ -165,9 +167,12 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
             </div>
             {/* What the anime is and what to do with it, on one glass panel over its art. */}
             <div className="relative z-10 px-6 pt-28 pb-8 md:px-8 xl:px-10">
-            <div className={cn("flex flex-col gap-6 rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:flex-row md:p-6", !tv && "backdrop-blur-2xl")}>
+            <div className={cn("flex flex-col gap-6 md:flex-row", classic ? "rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:p-6" : "md:gap-8", !tv && classic && "backdrop-blur-2xl")}>
                 <div className="w-32 shrink-0 md:w-44">
-                    <img src={cover(media, "poster")} alt="" className="aspect-[2/3] w-full rounded-lg object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 fade-in" />
+                    {/* marks: this look's corner marks on the poster (index.css). */}
+                    <div className="marks">
+                        <img src={cover(media, "poster")} alt="" className="aspect-[2/3] w-full rounded-lg object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 fade-in" />
+                    </div>
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-end gap-4 fade-in">
                     <div>
@@ -229,7 +234,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                             </Button>
                         )}
                         {/* The list's status, progress and score, and the rest: one quiet group. */}
-                        <div className="flex max-w-full flex-wrap items-center gap-0.5 rounded-xl border border-white/10 bg-white/[0.06] p-0.5 *:h-[38px]! *:rounded-[9px]! *:bg-transparent! [&>button:not([aria-label])]:px-3.5! [&>button]:text-sm! [&>button:hover]:bg-white/[0.08]! [&>button[data-state=open]]:bg-white/[0.08]!">
+                        <div className={classic ? "flex max-w-full flex-wrap items-center gap-0.5 rounded-xl border border-white/10 bg-white/[0.06] p-0.5 *:h-[38px]! *:rounded-[9px]! *:bg-transparent! [&>button:not([aria-label])]:px-3.5! [&>button]:text-sm! [&>button:hover]:bg-white/[0.08]! [&>button[data-state=open]]:bg-white/[0.08]!" : "flex max-w-full flex-wrap items-center gap-x-1 gap-y-2"}>
                             <ListStatusButton media={media} entry={entry.listEntry} />
                             {entry.listEntry && <ProgressEditor media={media} entry={entry.listEntry} />}
                             <ScoreEditor media={media} entry={entry.listEntry} />
@@ -464,6 +469,7 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
 // Sub/Dub for dual-audio files: shown when the files have an English and an
 // original-language audio track (found by language tag or track title).
 function LocalLanguageSwitch({ mediaId, samplePath }: { mediaId: number; samplePath?: string }) {
+    const classic = useClassic()
     const language = useLanguageMode(mediaId)
     const { data: probe } = useQuery({
         queryKey: ["probe", samplePath],
@@ -481,7 +487,7 @@ function LocalLanguageSwitch({ mediaId, samplePath }: { mediaId: number; sampleP
     return (
         <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-subtle">Audio</span>
-            <div className="flex rounded-lg bg-white/[0.04] p-0.5">
+            <div className={switchBox(classic)}>
                 {(["sub", "dub"] as const).map(m => (
                     <Tooltip key={m} content={m === "dub" ? `English audio${names(true) ? ` (${names(true)})` : ""}, signs & songs subtitles` : `Original audio${names(false) ? ` (${names(false)})` : ""} with full subtitles`}>
                         <button
@@ -489,7 +495,8 @@ function LocalLanguageSwitch({ mediaId, samplePath }: { mediaId: number; sampleP
                                 language.set(m)
                                 toast.success(m === "dub" ? "Switched to dub" : "Switched to sub")
                             }}
-                            className={cn("h-7 rounded-md px-3 text-xs font-medium uppercase transition-colors", mode === m ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
+                            data-on={mode === m || undefined}
+                            className={switchItem(classic, mode === m)}
                         >
                             {m}
                         </button>
@@ -501,6 +508,7 @@ function LocalLanguageSwitch({ mediaId, samplePath }: { mediaId: number; sampleP
 }
 
 function DetailsTab({ entry }: { entry: EntryView }) {
+    const classic = useClassic()
     const media = entry.media
     const relations = (media.relations?.edges ?? []).filter(e => e.node && ["ANIME", "MANGA"].includes(e.node.type))
     const recs = (media.recommendations?.nodes ?? []).map(n => n.mediaRecommendation).filter(Boolean)
@@ -591,10 +599,10 @@ function DetailsTab({ entry }: { entry: EntryView }) {
                 </div>
             )}
             {media.trailer?.site === "youtube" && (
-                <a href={`https://www.youtube.com/watch?v=${media.trailer.id}`} target="_blank" rel="noopener noreferrer" className="group relative block w-full max-w-xl overflow-hidden rounded-lg">
+                <a href={`https://www.youtube.com/watch?v=${media.trailer.id}`} target="_blank" rel="noopener noreferrer" className="marks on-dark group relative block w-full max-w-xl overflow-hidden rounded-lg">
                     <img src={img(media.trailer.thumbnail)} alt="" className="aspect-video w-full object-cover transition-[filter] duration-300 group-hover:brightness-110" />
                     <span className="absolute inset-0 grid place-items-center bg-black/40">
-                        <span className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950">
+                        <span className={cn("flex items-center gap-2 bg-white px-4", classic ? "rounded-full py-2 text-sm font-medium text-neutral-950" : "label rounded-sm py-2.5 text-black")}>
                             <Play className="size-4 fill-current" /> Watch trailer
                         </span>
                     </span>

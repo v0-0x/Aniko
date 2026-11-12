@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import { Badge, Button, IconButton, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useCollection, useWatchOrder } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { CollectionItem, WatchOrder as Order, WatchOrderEntry } from "@/lib/types"
 import { cn, cover, formatLabel, title } from "@/lib/utils"
@@ -173,16 +174,17 @@ function Row({
     status: string
     actions?: React.ReactNode
 }) {
+    const classic = useClassic()
     const m = entry.media
     const facts = [formatLabel(m.format), m.startDate?.year ?? m.seasonYear ?? "TBA", m.episodes && m.format !== "MOVIE" ? `${m.episodes} ${m.episodes === 1 ? "episode" : "episodes"}` : ""]
         .filter(Boolean)
         .join(" · ")
     return (
-        <li className={cn("flex items-center gap-3 px-3 py-2.5", current && "bg-brand-soft/60", entry.hidden && "opacity-45")}>
+        <li className={cn("flex items-center gap-3 px-3 py-2.5", current && (classic ? "bg-brand-soft/60" : "shadow-[inset_2px_0_0_0_var(--text)]"), entry.hidden && "opacity-45")}>
             {n !== undefined && <span className="w-6 shrink-0 text-right text-sm text-subtle tabular-nums">{n}</span>}
             <img src={cover(m, "thumb")} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded object-cover" />
             <div className="min-w-0 flex-1">
-                <Link to={`/entry?id=${m.id}`} className="focus-ring block truncate rounded text-sm font-medium hover:text-brand-strong">
+                <Link to={`/entry?id=${m.id}`} className={cn("focus-ring block truncate rounded text-sm font-medium", classic ? "hover:text-brand-strong" : "underline-offset-4 hover:underline")}>
                     {title(m)}
                 </Link>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">

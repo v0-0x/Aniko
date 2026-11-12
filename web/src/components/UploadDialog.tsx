@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 import { CheckCircle2, FilePlus2, FolderPlus, Server, TriangleAlert, Upload, X } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ApiError, api } from "@/lib/api"
-import { formatBytes } from "@/lib/utils"
+import { useClassic } from "@/lib/themes"
+import { cn, formatBytes } from "@/lib/utils"
 import { Button, Dialog, Progress, Select } from "./ui"
 
 // Files and folders from this computer into a server's library: one that
@@ -64,6 +65,7 @@ export function UploadDialog({
     base?: string
     description?: string
 }) {
+    const classic = useClassic()
     const targets = useUploadTargets(open, base)
     const list = targets.data ?? []
     const [targetId, setTargetId] = useState<string>("")
@@ -300,9 +302,9 @@ export function UploadDialog({
                                 <span className="tabular-nums">{total ? Math.floor((sent / total) * 100) : 0}%</span>
                             </div>
                             <Progress value={total ? sent / total : 0} />
-                            <ul className="flex max-h-[40vh] flex-col gap-1 overflow-y-auto pr-1">
+                            <ul className={cn("flex max-h-[40vh] flex-col overflow-y-auto pr-1", classic ? "gap-1" : "divide-y divide-line")}>
                                 {items.map(it => (
-                                    <li key={it.key} className="flex items-center gap-2.5 rounded-lg bg-white/[0.03] px-2.5 py-2 text-[13px]">
+                                    <li key={it.key} className={cn("flex items-center gap-2.5 py-2 text-[13px]", classic && "rounded-lg bg-white/[0.03] px-2.5")}>
                                         {it.state === "done" || it.state === "there" ? (
                                             <CheckCircle2 className="size-4 shrink-0 text-emerald-300" />
                                         ) : it.state === "failed" ? (

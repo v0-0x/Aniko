@@ -5,12 +5,27 @@ import { toast } from "@/lib/toast"
 import { EmptyState, ErrorState, IconButton, Progress } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useDownloads, useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { DownloadItem } from "@/lib/types"
 import { cn, img } from "@/lib/utils"
 
 const RUNNING = ["queued", "resolving", "downloading"]
+// A group's rows: in this look on hairlines, not a box each.
+const rows = (classic: boolean) => cn("flex flex-col", classic ? "gap-2" : "border-t border-line")
+
+// A group's name: in this look a small capital label (in a span: a heading
+// has its own face).
+function GroupName({ children }: { children: React.ReactNode }) {
+    const classic = useClassic()
+    return (
+        <h2 className={cn("text-sm font-medium text-muted", classic ? "mb-3" : "mb-1")}>
+            <span className={classic ? undefined : "label"}>{children}</span>
+        </h2>
+    )
+}
 
 export default function DownloadsPage() {
+    const classic = useClassic()
     const { data, isLoading, error, refetch, isFetching } = useDownloads()
     const { data: status } = useStatus()
     // This device's downloads go to another Aniko (a TV's to its computer):
@@ -49,8 +64,8 @@ export default function DownloadsPage() {
             )}
             {active.length > 0 && (
                 <section className="mb-8">
-                    <h2 className="mb-3 text-sm font-medium text-muted">In progress</h2>
-                    <div className="flex flex-col gap-2">
+                    <GroupName>In progress</GroupName>
+                    <div className={rows(classic)}>
                         {active.map(i => (
                             <Row key={i.id} item={i} onCancel={() => call(api.post(`/api/downloads/${i.id}/cancel`))} />
                         ))}
@@ -59,8 +74,8 @@ export default function DownloadsPage() {
             )}
             {done.length > 0 && (
                 <section>
-                    <h2 className="mb-3 text-sm font-medium text-muted">History</h2>
-                    <div className="flex flex-col gap-2">
+                    <GroupName>History</GroupName>
+                    <div className={rows(classic)}>
                         {done.map(i => (
                             <Row key={i.id} item={i} onRetry={() => call(api.post(`/api/downloads/${i.id}/retry`))} onRemove={() => call(api.del(`/api/downloads/${i.id}`))} />
                         ))}
@@ -72,6 +87,7 @@ export default function DownloadsPage() {
 }
 
 function HostDownloads({ host, items, error, refetch, local }: { host: string; items: DownloadItem[]; error?: string; refetch: () => void; local: DownloadItem[] }) {
+    const classic = useClassic()
     const call = (p: Promise<unknown>) => p.then(refetch, (e: Error) => toast.error(e.message))
     const active = items.filter(i => RUNNING.includes(i.status))
     const done = items.filter(i => !RUNNING.includes(i.status)).slice(0, 50)
@@ -81,7 +97,7 @@ function HostDownloads({ host, items, error, refetch, local }: { host: string; i
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Downloads</h1>
                 <p className="mt-1 truncate text-sm text-muted">Saved on {host}</p>
             </div>
-            {error && <p className="mb-8 rounded-xl bg-rose-500/10 p-4 text-sm text-rose-200">{error}</p>}
+            {error && <p className={cn("mb-8 text-sm text-rose-200", classic ? "rounded-xl bg-rose-500/10 p-4" : "border-l border-rose-400 pl-3")}>{error}</p>}
             {!error && items.length === 0 && (
                 <EmptyState icon={<Download className="size-6" />} title={`Nothing downloading on ${host}`}>
                     Download an episode from an anime's Watch online tab.
@@ -89,8 +105,8 @@ function HostDownloads({ host, items, error, refetch, local }: { host: string; i
             )}
             {active.length > 0 && (
                 <section className="mb-8">
-                    <h2 className="mb-3 text-sm font-medium text-muted">In progress</h2>
-                    <div className="flex flex-col gap-2">
+                    <GroupName>In progress</GroupName>
+                    <div className={rows(classic)}>
                         {active.map(i => (
                             <Row key={i.id} item={i} onCancel={() => call(api.post(`/api/downloads/host/${encodeURIComponent(i.id)}/cancel`))} />
                         ))}
@@ -99,8 +115,8 @@ function HostDownloads({ host, items, error, refetch, local }: { host: string; i
             )}
             {done.length > 0 && (
                 <section className="mb-8">
-                    <h2 className="mb-3 text-sm font-medium text-muted">History</h2>
-                    <div className="flex flex-col gap-2">
+                    <GroupName>History</GroupName>
+                    <div className={rows(classic)}>
                         {done.map(i => (
                             <Row key={i.id} item={i} onRetry={() => call(api.post(`/api/downloads/host/${encodeURIComponent(i.id)}/retry`))} />
                         ))}
@@ -109,8 +125,8 @@ function HostDownloads({ host, items, error, refetch, local }: { host: string; i
             )}
             {local.length > 0 && (
                 <section>
-                    <h2 className="mb-3 text-sm font-medium text-muted">On this device</h2>
-                    <div className="flex flex-col gap-2">
+                    <GroupName>On this device</GroupName>
+                    <div className={rows(classic)}>
                         {local.map(i => (
                             <Row
                                 key={i.id}
@@ -140,8 +156,9 @@ function Row({ item, onCancel, onRetry, onRemove }: { item: DownloadItem; onCanc
         item.status === "downloading" && item.speed,
         item.status === "downloading" && item.eta && `ETA ${item.eta}`,
     ].filter(Boolean)
+    const classic = useClassic()
     return (
-        <div className="card flex items-center gap-4 p-3 fade-in">
+        <div className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
             <Link to={`/entry?id=${item.mediaId}`} className="focus-ring shrink-0 rounded-lg">
                 {item.image ? <img src={img(item.image)} alt="" className="h-16 w-11 rounded-lg object-cover" /> : <div className="h-16 w-11 rounded-lg bg-surface-3" />}
             </Link>

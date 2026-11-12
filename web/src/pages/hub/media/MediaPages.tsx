@@ -5,6 +5,7 @@ import { DirPicker } from "@/components/DirPicker"
 import { UploadDialog } from "@/components/UploadDialog"
 import { Badge, Button, EmptyState, IconButton, Input, Spinner, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { HubOverview } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -55,6 +56,7 @@ function kindCounts(titles: MTitle[], kind: MediaKind) {
 // ------------------------------------------------------------------ overview
 
 export function MediaOverview({ kind, o, go }: { kind: MediaKind; o: HubOverview; go: (t: MediaTab) => void }) {
+    const classic = useClassic()
     const { data: titles } = useMTitles()
     const { data: sharing } = useMSharing()
     const { data: status } = useMStatus()
@@ -90,7 +92,7 @@ export function MediaOverview({ kind, o, go }: { kind: MediaKind; o: HubOverview
                     <Panel
                         title={`Recently added ${noun(kind)}`}
                         action={
-                            <button className="flex items-center gap-1 text-[13px] text-muted hover:text-fg" onClick={() => go("library")}>
+                            <button className={classic ? "flex items-center gap-1 text-[13px] text-muted hover:text-fg" : "word label focus-ring -mr-2.5 flex h-7 items-center gap-0.5 px-2.5 text-[10.5px] text-muted transition-colors hover:text-fg"} onClick={() => go("library")}>
                                 Library <ChevronRight className="size-4" />
                             </button>
                         }
@@ -119,7 +121,7 @@ export function MediaOverview({ kind, o, go }: { kind: MediaKind; o: HubOverview
                     <Panel
                         title={`Moviko apps · ${online.length} online`}
                         action={
-                            <button className="flex items-center gap-1 text-[13px] text-muted hover:text-fg" onClick={() => go("devices")}>
+                            <button className={classic ? "flex items-center gap-1 text-[13px] text-muted hover:text-fg" : "word label focus-ring -mr-2.5 flex h-7 items-center gap-0.5 px-2.5 text-[10.5px] text-muted transition-colors hover:text-fg"} onClick={() => go("devices")}>
                                 Manage <ChevronRight className="size-4" />
                             </button>
                         }
@@ -179,7 +181,7 @@ function PosterCard({ t, kind, small }: { t: MTitle; kind: MediaKind; small?: bo
     const year = mediaYear(t.media)
     return (
         <div className="min-w-0" title={t.dir}>
-            <div className="aspect-[2/3] overflow-hidden rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]">
+            <div className={cn("aspect-[2/3] overflow-hidden rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]", src && "marks")}>
                 {src ? (
                     <img src={src} alt="" loading="lazy" className="size-full object-cover" />
                 ) : (
@@ -197,6 +199,7 @@ function PosterCard({ t, kind, small }: { t: MTitle; kind: MediaKind; small?: bo
 // ------------------------------------------------------------------- devices
 
 export function MediaDevices() {
+    const classic = useClassic()
     const qc = useQueryClient()
     const { data: sharing, isLoading } = useMSharing()
     const save = useMutation({
@@ -235,7 +238,7 @@ export function MediaDevices() {
                         {(list as MPeer[]).map(p => (
                             <div key={p.id} className={cn("card overflow-hidden", !p.allowed && p.online && "border-brand/40")}>
                                 <div className="flex items-center gap-3 px-4 py-3.5">
-                                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05]">
+                                    <span className={classic ? "grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05]" : "grid shrink-0 place-items-center"}>
                                         <PeerIcon p={p} className="size-5 text-muted" />
                                     </span>
                                     <div className="min-w-0 flex-1">
@@ -298,6 +301,7 @@ function Loading() {
 // ------------------------------------------------------------------- library
 
 export function MediaLibrary({ kind, moviesPort }: { kind: MediaKind; moviesPort?: number }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const { data: settings } = useMSettings()
     const { data: titles, isLoading } = useMTitles()
@@ -360,7 +364,7 @@ export function MediaLibrary({ kind, moviesPort }: { kind: MediaKind; moviesPort
                             <ul className="divide-y divide-line">
                                 {folders.map(f => (
                                     <li key={f} className="flex items-center gap-3 px-4 py-3">
-                                        <Folder className="size-4 shrink-0 text-amber-300" />
+                                        <Folder className={classic ? "size-4 shrink-0 text-amber-300" : "size-4 shrink-0 text-muted"} />
                                         <span className="min-w-0 flex-1 truncate font-mono text-[13px]" title={f}>
                                             {shortPath(f)}
                                         </span>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button, Dialog, ErrorState, IconButton, Input } from "@/components/ui"
 import { keepPlaylist, playlists, playPlaylist, usePlaylists, type Playlist } from "@/lib/playlist"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import { cn, img } from "@/lib/utils"
 
@@ -12,6 +13,7 @@ const count = (n: number) => `${n} episode${n === 1 ? "" : "s"}`
 // Your playlists (lib/playlist), and one opened (?id=): its episodes in
 // order, each moved with buttons (a TV's remote), not dragged.
 export default function PlaylistsPage() {
+    const classic = useClassic()
     const [params] = useSearchParams()
     const id = params.get("id")
     const { data, isLoading, error, refetch, isFetching } = usePlaylists()
@@ -25,9 +27,10 @@ export default function PlaylistsPage() {
             </div>
             {error && !data && <ErrorState title="Couldn't load the playlists" error={error} retrying={isFetching} onRetry={() => refetch()} />}
             {!isLoading && !error && lists.length === 0 && <p className="text-sm text-muted">No playlists yet: add episodes from an episode's ⋯ menu.</p>}
-            <div className="flex flex-col gap-2">
+            {/* This look: rows on hairlines, not a box each. */}
+            <div className={cn("flex flex-col", classic ? "gap-2" : lists.length > 0 && "border-t border-line")}>
                 {lists.map(p => (
-                    <div key={p.id} className="card flex items-center gap-3 p-3 fade-in sm:gap-4">
+                    <div key={p.id} className={cn("flex items-center gap-3 fade-in sm:gap-4", classic ? "card p-3" : "border-b border-line py-3")}>
                         <Link to={`/playlists?id=${p.id}`} className="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-lg sm:gap-4">
                             {p.items[0]?.image ? <img src={img(p.items[0].image)} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" /> : <div className="grid h-16 w-11 shrink-0 place-items-center rounded-lg bg-surface-3 text-subtle"><ListVideo className="size-4" /></div>}
                             <div className="min-w-0 flex-1">
@@ -48,6 +51,7 @@ export default function PlaylistsPage() {
 }
 
 function PlaylistView({ p }: { p: Playlist }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const navigate = useNavigate()
     const [renaming, setRenaming] = useState(false)
@@ -86,7 +90,7 @@ function PlaylistView({ p }: { p: Playlist }) {
 
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
-            <Link to="/playlists" className="focus-ring mb-3 inline-flex items-center gap-1.5 rounded text-sm text-muted hover:text-fg">
+            <Link to="/playlists" className={cn("focus-ring mb-3 inline-flex items-center gap-1.5 text-muted hover:text-fg", classic ? "rounded text-sm" : "word label -ml-2.5 h-7 px-2.5 transition-colors")}>
                 <ArrowLeft className="size-4" /> Playlists
             </Link>
             <div className="mb-6 min-w-0">
@@ -107,12 +111,12 @@ function PlaylistView({ p }: { p: Playlist }) {
                 </Button>
             </div>
             {p.items.length === 0 && <p className="text-sm text-muted">Empty: add episodes from an episode's ⋯ menu.</p>}
-            <div ref={list} className="flex flex-col gap-2">
+            <div ref={list} className={cn("flex flex-col", classic ? "gap-2" : p.items.length > 0 && "border-t border-line")}>
                 {p.items.map((it, i) => {
                     const first = i === 0
                     const last = i === p.items.length - 1
                     return (
-                        <div key={`${i}:${it.mediaId}:${it.episode}`} data-row className="card flex items-center gap-3 p-3 sm:gap-4">
+                        <div key={`${i}:${it.mediaId}:${it.episode}`} data-row className={cn("flex items-center gap-3 sm:gap-4", classic ? "card p-3" : "border-b border-line py-3")}>
                             <Link to={`/entry?id=${it.mediaId}`} className="focus-ring shrink-0 rounded-lg max-sm:hidden" tabIndex={-1}>
                                 {it.image ? <img src={img(it.image)} alt="" className="h-12 w-20 rounded-lg object-cover" /> : <div className="h-12 w-20 rounded-lg bg-surface-3" />}
                             </Link>

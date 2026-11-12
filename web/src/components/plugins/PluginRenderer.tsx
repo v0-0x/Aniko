@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import type { UINode } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Popover, Select, Switch, Tooltip } from "../ui"
@@ -64,6 +65,7 @@ const badgeTone = (intent?: string) =>
         | "gray"
 
 function Node({ node }: { node: UINode }) {
+    const classic = useClassic()
     const send = useSend()
     const p = node.props ?? {}
     const style = p.style as React.CSSProperties | undefined
@@ -127,7 +129,7 @@ function Node({ node }: { node: UINode }) {
             )
         case "anchor":
             return (
-                <a href={p.href} target={p.target ?? "_blank"} rel="noopener noreferrer" onClick={p.onClick ? click : undefined} className={cn("text-brand hover:underline", cls)} style={style}>
+                <a href={p.href} target={p.target ?? "_blank"} rel="noopener noreferrer" onClick={p.onClick ? click : undefined} className={cn(classic ? "text-brand hover:underline" : "underline decoration-fg/40 underline-offset-4 hover:decoration-fg", cls)} style={style}>
                     {String(p.text ?? "")}
                 </a>
             )
@@ -146,11 +148,14 @@ function Node({ node }: { node: UINode }) {
                 </Badge>
             )
         case "alert": {
-            const tone = { success: "border-emerald-500/30 bg-emerald-500/10", warning: "border-amber-500/30 bg-amber-500/10", alert: "border-rose-500/30 bg-rose-500/10" }[
-                p.intent as string
-            ]
+            const tone = (
+                classic
+                    ? { success: "border-emerald-500/30 bg-emerald-500/10", warning: "border-amber-500/30 bg-amber-500/10", alert: "border-rose-500/30 bg-rose-500/10" }
+                    : // Only its line.
+                      { success: "border-emerald-400/45", warning: "border-amber-400/45", alert: "border-rose-400/45" }
+            )[p.intent as string]
             return (
-                <div className={cn("rounded-xl border px-4 py-3", tone ?? "border-sky-500/30 bg-sky-500/10", cls)} style={style}>
+                <div className={cn("rounded-xl border px-4 py-3", tone ?? (classic ? "border-sky-500/30 bg-sky-500/10" : "border-sky-400/45"), cls)} style={style}>
                     {p.title && <p className="font-semibold">{p.title}</p>}
                     {p.description && <p className="mt-0.5 text-muted">{p.description}</p>}
                 </div>
@@ -208,7 +213,7 @@ function Node({ node }: { node: UINode }) {
             return <TabsNode node={node} />
         case "tabsList":
             return (
-                <div className={cn("flex gap-1 rounded-xl border border-line bg-surface-2 p-1", cls)}>
+                <div className={cn("flex gap-1", classic && "rounded-xl border border-line bg-surface-2 p-1", cls)}>
                     <Items items={p.items} />
                 </div>
             )
@@ -224,6 +229,7 @@ function Node({ node }: { node: UINode }) {
 }
 
 function FieldNode({ node }: { node: UINode }) {
+    const classic = useClassic()
     const send = useSend()
     const p = node.props
     const [value, setValue] = useState<any>(p.value ?? (node.type === "checkbox" || node.type === "switch" ? false : ""))
@@ -252,7 +258,7 @@ function FieldNode({ node }: { node: UINode }) {
                             placeholder={p.placeholder}
                             disabled={p.disabled}
                             onChange={e => commit(e.target.value)}
-                            className="min-h-20 rounded-xl border border-line bg-surface-2 px-3 py-2 outline-none focus:border-brand/60"
+                            className={classic ? "min-h-20 rounded-xl border border-line bg-surface-2 px-3 py-2 outline-none focus:border-brand/60" : "min-h-20 rounded-sm border border-line bg-transparent px-3 py-2 outline-none transition-[border-color] hover:border-line-strong focus:border-fg"}
                         />
                     ) : (
                         <input
@@ -261,7 +267,7 @@ function FieldNode({ node }: { node: UINode }) {
                             disabled={p.disabled}
                             onChange={e => commit(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && p.onSelect && send({ kind: "handler", name: p.onSelect, payload: { value } })}
-                            className="h-9 rounded-xl border border-line bg-surface-2 px-3 outline-none focus:border-brand/60"
+                            className={classic ? "h-9 rounded-xl border border-line bg-surface-2 px-3 outline-none focus:border-brand/60" : "h-9 rounded-none border-b border-line-strong bg-transparent px-0.5 outline-none transition-[border-color] hover:border-fg/45 focus:border-fg"}
                         />
                     )}
                 </label>
@@ -357,11 +363,14 @@ function TabsNode({ node }: { node: UINode }) {
 }
 
 function TabsTrigger({ value, item }: { value: string; item: any }) {
+    const classic = useClassic()
     const t = useContext(TabsCtx)
+    const on = t.value === value
     return (
         <button
             onClick={() => t.set(value)}
-            className={cn("h-8 rounded-lg px-3 text-sm font-medium transition", t.value === value ? "bg-white/[0.09] text-fg" : "text-muted hover:text-fg")}
+            data-on={on || undefined}
+            className={cn("h-8 px-3 transition", classic ? "rounded-lg text-sm font-medium" : "word label text-[10.5px]", on ? (classic ? "bg-white/[0.09] text-fg" : "text-fg") : "text-muted hover:text-fg")}
         >
             {typeof item === "string" ? item : item && <Node node={item} />}
         </button>
@@ -379,5 +388,5 @@ function TabsContent({ value, items }: { value: string; items: any[] }) {
 }
 
 function HtmlFrame({ html }: { html: string }) {
-    return <iframe title="plugin" sandbox="allow-popups" srcDoc={html} className="h-80 w-full rounded-xl border border-line bg-white" />
+    return <iframe title="plugin" sandbox="allow-popups" srcDoc={html} className="h-80 w-full rounded-xl border border-line bg-[#fff]" />
 }

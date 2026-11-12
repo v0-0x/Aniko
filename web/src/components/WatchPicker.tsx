@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom"
 import { Badge, Button, Dialog, Select } from "@/components/ui"
 import { formatRanges } from "@/lib/missing"
 import { useCollection } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { CollectionItem } from "@/lib/types"
-import { cleanDescription, cover, formatLabel, title } from "@/lib/utils"
+import { cleanDescription, cn, cover, formatLabel, title } from "@/lib/utils"
 
 type From = "PLANNING" | "PAUSED" | "CURRENT" | "library"
 type Length = "any" | "short" | "long" | "movie"
@@ -26,6 +27,7 @@ const LENGTHS: { value: Length; label: string }[] = [
 // "What should I watch?": an anime picked at random from the list (what's
 // planned, by default), another one a click away.
 export function WatchPicker({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+    const classic = useClassic()
     const { data: coll } = useCollection()
     const navigate = useNavigate()
     const [from, setFrom] = useState<From>("PLANNING")
@@ -86,7 +88,7 @@ export function WatchPicker({ open, onOpenChange }: { open: boolean; onOpenChang
                     <Select className="w-full" value={genre} onChange={change(setGenre)} options={[{ value: "", label: "Any genre" }, ...(coll?.genres ?? []).map(g => ({ value: g, label: g }))]} />
                 </div>
                 {!m ? (
-                    <p className="rounded-lg bg-white/[0.04] px-4 py-8 text-center text-sm text-muted">
+                    <p className={cn("px-4 py-8 text-center text-sm text-muted", classic && "rounded-lg bg-white/[0.04]")}>
                         {coll ? "Nothing on your list fits. Try another list, length or genre." : "Loading your list…"}
                     </p>
                 ) : (

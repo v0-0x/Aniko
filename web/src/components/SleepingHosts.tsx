@@ -4,12 +4,14 @@ import { useState } from "react"
 import { Button } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 
 // Home: a computer that shares its library with this device doesn't answer
 // (asleep, or off), so its anime aren't here; one that can be woken up from
 // here (Wake-on-LAN) gets a button for it.
 export function SleepingHosts() {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const qc = useQueryClient()
     const [busy, setBusy] = useState("")
@@ -31,7 +33,7 @@ export function SleepingHosts() {
         <div className="flex flex-col gap-3 px-6 pt-6 md:px-8 xl:px-10">
             {hosts.map(h => (
                 <div key={h.id} className="card flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4 rise-in">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-fg/80 [&>svg]:size-[18px]">
+                    <span className={classic ? "grid size-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-fg/80 [&>svg]:size-[18px]" : "shrink-0 text-muted [&>svg]:size-5 [&>svg]:stroke-[1.5]"}>
                         <Moon />
                     </span>
                     <div className="min-w-0 flex-1">

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Badge, Button, Input, Progress, Select, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useApplyUpdate, useCheckUpdate, useSaveSettings, useUpdateStatus } from "@/lib/queries"
-import { COLOR_THEMES } from "@/lib/themes"
+import { COLOR_THEMES, useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { HubOverview, Settings, Status, TorrentClientConfig } from "@/lib/types"
 import { copyText, relativeTime } from "@/lib/utils"
@@ -81,6 +81,7 @@ function Name({ settings, current, set }: { settings: Settings; current: string;
     // Unset, it's the computer's name.
     const [name, setName] = useState(settings.sharing.name || current)
     const changed = name.trim() !== (settings.sharing.name || current) && name.trim() !== ""
+    const classic = useClassic()
     return (
         <Panel title="Name">
             <form
@@ -93,7 +94,7 @@ function Name({ settings, current, set }: { settings: Settings; current: string;
                 <p className="text-[12.5px] text-muted">The name devices show for this server.</p>
                 <div className="flex gap-2">
                     <Input value={name} maxLength={40} onChange={e => setName(e.target.value)} />
-                    <Button type="submit" variant="primary" disabled={!changed}>
+                    <Button type="submit" variant={classic ? "primary" : "subtle"} disabled={!changed}>
                         Save
                     </Button>
                 </div>
@@ -144,6 +145,7 @@ function Updates({ settings, set }: { settings: Settings; set: SetFn }) {
     const apply = useApplyUpdate()
     const busy = !!u && u.state !== "idle" && u.state !== "failed" && u.state !== "ready"
     const beta = settings.updates?.channel === "beta"
+    const classic = useClassic()
     return (
         <Panel
             title="Updates"
@@ -165,7 +167,7 @@ function Updates({ settings, set }: { settings: Settings; set: SetFn }) {
                 </p>
                 {u?.error && <p className="text-[12.5px] text-rose-300">{u.error}</p>}
                 {u?.available && u.latest && !busy && (
-                    <div className="flex flex-wrap items-center gap-3 rounded-lg bg-brand-soft p-3">
+                    <div className={classic ? "flex flex-wrap items-center gap-3 rounded-lg bg-brand-soft p-3" : "flex flex-wrap items-center gap-3"}>
                         <p className="min-w-0 flex-1 text-sm">
                             <span className="font-medium">{u.latest.version}</span> {u.latest.beta ? "(beta) " : ""}is out.
                             {u.applyNote && <span className="block text-[12.5px] text-muted">{u.applyNote}</span>}

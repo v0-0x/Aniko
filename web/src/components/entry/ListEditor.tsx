@@ -1,6 +1,7 @@
 import { Check, ChevronDown, Minus, Plus, Star, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useDeleteEntry, useUpdateEntry } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { Media } from "@/lib/types"
 import { cn, LIST_STATUS, LIST_STATUS_MANGA, totalEpisodes, title } from "@/lib/utils"
 import { Button, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger } from "../ui"
@@ -50,6 +51,7 @@ export function ListStatusButton({ media, entry }: { media: Media; entry: Entry 
 }
 
 export function ProgressEditor({ media, entry }: { media: Media; entry: Entry }) {
+    const classic = useClassic()
     const update = useUpdateEntry(media.id)
     const total = media.type === "MANGA" ? media.chapters ?? 0 : totalEpisodes(media)
     const [value, setValue] = useState(entry?.progress ?? 0)
@@ -63,8 +65,8 @@ export function ProgressEditor({ media, entry }: { media: Media; entry: Entry })
         update.mutate(body)
     }
     return (
-        <div className="flex h-11 items-center gap-1 rounded-lg bg-white/[0.07] px-1">
-            <button className="grid size-9 place-items-center rounded-md text-muted transition-colors hover:bg-white/10 hover:text-fg" onClick={() => commit(value - 1)} aria-label="Decrease progress">
+        <div className={cn("flex h-11 items-center gap-1 px-1", classic && "rounded-lg bg-white/[0.07]")}>
+            <button className={cn("grid size-9 place-items-center rounded-md text-muted transition-colors hover:text-fg", classic ? "hover:bg-white/10" : "hover:bg-white/[0.06]")} onClick={() => commit(value - 1)} aria-label="Decrease progress">
                 <Minus className="size-4" />
             </button>
             <div className="min-w-16 text-center text-sm tabular-nums">
@@ -82,7 +84,7 @@ export function ProgressEditor({ media, entry }: { media: Media; entry: Entry })
                 />
                 <span className="text-subtle"> / {total || "?"}</span>
             </div>
-            <button className="grid size-9 place-items-center rounded-md text-muted transition-colors hover:bg-white/10 hover:text-fg" onClick={() => commit(value + 1)} aria-label="Increase progress">
+            <button className={cn("grid size-9 place-items-center rounded-md text-muted transition-colors hover:text-fg", classic ? "hover:bg-white/10" : "hover:bg-white/[0.06]")} onClick={() => commit(value + 1)} aria-label="Increase progress">
                 <Plus className="size-4" />
             </button>
         </div>
@@ -90,13 +92,21 @@ export function ProgressEditor({ media, entry }: { media: Media; entry: Entry })
 }
 
 export function ScoreEditor({ media, entry }: { media: Media; entry: Entry }) {
+    const classic = useClassic()
     const update = useUpdateEntry(media.id)
     const score = entry?.score ?? 0
     return (
         <Dropdown>
             <DropdownTrigger asChild>
-                <button className="focus-ring flex h-11 items-center gap-2 rounded-lg bg-white/[0.07] px-4 text-[15px] font-medium transition-colors hover:bg-white/[0.11] data-[state=open]:bg-white/[0.11]">
-                    <Star className={cn("size-4", score ? "fill-amber-300 text-amber-300" : "text-muted")} />
+                <button
+                    className={cn(
+                        "focus-ring flex h-11 items-center gap-2 px-4 transition-colors",
+                        classic
+                            ? "rounded-lg bg-white/[0.07] text-[15px] font-medium hover:bg-white/[0.11] data-[state=open]:bg-white/[0.11]"
+                            : "word label text-xs",
+                    )}
+                >
+                    <Star className={cn("size-4", score ? (classic ? "fill-amber-300 text-amber-300" : "fill-current") : "text-muted")} />
                     {score ? (score / 10).toFixed(score % 10 ? 1 : 0) : "Rate"}
                 </button>
             </DropdownTrigger>
@@ -106,7 +116,7 @@ export function ScoreEditor({ media, entry }: { media: Media; entry: Entry }) {
                     <DropdownItem
                         key={s}
                         onSelect={() => update.mutate({ score: s * 10 })}
-                        className={cn("justify-center px-0 font-semibold", score === s * 10 && "bg-brand text-white data-[highlighted]:bg-brand/80")}
+                        className={cn("justify-center px-0 font-semibold", score === s * 10 && (classic ? "bg-brand text-white data-[highlighted]:bg-brand/80" : "bg-brand text-[color:var(--on-brand)] data-[highlighted]:bg-brand/80"))}
                     >
                         {s}
                     </DropdownItem>

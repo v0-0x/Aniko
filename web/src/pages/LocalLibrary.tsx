@@ -12,6 +12,7 @@ import { usePersisted } from "@/lib/hooks"
 import { usePlay } from "@/lib/play"
 import { useCollection, useEpisodeMarker, useLibraryFiles, useScan, useSharedLibraries, useStatus } from "@/lib/queries"
 import { scanStore, useStore } from "@/lib/store"
+import { useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import type { CollectionItem, LocalFile } from "@/lib/types"
 import { banner, cn, cover, entryUrl, formatBytes, formatLabel, LIST_STATUS, mostCommon, relativeTime, title, totalEpisodes } from "@/lib/utils"
@@ -125,6 +126,7 @@ function buildGroups(items: CollectionItem[], files: LocalFile[]): Group[] {
 }
 
 export default function LocalLibraryPage() {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const { data: coll, isLoading: collLoading, error } = useCollection()
     const { data: localFiles, isLoading: filesLoading } = useLibraryFiles()
@@ -412,7 +414,7 @@ export default function LocalLibraryPage() {
                                 </div>
                                 <Dropdown>
                                     <DropdownTrigger asChild>
-                                        <IconButton label="Type, sort and view" variant="subtle" className={cn("rounded-xl", activeType !== "ALL" && "text-brand-strong")}>
+                                        <IconButton label="Type, sort and view" variant="subtle" className={cn("rounded-xl", activeType !== "ALL" && (classic ? "text-brand-strong" : "border-b border-fg text-fg"))}>
                                             <SlidersHorizontal className="size-4" />
                                         </IconButton>
                                     </DropdownTrigger>
@@ -475,7 +477,8 @@ export default function LocalLibraryPage() {
                                 ))}
                             </MediaGrid>
                         ) : (
-                            <div className="flex flex-col gap-3">
+                            // This look: rows on hairlines, not a box each.
+                            <div className={cn("flex flex-col", classic ? "gap-3" : "border-t border-line")}>
                                 {shown.map(g => (
                                     <LibraryRow key={g.item.media.id} group={g} trusted={trusted && !host} onOpen={openFolder} onPlay={f => playLocal(f.path, f.mediaId, f.episode)} />
                                 ))}
@@ -497,11 +500,12 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
     const isMovie = m.format === "MOVIE"
     const extras = g.files.length - g.files.filter(f => f.kind === "main").length
     const marker = useEpisodeMarker(m, le)
+    const classic = useClassic()
 
     return (
-        <div className="card overflow-hidden">
+        <div className={classic ? "card overflow-hidden" : "border-b border-line"}>
             {/* On a phone the actions go under the text. */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+            <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-3", classic ? "p-4" : "py-4")}>
                 <Link to={entryUrl(m)} className="shrink-0">
                     <img src={cover(m, "thumb")} alt="" loading="lazy" className="h-24 w-16 rounded-xl object-cover ring-1 ring-white/10" style={{ backgroundColor: m.coverImage?.color || undefined }} />
                 </Link>
@@ -542,13 +546,13 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
                 </div>
             </div>
             {open && (
-                <div className="bg-black/20 py-1">
+                <div className={classic ? "bg-black/20 py-1" : "pb-2"}>
                     {g.files.map(f => {
                         const watched = le?.status === "COMPLETED" || (f.kind === "main" && (le?.progress ?? 0) >= f.episode)
                         return (
-                            <div key={f.path} className="group/file flex w-full items-center gap-3 px-4 py-2 text-sm transition hover:bg-white/[0.04]">
+                            <div key={f.path} className={cn("group/file flex w-full items-center gap-3 py-2 text-sm transition hover:bg-white/[0.04]", classic ? "px-4" : "px-2")}>
                                 <button onClick={() => onPlay(f)} title={f.path} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/[0.06] text-muted transition group-hover/file:bg-brand group-hover/file:text-white">
+                                    <span className={cn("grid size-7 shrink-0 place-items-center text-muted transition", classic ? "rounded-full bg-white/[0.06] group-hover/file:bg-brand group-hover/file:text-white" : "group-hover/file:text-fg")}>
                                         <Play className="ml-0.5 size-3 fill-current" />
                                     </span>
                                     <span className={cn("w-16 shrink-0 font-semibold tabular-nums", watched && "text-subtle")}>
@@ -566,7 +570,7 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
                                             onClick={() => marker.mark(f.episode, !watched)}
                                             className={cn(
                                                 "grid size-7 shrink-0 place-items-center rounded-full transition disabled:opacity-50",
-                                                watched ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25" : "text-subtle hover:bg-white/[0.08] hover:text-fg",
+                                                watched ? (classic ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25" : "text-emerald-300 hover:bg-white/[0.08]") : "text-subtle hover:bg-white/[0.08] hover:text-fg",
                                             )}
                                         >
                                             {watched ? <CheckCheck className="size-3.5" /> : <Check className="size-3.5" />}
@@ -576,7 +580,7 @@ function LibraryRow({ group: g, trusted, onOpen, onPlay }: { group: Group; trust
                             </div>
                         )
                     })}
-                    {g.dir && <p className="truncate px-4 py-2 font-mono text-[11px] text-subtle">{g.dir}</p>}
+                    {g.dir && <p className={cn("truncate py-2 font-mono text-[11px] text-subtle", classic ? "px-4" : "px-2")}>{g.dir}</p>}
                 </div>
             )}
         </div>

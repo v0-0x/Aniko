@@ -38,7 +38,7 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
                 aria-label="Themes"
                 className={cn(
                     "focus-ring flex shrink-0 items-center rounded-sm text-muted transition-colors duration-200 hover:text-fg data-[state=open]:text-fg [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.5]",
-                    wide ? "label h-9 gap-1.5 px-3" : "size-9 justify-center data-[state=open]:shadow-[inset_0_0_0_1px_var(--line-strong)]",
+                    wide ? "label h-9 gap-1.5 px-3" : "size-9 justify-center data-[state=open]:shadow-[inset_0_-1px_0_var(--text)]",
                 )}
             >
                 {holiday ? <HolidayIcon id={holiday.id} className="size-[18px] shrink-0" /> : <Palette />}

@@ -7,6 +7,7 @@ import { MangaReader } from "@/pages/MangaReader"
 import { Badge, Button, Dialog, IconButton, Spinner } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useSaveSettings } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { LocalMangaChapter, MangaSeries, Status } from "@/lib/types"
 import { ago, bytes, Panel, shortPath } from "./parts"
@@ -18,6 +19,7 @@ import { ago, bytes, Panel, shortPath } from "./parts"
 type Library = { dir: string; series: MangaSeries[] | null }
 
 export default function MangaLibrary({ status }: { status: Status }) {
+    const classic = useClassic()
     const settings = status.settings
     const saveSettings = useSaveSettings()
     const [picking, setPicking] = useState(false)
@@ -74,7 +76,7 @@ export default function MangaLibrary({ status }: { status: Status }) {
                     }
                 >
                     <div className="flex items-center gap-3 px-4 py-3">
-                        <Folder className="size-4 shrink-0 text-amber-300" />
+                        <Folder className={classic ? "size-4 shrink-0 text-amber-300" : "size-4 shrink-0 text-muted"} />
                         <span className="min-w-0 flex-1 truncate font-mono text-[13px]" title={data?.dir}>
                             {data ? shortPath(data.dir) : "…"}
                         </span>
@@ -112,7 +114,7 @@ export default function MangaLibrary({ status }: { status: Status }) {
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-5 p-4">
                         {series.map(s => (
                             <button key={s.anilistId} onClick={() => setOpen(s)} className="group focus-ring flex flex-col gap-2 rounded-lg text-left">
-                                <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface-2">
+                                <div className="marks aspect-[2/3] overflow-hidden rounded-lg bg-surface-2">
                                     {s.hasCover ? (
                                         <img src={`/api/manga-library/${s.anilistId}/cover`} alt="" loading="lazy" className="size-full object-cover transition group-hover:scale-[1.03]" />
                                     ) : (
@@ -147,6 +149,7 @@ export default function MangaLibrary({ status }: { status: Status }) {
 
 // A series: its details and chapters, each to delete, or all of it.
 function SeriesDialog({ series, onClose, onRead }: { series: MangaSeries; onClose: () => void; onRead: (file: string) => void }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const [sure, setSure] = useState(false)
     const { data, isLoading } = useQuery({
@@ -213,7 +216,7 @@ function SeriesDialog({ series, onClose, onRead }: { series: MangaSeries; onClos
             ) : chapters.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted">No chapters left in this folder.</p>
             ) : (
-                <ul className="max-h-[50vh] divide-y divide-line overflow-y-auto rounded-lg border border-line">
+                <ul className={classic ? "max-h-[50vh] divide-y divide-line overflow-y-auto rounded-lg border border-line" : "max-h-[50vh] divide-y divide-line overflow-y-auto border-y border-line"}>
                     {chapters.map(c => (
                         <li key={c.file} className="flex items-center gap-3 px-3 py-2">
                             <div className="min-w-0 flex-1">

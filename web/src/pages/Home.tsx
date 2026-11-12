@@ -9,7 +9,7 @@ import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { ProgramsNotice } from "@/components/ProgramsNotice"
-import { Button, ChipRow, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Skeleton } from "@/components/ui"
+import { artButton, Button, Chip, ChipRow, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Skeleton } from "@/components/ui"
 import { UpdateBanner } from "@/components/UpdateBanner"
 import { WatchPicker } from "@/components/WatchPicker"
 import { api } from "@/lib/api"
@@ -328,7 +328,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                 ) : item ? (
                     // Clear of the arrows at its right on a phone.
                     <div key={item.media.id} className="max-w-3xl rise-in max-sm:pr-20">
-                        <p className="text-sm font-medium text-white/65 max-sm:hidden">Continue watching</p>
+                        <p className={cn(classic ? "text-sm font-medium" : "label", "text-white/65 max-sm:hidden")}>Continue watching</p>
                         {/* On a TV the cards below are what's picked (the banner follows them). */}
                         <Link to={`/entry?id=${item.media.id}`} data-tv-skip-nav className="mt-1.5 line-clamp-2 text-4xl leading-[1.1] font-semibold tracking-tight text-white transition-colors hover:text-white/85 md:text-[2.75rem]">
                             {title(item.media)}
@@ -350,7 +350,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                                 <Button variant="white" icon={<Play className="size-4 fill-current" />} onClick={() => play(item)}>
                                     {started ? "Resume" : `Play episode ${item.episode}`}
                                 </Button>
-                                <Link to={`/entry?id=${item.media.id}`} className={cn("focus-ring inline-flex h-9 items-center transition-colors", classic ? "rounded-full bg-white/10 px-4 text-sm font-medium text-white backdrop-blur hover:bg-white/20" : "label rounded-sm border border-white/35 px-3.5 text-white hover:border-white/70 hover:bg-white/10")}>
+                                <Link to={`/entry?id=${item.media.id}`} className={classic ? "focus-ring inline-flex h-9 items-center rounded-full bg-white/10 px-4 font-display text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20" : artButton}>
                                     Details
                                 </Link>
                             </div>
@@ -358,7 +358,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                     </div>
                 ) : (
                     <div className="rise-in">
-                        <p className="text-sm font-medium text-white/65">Welcome to</p>
+                        <p className={cn(classic ? "text-sm font-medium" : "label", "text-white/65")}>Welcome to</p>
                         <h1 className="mt-1 text-4xl font-semibold tracking-tight">Aniko</h1>
                     </div>
                 )}
@@ -518,20 +518,13 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
 function GenreBar({ genres, value, onChange }: { genres: string[]; value: string | null; onChange: (g: string | null) => void }) {
     return (
         <ChipRow label="More genres">
-            <button
-                onClick={() => onChange(null)}
-                className={cn("h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium transition-colors", !value ? "bg-white text-neutral-950" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")}
-            >
+            <Chip on={!value} onClick={() => onChange(null)}>
                 All
-            </button>
+            </Chip>
             {genres.map(g => (
-                <button
-                    key={g}
-                    onClick={() => onChange(value === g ? null : g)}
-                    className={cn("h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium transition-colors", value === g ? "bg-white text-neutral-950" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")}
-                >
+                <Chip key={g} on={value === g} onClick={() => onChange(value === g ? null : g)}>
                     {g}
-                </button>
+                </Chip>
             ))}
         </ChipRow>
     )

@@ -4,6 +4,7 @@ import { DirPicker } from "@/components/DirPicker"
 import { UploadDialog } from "@/components/UploadDialog"
 import { Badge, Button, EmptyState, IconButton, Input, Spinner, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import type { HubOverview } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { SystemTiles } from "../Overview"
@@ -20,6 +21,7 @@ export type MusicTab = "overview" | "devices" | "library" | "settings"
 // ------------------------------------------------------------------ overview
 
 export function MusicOverview({ o, go }: { o: HubOverview; go: (t: MusicTab) => void }) {
+    const classic = useClassic()
     const { data: s } = useUStatus()
     const { data: devices } = useUDevices()
     const recent = useUAlbums("", 12)
@@ -67,7 +69,7 @@ export function MusicOverview({ o, go }: { o: HubOverview; go: (t: MusicTab) => 
                     <Panel
                         title="Recently added albums"
                         action={
-                            <button className="flex items-center gap-1 text-[13px] text-muted hover:text-fg" onClick={() => go("library")}>
+                            <button className={classic ? "flex items-center gap-1 text-[13px] text-muted hover:text-fg" : "word label focus-ring -mr-2.5 flex h-7 items-center gap-0.5 px-2.5 text-[10.5px] text-muted transition-colors hover:text-fg"} onClick={() => go("library")}>
                                 Library <ChevronRight className="size-4" />
                             </button>
                         }
@@ -90,7 +92,7 @@ export function MusicOverview({ o, go }: { o: HubOverview; go: (t: MusicTab) => 
                     <Panel
                         title={`Utako apps · ${online.length} online`}
                         action={
-                            <button className="flex items-center gap-1 text-[13px] text-muted hover:text-fg" onClick={() => go("devices")}>
+                            <button className={classic ? "flex items-center gap-1 text-[13px] text-muted hover:text-fg" : "word label focus-ring -mr-2.5 flex h-7 items-center gap-0.5 px-2.5 text-[10.5px] text-muted transition-colors hover:text-fg"} onClick={() => go("devices")}>
                                 Manage <ChevronRight className="size-4" />
                             </button>
                         }
@@ -161,7 +163,7 @@ function AlbumCard({ a, small }: { a: UAlbum; small?: boolean }) {
     const [broken, setBroken] = useState(false)
     return (
         <div className="min-w-0" title={`${a.album} · ${a.artist}`}>
-            <div className="aspect-square overflow-hidden rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]">
+            <div className={cn("aspect-square overflow-hidden rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]", a.cover && !broken && "marks")}>
                 {a.cover && !broken ? (
                     <img src={artURL(a.cover)} alt="" loading="lazy" className="size-full object-cover" onError={() => setBroken(true)} />
                 ) : (
@@ -204,10 +206,11 @@ export function MusicDevices() {
 }
 
 function DeviceCard({ d, onChange, onForget }: { d: UDevice; onChange: (c: { allowed?: boolean; uploads?: boolean }) => void; onForget: () => void }) {
+    const classic = useClassic()
     return (
         <div className={cn("card overflow-hidden", !d.allowed && d.online && "border-brand/40")}>
             <div className="flex items-center gap-3 px-4 py-3.5">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05]">
+                <span className={classic ? "grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05]" : "grid shrink-0 place-items-center"}>
                     <Monitor className="size-5 text-muted" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -258,6 +261,7 @@ function Setting({ label, help, children }: { label: string; help?: string; chil
 const PAGE = 100
 
 export function MusicLibrary() {
+    const classic = useClassic()
     const { data: s } = useUStatus()
     const { data: folders } = useUFolders()
     const [picking, setPicking] = useState(false)
@@ -304,7 +308,7 @@ export function MusicLibrary() {
                             <ul className="divide-y divide-line">
                                 {list.map(f => (
                                     <li key={f.path} className="flex items-center gap-3 px-4 py-3">
-                                        <Folder className="size-4 shrink-0 text-amber-300" />
+                                        <Folder className={classic ? "size-4 shrink-0 text-amber-300" : "size-4 shrink-0 text-muted"} />
                                         <span className="min-w-0 flex-1 truncate font-mono text-[13px]" title={f.path}>
                                             {shortPath(f.path)}
                                         </span>
@@ -341,7 +345,7 @@ export function MusicLibrary() {
                 title={`${view === "albums" ? "Albums" : view === "videos" ? "Music videos" : "Songs"} · ${total.toLocaleString()}`}
                 action={
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                        <div role="tablist" aria-label="Albums, songs or music videos" className="flex shrink-0 rounded-lg bg-white/[0.05] p-0.5">
+                        <div role="tablist" aria-label="Albums, songs or music videos" className={classic ? "flex shrink-0 rounded-lg bg-white/[0.05] p-0.5" : "flex shrink-0 gap-1"}>
                             {(["albums", "songs", "videos"] as const).map(v => (
                                 <button
                                     key={v}
@@ -351,7 +355,8 @@ export function MusicLibrary() {
                                         setView(v)
                                         setLimit(PAGE)
                                     }}
-                                    className={cn("focus-ring h-7 rounded-md px-3 text-[12.5px] font-medium", view === v ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
+                                    // This look: words, the one shown in brackets (index.css's word).
+                                    className={cn("focus-ring", classic ? "h-7 rounded-md px-3 text-[12.5px] font-medium" : "word label h-8 px-3 text-[10.5px] transition-colors", view === v ? (classic ? "bg-white/[0.1] text-fg" : "text-fg") : "text-muted hover:text-fg")}
                                 >
                                     {v === "albums" ? "Albums" : v === "videos" ? "Videos" : "Songs"}
                                 </button>

@@ -8,9 +8,10 @@ import { AllFiles, Ignored, Unmatched } from "@/components/library/LibraryTools"
 import { Badge, EmptyState, IconButton, Tabs, Tooltip } from "@/components/ui"
 import { useCollection, useScan } from "@/lib/queries"
 import { scanStore, useStore } from "@/lib/store"
+import { useClassic } from "@/lib/themes"
 import { formatRanges, type Missing, missingEpisodes } from "@/lib/missing"
 import type { CollectionItem, CollectionView } from "@/lib/types"
-import { cover, title } from "@/lib/utils"
+import { cn, cover, title } from "@/lib/utils"
 
 type Tab = "folders" | "unmatched" | "missing" | "cleanup" | "files" | "ignored"
 const TABS: string[] = ["folders", "unmatched", "missing", "cleanup", "files", "ignored"]
@@ -87,6 +88,7 @@ function withMissing(coll?: CollectionView) {
 }
 
 function MissingEpisodes() {
+    const classic = useClassic()
     const { data: coll, isLoading } = useCollection()
     if (isLoading) return <div className="card h-40 shimmer" />
     const rows = withMissing(coll)
@@ -97,7 +99,8 @@ function MissingEpisodes() {
             </EmptyState>
         )
     return (
-        <div className="flex flex-col gap-2">
+        // This look: rows on hairlines, not a box each.
+        <div className={cn("flex flex-col", classic ? "gap-2" : "border-t border-line")}>
             {rows.map(({ item, missing }) => (
                 <MissingRow key={item.media.id} item={item} missing={missing} />
             ))}
@@ -108,13 +111,14 @@ function MissingEpisodes() {
 // An anime with episodes missing: download them with ani-cli (sub or dub),
 // or find torrents for the first.
 function MissingRow({ item, missing }: { item: CollectionItem; missing: Missing }) {
+    const classic = useClassic()
     const [open, setOpen] = useState(false)
     const aniCli = useAniCliDownloads()
     const downloading = useDownloading(item.media.id)
     const first = missing.gaps[0] ?? missing.newer[0]
     const busy = [...missing.gaps, ...missing.newer].filter(n => downloading.has(n)).length
     return (
-        <div className="card flex items-center gap-4 p-3 fade-in">
+        <div className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
             <img src={cover(item.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
             <div className="min-w-0 flex-1">
                 <Link to={`/entry?id=${item.media.id}`} className="block truncate font-medium hover:underline">

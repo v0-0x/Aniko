@@ -44,7 +44,7 @@ import { toast } from "@/lib/toast"
 import { DirPicker } from "@/components/DirPicker"
 import { ParentalDialog } from "@/components/ParentalDialog"
 import { LoginDialog } from "@/components/LoginDialog"
-import { Badge, Button, EmptyState, Input, Select, Switch, Textarea } from "@/components/ui"
+import { Badge, Button, EmptyState, Input, Select, Switch, switchBox, switchItem, Textarea } from "@/components/ui"
 import { UpdateBanner, versionName } from "@/components/UpdateBanner"
 import { whatsNewStore } from "@/components/WhatsNew"
 import { api, desktop, type DesktopPrefs } from "@/lib/api"
@@ -294,7 +294,8 @@ export default function SettingsPage() {
                 "focus-ring flex h-8 items-center gap-2.5 px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:stroke-[1.75]",
                 classic
                     ? cn("rounded-md", !searching && section === it.id ? "bg-white/[0.08] text-fg" : "text-muted hover:bg-white/[0.04] hover:text-fg")
-                    : cn("rounded-lg", !searching && section === it.id ? "bg-white/[0.07] text-fg [&>svg]:text-brand-strong" : "text-muted hover:bg-white/[0.05] hover:text-fg"),
+                    : // The open one: bright, a line at its left edge.
+                      cn("rounded-none", !searching && section === it.id ? "text-fg shadow-[inset_1px_0_0_var(--text)]" : "text-muted shadow-[inset_1px_0_0_var(--line)] hover:text-fg"),
             )}
         >
             {it.icon}
@@ -521,12 +522,14 @@ function Group({ title, children, description }: { title?: string; description?:
     const search = useContext(SearchContext)
     // The group's own name or words found: all of it.
     const all = !!search && (search.all || (!!title && matches(search.words, title, description)))
+    const classic = useClassic()
     const body = (
         <div data-group data-all={all || undefined}>
-            {title && <h3 className="mb-1 text-[15px] font-semibold">{title}</h3>}
+            {title && <h3 className={classic ? "mb-1 text-[15px] font-semibold" : "label mb-1.5 text-muted"}>{title}</h3>}
             {description && <p className="mb-3 text-[13px] text-muted">{description}</p>}
-            {!description && title && <div className="mb-3" />}
-            <div data-group-body className="card divide-y divide-line">
+            {!description && title && <div className={classic ? "mb-3" : "mb-2"} />}
+            {/* This look: no box, its rows under one line, a fainter one between them, to the page's own edges. */}
+            <div data-group-body className={classic ? "card divide-y divide-line" : "divide-y divide-line border-t border-line-strong *:px-0!"}>
                 {children}
             </div>
         </div>
@@ -967,6 +970,7 @@ function ProgramsGroup() {
 // choices, matches made by hand, auto downloader rules, extensions), and
 // back. A restore merges, then Aniko starts again.
 function BackupGroup() {
+    const classic = useClassic()
     const [logins, setLogins] = useState(false)
     const [restoring, setRestoring] = useState(false)
     const restore = async (file: File) => {
@@ -1020,7 +1024,7 @@ function BackupGroup() {
             <Row label="Restore a backup" help="Merged with what's here. Aniko restarts after.">
                 <label>
                     <input type="file" accept=".json,application/json" className="sr-only" disabled={restoring} onChange={e => e.target.files?.[0] && restore(e.target.files[0])} />
-                    <span className={cn("inline-flex h-8 cursor-pointer items-center rounded-lg bg-white/[0.07] px-3 text-[13px] font-medium hover:bg-white/[0.12]", restoring && "pointer-events-none opacity-60")}>
+                    <span className={cn("inline-flex h-8 cursor-pointer items-center px-3", classic ? "rounded-lg bg-white/[0.07] text-[13px] font-medium hover:bg-white/[0.12]" : "word label text-[10.5px] text-fg/85 transition-colors hover:text-fg", restoring && "pointer-events-none opacity-60")}>
                         {restoring ? "Restoring…" : "Choose a backup…"}
                     </span>
                 </label>
@@ -1161,7 +1165,10 @@ function UISection({ draft, set }: SectionProps) {
                                     key={t.id}
                                     onClick={() => set("ui", { colorTheme: t.id, accentColor: t.accent })}
                                     aria-pressed={on}
-                                    className={cn("focus-ring flex flex-col gap-2 rounded-lg border p-2 text-left transition", on ? "border-transparent outline-2 outline-offset-2 outline-fg" : "border-line-strong hover:border-white/45")}
+                                    className={cn(
+                                        "focus-ring flex flex-col gap-2 rounded-lg border p-2 text-left transition",
+                                        classicLook ? (on ? "border-white/70" : "border-line hover:border-white/25") : on ? "border-transparent outline-2 outline-offset-2 outline-fg" : "border-line-strong hover:border-white/45",
+                                    )}
                                     style={{ background: t.palette.frame }}
                                 >
                                     {/* The window in small: the sidebar, a page with panels, the accent. */}
@@ -1194,7 +1201,7 @@ function UISection({ draft, set }: SectionProps) {
                         {!classicLook && (
                             <button
                                 onClick={() => set("ui", { accentColor: theme.accent })}
-                                className={cn("label h-9 border px-3 text-[10px] transition", !own || own === theme.accent ? "border-fg text-fg" : "border-line-strong text-muted hover:border-white/45 hover:text-fg")}
+                                className={cn("word label h-9 px-3 text-[10px] transition-colors", !own || own === theme.accent ? "text-fg" : "text-muted hover:text-fg")}
                                 aria-pressed={!own || own === theme.accent}
                             >
                                 Theme's own
@@ -2074,6 +2081,7 @@ function TorrentClientSection({ draft, set }: SectionProps) {
 }
 
 function StreamingSection({ draft, set }: SectionProps) {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const { data: providers } = useOnlineProviders()
     const { data: ani } = useQuery({ queryKey: ["anicli-status"], queryFn: () => api.get<{ installed: boolean; path: string; version: string; ytDlp: boolean; ffmpeg: boolean }>("/api/anicli/status") })
@@ -2130,9 +2138,9 @@ function StreamingSection({ draft, set }: SectionProps) {
                     </Stack>
                 </Locked>
                 <Row label="Default audio">
-                    <div className="flex rounded-lg bg-white/[0.04] p-0.5">
+                    <div className={switchBox(classic)}>
                         {(["sub", "dub"] as const).map(m => (
-                            <button key={m} onClick={() => set("aniCli", { defaultMode: m })} className={cn("h-7 rounded-md px-3 text-xs font-medium uppercase transition-colors", a.defaultMode === m ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}>
+                            <button key={m} onClick={() => set("aniCli", { defaultMode: m })} data-on={a.defaultMode === m || undefined} className={switchItem(classic, a.defaultMode === m)}>
                                 {m}
                             </button>
                         ))}

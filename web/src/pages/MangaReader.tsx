@@ -2,10 +2,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2, Maximize, Minimize, RectangleVertical, Rows3, ZoomIn, ZoomOut } from "lucide-react"
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Tooltip } from "@/components/ui"
+import { DarkScope, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Tooltip } from "@/components/ui"
 import { api, qs } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { useMangaChapters, useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { MangaPosition, Settings, Status } from "@/lib/types"
 import { move, tv } from "@/lib/tv"
@@ -116,6 +117,7 @@ export function MangaReader({
     track?: boolean
 }) {
     const { data: status } = useStatus()
+    const classic = useClassic()
     const qc = useQueryClient()
     // A mode picked here shows at once and becomes the default (Settings).
     const [picked, setPicked] = useState<Mode>()
@@ -378,8 +380,10 @@ export function MangaReader({
     const bar = "grid size-9 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/15 hover:text-white disabled:opacity-30 [&_svg]:size-[18px]"
 
     return (
-        // data-tv-scope: the reader has its own keys on a TV (above).
-        <div ref={rootRef} tabIndex={-1} data-tv-scope={tv || undefined} data-tv-autofocus className={cn("fixed inset-0 z-[70] bg-black text-white outline-none", !shown && view !== "long-strip" && "cursor-none")} onMouseMove={poke}>
+        // Dark in a light theme too, with its menus (on-dark, DarkScope).
+        <DarkScope.Provider value={true}>
+        {/* data-tv-scope: the reader has its own keys on a TV (above). */}
+        <div ref={rootRef} tabIndex={-1} data-tv-scope={tv || undefined} data-tv-autofocus className={cn("on-dark fixed inset-0 z-[70] bg-black text-white outline-none", !shown && view !== "long-strip" && "cursor-none")} onMouseMove={poke}>
             <div
                 id="reader"
                 className={cn("absolute inset-0", view === "long-strip" ? "overflow-y-auto" : "overflow-hidden")}
@@ -422,7 +426,7 @@ export function MangaReader({
                             />
                         ))}
                         {idx < list.length - 1 && (
-                            <button onClick={() => go(idx + 1)} className="my-10 self-center rounded-lg bg-white px-6 py-3 font-medium text-neutral-950">
+                            <button onClick={() => go(idx + 1)} className={cn("my-10 self-center bg-white px-6", classic ? "rounded-lg py-3 font-medium text-neutral-950" : "label focus-ring rounded-sm py-3.5 text-black transition-opacity hover:opacity-85")}>
                                 Next chapter
                             </button>
                         )}
@@ -605,5 +609,6 @@ export function MangaReader({
                 </div>
             )}
         </div>
+        </DarkScope.Provider>
     )
 }

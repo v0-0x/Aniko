@@ -7,10 +7,12 @@ import { MediaPicker } from "@/components/MediaPicker"
 import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Spinner, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useAutoRules, useSaveSettings, useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { AutoRule, Media } from "@/lib/types"
 import { cn, cover, formatBytes, relativeTime, title } from "@/lib/utils"
 
 export default function AutoDownloaderPage() {
+    const classic = useClassic()
     const { data: rules, isLoading } = useAutoRules()
     const { data: status } = useStatus()
     const save = useSaveSettings()
@@ -54,7 +56,7 @@ export default function AutoDownloaderPage() {
                 </div>
             </div>
             {settings?.torrent.defaultClient === "none" && (
-                <p className="mb-8 rounded-xl bg-amber-500/10 p-4 text-sm text-amber-200">
+                <p className={cn("mb-8 text-sm text-amber-200", classic ? "rounded-xl bg-amber-500/10 p-4" : "border-l border-amber-400 pl-3")}>
                     No torrent client yet. <Link to="/settings?tab=torrents" className="underline">Set one up</Link> first.
                 </p>
             )}
@@ -63,17 +65,21 @@ export default function AutoDownloaderPage() {
                     A rule sends an airing anime's new episodes to your torrent client.
                 </EmptyState>
             )}
-            <div className="grid gap-2 lg:grid-cols-2">
+            {/* This look: rows on hairlines, not a box each. */}
+            <div className={cn("grid lg:grid-cols-2", classic ? "gap-2" : (rules ?? []).length > 0 && "gap-x-8 border-t border-line")}>
                 {(rules ?? []).map(r => (
                     <RuleCard key={r.id} rule={r} onEdit={() => setEditing(r)} onTest={name => setTesting({ rule: r, name })} />
                 ))}
             </div>
             {(items ?? []).length > 0 && (
                 <section className="mt-8">
-                    <h2 className="mb-3 text-sm font-medium text-muted">Recently grabbed</h2>
-                    <div className="card py-1.5">
+                    <h2 className={cn("text-sm font-medium text-muted", classic ? "mb-3" : "mb-1")}>
+                        {/* This look: a small capital label (in a span: a heading has its own face). */}
+                        <span className={classic ? undefined : "label"}>Recently grabbed</span>
+                    </h2>
+                    <div className={classic ? "card py-1.5" : "divide-y divide-line border-y border-line"}>
                         {items!.slice(0, 30).map(i => (
-                            <div key={i.key} className="flex items-center justify-between gap-4 px-4 py-2 text-sm">
+                            <div key={i.key} className={cn("flex items-center justify-between gap-4 py-2 text-sm", classic && "px-4")}>
                                 <span className="truncate">{i.title}</span>
                                 <span className="shrink-0 text-muted">{relativeTime(i.createdAt)}</span>
                             </div>
@@ -88,6 +94,7 @@ export default function AutoDownloaderPage() {
 }
 
 function RuleCard({ rule, onEdit, onTest }: { rule: AutoRule; onEdit: () => void; onTest: (name: string) => void }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const { data: media } = useQuery({ queryKey: ["entry-lite", rule.mediaId], queryFn: () => api.get<{ media: Media }>(`/api/anime/${rule.mediaId}`), staleTime: 3600_000 })
     const toggle = async (enabled: boolean) => {
@@ -111,7 +118,7 @@ function RuleCard({ rule, onEdit, onTest }: { rule: AutoRule; onEdit: () => void
     const facts = [...rule.releaseGroups, ...rule.resolutions.map(r => `${r}p`), rule.episodeType === "all" ? "All episodes" : "New episodes"]
     if (rule.delayMinutes) facts.push(`Waits ${rule.delayMinutes} min`)
     return (
-        <div className="card flex items-center gap-4 p-3 fade-in">
+        <div className={cn("flex items-center gap-4 fade-in", classic ? "card p-3" : "border-b border-line py-3")}>
             {media?.media && <img src={cover(media.media, "thumb")} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />}
             <div className={cn("min-w-0 flex-1 transition-opacity", !rule.enabled && "opacity-60")}>
                 <p className="truncate font-medium">{name}</p>
@@ -143,6 +150,7 @@ function RuleCard({ rule, onEdit, onTest }: { rule: AutoRule; onEdit: () => void
 }
 
 function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) {
+    const classic = useClassic()
     const [r, setR] = useState<AutoRule>(rule)
     const [pick, setPick] = useState(false)
     const [mediaTitle, setMediaTitle] = useState(rule.title)
@@ -184,7 +192,7 @@ function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) 
         >
             <div className="flex flex-col gap-5">
                 <Field label="Anime">
-                    <Button className="justify-start" onClick={() => setPick(true)}>
+                    <Button className={cn("justify-start", !classic && "-ml-3.5 self-start")} onClick={() => setPick(true)}>
                         {mediaTitle || "Choose an anime…"}
                     </Button>
                 </Field>

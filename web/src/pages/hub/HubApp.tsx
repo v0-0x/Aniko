@@ -5,7 +5,7 @@ import { Toaster } from "sonner"
 import { AnikoLogo } from "@/components/Sidebar"
 import { Badge, Button, Input, Spinner, Tabs, TooltipProvider } from "@/components/ui"
 import { api } from "@/lib/api"
-import { applyTheme, resolveTheme } from "@/lib/themes"
+import { applyTheme, resolveTheme, useClassic } from "@/lib/themes"
 import { cn } from "@/lib/utils"
 import type { Status } from "@/lib/types"
 import { useMSharing } from "./media/data"
@@ -72,15 +72,16 @@ export default function HubApp({ status }: { status: Status }) {
         document.title = "mediaserver"
     }, [])
     const setup = !!status.hub?.setup && status.client === "lan"
+    const classic = useClassic()
     return (
         <TooltipProvider>
             {setup ? <Setup /> : <Dashboard status={status} />}
             <Toaster
-                theme="dark"
+                theme={!classic && resolveTheme(ui).theme.light ? "light" : "dark"}
                 position="top-right"
                 richColors
                 closeButton
-                toastOptions={{ style: { background: "var(--surface-2)", border: "1px solid var(--line-strong)", borderRadius: 10 } }}
+                toastOptions={{ style: { background: "var(--surface-2)", border: "1px solid var(--line-strong)", borderRadius: classic ? 10 : 2 } }}
             />
         </TooltipProvider>
     )
@@ -99,6 +100,7 @@ function Dashboard({ status }: { status: Status }) {
         document.getElementById("hub-scroll")?.scrollTo({ top: 0 })
     }
     const { side, tab } = route
+    const classic = useClassic()
     const go = (t: HubTab) => show({ side: "anime", tab: t })
     const goMedia = (t: MediaTab) => show({ side, tab: t })
     const goMusic = (t: MusicTab) => show({ side: "music", tab: t })
@@ -129,14 +131,15 @@ function Dashboard({ status }: { status: Status }) {
         return [sys.model || sys.hostname, sys.arch, sys.cores ? `${sys.cores} cores` : "", sys.uptime ? `on for ${span(sys.uptime)}` : ""].filter(Boolean).join(" · ")
     }, [sys])
     return (
-        <div className="flex h-full flex-col bg-frame sm:p-2">
-            <div id="hub-scroll" className="relative min-h-0 flex-1 overflow-y-auto border-line bg-bg sm:rounded-[14px] sm:border sm:shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]">
-                <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
+        // This look: one plane, no panel inset in the window.
+        <div className={cn("flex h-full flex-col bg-frame", classic && "sm:p-2")}>
+            <div id="hub-scroll" className={cn("relative min-h-0 flex-1 overflow-y-auto bg-bg", classic && "border-line sm:rounded-[14px] sm:border sm:shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]")}>
+                <header className={cn("sticky top-0 z-20 border-b border-line", classic ? "bg-bg/95 backdrop-blur" : "bg-bg")}>
                     <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-4 sm:px-6">
                         {side === "anime" ? (
                             <AnikoLogo className="size-9 shrink-0" />
                         ) : (
-                            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white/[0.06] text-fg [&>svg]:size-5">{side === "tv" ? <Tv /> : side === "music" ? <Music2 /> : <Clapperboard />}</span>
+                            <span className={cn("grid size-9 shrink-0 place-items-center text-fg", classic ? "rounded-[10px] bg-white/[0.06] [&>svg]:size-5" : "[&>svg]:size-6 [&>svg]:stroke-[1.5]")}>{side === "tv" ? <Tv /> : side === "music" ? <Music2 /> : <Clapperboard />}</span>
                         )}
                         <div className="min-w-0 flex-1">
                             <h1 className="flex items-center gap-2 text-[17px] leading-tight font-semibold">
@@ -158,7 +161,7 @@ function Dashboard({ status }: { status: Status }) {
                         {side === "anime" ? (
                             <Tabs
                                 variant="underline"
-                                className="mt-3 border-b-0"
+                                className={cn("mt-3 border-b-0", !classic && "-mb-px pb-px")}
                                 value={tab as HubTab}
                                 onChange={go}
                                 tabs={[
@@ -173,7 +176,7 @@ function Dashboard({ status }: { status: Status }) {
                         ) : side === "music" ? (
                             <Tabs
                                 variant="underline"
-                                className="mt-3 border-b-0"
+                                className={cn("mt-3 border-b-0", !classic && "-mb-px pb-px")}
                                 value={tab as MusicTab}
                                 onChange={goMusic}
                                 tabs={[
@@ -186,7 +189,7 @@ function Dashboard({ status }: { status: Status }) {
                         ) : (
                             <Tabs
                                 variant="underline"
-                                className="mt-3 border-b-0"
+                                className={cn("mt-3 border-b-0", !classic && "-mb-px pb-px")}
                                 value={tab as MediaTab}
                                 onChange={goMedia}
                                 tabs={[
@@ -326,15 +329,19 @@ const SIDES: { value: Side; label: string; icon: React.ReactNode }[] = [
 ]
 
 function SideSlider({ side, onPick }: { side: Side; onPick: (s: Side) => void }) {
+    const classic = useClassic()
     const at = SIDES.findIndex(s => s.value === side)
     return (
-        <div role="tablist" aria-label="What the dashboard shows" className="relative grid shrink-0 grid-cols-4 rounded-[10px] bg-white/[0.05] p-0.5 ring-1 ring-white/[0.06]">
+        // This look: words, the side shown in brackets (index.css's word).
+        <div role="tablist" aria-label="What the dashboard shows" className={classic ? "relative grid shrink-0 grid-cols-4 rounded-[10px] bg-white/[0.05] p-0.5 ring-1 ring-white/[0.06]" : "flex shrink-0 sm:gap-1"}>
             {/* The thumb, sliding under the side shown. */}
+            {classic && (
             <span
                 aria-hidden
                 className="absolute inset-y-0.5 left-0.5 rounded-lg bg-white/[0.1] shadow-[0_1px_0_rgb(255_255_255/0.06)_inset] transition-transform duration-200 ease-out"
                 style={{ width: `calc((100% - 4px) / ${SIDES.length})`, transform: `translateX(${at * 100}%)` }}
             />
+            )}
             {SIDES.map(s => (
                 <button
                     key={s.value}
@@ -342,7 +349,8 @@ function SideSlider({ side, onPick }: { side: Side; onPick: (s: Side) => void })
                     aria-selected={s.value === side}
                     onClick={() => onPick(s.value)}
                     className={cn(
-                        "focus-ring relative z-10 flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-medium transition-colors [&>svg]:size-4 sm:min-w-[92px]",
+                        "focus-ring relative z-10 flex h-8 items-center justify-center gap-1.5 px-3 transition-colors",
+                        classic ? "rounded-lg text-[13px] font-medium [&>svg]:size-4 sm:min-w-[92px]" : "word label text-[10.5px] [&>svg]:size-3.5",
                         s.value === side ? "text-fg" : "text-muted hover:text-fg",
                     )}
                 >

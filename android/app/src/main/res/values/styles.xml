@@ -4,7 +4,7 @@
          bars in it too (a TV has none). -->
     <style name="Aniko" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/frame</item>
-        <item name="android:colorAccent">#FF7EB6</item>
+        <item name="android:colorAccent">#EDEDED</item>
         <item name="android:statusBarColor">@color/frame</item>
         <item name="android:navigationBarColor">@color/frame</item>
     </style>

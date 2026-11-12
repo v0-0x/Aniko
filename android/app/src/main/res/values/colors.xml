@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The page's black (its frame color). -->
-    <color name="frame">#100B1A</color>
+    <color name="frame">#0A0A0A</color>
     <!-- The logo's tile. -->
     <color name="icon_background">#2A1D45</color>
 </resources>

@@ -7,6 +7,7 @@ import { usePlay } from "@/lib/play"
 import { installHint, installSource } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms } from "@/lib/programs"
 import { useEpisodeMarker, useFiller, useLanguageMode, useOnlineProviders, useStatus, useStreamEpisodes, useStreamModes } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { fillerFact } from "@/lib/filler"
 import type { PlaylistItem } from "@/lib/playlist"
 import { AddToPlaylistDialog } from "../PlaylistDialog"
@@ -16,6 +17,7 @@ import { EpisodeCard, WatchedToggle } from "../EpisodeCard"
 import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, Field, IconButton, Input, Select, Skeleton, Tooltip } from "../ui"
 
 export function StreamPanel({ entry }: { entry: EntryView }) {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const settings = status?.settings
     const { data: providers } = useOnlineProviders()
@@ -93,6 +95,8 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     ].filter((n): n is string => !!n)
     const download = (n: number) => api.post("/api/onlinestream/download", { provider, mediaId: media.id, episodes: [n], dub }).catch(err => toast.error(err.message))
 
+    // A command's name in a sentence.
+    const code = classic ? "rounded bg-black/40 px-1.5 py-0.5" : "font-mono text-[0.92em] text-fg"
     const streamItem = (ep: (typeof episodes)[number]): PlaylistItem => ({ mediaId: media.id, episode: ep.number, title: title(media), image: ep.image || cover(media), play: { kind: "stream", provider, dub } })
     const lastEp = episodes.reduce((m, e) => Math.max(m, e.number), 0)
     return (
@@ -101,13 +105,17 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
             <div className="flex flex-wrap items-center gap-2">
                 <Select value={provider} onChange={setProvider} options={providerOptions} className="min-w-0 flex-1 basis-36 sm:w-56 sm:flex-none sm:basis-auto" />
                 {hasSub && hasDub ? (
-                    <div className="flex shrink-0 rounded-lg bg-white/[0.04] p-0.5">
+                    <div className={classic ? "flex shrink-0 rounded-lg bg-white/[0.04] p-0.5" : "flex shrink-0"}>
                         {(["sub", "dub"] as const).map(m => (
                             <button
                                 key={m}
                                 onClick={() => setDub(m === "dub")}
                                 aria-pressed={(m === "dub") === dub}
-                                className={cn("focus-ring h-8 rounded-md px-3.5 text-[13px] font-medium uppercase transition-colors", (m === "dub") === dub ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
+                                className={cn(
+                                    "focus-ring transition-colors",
+                                    classic ? "h-8 rounded-md px-3.5 text-[13px] font-medium uppercase" : "word label h-9 px-3 text-[10.5px]",
+                                    (m === "dub") === dub ? (classic ? "bg-white/[0.1] text-fg" : "text-fg") : "text-muted hover:text-fg",
+                                )}
                             >
                                 {m}
                             </button>
@@ -115,8 +123,10 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                     </div>
                 ) : (
                     <Tooltip content={`${prov?.name ?? provider} only has it ${dub ? "dubbed" : "with subtitles"}`}>
-                        <span className="flex shrink-0 rounded-lg bg-white/[0.04] p-0.5">
-                            <span className="grid h-8 place-items-center rounded-md bg-white/[0.1] px-3.5 text-[13px] font-medium uppercase text-fg">{dub ? "dub" : "sub"}</span>
+                        <span className={classic ? "flex shrink-0 rounded-lg bg-white/[0.04] p-0.5" : "flex shrink-0"}>
+                            <span data-on className={classic ? "grid h-8 place-items-center rounded-md bg-white/[0.1] px-3.5 text-[13px] font-medium uppercase text-fg" : "word label grid h-9 place-items-center px-3 text-[10.5px] text-fg"}>
+                                {dub ? "dub" : "sub"}
+                            </span>
                         </span>
                     </Tooltip>
                 )}
@@ -154,7 +164,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
             </div>
 
             {aniMissing && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3">
+                <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 border px-4 py-3", classic ? "rounded-xl border-amber-500/25 bg-amber-500/10" : "rounded-sm border-amber-400/45")}>
                     <Terminal className="size-5 shrink-0 text-amber-300" />
                     <div className="min-w-0 flex-1 basis-48 text-sm">
                         <p className="font-medium text-amber-200">{status?.platform === "android" ? "ani-cli doesn’t run on Android" : "ani-cli isn’t installed"}</p>
@@ -166,9 +176,8 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
                             <p className="mt-0.5 text-muted">Install it, or pick another provider.</p>
                         ) : (
                             <p className="mt-0.5 break-words text-muted">
-                                {installSource(status?.platform, "ani-cli")} <code className="rounded bg-black/40 px-1.5 py-0.5">{installHint(status?.platform, "ani-cli")}</code> (needs{" "}
-                                <code className="rounded bg-black/40 px-1.5 py-0.5">mpv</code>, <code className="rounded bg-black/40 px-1.5 py-0.5">yt-dlp</code> or{" "}
-                                <code className="rounded bg-black/40 px-1.5 py-0.5">ffmpeg</code>). Or pick another provider.
+                                {installSource(status?.platform, "ani-cli")} <code className={code}>{installHint(status?.platform, "ani-cli")}</code> (needs{" "}
+                                <code className={code}>mpv</code>, <code className={code}>yt-dlp</code> or <code className={code}>ffmpeg</code>). Or pick another provider.
                             </p>
                         )}
                     </div>
@@ -301,6 +310,7 @@ function ManualMatchDialog({
     onPicked: (dub: boolean) => void
     defaultQuery: string
 }) {
+    const classic = useClassic()
     const [q, setQ] = useState(defaultQuery)
     const [results, setResults] = useState<{ id: string; title: string; subOrDub?: string; query?: string; index?: number; episodes?: number }[]>([])
     const [busy, setBusy] = useState(false)
@@ -338,7 +348,7 @@ function ManualMatchDialog({
             <div className="flex gap-2">
                 <Input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && search()} placeholder="Search…" icon={<Search className="size-4" />} />
                 {canDub && (
-                    <div className="flex shrink-0 rounded-lg bg-white/[0.04] p-0.5">
+                    <div className={classic ? "flex shrink-0 rounded-lg bg-white/[0.04] p-0.5" : "flex shrink-0"}>
                         {(["sub", "dub"] as const).map(m => (
                             <button
                                 key={m}
@@ -346,7 +356,12 @@ function ManualMatchDialog({
                                     setDubMode(m === "dub")
                                     setResults([])
                                 }}
-                                className={cn("focus-ring h-8 rounded-md px-3 text-xs font-medium uppercase transition-colors", (m === "dub") === dub ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
+                                aria-pressed={(m === "dub") === dub}
+                                className={cn(
+                                    "focus-ring transition-colors",
+                                    classic ? "h-8 rounded-md px-3 text-xs font-medium uppercase" : "word label h-9 px-3 text-[10.5px]",
+                                    (m === "dub") === dub ? (classic ? "bg-white/[0.1] text-fg" : "text-fg") : "text-muted hover:text-fg",
+                                )}
                             >
                                 {m}
                             </button>

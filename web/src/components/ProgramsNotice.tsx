@@ -3,6 +3,8 @@ import { Button, IconButton } from "@/components/ui"
 import { usePersisted } from "@/lib/hooks"
 import { canInstallPrograms, missingPrograms, setupWindow, useInstallPrograms, useWatchSetup } from "@/lib/programs"
 import { useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
+import { cn } from "@/lib/utils"
 
 const list = (names: string[]) => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`)
 
@@ -10,6 +12,7 @@ const list = (names: string[]) => (names.length < 2 ? names.join("") : `${names.
 // missing: a button that installs what Aniko uses. Hidden for good per set of
 // missing programs.
 export function ProgramsNotice() {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const [hidden, setHidden] = usePersisted("aniko-programs-notice-hidden", "")
     const install = useInstallPrograms(status)
@@ -19,7 +22,7 @@ export function ProgramsNotice() {
     const running = !!status?.setupRunning
     if (!canInstallPrograms(status) || !(missing.includes("ffmpeg") || missing.includes("ani-cli")) || hidden === key) return null
     return (
-        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-amber-500/25 bg-amber-500/10 px-5 py-4">
+        <div className={cn("flex flex-wrap items-center gap-4 border px-5 py-4", classic ? "rounded-xl border-amber-500/25 bg-amber-500/10" : "rounded-sm border-amber-400/45")}>
             <Wrench className="size-5 shrink-0 text-amber-300" />
             <div className="min-w-0 flex-1 text-sm">
                 <p className="font-semibold text-amber-200">{running ? "Installing the programs Aniko uses…" : `Aniko needs ${list(missing)}`}</p>

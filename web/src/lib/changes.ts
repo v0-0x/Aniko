@@ -7,6 +7,25 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 48,
+        title: "A whole new look",
+        changes: [
+            {
+                title: "Black, white and little else",
+                text: "One ink on one ground, corner marks on every picture, fewer boxes.",
+            },
+            {
+                title: "Words you click",
+                text: "Buttons and tabs are plain words. Point at one and it steps into brackets.",
+            },
+            {
+                title: "Eight themes, two of them light",
+                text: "Black, White, Graphite, Paper, Phosphor, Amber, Ice and Rose. The classic look keeps its own.",
+                to: "/settings?tab=appearance",
+            },
+        ],
+    },
+    {
         id: 47,
         title: "A new logo and look",
         changes: [

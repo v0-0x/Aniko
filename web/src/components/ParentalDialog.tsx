@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { KeyRound, Plus, ShieldCheck, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { DeviceParental, Media, ParentalRules } from "@/lib/types"
 import { cn, cover, GENRES, img, relativeTime, title } from "@/lib/utils"
@@ -17,6 +18,7 @@ type Named = { id: number; title: string; cover: string }
 
 // host: what sets them, "this computer" or "the hub".
 export function ParentalDialog({ device, host = "this computer", open, onOpenChange }: { device: { id: string; name: string }; host?: string; open: boolean; onOpenChange: (v: boolean) => void }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const key = ["parental", device.id]
     const { data } = useQuery({
@@ -120,10 +122,15 @@ export function ParentalDialog({ device, host = "this computer", open, onOpenCha
                                         disabled={with18}
                                         title={with18 ? "Blocked with 18+" : undefined}
                                         aria-pressed={on}
-                                        className={cn(
-                                            "focus-ring rounded-full border px-3 py-1 text-[13px] transition-colors disabled:cursor-default",
-                                            on ? "border-rose-400/60 bg-rose-500/15 text-rose-200" : "border-line text-muted hover:border-line-strong hover:text-fg",
-                                        )}
+                                        className={
+                                            classic
+                                                ? cn(
+                                                      "focus-ring rounded-full border px-3 py-1 text-[13px] transition-colors disabled:cursor-default",
+                                                      on ? "border-rose-400/60 bg-rose-500/15 text-rose-200" : "border-line text-muted hover:border-line-strong hover:text-fg",
+                                                  )
+                                                : // A word; a blocked one in the error's color, in brackets.
+                                                  cn("word label focus-ring h-7 px-2.5 text-[10.5px] transition-colors disabled:cursor-default", on ? "text-rose-300" : "text-muted hover:text-fg")
+                                        }
                                     >
                                         {g}
                                         {with18 && <span className="ml-1 text-[11px] text-rose-300/80">18+</span>}
@@ -201,12 +208,13 @@ function Row({ label, help, children }: { label: string; help: string; children:
 }
 
 function AnimeList({ ids, names, onRemove, onAdd, addLabel }: { ids: number[]; names: Record<number, Named>; onRemove: (id: number) => void; onAdd: () => void; addLabel: string }) {
+    const classic = useClassic()
     return (
         <div className="flex flex-col gap-1.5">
             {ids.map(id => {
                 const n = names[id]
                 return (
-                    <div key={id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-2 py-1.5">
+                    <div key={id} className={cn("flex items-center gap-3 py-1.5", classic ? "rounded-lg bg-white/[0.03] px-2" : "border-b border-line")}>
                         {n?.cover ? <img src={img(n.cover)} alt="" className="h-10 w-7 shrink-0 rounded object-cover" /> : <div className="h-10 w-7 shrink-0 rounded bg-surface-3" />}
                         <span className="min-w-0 flex-1 truncate text-sm">{n?.title || `Anime ${id}`}</span>
                         <button onClick={() => onRemove(id)} className="focus-ring grid size-7 place-items-center rounded-md text-muted hover:bg-white/[0.06] hover:text-fg" aria-label={`Remove ${n?.title || id}`}>

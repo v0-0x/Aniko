@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import type { HubOverview } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -164,9 +165,10 @@ export function Sparkline({ values, times, max, format, label, className }: { va
 
 // A headline number: its name, the value, a line under it.
 export function StatTile({ label, icon, value, sub, children, className }: { label: string; icon: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode; children?: React.ReactNode; className?: string }) {
+    const classic = useClassic()
     return (
         <div className={cn("card flex min-w-0 flex-col gap-2 p-4", className)}>
-            <p className="flex items-center gap-2 text-[13px] text-muted [&>svg]:size-4">
+            <p className={cn("flex items-center gap-2 text-muted [&>svg]:size-4", classic ? "text-[13px]" : "label")}>
                 {icon}
                 {label}
             </p>
@@ -192,9 +194,10 @@ export function Panel({ title, action, children, className }: { title: React.Rea
 
 // A dot: online (green) or not (gray), with its word for screen readers.
 export function OnlineDot({ online, className }: { online: boolean; className?: string }) {
+    const classic = useClassic()
     return (
         <span
-            className={cn("inline-block size-2 shrink-0 rounded-full", online ? "bg-emerald-400 shadow-[0_0_0_3px_rgb(52_211_153/0.15)]" : "bg-white/20", className)}
+            className={cn("inline-block size-2 shrink-0 rounded-full", online ? (classic ? "bg-emerald-400 shadow-[0_0_0_3px_rgb(52_211_153/0.15)]" : "bg-emerald-400") : "bg-white/20", className)}
             role="img"
             aria-label={online ? "online" : "offline"}
         />

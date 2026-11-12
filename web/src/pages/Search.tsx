@@ -6,6 +6,7 @@ import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { Button, EmptyState, ErrorState, IconButton, Input, Popover, Select } from "@/components/ui"
 import { useGenres, useSearch } from "@/lib/queries"
 import type { Media } from "@/lib/types"
+import { useClassic } from "@/lib/themes"
 import { cn, GENRES, SEASONS } from "@/lib/utils"
 
 const SORTS = [
@@ -23,6 +24,7 @@ const FILTERS = ["genre", "season", "year", "format", "status"]
 const formatsFor = (type: string) => (type === "MANGA" ? MANGA_FORMATS : FORMATS)
 
 export default function SearchPage() {
+    const classic = useClassic()
     const [params, setParams] = useSearchParams()
     const q = params.get("q") ?? ""
     const [text, setText] = useState(q)
@@ -112,7 +114,7 @@ export default function SearchPage() {
             <div className="mb-8 flex flex-col gap-5">
                 <div className="flex items-center justify-between gap-4">
                     <h1 className="text-[1.75rem] font-semibold tracking-tight">Search</h1>
-                    <div className="flex rounded-xl border border-white/10 bg-white/[0.045] p-0.5">
+                    <div className={cn("flex", classic ? "rounded-xl border border-white/10 bg-white/[0.045] p-0.5" : "gap-1")}>
                         {(["ANIME", "MANGA"] as const).map(t => (
                             <button
                                 key={t}
@@ -125,7 +127,11 @@ export default function SearchPage() {
                                         if (!formatsFor(t).includes(p.get("format") ?? "")) p.delete("format")
                                     })
                                 }
-                                className={cn("h-8 rounded-[10px] px-3.5 text-[13px] font-medium transition-colors", type === t ? "bg-white/[0.1] text-fg" : "text-muted hover:text-fg")}
+                                className={cn(
+                                    "h-8 px-3.5 font-medium transition-colors",
+                                    classic ? "rounded-[10px] text-[13px]" : "word label focus-ring text-[10.5px]",
+                                    type === t ? (classic ? "bg-white/[0.1] text-fg" : "text-fg") : "text-muted hover:text-fg",
+                                )}
                             >
                                 {t === "ANIME" ? "Anime" : "Manga"}
                             </button>
@@ -152,7 +158,7 @@ export default function SearchPage() {
                             align="start"
                             className="w-[min(24rem,calc(100vw-1.5rem))]"
                             trigger={
-                                <Button variant="ghost" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.045] sm:flex-none" icon={<SlidersHorizontal className="size-4" />}>
+                                <Button variant={classic ? "ghost" : "outline"} className={cn("min-w-0 flex-1 sm:flex-none", classic && "rounded-xl border border-white/10 bg-white/[0.045]")} icon={<SlidersHorizontal className="size-4" />}>
                                     Filters
                                     {tucked > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-white/15 px-1.5 text-xs font-semibold text-fg">{tucked}</span>}
                                 </Button>
@@ -188,7 +194,12 @@ export default function SearchPage() {
                                                             for (const v of cur.includes(g) ? cur.filter(c => c !== g) : [...cur, g]) p.append("genre", v)
                                                         })
                                                     }
-                                                    className={cn("h-8 rounded-full px-3 text-[13px] font-medium transition-colors", on ? "bg-white/20 text-fg" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")}
+                                                    className={cn(
+                                                        "h-8 px-3 font-medium transition-colors",
+                                                        classic
+                                                            ? cn("rounded-full text-[13px]", on ? "bg-white/20 text-fg" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")
+                                                            : cn("word label text-[10.5px]", on ? "text-fg" : "text-muted hover:text-fg"),
+                                                    )}
                                                 >
                                                     {g}
                                                 </button>

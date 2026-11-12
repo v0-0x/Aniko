@@ -28,6 +28,7 @@ import {
 import { useEffect, useState } from "react"
 import { Badge, Button, EmptyState, IconButton, Input, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { HubEvent, HubOverview } from "@/lib/types"
 import { cn, formatBytes } from "@/lib/utils"
@@ -192,12 +193,15 @@ function who(e: HubEvent) {
 
 function Row({ e, account }: { e: HubEvent; account?: string }) {
     const subject = who(e)
+    const classic = useClassic()
     return (
         <li className="flex items-start gap-3 px-4 py-3">
             <span
                 className={cn(
-                    "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full [&>svg]:size-3.5",
-                    e.failed ? "bg-rose-500/[0.12] text-rose-300" : e.kind === "delete" ? "bg-amber-400/[0.1] text-amber-300" : "bg-white/[0.05] text-muted",
+                    "grid shrink-0 place-items-center",
+                    // This look: the icon alone, in its tone.
+                    classic ? "mt-0.5 size-7 rounded-full [&>svg]:size-3.5" : "mt-0.5 size-5 [&>svg]:size-4 [&>svg]:stroke-[1.5]",
+                    e.failed ? cn("text-rose-300", classic && "bg-rose-500/[0.12]") : e.kind === "delete" ? cn("text-amber-300", classic && "bg-amber-400/[0.1]") : cn("text-muted", classic && "bg-white/[0.05]"),
                 )}
             >
                 {ICONS[e.kind] ?? <Activity />}
@@ -268,8 +272,9 @@ function Deleted({ e }: { e: HubEvent }) {
         }
     }
     const skipped = (e.files?.length ?? 0) - (again?.episodes.length ?? 0)
+    const classic = useClassic()
     return (
-        <div className="mt-2.5 rounded-lg border border-line bg-white/[0.02] p-3">
+        <div className={classic ? "mt-2.5 rounded-lg border border-line bg-white/[0.02] p-3" : "mt-2.5 border-l border-line pl-3"}>
             <Files files={e.files ?? []} />
             {again ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2.5">
@@ -311,6 +316,7 @@ function episodeList(eps: number[]) {
 
 // The server's log, every line, the newest first.
 function ServerLog() {
+    const classic = useClassic()
     const [typed, setTyped] = useState("")
     const q = useSettled(typed.trim())
     const [only, setOnly] = useState<"all" | "problems">("all")
@@ -346,7 +352,7 @@ function ServerLog() {
                 <IconButton label="Look again" onClick={() => log.refetch()}>
                     <RefreshCw className={cn("size-4", log.isFetching && "animate-spin")} />
                 </IconButton>
-                <a href="/api/hub/log/download" download className="focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-muted hover:bg-white/[0.06] hover:text-fg">
+                <a href="/api/hub/log/download" download className={classic ? "focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-muted hover:bg-white/[0.06] hover:text-fg" : "word label focus-ring inline-flex h-9 items-center gap-2 px-3.5 text-muted transition-colors hover:text-fg"}>
                     <Download className="size-4" /> Save the log
                 </a>
             </div>

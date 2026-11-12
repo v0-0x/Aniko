@@ -5,6 +5,7 @@ import { Badge, Button, Dialog, EmptyState, IconButton, Input, Select } from "@/
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { useCollection, useLibraryFiles } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { EntryView, EpisodeView, LocalFile, Media } from "@/lib/types"
 import { cleanDescription, cover, formatBytes, formatLabel, img, title } from "@/lib/utils"
@@ -27,6 +28,7 @@ const SORTS = [
 const PAGE = 120
 
 export function LibraryBrowse() {
+    const classic = useClassic()
     const { data: coll, isLoading } = useCollection()
     const { data: files } = useLibraryFiles()
     const [q, setQ] = useState("")
@@ -106,7 +108,7 @@ export function LibraryBrowse() {
                         {list.slice(0, shown).map(it => (
                             <li key={it.media.id}>
                                 <button onClick={() => setOpen(it.media)} className="focus-ring group w-full rounded-lg text-left">
-                                    <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface-3">
+                                    <div className="marks aspect-[2/3] overflow-hidden rounded-lg bg-surface-3">
                                         <img src={cover(it.media)} alt="" loading="lazy" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
                                     </div>
                                     <p className="mt-2 line-clamp-2 text-[13px] font-medium leading-snug">{title(it.media)}</p>
@@ -119,7 +121,7 @@ export function LibraryBrowse() {
                     </ul>
                     {list.length > shown && (
                         <div className="border-t border-line p-3 text-center">
-                            <button onClick={() => setShown(n => n + PAGE)} className="focus-ring rounded-md px-3 py-1.5 text-sm text-muted hover:text-fg">
+                            <button onClick={() => setShown(n => n + PAGE)} className={classic ? "focus-ring rounded-md px-3 py-1.5 text-sm text-muted hover:text-fg" : "word label focus-ring h-8 px-3 text-[10.5px] text-muted transition-colors hover:text-fg"}>
                                 Show more ({list.length - shown} left)
                             </button>
                         </div>
@@ -135,6 +137,7 @@ export function LibraryBrowse() {
 // which can be deleted: for good (no trash), noted in the audit log, from
 // where they can be downloaded again.
 function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFile[]; onClose: () => void }) {
+    const classic = useClassic()
     const { data, isLoading } = useQuery({ queryKey: ["entry", media.id], queryFn: () => api.get<EntryView>(`/api/anime/${media.id}`) })
     const qc = useQueryClient()
     const [asking, setAsking] = useState<string | null>(null) // "all", or a file's path
@@ -195,7 +198,7 @@ function AnimeDetails({ media, files, onClose }: { media: Media; files: LocalFil
                         )}
                     </div>
                     {asking === "all" && (
-                        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.07] px-3 py-2.5 text-sm">
+                        <div className={classic ? "mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.07] px-3 py-2.5 text-sm" : "mb-3 flex flex-wrap items-center gap-3 border-l border-rose-400/60 py-1 pl-3 text-sm"}>
                             <span className="min-w-0 flex-1">
                                 Delete its {files.length} {files.length === 1 ? "file" : "files"} ({formatBytes(size)}) from the server? This can't be undone, but episodes can be downloaded again
                                 from the Audit log.

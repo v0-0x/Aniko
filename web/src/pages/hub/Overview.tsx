@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { ArrowDownUp, ChevronRight, CircleCheck, Cpu, Flame, HardDrive, MemoryStick, Monitor, Play, Smartphone, Thermometer, TriangleAlert, Tv } from "lucide-react"
 import { Badge, EmptyState } from "@/components/ui"
+import { useClassic } from "@/lib/themes"
 import type { HubDevice, HubOverview, HubStream } from "@/lib/types"
 import { cn, formatDuration, img } from "@/lib/utils"
 import type { HubTab } from "./HubApp"
@@ -11,6 +12,7 @@ import { ago, bits, bytes, levelOf, Meter, OnlineDot, Panel, shortPath, since, S
 
 export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) => void }) {
     const s = o.system
+    const classic = useClassic()
     const online = o.devices.filter(d => d.online)
     const waiting = o.devices.filter(d => d.online && !d.allowed)
     return (
@@ -60,7 +62,7 @@ export default function Overview({ o, go }: { o: HubOverview; go: (t: HubTab) =>
                                 {o.playing.map(p => {
                                     const acct = o.accounts.find(a => a.user === p.user)
                                     return (
-                                        <li key={p.device} className="flex min-w-0 gap-3 rounded-xl bg-white/[0.03] p-2.5">
+                                        <li key={p.device} className={cn("flex min-w-0 gap-3", classic ? "rounded-xl bg-white/[0.03] p-2.5" : "p-1")}>
                                             {p.cover ? (
                                                 <img src={img(p.cover)} alt="" className="h-20 w-14 shrink-0 rounded-md object-cover" />
                                             ) : (
@@ -239,8 +241,9 @@ function Figure({ n, label }: { n: number | string; label: string }) {
 }
 
 function More({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+    const classic = useClassic()
     return (
-        <button onClick={onClick} className="focus-ring flex items-center gap-0.5 rounded text-xs font-medium text-muted hover:text-fg">
+        <button onClick={onClick} className={classic ? "focus-ring flex items-center gap-0.5 rounded text-xs font-medium text-muted hover:text-fg" : "word label focus-ring -mr-2.5 flex h-7 items-center gap-0.5 px-2.5 text-[10.5px] text-muted transition-colors hover:text-fg"}>
             {children}
             <ChevronRight className="size-3.5" />
         </button>
@@ -248,8 +251,9 @@ function More({ onClick, children }: { onClick: () => void; children: React.Reac
 }
 
 function NewDevicesIcon() {
+    const classic = useClassic()
     return (
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand/20 text-brand-strong">
+        <span className={classic ? "grid size-9 shrink-0 place-items-center rounded-full bg-brand/20 text-brand-strong" : "grid shrink-0 place-items-center text-fg"}>
             <Monitor className="size-4" />
         </span>
     )

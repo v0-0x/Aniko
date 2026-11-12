@@ -7,6 +7,7 @@ import { DownloadedGrid } from "@/components/MangaDownloads"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { Button, EmptyState, ErrorState, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import type { ListEntry } from "@/lib/types"
 import { LIST_STATUS_MANGA } from "@/lib/utils"
 
@@ -17,6 +18,7 @@ export default function MangaPage() {
     })
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
     const [status, setStatus] = useState("CURRENT")
+    const classic = useClassic()
     const byStatus = useMemo(() => {
         const out: Record<string, ListEntry[]> = {}
         for (const l of data?.lists ?? []) if (!l.isCustomList) out[l.status] = [...(out[l.status] ?? []), ...l.entries]
@@ -33,7 +35,7 @@ export default function MangaPage() {
                 </Link>
             </div>
             {providers && providers.length === 0 && (
-                <div className="card mb-8 flex items-center gap-3 p-3 pl-4">
+                <div className={classic ? "card mb-8 flex items-center gap-3 p-3 pl-4" : "mb-8 flex items-center gap-3 border-y border-line py-2"}>
                     <Puzzle className="size-4 shrink-0 text-muted" />
                     <p className="min-w-0 flex-1 text-sm text-muted">No manga provider installed</p>
                     <Link to="/extensions?tab=marketplace">

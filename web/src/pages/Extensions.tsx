@@ -28,6 +28,7 @@ import { toast } from "@/lib/toast"
 import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger, EmptyState, Field, IconButton, Input, Popover, Select, Switch, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useExtensions, useMarketplace, useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { ExtensionInfo, LogLineT, MarketEntry } from "./extensionTypes"
 import { cn } from "@/lib/utils"
 
@@ -41,7 +42,12 @@ const TYPES: Record<string, { label: string; icon: React.ReactNode }> = {
 
 const openLink = (url: string) => window.open(url, "_blank", "noopener,noreferrer")
 
+// The extensions, in columns: in this look rows on hairlines, not a box each.
+const grid = (classic: boolean) => cn("grid lg:grid-cols-2 2xl:grid-cols-3", classic ? "gap-2" : "gap-x-8 border-t border-line")
+const row = (classic: boolean) => cn("flex items-center gap-3 fade-in", classic ? "card p-3" : "border-b border-line py-3")
+
 export default function ExtensionsPage() {
+    const classic = useClassic()
     const [params, setParams] = useSearchParams()
     const tab = params.get("tab") === "marketplace" ? "marketplace" : "installed"
     const { data: installed } = useExtensions()
@@ -89,7 +95,7 @@ export default function ExtensionsPage() {
                     )}
                 </div>
             </div>
-            {lan && <p className="mb-6 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-muted">View only. Set up extensions on the computer Aniko runs on.</p>}
+            {lan && <p className={cn("mb-6 text-sm text-muted", classic ? "rounded-xl bg-white/[0.04] px-3 py-2" : "border-l border-line-strong pl-3")}>View only. Set up extensions on the computer Aniko runs on.</p>}
             <fieldset disabled={lan} className="m-0 min-w-0 border-0 p-0">
                 {tab === "installed" ? <Installed updates={updates} /> : <Marketplace />}
             </fieldset>
@@ -112,6 +118,7 @@ function ExtIcon({ src, className }: { src?: string; className?: string }) {
 // ---------------------------------------------------------------------------
 
 function Installed({ updates }: { updates: Record<string, string> }) {
+    const classic = useClassic()
     const { data, isLoading } = useExtensions()
     const qc = useQueryClient()
     if (isLoading) return <div className="card h-[4.5rem] shimmer" />
@@ -135,10 +142,11 @@ function Installed({ updates }: { updates: Record<string, string> }) {
         <div className="flex flex-col gap-8">
             {groups.map(g => (
                 <section key={g.type}>
-                    <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted">
-                        {TYPES[g.type]?.icon} {TYPES[g.type]?.label ?? g.type}
+                    <h2 className={cn("flex items-center gap-2 text-sm font-medium text-muted", classic ? "mb-3" : "mb-1")}>
+                        {/* This look: a small capital label (in a span: a heading has its own face). */}
+                        {TYPES[g.type]?.icon} <span className={classic ? undefined : "label"}>{TYPES[g.type]?.label ?? g.type}</span>
                     </h2>
-                    <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
+                    <div className={grid(classic)}>
                         {g.items.map(e => (
                             <InstalledRow key={e.manifest.id} ext={e} update={updates[e.manifest.id]} onChange={() => qc.invalidateQueries({ queryKey: ["extensions"] })} />
                         ))}
@@ -150,6 +158,7 @@ function Installed({ updates }: { updates: Record<string, string> }) {
 }
 
 function InstalledRow({ ext, update, onChange }: { ext: ExtensionInfo; update?: string; onChange: () => void }) {
+    const classic = useClassic()
     const m = ext.manifest
     const [cfgOpen, setCfgOpen] = useState(false)
     const [logsOpen, setLogsOpen] = useState(false)
@@ -173,7 +182,7 @@ function InstalledRow({ ext, update, onChange }: { ext: ExtensionInfo; update?: 
     const facts = [`v${m.version}`, m.author, m.language === "typescript" ? "TS" : "JS", m.lang?.toUpperCase(), ext.running && "Running", update && `${update} available`].filter(Boolean)
     const notes = !ext.supported || !!ext.error || !!ext.configError || needsGrant
     return (
-        <div className="card flex items-center gap-3 p-3 fade-in">
+        <div className={row(classic)}>
             <ExtIcon src={m.icon} className={cn("size-11 transition-opacity", !on && "opacity-60")} />
             <div className="min-w-0 flex-1">
                 <p className={cn("truncate font-medium transition-opacity", !on && "opacity-60")}>{m.name}</p>
@@ -280,6 +289,7 @@ function ConfigDialog({ open, onOpenChange, ext, onSaved }: { open: boolean; onO
 }
 
 function LogsDialog({ open, onOpenChange, id }: { open: boolean; onOpenChange: (v: boolean) => void; id: string }) {
+    const classic = useClassic()
     const [lines, setLines] = useState<LogLineT[]>([])
     useEffect(() => {
         if (open) api.get<LogLineT[] | null>(`/api/extensions/${id}/logs`).then(l => setLines(l ?? [])).catch(e => toast.error(e.message))
@@ -289,7 +299,7 @@ function LogsDialog({ open, onOpenChange, id }: { open: boolean; onOpenChange: (
             {lines.length === 0 ? (
                 <p className="py-8 text-center text-sm text-subtle">No output yet.</p>
             ) : (
-                <pre className="max-h-[60vh] overflow-auto rounded-xl bg-black/40 p-4 text-xs leading-relaxed">
+                <pre className={cn("max-h-[60vh] overflow-auto text-xs leading-relaxed", classic ? "rounded-xl bg-black/40 p-4" : "border-y border-line py-3")}>
                     {lines.map((l, i) => (
                         <div key={i} className={cn(l.level === "error" ? "text-rose-300" : l.level === "warn" ? "text-amber-300" : "text-fg/80")}>
                             <span className="text-subtle">{new Date(l.time * 1000).toLocaleTimeString()} </span>
@@ -303,6 +313,7 @@ function LogsDialog({ open, onOpenChange, id }: { open: boolean; onOpenChange: (
 }
 
 function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpenChange: (v: boolean) => void; ext: ExtensionInfo; onDone: () => void }) {
+    const classic = useClassic()
     const perms = ext.manifest.plugin?.permissions
     const grant = async () => {
         try {
@@ -336,20 +347,20 @@ function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpe
         >
             <div className="flex flex-col gap-5 text-sm">
                 <div>
-                    <p className="mb-2 font-semibold">Requested access</p>
+                    <p className={classic ? "mb-2 font-semibold" : "label mb-2 text-muted"}>Requested access</p>
                     <div className="flex flex-wrap gap-1.5">
                         {scopes.length ? scopes.map(s => <Badge key={s} tone={s.includes("token") || s === "system" ? "amber" : "gray"}>{s}</Badge>) : <span className="text-muted">Nothing special</span>}
                     </div>
                 </div>
                 {domains.length > 0 && (
                     <div>
-                        <p className="mb-2 font-semibold">Network</p>
+                        <p className={classic ? "mb-2 font-semibold" : "label mb-2 text-muted"}>Network</p>
                         <p className="text-muted">{domains.join(", ")}</p>
                         {perms?.allow.networkAccess.reasoning && <p className="mt-1 text-xs text-subtle">“{perms.allow.networkAccess.reasoning}”</p>}
                     </div>
                 )}
                 {unsafe.length > 0 && (
-                    <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-amber-200">
+                    <div className={cn("text-amber-200", classic ? "rounded-xl border border-amber-500/25 bg-amber-500/10 p-3" : "border-l border-amber-400 pl-3")}>
                         <p className="flex items-center gap-2 font-semibold">
                             <ShieldAlert className="size-4" /> Page modification
                         </p>
@@ -367,6 +378,7 @@ function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpe
 // ---------------------------------------------------------------------------
 
 function Marketplace() {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const [url, setUrl] = useState("")
     const effectiveUrl = url || status?.settings.extensions.marketplaceUrl || ""
@@ -421,7 +433,7 @@ function Marketplace() {
                     align="end"
                     className="w-[min(22rem,calc(100vw-1.5rem))]"
                     trigger={
-                        <IconButton aria-label="Sort and source" className="rounded-xl border border-white/10 bg-white/[0.045]">
+                        <IconButton aria-label="Sort and source" className={classic ? "rounded-xl border border-white/10 bg-white/[0.045]" : undefined}>
                             <SlidersHorizontal className="size-4" />
                         </IconButton>
                     }
@@ -473,7 +485,7 @@ function Marketplace() {
                 </EmptyState>
             )}
             {!isLoading && !error && entries.length === 0 && <EmptyState icon={<Search className="size-6" />} title="Nothing found" />}
-            <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
+            <div className={cn(grid(classic), !classic && entries.length === 0 && "border-t-0")}>
                 {entries.map(e => (
                     <MarketRow key={e.id} e={e} />
                 ))}
@@ -483,6 +495,7 @@ function Marketplace() {
 }
 
 function MarketRow({ e }: { e: MarketEntry }) {
+    const classic = useClassic()
     const [busy, setBusy] = useState(false)
     const [grant, setGrant] = useState<ExtensionInfo | null>(null)
     const qc = useQueryClient()
@@ -512,7 +525,7 @@ function MarketRow({ e }: { e: MarketEntry }) {
     ].filter(Boolean)
     const needs = (e.unsupported?.length ?? 0) > 0
     return (
-        <div className="card flex items-center gap-3 p-3 fade-in">
+        <div className={row(classic)}>
             <ExtIcon src={e.icon} className={cn("size-11", e.brokenTag && "opacity-60")} />
             <div className="min-w-0 flex-1">
                 <p className={cn("truncate font-medium", e.brokenTag && "opacity-60")}>{e.name}</p>
@@ -542,7 +555,7 @@ function MarketRow({ e }: { e: MarketEntry }) {
                             <span className="max-sm:sr-only">Update</span>
                         </Button>
                     ) : (
-                        <span className="flex items-center gap-1.5 px-1 text-xs font-medium text-emerald-300">
+                        <span className={cn("flex items-center gap-1.5 px-1 text-emerald-300", classic ? "text-xs font-medium" : "label text-[10px]")}>
                             <CheckCircle2 className="size-4" /> <span className="max-sm:sr-only">Installed</span>
                         </span>
                     )

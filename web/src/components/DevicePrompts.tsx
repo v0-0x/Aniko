@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { DevicePrompt } from "@/lib/types"
 
@@ -23,6 +24,7 @@ function readHidden(): string[] {
 // this computer's library with; and a paired one on another version than
 // this one, to update.
 export function DevicePrompts() {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const qc = useQueryClient()
     const [busy, setBusy] = useState("")
@@ -64,7 +66,7 @@ export function DevicePrompts() {
                 const isNew = p.kind === "new"
                 return (
                     <div key={`${p.kind}:${p.id}`} className="card flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4 rise-in">
-                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-fg/80 [&>svg]:size-[18px]">
+                        <span className={classic ? "grid size-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-fg/80 [&>svg]:size-[18px]" : "shrink-0 text-muted [&>svg]:size-5 [&>svg]:stroke-[1.5]"}>
                             {isNew ? tvApp ? <Tv /> : <MonitorSmartphone /> : <ArrowUpCircle />}
                         </span>
                         <div className="min-w-0 flex-1">

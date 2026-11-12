@@ -429,11 +429,11 @@ func kindOf(r *http.Request) clientKind {
 func isTrusted(r *http.Request) bool { return kindOf(r) != clientLAN }
 
 const webUIDisabledPage = `<!doctype html><html><head><meta charset="utf-8"><title>Aniko</title>
-<style>body{margin:0;height:100vh;display:grid;place-items:center;background:#100b1a;color:#ececee;font-family:system-ui,sans-serif}
-.c{max-width:440px;padding:32px;border:1px solid #2f2445;border-radius:20px;background:#1e162e;text-align:center}
-h1{font-size:20px;margin:0 0 8px}p{color:#b5a8c6;line-height:1.5}</style></head>
+<style>body{margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0a;color:#ededed;font-family:system-ui,sans-serif}
+.c{max-width:440px;padding:32px;border:1px solid #333;border-radius:2px;text-align:center}
+h1{font-size:20px;margin:0 0 8px}p{color:#9a9a9a;line-height:1.5}</style></head>
 <body><div class="c"><h1>The Aniko Web UI is turned off</h1>
-<p>Open the Aniko desktop app and enable <b>Settings › Network & web UI</b> to use Aniko from a browser.</p></div></body></html>`
+<p>Open the Aniko desktop app and enable it in <b>Settings › Devices & network</b> to use Aniko from a browser.</p></div></body></html>`
 
 // ---------------------------------------------------------------------------
 // JSON helpers

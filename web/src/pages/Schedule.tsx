@@ -4,10 +4,12 @@ import { Link } from "react-router-dom"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { Button, EmptyState, ErrorState, Skeleton, Tabs } from "@/components/ui"
 import { useSchedule } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { ScheduleItem } from "@/lib/types"
 import { cn, cover, formatLabel, LIST_STATUS, readLocal, timeUntil, title, writeLocal } from "@/lib/utils"
 
 export default function SchedulePage() {
+    const classic = useClassic()
     const { data, isLoading, error, refetch, isFetching } = useSchedule(8)
     const [filter, setFilter] = useState<"mine" | "all">(() => (readLocal("aniko-schedule-filter") as "mine" | "all") || "mine")
 
@@ -76,17 +78,21 @@ export default function SchedulePage() {
                     const isToday = d.date.toDateString() === today
                     return (
                         <section key={d.date.toISOString()}>
-                            <h2 className="mb-3 text-sm font-medium text-muted">
-                                {isToday && <span className="text-brand-strong">Today · </span>}
-                                {d.date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                            <h2 className={cn("text-sm font-medium text-muted", classic ? "mb-3" : "mb-1")}>
+                                {/* This look: a small capital label (in a span: a heading has its own face). */}
+                                <span className={classic ? undefined : "label"}>
+                                    {isToday && <span className={classic ? "text-brand-strong" : "text-fg"}>Today · </span>}
+                                    {d.date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                                </span>
                             </h2>
-                            <div className="grid gap-2 md:grid-cols-2 2xl:grid-cols-3">
+                            {/* This look: rows on hairlines, not a box each. */}
+                            <div className={cn("grid md:grid-cols-2 2xl:grid-cols-3", classic ? "gap-2" : "gap-x-8 border-t border-line")}>
                                 {d.items.map(it => {
                                     const aired = it.airingAt < now
                                     // What airs and where it stands in the list, on one line.
                                     const facts = [`Episode ${it.episode}${it.media.episodes ? ` / ${it.media.episodes}` : ""}`, formatLabel(it.media.format), it.listStatus && LIST_STATUS[it.listStatus]].filter(Boolean)
                                     return (
-                                        <Link key={it.id} to={`/entry?id=${it.media.id}`} className={cn("card focus-ring flex items-center gap-4 p-3 transition hover:border-line-strong", aired && "opacity-60")}>
+                                        <Link key={it.id} to={`/entry?id=${it.media.id}`} className={cn("focus-ring flex items-center gap-4 transition", classic ? "card p-3 hover:border-line-strong" : "border-b border-line py-3 hover:border-fg/45", aired && "opacity-60")}>
                                             <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-medium">{title(it.media)}</p>

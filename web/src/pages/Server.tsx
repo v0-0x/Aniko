@@ -3,6 +3,7 @@ import { ArrowDownToLine, Cpu, HardDrive, LibraryBig, MemoryStick, MonitorPlay, 
 import { Link } from "react-router-dom"
 import { Badge, EmptyState, Spinner } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import type { HubSystem, SharingPeer } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { bytes, Meter, OnlineDot, span, StatTile } from "./hub/parts"
@@ -54,6 +55,7 @@ export default function ServerPage() {
 }
 
 function ServerCard({ server: { host, state: st, needs } }: { server: ServerView }) {
+    const classic = useClassic()
     const sys = st?.system
     const temp = !sys?.temp ? "" : sys.throttled ? "Slowed down: too hot or underpowered" : sys.temp >= 75 ? "Hot" : "Fine"
     return (
@@ -87,7 +89,7 @@ function ServerCard({ server: { host, state: st, needs } }: { server: ServerView
                         <StatTile label="Converts with" icon={<Cpu />} value={st.encoder || "Nothing"} sub={st.encoder ? "for files a device can't play" : "ffmpeg isn't installed"} />
                     </div>
                     {!!sys.disks?.length && (
-                        <div className="rounded-xl border border-line bg-surface-1 p-4">
+                        <div className={classic ? "rounded-xl border border-line bg-surface-1 p-4" : "card p-4"}>
                             <p className="mb-3 flex items-center gap-2 text-sm font-medium [&>svg]:size-4 [&>svg]:text-muted">
                                 <HardDrive /> Storage
                             </p>

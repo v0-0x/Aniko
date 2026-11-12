@@ -7,6 +7,7 @@ import { UploadDialog } from "@/components/UploadDialog"
 import { Badge, Button, IconButton, Progress, Select, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useCollection, useSaveSettings } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { DownloadItem, HubOverview, ScanProgress, Status } from "@/lib/types"
 import { img } from "@/lib/utils"
@@ -60,6 +61,7 @@ export default function Library({ o, status }: { o: HubOverview; status: Status 
 }
 
 function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const settings = status.settings
     const folders = [settings.library.dir, ...(settings.library.extraDirs ?? [])].filter(Boolean)
@@ -138,7 +140,7 @@ function AnimeLibrary({ o, status }: { o: HubOverview; status: Status }) {
                             <ul className="divide-y divide-line">
                                 {folders.map(f => (
                                     <li key={f} className="flex items-center gap-3 px-4 py-3">
-                                        <Folder className="size-4 shrink-0 text-amber-300" />
+                                        <Folder className={classic ? "size-4 shrink-0 text-amber-300" : "size-4 shrink-0 text-muted"} />
                                         <span className="min-w-0 flex-1 truncate font-mono text-[13px]" title={f}>
                                             {shortPath(f)}
                                         </span>

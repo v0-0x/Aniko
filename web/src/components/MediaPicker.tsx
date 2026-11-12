@@ -1,6 +1,7 @@
 import { Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useCollection, useSearch } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { Media } from "@/lib/types"
 import { cn, cover, formatLabel, otherTitle, title } from "@/lib/utils"
 import { Dialog, ErrorState, Input, Spinner } from "./ui"
@@ -21,6 +22,7 @@ export function MediaPicker({
     heading?: string
     description?: React.ReactNode
 }) {
+    const classic = useClassic()
     const [q, setQ] = useState(initialQuery)
     const [dq, setDq] = useState(initialQuery)
     useEffect(() => {
@@ -68,7 +70,7 @@ export function MediaPicker({
                                 {otherTitle(m) ? ` · ${otherTitle(m)}` : ""}
                             </p>
                         </div>
-                        {i < fromList.length && <span className={cn("rounded-md bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand-strong")}>In your list</span>}
+                        {i < fromList.length && <span className={cn(classic ? "rounded-md bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand-strong" : "label shrink-0 text-[10px] text-muted")}>In your list</span>}
                     </button>
                 ))}
                 {!isFetching && dq.trim().length > 1 && error && <ErrorState compact title="Couldn't search AniList" error={error} onRetry={() => refetch()} />}

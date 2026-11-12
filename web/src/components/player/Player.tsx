@@ -40,7 +40,7 @@ import type { EntryView, EpisodeView, Probe, StreamSource, TorrentStreamStatus, 
 import { android, androidApp, move, tv } from "@/lib/tv"
 import { cn, formatBytes, formatDuration, img, readLocal, title as animeTitle, writeLocal } from "@/lib/utils"
 import { parseVTT, type Cue } from "@/lib/vtt"
-import { Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger } from "../ui"
+import { DarkScope, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger } from "../ui"
 import { NativeSubtitles } from "./NativeSubtitles"
 
 type SubOption = { key: string; label: string; lang: string; title: string; index: number; url: string; bitmap?: boolean }
@@ -102,7 +102,9 @@ export function PlayerOverlay({ mini = false }: { mini?: boolean }) {
     const stage = useRef<HTMLDivElement>(null)
     if (!req) return null
     return (
-        <div ref={stage} data-player-overlay className="fixed inset-0 z-[80] bg-black fade-in">
+        // on-dark: the player stays dark in a light theme, its menus too.
+        <div ref={stage} data-player-overlay className="on-dark fixed inset-0 z-[80] bg-black fade-in">
+            <DarkScope.Provider value={true}>
             <Player
                 key={JSON.stringify(req)}
                 req={req}
@@ -113,6 +115,7 @@ export function PlayerOverlay({ mini = false }: { mini?: boolean }) {
                     if (mini) closeMini()
                 }}
             />
+            </DarkScope.Provider>
         </div>
     )
 }

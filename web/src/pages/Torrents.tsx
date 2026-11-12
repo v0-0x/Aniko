@@ -6,10 +6,12 @@ import { toast } from "@/lib/toast"
 import { Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Progress, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus, useTorrentList } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import type { Torrent } from "@/lib/types"
 import { cn, formatBytes, formatSpeed, timeUntil } from "@/lib/utils"
 
 export default function TorrentsPage() {
+    const classic = useClassic()
     const { data: status } = useStatus()
     const navigate = useNavigate()
     const { data: clientStatus, refetch: refetchStatus } = useQuery({
@@ -140,7 +142,8 @@ export default function TorrentsPage() {
                     {isLoading && <div className="card h-40 shimmer" />}
                     {!isLoading && listError && !list && <ErrorState title="Couldn't read the torrent list" error={listError} retrying={listFetching} onRetry={() => refetchList()} />}
                     {!isLoading && !(listError && !list) && torrents.length === 0 && <EmptyState icon={<Magnet className="size-6" />} title="No torrents" />}
-                    <div className="flex flex-col gap-2">
+                    {/* This look: rows on hairlines, not a box each. */}
+                    <div className={cn("flex flex-col", classic ? "gap-2" : torrents.length > 0 && "border-t border-line")}>
                         {torrents.map(t => (
                             <TorrentRow key={t.hash} t={t} onAction={a => act([t.hash], a)} canOpen={status?.client !== "lan" && !host} />
                         ))}
@@ -164,8 +167,9 @@ function TorrentRow({ t, onAction, canOpen }: { t: Torrent; onAction: (a: string
         t.eta > 0 && t.progress < 1 && `ETA ${timeUntil(t.eta)}`,
         `Ratio ${t.ratio.toFixed(2)}`,
     ].filter(Boolean)
+    const classic = useClassic()
     return (
-        <div className="card flex items-center gap-3 p-4 fade-in">
+        <div className={cn("flex items-center gap-3 fade-in", classic ? "card p-4" : "border-b border-line py-4")}>
             <div className="min-w-0 flex-1">
                 <p className="truncate font-medium" title={t.name}>
                     {t.name}

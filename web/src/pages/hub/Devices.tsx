@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ParentalDialog } from "@/components/ParentalDialog"
 import { Badge, Button, EmptyState, Select, Switch } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import type { HubDevice, HubOverview } from "@/lib/types"
 import { cn, compareVersions, img } from "@/lib/utils"
@@ -62,10 +63,11 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
     const on = o.accounts.find(a => a.user === d.user)
     const given = o.accounts.find(a => a.user === d.accountUser) ?? o.accounts[0]
     const older = compareVersions(d.version, o.version) === -1
+    const classic = useClassic()
     return (
         <div className={cn("card overflow-hidden", !d.allowed && d.online && "border-brand/40")}>
             <div className="flex items-center gap-3 px-4 py-3.5">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05]">
+                <span className={classic ? "grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05]" : "grid shrink-0 place-items-center"}>
                     <DeviceIcon d={d} className="size-5 text-muted" />
                 </span>
                 <div className="min-w-0 flex-1">

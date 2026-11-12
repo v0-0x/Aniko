@@ -1,6 +1,7 @@
 import { Compass, Ellipsis, HardDrive, Home, Palette, Search, Settings as SettingsIcon, UserRound } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { cn } from "@/lib/utils"
 import { useNavGroups } from "./Sidebar"
 import { Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger } from "./ui"
@@ -25,13 +26,20 @@ export function PhoneNav() {
     const rest = groups.flatMap(g => g.items).filter(it => !TABS.some(t => t.to === it.to))
     const counted = rest.some(it => (it.badge ?? 0) > 0)
     const onMore = !inTabs(location.pathname)
-    const tab = "focus-ring relative flex h-full flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[10.5px] font-medium transition-colors [&_svg]:size-[21px] [&_svg]:stroke-[1.75]"
+    const classic = useClassic()
+    // This look: small capitals, and a short line over the open page's tab.
+    const tab = cn(
+        "focus-ring relative flex h-full flex-1 flex-col items-center justify-center gap-1 rounded-lg font-medium transition-colors [&_svg]:size-[21px]",
+        classic ? "text-[10.5px] [&_svg]:stroke-[1.75]" : "label text-[9px] tracking-[0.06em] [&_svg]:stroke-[1.5]",
+    )
+    const mark = (active: boolean) => !classic && <span aria-hidden className={cn("absolute top-0 left-1/2 h-px w-6 -translate-x-1/2 bg-fg transition-transform duration-300 ease-out", active ? "scale-x-100" : "scale-x-0")} />
     return (
-        <nav aria-label="Pages" className="relative z-40 flex shrink-0 items-stretch gap-1 border-t border-line bg-frame px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]" style={{ height: "calc(3.75rem + env(safe-area-inset-bottom))" }}>
+        <nav aria-label="Pages" className={cn("relative z-40 flex shrink-0 items-stretch gap-1 border-t bg-frame px-2 pb-[max(0.375rem,env(safe-area-inset-bottom))]", classic ? "border-line pt-1.5" : "border-line-strong pt-1.5")} style={{ height: "calc(3.75rem + env(safe-area-inset-bottom))" }}>
             {TABS.map(t => {
                 const active = t.match ? t.match(location.pathname) : location.pathname.startsWith(t.to)
                 return (
-                    <NavLink key={t.to} to={t.to} className={cn(tab, active ? "text-fg [&_svg]:text-brand-strong" : "text-subtle")}>
+                    <NavLink key={t.to} to={t.to} className={cn(tab, active ? "text-fg [&_svg]:text-brand-strong" : classic ? "text-subtle" : "text-muted")}>
+                        {mark(active)}
                         {t.icon}
                         {t.label}
                     </NavLink>
@@ -39,7 +47,8 @@ export function PhoneNav() {
             })}
             <Dropdown>
                 <DropdownTrigger asChild>
-                    <button className={cn(tab, onMore ? "text-fg [&_svg]:text-brand-strong" : "text-subtle", "data-[state=open]:text-fg")}>
+                    <button className={cn(tab, onMore ? "text-fg [&_svg]:text-brand-strong" : classic ? "text-subtle" : "text-muted", "data-[state=open]:text-fg")}>
+                        {mark(onMore)}
                         <Ellipsis />
                         More
                         {counted && <span className="absolute top-1.5 left-1/2 ml-2.5 size-2 rounded-full bg-brand" />}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react"
 import { usePluginStates } from "@/lib/queries"
 import { pluginStore, trayOpenStore, useStore } from "@/lib/store"
+import { useClassic } from "@/lib/themes"
 import type { PluginState } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Popover, Tooltip } from "../ui"
@@ -36,6 +37,7 @@ export function usePlugins() {
 }
 
 export function PluginTrays() {
+    const classic = useClassic()
     const plugins = usePlugins()
     const open = useStore(trayOpenStore)
     const trays = useMemo(
@@ -47,13 +49,15 @@ export function PluginTrays() {
         [plugins],
     )
     if (trays.length === 0 && pages.length === 0) return null
+    // The open one, in this look: a line under its icon.
+    const on = "shadow-[inset_0_-1.5px_0_0_var(--text)]"
     return (
         <div className="mb-1 flex flex-wrap items-center justify-center gap-1 border-b border-line pb-2 lg:justify-start">
             {pages.map(({ plugin, view }) => (
                 <Tooltip key={plugin.id + view.id} content={view.options.sidebar?.label || plugin.name} side="right">
                     <NavLink
                         to={`/webview?plugin=${encodeURIComponent(plugin.id)}&id=${encodeURIComponent(view.id)}`}
-                        className={({ isActive }) => cn("grid size-9 place-items-center rounded-lg transition-colors hover:bg-white/[0.06]", isActive && "bg-white/[0.08]")}
+                        className={({ isActive }) => cn("grid size-9 place-items-center rounded-lg transition-colors hover:bg-white/[0.06]", isActive && (classic ? "bg-white/[0.08]" : on))}
                     >
                         {plugin.icon ? <img src={plugin.icon} alt="" className="size-5 rounded object-contain" /> : <Puzzle className="size-[18px] stroke-[1.75] text-muted" />}
                     </NavLink>
@@ -65,7 +69,7 @@ export function PluginTrays() {
                     <button
                         className={cn(
                             "focus-ring relative grid size-9 place-items-center rounded-lg transition-colors hover:bg-white/[0.06]",
-                            isOpen && "bg-white/[0.08]",
+                            isOpen && (classic ? "bg-white/[0.08]" : on),
                         )}
                         onClick={() => {
                             sendPluginEvent(plugin.id, { kind: "tray-click", trayId: tray.id })

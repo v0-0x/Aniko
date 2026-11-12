@@ -169,6 +169,8 @@ func TestThemeSettings(t *testing.T) {
 	for _, c := range []struct{ theme, seasonal, wantTheme, wantSeasonal string }{
 		{"midnight", "off", "midnight", "off"},
 		{"black", "christmas", "black", "christmas"},
+		{"white", "off", "white", "off"}, // a light theme of the look after 3.0.33
+		{"phosphor", "auto", "phosphor", "auto"},
 		{"nope", "easter", "aniko", "auto"},
 		{"", "", "aniko", "auto"},
 	} {

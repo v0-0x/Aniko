@@ -8,6 +8,7 @@ import { Button, EmptyState, ErrorState, IconButton, Skeleton, Tabs } from "@/co
 import { api } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
 import { useActivity, useCollection, useProfile, useStatus } from "@/lib/queries"
+import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import { focusEl, tv } from "@/lib/tv"
 import type { Activity, CollectionItem, Profile, UserLite } from "@/lib/types"
@@ -118,6 +119,7 @@ function countText(n: number | null, more?: boolean) {
 // their profile color): the avatar and name, a line of totals (following
 // and followers open those tabs), since when, and the page's actions.
 function Header({ profile, onTab, onRefresh, refreshing }: { profile: Profile; onTab: (t: Tab) => void; onRefresh: () => void; refreshing: boolean }) {
+    const classic = useClassic()
     const qc = useQueryClient()
     const [following, setFollowing] = useState(profile.isFollowing)
     const [busy, setBusy] = useState(false)
@@ -165,15 +167,21 @@ function Header({ profile, onTab, onRefresh, refreshing }: { profile: Profile; o
                 {profile.bannerImage ? (
                     <img src={img(profile.bannerImage)} alt="" className="size-full object-cover opacity-80 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
                 ) : (
-                    <div className="size-full" style={{ background: `radial-gradient(900px 260px at 20% 0%, color-mix(in oklab, ${color} 35%, transparent), transparent)` }} />
+                    // This look: no wash, the plain ground.
+                    classic && <div className="size-full" style={{ background: `radial-gradient(900px 260px at 20% 0%, color-mix(in oklab, ${color} 35%, transparent), transparent)` }} />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-bg/10" />
+                {/* This look has no panel under the words: the banner fades into the ground under them (as an anime's page). */}
+                <div className={cn("absolute inset-0 bg-gradient-to-t from-bg to-bg/10", classic ? "via-bg/50" : "via-bg/75")} />
+                {!classic && <div className="absolute inset-0 bg-gradient-to-r from-bg/90 via-bg/30 to-transparent" />}
             </div>
-            <div className="relative z-10 px-6 pt-24 md:px-8 md:pt-28 xl:px-10">
-                <div className={cn("flex flex-col gap-5 rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:p-6", !tv && "backdrop-blur-2xl")}>
+            <div className={cn("relative z-10 px-6 md:px-8 xl:px-10", classic || profile.bannerImage ? "pt-24 md:pt-28" : "pt-8")}>
+                <div className={cn("flex flex-col gap-5", classic && "rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:p-6", !tv && classic && "backdrop-blur-2xl")}>
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                     <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-6">
-                        <img src={img(profile.avatar?.large)} alt="" className="size-20 shrink-0 rounded-2xl object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 md:size-28" />
+                        {/* marks: this look's corner marks on the picture (index.css). */}
+                        <div className="marks shrink-0">
+                            <img src={img(profile.avatar?.large)} alt="" className="size-20 rounded-2xl object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 md:size-28" />
+                        </div>
                         <div className="min-w-0 flex-1">
                             <h1 className="truncate text-3xl leading-tight font-semibold tracking-tight text-white md:text-[2.5rem]">{profile.name}</h1>
                             {(since || (!profile.own && profile.isFollower)) && (
@@ -254,6 +262,7 @@ function ActivityTab({ profile }: { profile: Profile }) {
 }
 
 function Feed({ feed, profile }: { feed: "following" | "user"; profile: Profile }) {
+    const classic = useClassic()
     const { data, error, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, isFetching } = useActivity(feed, profile.id)
     const items = data?.pages.flatMap(p => p.items) ?? []
     const list = useRef<HTMLDivElement>(null)
@@ -285,12 +294,12 @@ function Feed({ feed, profile }: { feed: "following" | "user"; profile: Profile 
         )
     return (
         // A TV's remote starts on the first one (lib/pages).
-        <div ref={list} className="flex flex-col gap-2" data-tv-autofocus>
+        <div ref={list} className={cn("flex flex-col", classic && "gap-2")} data-tv-autofocus>
             {items.map(a => (
                 <ActivityRow key={a.id} activity={a} showUser={feed === "following"} />
             ))}
             {hasNextPage && (
-                <Button className="self-center" loading={isFetchingNextPage} onClick={more}>
+                <Button className={cn("self-center", !classic && "mt-3")} loading={isFetchingNextPage} onClick={more}>
                     Show more
                 </Button>
             )}
@@ -301,6 +310,7 @@ function Feed({ feed, profile }: { feed: "following" | "user"; profile: Profile 
 // One entry: who, what (watched episode 5 of…, a post), when; a like, and
 // the replies (on AniList).
 function ActivityRow({ activity: a, showUser }: { activity: Activity; showUser: boolean }) {
+    const classic = useClassic()
     const [liked, setLiked] = useState(a.isLiked)
     const [likes, setLikes] = useState(a.likeCount)
     const [expanded, setExpanded] = useState(false)
@@ -321,7 +331,7 @@ function ActivityRow({ activity: a, showUser }: { activity: Activity; showUser: 
     const text = a.kind === "text" ? plainText(a.text ?? "") : ""
     const replies = `${a.replyCount} ${a.replyCount === 1 ? "reply" : "replies"}`
     return (
-        <div className="card flex items-center gap-3.5 p-3">
+        <div className={cn("flex items-center gap-3.5", classic ? "card p-3" : "border-b border-line py-3")}>
             {a.media ? (
                 <Link to={entryUrl(a.media)} className="focus-ring shrink-0 rounded-lg" aria-label={title(a.media)}>
                     <img src={cover(a.media, "thumb")} alt="" loading="lazy" className="h-16 w-11 rounded-lg object-cover" />
@@ -347,7 +357,7 @@ function ActivityRow({ activity: a, showUser }: { activity: Activity; showUser: 
                     <>
                         <p className={cn("text-[14.5px] leading-relaxed break-words whitespace-pre-line text-fg/85", !expanded && "line-clamp-6")}>{text}</p>
                         {text.length > 400 && (
-                            <button onClick={() => setExpanded(e => !e)} className="focus-ring mt-1 rounded text-sm font-medium text-muted hover:text-fg">
+                            <button onClick={() => setExpanded(e => !e)} className={cn("focus-ring mt-1 text-muted hover:text-fg", classic ? "rounded text-sm font-medium" : "word label -ml-2.5 h-7 px-2.5 text-[10.5px] transition-colors")}>
                                 {expanded ? "Show less" : "Read more"}
                             </button>
                         )}
@@ -426,6 +436,7 @@ export function plainText(s: string) {
 // The anime being watched, most recently updated first (the logged-in
 // user's own list, as Aniko has it).
 function WatchingNow() {
+    const classic = useClassic()
     const { data } = useCollection()
     const items = (data?.lists ?? [])
         .filter(l => l.status === "CURRENT" || l.status === "REPEATING")
@@ -445,7 +456,7 @@ function WatchingNow() {
                             <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded-md object-cover" />
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-[13.5px] font-medium">{title(it.media)}</p>
-                                <p className="text-xs text-muted tabular-nums">
+                                <p className={cn("text-muted", classic ? "text-xs tabular-nums" : "font-mono text-[11px]")}>
                                     Episode {progress}
                                     {total ? ` of ${total}` : ""}
                                 </p>
@@ -466,6 +477,7 @@ function WatchingNow() {
 // The anime finished most recently (the date on AniList, else when the
 // entry last changed), with the score given; See all opens the list.
 function Completed() {
+    const classic = useClassic()
     const { data } = useCollection()
     const seen = new Set<number>()
     const all = (data?.lists ?? [])
@@ -478,9 +490,9 @@ function Completed() {
         <section>
             <div className="mb-3 flex items-baseline justify-between gap-3">
                 <h2 className="text-xl font-semibold tracking-tight">
-                    Completed <span className="ml-1 text-sm font-normal tracking-normal text-subtle tabular-nums">{all.length.toLocaleString()}</span>
+                    Completed <span className={cn("ml-1 text-subtle", classic ? "text-sm font-normal tracking-normal tabular-nums" : "label")}>{all.length.toLocaleString()}</span>
                 </h2>
-                <Link to="/lists?status=COMPLETED" className="focus-ring rounded px-1 text-[13px] text-muted transition-colors hover:text-fg">
+                <Link to="/lists?status=COMPLETED" className={cn("focus-ring text-muted transition-colors hover:text-fg", classic ? "rounded px-1 text-[13px]" : "word label -mr-2.5 px-2.5 text-[10.5px]")}>
                     See all
                 </Link>
             </div>
@@ -495,7 +507,7 @@ function Completed() {
                             <img src={cover(it.media, "thumb")} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded-md object-cover" />
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-[13.5px] font-medium">{title(it.media)}</p>
-                                <p className="truncate text-xs text-muted tabular-nums">{[when && `Finished ${when}`, eps, score > 0 && `Scored ${(score / 10).toFixed(score % 10 ? 1 : 0)}`].filter(Boolean).join(" · ") || "Completed"}</p>
+                                <p className={cn("truncate text-muted", classic ? "text-xs tabular-nums" : "font-mono text-[11px]")}>{[when && `Finished ${when}`, eps, score > 0 && `Scored ${(score / 10).toFixed(score % 10 ? 1 : 0)}`].filter(Boolean).join(" · ") || "Completed"}</p>
                             </div>
                         </Link>
                     )
