@@ -1704,8 +1704,6 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     if (f) loadSubFile(f)
                 }}
             />
-            {/* Corner marks around the picture while it's paused, like a viewfinder's (index.css). */}
-            {!classic && !mini && <div aria-hidden className={cn("stage-marks", paused && started && !error ? "opacity-100" : "opacity-0")} />}
             {mark && !classic && started && !error && (
                 <div key={mark.n} aria-hidden onAnimationEnd={() => setMark(null)} className="player-mark pointer-events-none absolute inset-0 grid place-items-center">
                     <span className={cn("grid place-items-center bg-black/55 text-white", mini ? "size-11" : "size-16")}>{mark.play ? <Play className={cn("fill-white", mini ? "size-5" : "size-7")} /> : <Pause className={cn("fill-white", mini ? "size-5" : "size-7")} />}</span>

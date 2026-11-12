@@ -169,7 +169,6 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
             <div className="relative z-10 px-6 pt-28 pb-8 md:px-8 xl:px-10">
             <div className={cn("flex flex-col gap-6 md:flex-row", classic ? "rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:p-6" : "md:gap-8", !tv && classic && "backdrop-blur-2xl")}>
                 <div className="w-32 shrink-0 md:w-44">
-                    {/* marks: this look's corner marks on the poster (index.css). */}
                     <div className="marks">
                         <img src={cover(media, "poster")} alt="" className="aspect-[2/3] w-full rounded-lg object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 fade-in" />
                     </div>

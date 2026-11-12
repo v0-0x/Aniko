@@ -70,7 +70,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-white/[0.07] transition-[box-shadow] duration-300 ring-inset group-hover/card:ring-white/[0.22]"
                 />
 
-                {/* Inside the corner marks (index.css), in this look. */}
+                {/* A little further in, in this look. */}
                 <div className={cn("absolute flex flex-col items-start gap-1", classic ? "top-2 left-2" : "top-3.5 left-3.5")}>
                     {behind > 0 && (
                         <span className={cn("bg-brand px-1.5 py-0.5 text-white", classic ? "rounded-md text-[11px] font-semibold" : "label rounded-sm text-[10px] font-semibold")}>{behind} new</span>

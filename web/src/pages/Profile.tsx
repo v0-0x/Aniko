@@ -179,7 +179,6 @@ function Header({ profile, onTab, onRefresh, refreshing }: { profile: Profile; o
                 <div className={cn("flex flex-col gap-5", classic && "rounded-3xl border border-white/10 bg-black/35 p-5 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.08)] md:p-6", !tv && classic && "backdrop-blur-2xl")}>
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                     <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-6">
-                        {/* marks: this look's corner marks on the picture (index.css). */}
                         <div className="marks shrink-0">
                             <img src={img(profile.avatar?.large)} alt="" className="size-20 rounded-2xl object-cover shadow-2xl shadow-black/60 ring-1 ring-white/10 md:size-28" />
                         </div>

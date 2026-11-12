@@ -43,7 +43,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "A tidier player",
-                text: "Time so far and time left sit at the ends of the bar, and corner marks show while it's paused.",
+                text: "Time so far and time left sit at the ends of the bar.",
             },
             {
                 title: "Eight themes, two of them light",
