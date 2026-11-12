@@ -197,7 +197,7 @@ export function Carousel({ children, className, itemClassName }: { children: Rea
     const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.85, behavior: "smooth" })
     return (
         <div className={cn("group/carousel relative", className)}>
-            <div ref={ref} onScroll={update} className="no-scrollbar -mx-2 flex snap-x scroll-px-2 gap-4 overflow-x-auto scroll-smooth px-2 pt-1 pb-3">
+            <div ref={ref} onScroll={update} className="no-scrollbar -mx-2 flex snap-x scroll-px-2 gap-4 overflow-x-auto scroll-smooth px-2 pt-1.5 -mt-0.5 pb-3">
                 {children.map((c, i) => (
                     <div key={i} className={cn("w-[160px] shrink-0 snap-start", itemClassName)}>
                         {c}

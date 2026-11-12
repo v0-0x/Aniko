@@ -17,7 +17,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Pictures stay clear",
-                text: "Pointing at a cover or an episode no longer draws over it.",
+                text: "Pointing at a cover or an episode lifts it a little. Nothing is drawn over it.",
             },
             {
                 title: "Episodes in the player",
@@ -31,7 +31,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Black, white and little else",
-                text: "One ink on one ground, corner marks on every picture, fewer boxes.",
+                text: "One ink on one ground, thin lines, fewer boxes.",
             },
             {
                 title: "Words you click",

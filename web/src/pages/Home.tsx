@@ -486,7 +486,7 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
         <div className="relative">
             {!tv && edges.left && arrow(-1)}
             {!tv && edges.right && arrow(1)}
-        <div ref={ref} className="no-scrollbar -mx-2 flex snap-x scroll-px-2 gap-5 overflow-x-auto px-2 pb-2">
+        <div ref={ref} className="no-scrollbar -mx-2 -mt-1.5 flex snap-x scroll-px-2 gap-5 overflow-x-auto px-2 pt-1.5 pb-2">
             {items.map((it, i) => (
                 <div key={it.media.id} className="w-[min(82vw,400px)] shrink-0 snap-start" onMouseEnter={() => onFocus(i)} onFocus={() => onFocus(i)} data-tv-autofocus={i === 0 || undefined}>
                     <EpisodeCard

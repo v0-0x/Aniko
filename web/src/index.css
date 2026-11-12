@@ -535,7 +535,7 @@ html.tv[data-look="classic"] .glass {
    what can be clicked is a word, in small capitals in a mono face, that
    steps into brackets under the pointer, [ LIKE THIS ], and stays in them
    while it's the one chosen. Thin lines and square corners where there are
-   any; pictures held by corner marks, like a viewfinder's. Outside the
+   any. Outside the
    layers on purpose, so it wins over the utilities the pages are built
    with. */
 html:not([data-look="classic"]) {
@@ -676,65 +676,19 @@ html:not([data-look="classic"]) [data-radix-popper-content-wrapper] > [data-stat
     box-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.55);
 }
 
-/* Corner marks on every picture ([data-tv-ring] is the layer over a cover or
-   an episode's picture): four corners at rest; under the pointer, and where
-   the keyboard or the remote is, they brighten and step out to the
-   picture's own corners, a little longer. Nothing is drawn across the
-   artwork. Always white: they're on it. */
-html:not([data-look="classic"]) [data-tv-ring] {
-    box-shadow: none;
+/* A picture (a cover, an episode's): under the pointer, and where the
+   keyboard is, it rises a little, and its hairline brightens (the cards'
+   own ring). Nothing is drawn on the artwork. Pressed, it comes back down.
+   The picture's box is what holds a [data-tv-ring] layer, or is one. Not on
+   a TV, whose remote has its own mark. */
+html:not([data-look="classic"]):not(.tv) [data-tv-card] :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
+    transition: transform 0.2s var(--ease);
 }
-html:not([data-look="classic"]) [data-tv-ring]::after {
-    --m: rgb(255 255 255 / 0.9);
-    --w: 1.5px;
-    --arm: 11px;
-    content: "";
-    position: absolute;
-    inset: 6px;
-    pointer-events: none;
-    opacity: 0.6;
-    background:
-        linear-gradient(var(--m), var(--m)) top left / var(--arm) var(--w),
-        linear-gradient(var(--m), var(--m)) top left / var(--w) var(--arm),
-        linear-gradient(var(--m), var(--m)) top right / var(--arm) var(--w),
-        linear-gradient(var(--m), var(--m)) top right / var(--w) var(--arm),
-        linear-gradient(var(--m), var(--m)) bottom left / var(--arm) var(--w),
-        linear-gradient(var(--m), var(--m)) bottom left / var(--w) var(--arm),
-        linear-gradient(var(--m), var(--m)) bottom right / var(--arm) var(--w),
-        linear-gradient(var(--m), var(--m)) bottom right / var(--w) var(--arm);
-    background-repeat: no-repeat;
-    transition:
-        background-size 0.22s var(--ease),
-        opacity 0.2s var(--ease),
-        inset 0.22s var(--ease);
+html:not([data-look="classic"]):not(.tv) [data-tv-card]:is(:hover, :focus-visible) :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
+    transform: translateY(-4px);
 }
-html:not([data-look="classic"]) [data-tv-card]:is(:hover, :focus-visible) [data-tv-ring]::after,
-html.tv:not([data-look="classic"]) [data-tv-card]:focus [data-tv-ring]::after {
-    --arm: 16px;
-    inset: 3px;
-    opacity: 1;
-}
-/* A picture with marks and no card around it (a page's poster). */
-html:not([data-look="classic"]) .marks {
-    position: relative;
-}
-html:not([data-look="classic"]) .marks::after {
-    --m: rgb(255 255 255 / 0.9);
-    content: "";
-    position: absolute;
-    inset: 6px;
-    pointer-events: none;
-    opacity: 0.6;
-    background:
-        linear-gradient(var(--m), var(--m)) top left / 11px 1.5px,
-        linear-gradient(var(--m), var(--m)) top left / 1.5px 11px,
-        linear-gradient(var(--m), var(--m)) top right / 11px 1.5px,
-        linear-gradient(var(--m), var(--m)) top right / 1.5px 11px,
-        linear-gradient(var(--m), var(--m)) bottom left / 11px 1.5px,
-        linear-gradient(var(--m), var(--m)) bottom left / 1.5px 11px,
-        linear-gradient(var(--m), var(--m)) bottom right / 11px 1.5px,
-        linear-gradient(var(--m), var(--m)) bottom right / 1.5px 11px;
-    background-repeat: no-repeat;
+html:not([data-look="classic"]):not(.tv) [data-tv-card]:active :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
+    transform: translateY(-1px);
 }
 
 /* The sidebar's links: the open page stands in brackets, [ HOME ]; the one
@@ -837,10 +791,6 @@ html.tv:not([data-look="classic"]) .glass {
     backdrop-filter: none;
     background: color-mix(in oklab, var(--bg) 82%, transparent);
 }
-/* A layer that's the picture's own box (not laid over it) holds the marks too. */
-html:not([data-look="classic"]) [data-tv-ring]:not(.absolute) {
-    position: relative;
-}
 
 /* The player: corner marks around the picture while it's paused, and a mark
    in the middle for a moment when Play or Pause is pressed. */
@@ -884,8 +834,8 @@ html:not([data-look="classic"]) [data-tv-ring]:not(.absolute) {
     }
 }
 
-/* Pressing: short and small. A word's brackets close in on it, a picture's
-   corner marks step inward, a filled button gives a little; menus and
+/* Pressing: short and small. A word's brackets close in on it, a filled
+   button gives a little; menus and
    dialogs leave as they came, a touch faster. Not on a TV (its box is slow),
    and reduced motion ends them at once (the rules above). */
 html:not([data-look="classic"]) .word:active:not(:disabled)::before {
@@ -901,9 +851,6 @@ html:not([data-look="classic"]) a:active > .nav-label::before {
 }
 html:not([data-look="classic"]) a:active > .nav-label::after {
     transform: translateX(-3px);
-}
-html:not([data-look="classic"]):not(.tv) [data-tv-card]:active [data-tv-ring]::after {
-    inset: 7px;
 }
 html:not([data-look="classic"]):not(.tv) :is(.bg-brand, .bg-white):is(button, a):active:not(:disabled) {
     transform: scale(0.97);
