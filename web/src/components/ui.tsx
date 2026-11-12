@@ -35,21 +35,24 @@ const sizes: Record<ButtonSize, string> = {
     md: "label h-9 gap-2 rounded-sm px-3.5",
     lg: "label h-11 gap-2.5 rounded-sm px-5 text-xs",
 }
-// The classic look's (before 2.0): flat, a little squarer.
+// The Classic look's (before 3.0.37): rounded pills in the rounded face.
 const classicVariants: Record<ButtonVariant, string> = {
-    primary: "bg-brand text-white hover:bg-[color-mix(in_oklab,var(--brand)_88%,white)]",
-    white: "bg-white text-neutral-950 hover:bg-white/85",
-    subtle: "bg-white/[0.07] text-fg hover:bg-white/[0.11]",
+    // The accent as a chunky pill: a solid edge under it, pressed down when
+    // pressed. Its text dark or white, whichever reads on the accent.
+    primary:
+        "bg-brand font-bold text-[color:var(--on-brand)] shadow-[0_3px_0_color-mix(in_oklab,var(--brand)_60%,black)] hover:bg-[color-mix(in_oklab,var(--brand)_88%,white)] active:translate-y-[2px] active:shadow-[0_1px_0_color-mix(in_oklab,var(--brand)_60%,black)]",
+    white: "bg-white font-bold text-neutral-950 shadow-[0_3px_0_#b9b1c9] hover:bg-white/90 active:translate-y-[2px] active:shadow-[0_1px_0_#b9b1c9]",
+    subtle: "bg-white/[0.065] text-fg hover:bg-white/[0.1]",
     ghost: "text-muted hover:text-fg hover:bg-white/[0.06]",
     outline: "border border-line-strong text-fg hover:bg-white/[0.05]",
     danger: "bg-rose-500/12 text-rose-300 hover:bg-rose-500/20",
     success: "bg-emerald-500/12 text-emerald-300 hover:bg-emerald-500/20",
 }
 const classicSizes: Record<ButtonSize, string> = {
-    xs: "h-7 px-2.5 text-xs gap-1.5 rounded-md",
-    sm: "h-8 px-3 text-[13px] gap-1.5 rounded-md",
-    md: "h-9 px-3.5 text-sm gap-2 rounded-lg",
-    lg: "h-11 px-5 text-[15px] gap-2 rounded-lg",
+    xs: "h-7 px-3 text-xs gap-1.5 rounded-full font-display",
+    sm: "h-8 px-3.5 text-[13px] gap-1.5 rounded-full font-display",
+    md: "h-9 px-4 text-sm gap-2 rounded-full font-display",
+    lg: "h-11 px-6 text-[15px] gap-2 rounded-full font-display",
 }
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -114,10 +117,10 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
                     ref={ref}
                     className={cn(
                         classic
-                            ? "h-9 w-full rounded-lg border border-line bg-white/[0.035] px-3 text-sm text-fg placeholder:text-subtle"
+                            ? "h-9 w-full rounded-full border border-line bg-white/[0.035] px-4 text-sm text-fg placeholder:text-subtle"
                             : "h-9 w-full rounded-none border-b border-line-strong bg-transparent px-0.5 text-sm text-fg placeholder:text-subtle",
                         classic
-                            ? "transition-[border-color,background-color] outline-none hover:border-line-strong focus:border-brand/70 focus:bg-white/[0.05] disabled:opacity-60"
+                            ? "transition-[border-color,background-color,box-shadow] outline-none hover:border-line-strong focus:border-brand/60 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)] disabled:opacity-60"
                             : "transition-[border-color] outline-none hover:border-fg/45 focus:border-fg disabled:opacity-60",
                         icon && (classic ? "pl-9" : "pl-7"),
                         className,
@@ -139,7 +142,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttrib
             ref={ref}
             className={cn(
                 classic
-                    ? "min-h-24 w-full rounded-lg border border-line bg-white/[0.035] px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color] hover:border-line-strong focus:border-brand/70"
+                    ? "min-h-24 w-full rounded-[9px] border border-line bg-white/[0.035] px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)]"
                     : "min-h-24 w-full rounded-sm border border-line bg-transparent px-3 py-2 text-sm text-fg placeholder:text-subtle outline-none transition-[border-color] hover:border-line-strong focus:border-fg",
                 className,
             )}
@@ -170,7 +173,7 @@ export function Select({
                 onChange={e => onChange(e.target.value)}
                 className={
                     classic
-                        ? "h-9 w-full cursor-pointer appearance-none rounded-lg border border-line bg-white/[0.035] pr-9 pl-3 text-sm text-fg outline-none transition-[border-color] hover:border-line-strong focus:border-brand/70 disabled:opacity-60"
+                        ? "h-9 w-full cursor-pointer appearance-none rounded-full border border-line bg-white/[0.035] pr-9 pl-4 text-sm text-fg outline-none transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand/60 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand)_12%,transparent)] disabled:opacity-60"
                         : "h-9 w-full cursor-pointer appearance-none rounded-none border-b border-line-strong bg-transparent pr-7 pl-0.5 text-sm text-fg outline-none transition-[border-color] hover:border-fg/45 focus:border-fg disabled:opacity-60"
                 }
             >
@@ -238,7 +241,7 @@ export function Badge({ children, className, tone = "gray" }: { children: React.
             red: "bg-rose-500/12 text-rose-300",
             blue: "bg-sky-500/12 text-sky-300",
         }
-        return <span className={cn("inline-flex h-5 items-center gap-1 rounded px-1.5 text-[11px] font-medium whitespace-nowrap", tones[tone], className)}>{children}</span>
+        return <span className={cn("inline-flex h-5 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium whitespace-nowrap", tones[tone], className)}>{children}</span>
     }
     // A word in small capitals, in its tone.
     const tones = {
@@ -274,12 +277,12 @@ export function EmptyState({ icon, title, children, action }: { icon?: React.Rea
         <div
             className={cn(
                 "flex flex-col items-center justify-center gap-2 px-6 py-14 text-center fade-in",
-                classic && "rounded-xl bg-white/[0.02]",
+                classic && "rounded-[14px] bg-white/[0.025]",
             )}
         >
             {icon &&
                 (classic ? (
-                    <div className="mb-1 text-subtle [&_svg]:size-6 [&_svg]:stroke-[1.5]">{icon}</div>
+                    <div className="mb-1 grid size-11 place-items-center rounded-full bg-white/[0.05] text-muted [&_svg]:size-5 [&_svg]:stroke-[1.6]">{icon}</div>
                 ) : (
                     <div className="mb-1 text-subtle [&_svg]:size-7 [&_svg]:stroke-[1.25]">{icon}</div>
                 ))}
@@ -330,11 +333,10 @@ export function ErrorState({
 }
 
 export function SectionHeader({ title, subtitle, action, className }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode; className?: string }) {
-    const classic = useClassic()
     return (
         <div className={cn("mb-4 flex items-end justify-between gap-4", className)}>
             <div>
-                <h2 className={cn("font-semibold tracking-tight", classic ? "text-xl" : "text-xl leading-tight")}>{title}</h2>
+                <h2 className="text-xl leading-tight font-semibold tracking-tight">{title}</h2>
                 {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
             </div>
             {action}
@@ -376,13 +378,15 @@ export function Tabs<T extends string>({
                         {t.icon}
                         {t.label}
                         {t.count !== undefined && (
-                            <span className={cn("tabular-nums", classic ? "text-xs text-subtle" : "text-[11px] text-subtle")}>{t.count}</span>
+                            <span className={cn("tabular-nums", classic ? "rounded-md bg-white/[0.06] px-1.5 text-[11px] leading-[18px] text-muted" : "text-[11px] text-subtle")}>{t.count}</span>
                         )}
                         <span
                             className={cn(
                                 "absolute inset-x-0 bg-brand",
                                 // The line under the open one: drawn out from its middle (inside the row, which cuts off what's under it).
-                                classic ? cn("-bottom-px h-0.5 rounded-full transition-opacity", value === t.value ? "opacity-100" : "opacity-0") : cn("bottom-0 h-px origin-center transition-transform duration-300 ease-out", value === t.value ? "scale-x-100" : "scale-x-0"),
+                                classic
+                                    ? cn("-bottom-px h-0.5 rounded-full shadow-[0_0_6px_color-mix(in_oklab,var(--brand)_45%,transparent)] transition-opacity", value === t.value ? "opacity-100" : "opacity-0")
+                                    : cn("bottom-0 h-px origin-center transition-transform duration-300 ease-out", value === t.value ? "scale-x-100" : "scale-x-0"),
                             )}
                         />
                     </button>
@@ -393,7 +397,7 @@ export function Tabs<T extends string>({
         <div
             className={cn(
                 "no-scrollbar inline-flex max-w-full gap-0.5 overflow-x-auto",
-                classic ? "rounded-lg bg-white/[0.04] p-0.5" : "gap-1",
+                classic ? "rounded-full bg-white/[0.04] p-[3px]" : "gap-1",
                 className,
             )}
         >
@@ -405,8 +409,8 @@ export function Tabs<T extends string>({
                     className={cn(
                         "focus-ring flex items-center gap-1.5 px-3 font-medium whitespace-nowrap transition-[background-color,color,box-shadow] [&_svg]:size-3.5",
                         // This look: words, the chosen one in brackets (index.css's word).
-                        classic ? "h-7 rounded-md text-[13px]" : "word label h-8 shrink-0 text-[10.5px]",
-                        value === t.value ? (classic ? "bg-white/[0.1] text-fg" : "text-fg") : "text-muted hover:text-fg",
+                        classic ? "h-7 rounded-full font-display text-[13px]" : "word label h-8 shrink-0 text-[10.5px]",
+                        value === t.value ? (classic ? "bg-white/[0.1] text-fg shadow-[0_1px_2px_rgb(0_0_0/0.3)]" : "text-fg") : "text-muted hover:text-fg",
                     )}
                 >
                     {t.icon}
@@ -446,7 +450,7 @@ export function Tooltip({ content, children, side = "top" }: { content: React.Re
                     sideOffset={8}
                     className={cn(
                         "z-[100] px-2 py-1 text-xs font-medium text-fg shadow-lg shadow-black/40 fade-in",
-                        classic ? "rounded-md bg-surface-4" : "rounded-sm border border-line-strong bg-surface-2",
+                        classic ? "rounded-lg border border-line bg-surface-4" : "rounded-sm border border-line-strong bg-surface-2",
                         dark,
                     )}
                 >
@@ -481,28 +485,25 @@ export function Dialog({
     return (
         <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
             <DialogPrimitive.Portal container={layer()}>
-                <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 fade-in", classic ? "bg-black/65" : "bg-black/70", dark)} />
+                <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 fade-in", classic ? "bg-black/60 backdrop-blur-[2px]" : "bg-black/70", dark)} />
                 <DialogPrimitive.Content
                     className={cn(
                         "fixed top-1/2 left-1/2 z-50 flex max-h-[88vh] w-[min(92vw,560px)] -translate-x-1/2 -translate-y-1/2 flex-col border border-line-strong bg-surface-1 outline-none [animation:pop-in_0.16s_var(--ease)_both]",
-                        classic ? "rounded-xl shadow-2xl shadow-black/50" : "rounded-sm bg-bg",
+                        classic ? "rounded-[14px] [box-shadow:0_24px_60px_-20px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.04)]" : "rounded-sm bg-bg",
                         dark,
                         className,
                     )}
                     aria-describedby={undefined}
                 >
                     {(title || description) && (
-                        <div className={cn("flex items-start justify-between gap-4 px-6 pb-3", classic ? "pt-5" : "pt-6")}>
+                        <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-3">
                             <div>
-                                {title && <DialogPrimitive.Title className={cn("font-semibold", classic ? "text-base" : "font-display text-lg tracking-tight")}>{title}</DialogPrimitive.Title>}
+                                {title && <DialogPrimitive.Title className={cn("font-semibold", classic ? "text-base tracking-tight" : "font-display text-lg tracking-tight")}>{title}</DialogPrimitive.Title>}
                                 {description && <DialogPrimitive.Description className="mt-0.5 text-sm text-muted">{description}</DialogPrimitive.Description>}
                             </div>
                             <DialogPrimitive.Close
                                 aria-label="Close"
-                                className={cn(
-                                    "focus-ring -mt-1 -mr-2 grid size-8 place-items-center text-muted transition-colors hover:text-fg",
-                                    classic ? "rounded-md hover:bg-white/[0.06]" : "rounded-lg hover:bg-white/[0.07]",
-                                )}
+                                className="focus-ring -mt-1 -mr-2 grid size-8 place-items-center rounded-lg text-muted transition-colors hover:bg-white/[0.07] hover:text-fg"
                             >
                                 <X className="size-4" />
                             </DialogPrimitive.Close>
@@ -546,7 +547,7 @@ export function DropdownContent({
                 onCloseAutoFocus={onCloseAutoFocus}
                 className={cn(
                     "z-[60] min-w-52 border border-line-strong bg-surface-2 pop-in origin-[var(--radix-dropdown-menu-content-transform-origin)]",
-                    classic ? "rounded-lg p-1 shadow-xl shadow-black/40" : "rounded-sm bg-surface-1 p-1",
+                    classic ? "rounded-[10px] p-1 shadow-[0_14px_40px_-12px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.04)]" : "rounded-sm bg-surface-1 p-1",
                     dark,
                     className,
                 )}
@@ -645,7 +646,7 @@ export function DropdownItem({
             disabled={disabled}
             className={cn(
                 "flex h-8 cursor-pointer items-center gap-2.5 text-[13px] outline-none select-none data-[disabled]:opacity-40",
-                classic ? "rounded-md px-2 data-[highlighted]:bg-white/[0.07]" : "rounded-sm px-2.5 transition-colors duration-100 data-[highlighted]:bg-white/[0.09]",
+                classic ? "rounded-md px-2.5 data-[highlighted]:bg-white/[0.07]" : "rounded-sm px-2.5 transition-colors duration-100 data-[highlighted]:bg-white/[0.09]",
                 danger ? "text-rose-300" : "text-fg",
                 className,
             )}
@@ -657,14 +658,13 @@ export function DropdownItem({
 }
 
 export function DropdownSeparator() {
-    const classic = useClassic()
-    return <DropdownPrimitive.Separator className={cn("h-px bg-line", classic ? "my-1" : "-mx-1 my-1")} />
+    return <DropdownPrimitive.Separator className="-mx-1 my-1 h-px bg-line" />
 }
 
 export function DropdownLabel({ children }: { children: React.ReactNode }) {
     const classic = useClassic()
     return (
-        <DropdownPrimitive.Label className={cn("pt-1.5 pb-1 text-subtle", classic ? "px-2 text-xs font-medium" : "label px-2.5 text-[10px]")}>
+        <DropdownPrimitive.Label className={cn("pt-1.5 pb-1 text-subtle", classic ? "px-2.5 text-xs font-medium" : "label px-2.5 text-[10px]")}>
             {children}
         </DropdownPrimitive.Label>
     )
@@ -700,7 +700,7 @@ export function Popover({
                     collisionPadding={12}
                     className={cn(
                         "z-[60] max-h-[85vh] overflow-y-auto border border-line-strong bg-surface-1 p-4 outline-none pop-in origin-[var(--radix-popover-content-transform-origin)]",
-                        classic ? "rounded-xl shadow-xl shadow-black/40" : "rounded-sm",
+                        classic ? "rounded-[14px] shadow-[0_14px_40px_-12px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.04)]" : "rounded-sm",
                         dark,
                         className,
                     )}

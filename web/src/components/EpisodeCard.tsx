@@ -56,16 +56,18 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 e.preventDefault()
                 onClick?.()
             }}
-            className={cn("group/ep focus-ring relative flex cursor-pointer flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !aired && "cursor-default opacity-50", className)}
+            className={cn("group/ep focus-ring relative flex cursor-pointer flex-col gap-2.5 rounded-[10px] outline-none", !aired && "cursor-default opacity-50", className)}
         >
-            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-lg" : "on-dark rounded-sm")}>
+            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)]" : "on-dark rounded-sm")}>
                 {image ? (
                     <img
                         src={img(image)}
                         alt=""
                         loading="lazy"
                         className={cn(
-                            "size-full object-cover transition-[filter,opacity] duration-300 group-hover/ep:brightness-[0.8]",
+                            // The classic look dims the picture under its play button; this one leaves it as it is.
+                            "size-full object-cover transition-[filter,opacity] duration-300",
+                            classic && "group-hover/ep:brightness-[0.8]",
                             blur && !watched && "scale-110 blur-xl",
                             watched && "opacity-75 group-hover/ep:opacity-100",
                         )}
@@ -75,15 +77,13 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 )}
                 <div
                     data-tv-ring
-                    className={cn(
-                        "pointer-events-none absolute inset-0 ring-1 transition-[box-shadow] duration-300 ring-inset",
-                        classic ? "rounded-lg ring-white/[0.07] group-hover/ep:ring-white/20" : "rounded-[10px] ring-white/[0.07] group-hover/ep:ring-white/[0.22]",
-                    )}
+                    className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-white/[0.07] transition-[box-shadow] duration-300 ring-inset group-hover/ep:ring-white/[0.22]"
                 />
                 {aired && (
-                    <div className="absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-200 group-hover/ep:opacity-100">
-                        <span className={cn("grid place-items-center rounded-full", classic ? "bg-white/95 text-neutral-950 shadow-lg shadow-black/40" : "bg-white text-black", large ? "size-14" : "size-11")}>
-                            <Play className={cn("ml-0.5 fill-current", large ? "size-5" : "size-4")} />
+                    // This look: a small play mark in the bottom left corner, off the artwork's middle.
+                    <div className={cn("absolute opacity-0 transition-opacity duration-200 group-hover/ep:opacity-100", classic ? "inset-0 grid place-items-center" : "bottom-3.5 left-3.5")}>
+                        <span className={cn("grid place-items-center rounded-full", classic ? "bg-white/95 text-neutral-950 shadow-lg shadow-black/40" : "bg-white text-black", classic ? (large ? "size-14" : "size-11") : large ? "size-8" : "size-7")}>
+                            <Play className={cn("fill-current", classic ? cn("ml-0.5", large ? "size-5" : "size-4") : "size-3.5")} />
                         </span>
                     </div>
                 )}
@@ -129,7 +129,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 )}
                 {!!progress && progress > 0 && (
                     <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full")} style={{ width: `${Math.min(100, progress * 100)}%` }} />
+                        <div className="h-full rounded-r-full bg-brand" style={{ width: `${Math.min(100, progress * 100)}%` }} />
                     </div>
                 )}
             </div>

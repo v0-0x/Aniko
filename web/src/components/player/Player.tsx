@@ -2285,7 +2285,7 @@ function EpisodesPanel({
             role="dialog"
             aria-label="Episodes"
             className={cn(
-                "absolute bottom-[6.75rem] left-4 z-30 flex max-h-[min(30rem,calc(100%-9.5rem))] w-[clamp(19rem,24vw,30rem)] max-w-[calc(100%-2rem)] origin-bottom-left flex-col overflow-hidden rounded-2xl border border-line bg-surface-1/[0.98] text-fg shadow-2xl shadow-black/60 sm:left-6",
+                "absolute bottom-[6.75rem] left-4 z-30 flex max-h-[min(30rem,calc(100%-9.5rem))] w-[clamp(19rem,24vw,30rem)] max-w-[calc(100%-2rem)] origin-bottom-left flex-col overflow-hidden rounded-2xl border border-line bg-surface-1/[0.98] text-fg shadow-2xl shadow-black/60 sm:left-[max(1.5rem,calc(50%-32rem))]",
                 leaving ? "corner-out" : "corner-in",
             )}
         >

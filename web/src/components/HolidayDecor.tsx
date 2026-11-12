@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { Holiday } from "@/lib/themes"
+import { cn } from "@/lib/utils"
 
 // The holiday themes' decorations (lib/themes.ts), around the pages:
 // - HolidayBackdrop: the page panel's background, with the holiday's art
@@ -8,10 +9,11 @@ import type { Holiday } from "@/lib/themes"
 // - HolidayGarland: what hangs at the panel's top edge, over the pages, so
 //   every page shows it the same (Christmas lights, summer lanterns,
 //   Halloween's cobweb in the corner). Nothing can be clicked on either.
+// inset: the Classic look's panel, rounded and inset in the window (App).
 
-export function HolidayBackdrop({ holiday }: { holiday: Holiday | null }) {
+export function HolidayBackdrop({ holiday, inset }: { holiday: Holiday | null; inset?: boolean }) {
     return (
-        <div aria-hidden className="page-backdrop pointer-events-none absolute inset-0 overflow-hidden bg-bg">
+        <div aria-hidden className={cn("page-backdrop pointer-events-none absolute overflow-hidden bg-bg", inset ? "inset-y-2 right-2 left-0 rounded-[14px]" : "inset-0")}>
             {holiday && (
                 <>
                     {/* The holiday's light, from the top. */}
@@ -27,7 +29,7 @@ export function HolidayBackdrop({ holiday }: { holiday: Holiday | null }) {
 // hooks, a bulb at the bottom of each dip and one on each hook. animate:
 // twinkling and swaying (not with the holiday's animation off, nor behind a
 // video).
-export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; animate: boolean }) {
+export function HolidayGarland({ holiday, animate, inset }: { holiday: Holiday | null; animate: boolean; inset?: boolean }) {
     const ref = useRef<HTMLDivElement>(null)
     const [width, setWidth] = useState(0)
     const kind = holiday?.id === "christmas" ? "lights" : holiday?.id === "summer" ? "lanterns" : null
@@ -39,10 +41,10 @@ export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; 
         setWidth(el.clientWidth)
         return () => ro.disconnect()
     }, [kind])
-    if (holiday?.id === "halloween") return <Cobweb />
+    if (holiday?.id === "halloween") return <Cobweb inset={inset} />
     if (!kind) return null
     return (
-        <div ref={ref} aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-16 overflow-hidden">
+        <div ref={ref} aria-hidden className={cn("pointer-events-none absolute z-[5] h-16 overflow-hidden", inset ? "top-2 right-2 left-0 rounded-t-[14px]" : "inset-x-0 top-0")}>
             {width > 0 && (kind === "lights" ? <Lights width={width} animate={animate} /> : <Lanterns width={width} animate={animate} />)}
         </div>
     )
@@ -50,9 +52,9 @@ export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; 
 
 // A cobweb in the panel's top left corner, its spider down a thread in the
 // pages' margin.
-function Cobweb() {
+function Cobweb({ inset }: { inset?: boolean }) {
     return (
-        <div aria-hidden className="pointer-events-none absolute top-0 left-0 z-[5] size-[170px] overflow-hidden">
+        <div aria-hidden className={cn("pointer-events-none absolute left-0 z-[5] size-[170px] overflow-hidden", inset ? "top-2 rounded-tl-[14px]" : "top-0")}>
             <svg width="170" height="170">
                 <path d={cobweb(120)} fill="none" stroke="#e9d5ff" strokeOpacity="0.2" strokeWidth="0.9" />
                 <line x1="12" y1="12" x2="12" y2="136" stroke="#e9d5ff" strokeOpacity="0.24" strokeWidth="0.8" />

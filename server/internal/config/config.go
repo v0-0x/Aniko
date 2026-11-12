@@ -274,8 +274,8 @@ type UISettings struct {
 	ColorTheme      string `json:"colorTheme"`
 	Seasonal        string `json:"seasonal"`
 	SeasonalEffects bool   `json:"seasonalEffects"`
-	// Aniko's look from before 2.0 (its components, sidebar and holiday
-	// themes), with the same color themes.
+	// Aniko's look from before the current one (plum and pink, before
+	// 3.0.37), instead of it.
 	ClassicLook bool `json:"classicLook"`
 }
 

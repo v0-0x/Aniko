@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 import type { ListEntry, Media } from "@/lib/types"
 import { airedEpisodes, cn, cover, entryUrl, formatLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
 import { useClassic } from "@/lib/themes"
+import { tv } from "@/lib/tv"
 import { ListCardMenu } from "./ListCardMenu"
 import { Dropdown, DropdownContent, DropdownTrigger, IconButton, useContextMenu } from "./ui"
 
@@ -38,18 +39,20 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
             : 0
     const nextAir = media.nextAiringEpisode
     const score = media.meanScore ?? media.averageScore
-    // Before 2.0: flatter, squarer, a lighter hairline on hover, no lift.
+    // The Classic look (before 3.0.37): rounder, a shadow under the cover,
+    // which lifts under the pointer; its labels see-through.
     const classic = useClassic()
-    const label = classic ? "rounded bg-black/70" : "rounded-sm bg-black/75"
+    const label = classic ? "rounded-md bg-black/65 backdrop-blur-sm" : "rounded-sm bg-black/75"
 
     const card = (
-        <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]")}>
-            {/* Lifted a little under the pointer (not on a TV: it's slow at it). */}
+        <Link to={entryUrl(media)} data-tv-card className="group/card focus-ring relative flex flex-col gap-2.5 rounded-[10px] outline-none">
+            {/* The Classic look's: lifted a little under the pointer (not on a TV: it's slow at it). */}
             <div
                 className={cn(
                     "relative aspect-[2/3] overflow-hidden bg-surface-2",
                     // What's on a cover is white on dark in a light theme too (on-dark).
-                    classic ? "rounded-lg" : "on-dark rounded-sm",
+                    classic ? "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out" : "on-dark rounded-sm",
+                    !tv && classic && "group-hover/card:-translate-y-0.5 group-hover/card:shadow-[0_12px_28px_-14px_rgb(0_0_0/0.9)]",
                 )}
             >
                 {cover(media) && (
@@ -64,16 +67,13 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                 {/* A hairline, so dark covers don't melt into the page. */}
                 <div
                     data-tv-ring
-                    className={cn(
-                        "pointer-events-none absolute inset-0 ring-1 transition-[box-shadow] duration-300 ring-inset",
-                        classic ? "rounded-lg ring-white/[0.07] group-hover/card:ring-white/20" : "rounded-[10px] ring-white/[0.07] group-hover/card:ring-white/[0.22]",
-                    )}
+                    className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-white/[0.07] transition-[box-shadow] duration-300 ring-inset group-hover/card:ring-white/[0.22]"
                 />
 
                 {/* Inside the corner marks (index.css), in this look. */}
                 <div className={cn("absolute flex flex-col items-start gap-1", classic ? "top-2 left-2" : "top-3.5 left-3.5")}>
                     {behind > 0 && (
-                        <span className={cn("bg-brand px-1.5 py-0.5 text-white", classic ? "rounded text-[11px] font-semibold" : "label rounded-sm text-[10px] font-semibold")}>{behind} new</span>
+                        <span className={cn("bg-brand px-1.5 py-0.5 text-white", classic ? "rounded-md text-[11px] font-semibold" : "label rounded-sm text-[10px] font-semibold")}>{behind} new</span>
                     )}
                     {!!localCount && localCount > 0 && (
                         <span className={cn("flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums", label)}>
@@ -103,7 +103,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
 
                 {showProgress && listEntry && total > 0 && progress > 0 && progress < total && (
                     <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                        <div className={cn("h-full bg-brand", !classic && "rounded-r-full")} style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
+                        <div className="h-full rounded-r-full bg-brand" style={{ width: `${Math.min(100, (progress / total) * 100)}%` }} />
                     </div>
                 )}
             </div>
@@ -150,7 +150,7 @@ function CardMenu({ menu, className, children }: { menu: React.ReactNode; classN
                         size="xs"
                         className={cn(
                             "absolute text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100",
-                            classic ? "top-1.5 right-1.5 rounded-md bg-black/70" : "on-dark top-3 right-3 rounded-sm bg-black/75",
+                            classic ? "top-1.5 right-1.5 rounded-lg bg-black/65 backdrop-blur-sm" : "on-dark top-3 right-3 rounded-sm bg-black/75",
                         )}
                     >
                         <Ellipsis className="size-4" />
@@ -178,10 +178,9 @@ export function MediaGrid({ children, className, size = "md", start }: { childre
 }
 
 export function MediaCardSkeleton() {
-    const classic = useClassic()
     return (
         <div className="flex flex-col gap-2.5">
-            <div className={cn("shimmer aspect-[2/3]", classic ? "rounded-lg" : "rounded-[10px]")} />
+            <div className="shimmer aspect-[2/3] rounded-[10px]" />
             <div className="shimmer h-3.5 w-3/4 rounded" />
         </div>
     )

@@ -293,7 +293,7 @@ export default function SettingsPage() {
             className={cn(
                 "focus-ring flex h-8 items-center gap-2.5 px-2.5 text-[13.5px] font-medium transition-colors [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:stroke-[1.75]",
                 classic
-                    ? cn("rounded-md", !searching && section === it.id ? "bg-white/[0.08] text-fg" : "text-muted hover:bg-white/[0.04] hover:text-fg")
+                    ? cn("rounded-lg", !searching && section === it.id ? "bg-white/[0.07] text-fg [&>svg]:text-brand-strong" : "text-muted hover:bg-white/[0.05] hover:text-fg")
                     : // The open one: bright, a line at its left edge.
                       cn("rounded-none", !searching && section === it.id ? "text-fg shadow-[inset_1px_0_0_var(--text)]" : "text-muted shadow-[inset_1px_0_0_var(--line)] hover:text-fg"),
             )}
@@ -1131,8 +1131,11 @@ function TvSizeRow() {
 // Not #7c6cf2 or #ff7eb6: saved by every install as its default (before
 // 3.0.32, and since), they stand for "the theme's own" (lib/themes.ts).
 const ACCENTS = ["#ff6fae", "#8b7cf6", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#38bdf8", "#a3e635"]
+// The Classic look's, as they were: its pink is the Aniko theme's own.
+const CLASSIC_ACCENTS = ["#ff7eb6", ...ACCENTS.slice(1)]
 const ACCENT_NAMES: Record<string, string> = {
     "#ff6fae": "pink",
+    "#ff7eb6": "pink",
     "#8b7cf6": "violet",
     "#5b8cff": "blue",
     "#22c3a6": "teal",
@@ -1149,11 +1152,11 @@ function UISection({ draft, set }: SectionProps) {
     // The themes of the look being set, and the saved one as it draws it.
     const classicLook = !!draft.ui.classicLook
     const theme = colorTheme(draft.ui.colorTheme, classicLook)
-    const own = ownAccent(draft.ui.accentColor, classicLook)
+    const own = ownAccent(draft.ui.accentColor, classicLook, theme.id)
     return (
         <>
             <Group title="Theme">
-                <Row label="Classic look" help="Aniko as it looked before 2.0.">
+                <Row label="Classic look" help="Aniko as it looked before 3.0.37: plum and pink, rounded.">
                     <Switch checked={!!draft.ui.classicLook} onChange={v => set("ui", { classicLook: v })} />
                 </Row>
                 <Stack label="Colors">
@@ -1207,7 +1210,7 @@ function UISection({ draft, set }: SectionProps) {
                                 Theme's own
                             </button>
                         )}
-                        {ACCENTS.map(c => (
+                        {(classicLook ? CLASSIC_ACCENTS : ACCENTS).map(c => (
                             <button
                                 key={c}
                                 onClick={() => set("ui", { accentColor: c })}

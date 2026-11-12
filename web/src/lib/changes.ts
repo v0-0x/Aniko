@@ -7,6 +7,25 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 49,
+        title: "Touch-ups to the new look",
+        changes: [
+            {
+                title: "Classic look is the last one",
+                text: "The switch brings back plum and pink, as Aniko looked before this look.",
+                to: "/settings?tab=appearance",
+            },
+            {
+                title: "Pictures stay clear",
+                text: "Pointing at a cover or an episode no longer draws over it.",
+            },
+            {
+                title: "Episodes in the player",
+                text: "The list opens over the controls, not off to the side.",
+            },
+        ],
+    },
+    {
         id: 48,
         title: "A whole new look",
         changes: [
@@ -28,7 +47,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Eight themes, two of them light",
-                text: "Black, White, Graphite, Paper, Phosphor, Amber, Ice and Rose. The classic look keeps its own.",
+                text: "Black, White, Graphite, Paper, Phosphor, Amber, Ice and Rose. The Classic look switch brings back the one before.",
                 to: "/settings?tab=appearance",
             },
         ],

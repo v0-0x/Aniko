@@ -147,7 +147,8 @@ function AnikoApp() {
     // Updates are looked for each time Aniko opens (on this computer only).
     useCheckOnOpen(!!status && status.client !== "lan" && !mini)
     const playing = useStore(playerStore, p => !!p)
-    // Before 2.0's look: its plain panel, no holiday decorations.
+    // The Classic look (before 3.0.37): the pages are a rounded panel inset
+    // in the window.
     const classic = useClassic()
     // A phone (a narrow window, not a TV): the pages take the whole width,
     // with tabs along the bottom instead of the sidebar. What floats at the
@@ -178,13 +179,13 @@ function AnikoApp() {
                     (on a phone, the whole width). Its background is behind
                     them (with a holiday's art). */}
                 <div className={cn("relative min-h-0 min-w-0 flex-1", !phone && classic && "py-2 pr-2")}>
-                    {!classic && <HolidayBackdrop holiday={ui ? look.holiday : null} />}
+                    <HolidayBackdrop holiday={ui ? look.holiday : null} inset={classic && !phone} />
                     <main
                         id="main-scroll"
                         className={cn(
                             "relative h-full overflow-x-hidden overflow-y-auto",
                             // This look: one plane, a line between the sidebar and the pages.
-                            phone ? classic && "bg-bg" : classic ? "rounded-xl border border-line bg-bg" : "border-l border-line-strong",
+                            !phone && (classic ? "rounded-[14px] border border-line shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]" : "border-l border-line-strong"),
                         )}
                     >
                         <Suspense
@@ -224,7 +225,7 @@ function AnikoApp() {
                             </PageError>
                         </Suspense>
                     </main>
-                    {!classic && <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} />}
+                    <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} inset={classic} />
                 </div>
                 {phone && <PhoneNav />}
             </div>

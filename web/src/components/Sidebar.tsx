@@ -202,7 +202,8 @@ export function Sidebar() {
     const navigate = useNavigate()
     const qc = useQueryClient()
     const wide = useMediaQuery(WIDE)
-    // Before 2.0: no group names, the open page in plain white.
+    // The Classic look (before 3.0.37): rounded links, the open page a pill
+    // in the accent. This look: words, the open page in brackets.
     const classic = useClassic()
     // Links that don't fit scroll: they fade out at the bottom while there
     // are more below, so they aren't taken for all of them.
@@ -233,7 +234,7 @@ export function Sidebar() {
     const rest = all.filter(i => !daily.has(i.to))
     const isActive = (it: Item) => (it.match ? it.match(location.pathname) : location.pathname.startsWith(it.to))
     const [moreOpen, setMoreOpen] = usePersisted("aniko-sidebar-more", false)
-    const folds = wide && !classic
+    const folds = wide
     const showRest = !folds || moreOpen || rest.some(isActive)
     const restBadge = rest.reduce((n, i) => n + (i.badge ?? 0), 0)
 
@@ -257,13 +258,13 @@ export function Sidebar() {
                 aria-label={wide ? undefined : it.label}
                 className={cn(
                     "focus-ring relative flex h-9 shrink-0 items-center font-medium transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:transition-colors [&>svg]:duration-200",
-                    classic ? "rounded-md text-[13.5px] [&>svg]:stroke-[1.75]" : "label rounded-sm [&>svg]:stroke-[1.5]",
-                    wide ? (classic ? "gap-3 px-2.5" : "gap-1.5 px-3") : "w-10 justify-center",
+                    classic ? "rounded-full font-display text-[13.5px] [&>svg]:stroke-[1.75]" : "label rounded-sm [&>svg]:stroke-[1.5]",
+                    wide ? (classic ? "gap-3 px-3" : "gap-1.5 px-3") : "w-10 justify-center",
                     // The page it's on: tinted with the accent.
                     classic
                         ? active
-                            ? "bg-white/[0.08] text-fg"
-                            : "text-muted hover:bg-white/[0.04] hover:text-fg"
+                            ? "bg-[color-mix(in_oklab,var(--brand)_20%,transparent)] text-fg [&>svg]:text-brand-strong" // the open page: a pill in the accent
+                            : "text-muted hover:bg-white/[0.045] hover:text-fg"
                         : active
                           ? cn("text-fg", !wide && "shadow-[inset_0_-1px_0_var(--text)]") // the open page: in brackets (index.css's nav-label); a line under the icon alone
                           : "text-muted hover:text-fg",
@@ -273,7 +274,7 @@ export function Sidebar() {
                 {wide && <span className={cn("truncate", !classic && "nav-label")}>{it.label}</span>}
                 {badge &&
                     (wide ? (
-                        <span className={cn("ml-auto px-1.5 text-fg/80 tabular-nums", classic ? "rounded bg-white/[0.08] text-[11px] leading-[18px]" : "border border-line-strong text-[10px] leading-4")}>{badge}</span>
+                        <span className={cn("ml-auto px-1.5 text-fg/80 tabular-nums", classic ? "rounded-md bg-white/[0.08] text-[11px] leading-[18px]" : "border border-line-strong text-[10px] leading-4")}>{badge}</span>
                     ) : (
                         <span className="absolute top-0.5 right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white tabular-nums">{badge}</span>
                     ))}
@@ -309,22 +310,29 @@ export function Sidebar() {
 
             <nav
                 ref={navRef}
-                className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", wide ? (classic ? "gap-4" : "gap-3") : "items-center gap-3")}
+                className={cn("no-scrollbar flex flex-1 flex-col overflow-y-auto", "gap-3", !wide && "items-center")}
                 style={more ? { maskImage: FADE, WebkitMaskImage: FADE } : undefined}
             >
                 <div className={cn("flex flex-col gap-0.5", !wide && "items-center")}>{main.map(link)}</div>
                 {/* The pages used less: under More, closed until asked for (open on one of them). */}
                 {rest.length > 0 && (
-                    <div className={cn("flex flex-col gap-0.5", !wide && "items-center", !classic && "border-t border-line pt-3")}>
+                    <div className={cn("flex flex-col gap-0.5", !wide && "items-center", "border-t pt-3", classic ? "border-line/70" : "border-line")}>
                         {folds && (
                             <button
                                 onClick={() => setMoreOpen(!moreOpen)}
                                 aria-expanded={showRest}
-                                className="label focus-ring flex h-9 shrink-0 items-center gap-1.5 rounded-sm px-3 text-muted transition-colors duration-200 hover:text-fg"
+                                className={cn(
+                                    "focus-ring flex h-9 shrink-0 items-center text-muted transition-colors duration-200 hover:text-fg",
+                                    classic ? "gap-3 rounded-[10px] px-2.5 text-[13.5px] font-medium hover:bg-white/[0.045]" : "label gap-1.5 rounded-sm px-3",
+                                )}
                             >
-                                <ChevronDown className={cn("size-[18px] shrink-0 stroke-[1.5] transition-transform duration-200", !showRest && "-rotate-90")} />
-                                <span className="nav-label truncate">More</span>
-                                {!showRest && restBadge > 0 && <span className="ml-auto border border-line-strong px-1.5 text-[10px] leading-4 text-fg/80 tabular-nums">{restBadge > 99 ? "99+" : restBadge}</span>}
+                                <ChevronDown className={cn("size-[18px] shrink-0 transition-transform duration-200", classic ? "stroke-[1.75]" : "stroke-[1.5]", !showRest && "-rotate-90")} />
+                                <span className={cn("truncate", !classic && "nav-label")}>More</span>
+                                {!showRest && restBadge > 0 && (
+                                    <span className={cn("ml-auto px-1.5 text-fg/80 tabular-nums", classic ? "rounded-md bg-white/[0.08] text-[11px] leading-[18px]" : "border border-line-strong text-[10px] leading-4")}>
+                                        {restBadge > 99 ? "99+" : restBadge}
+                                    </span>
+                                )}
                             </button>
                         )}
                         {showRest && rest.map(link)}
@@ -332,11 +340,11 @@ export function Sidebar() {
                 )}
             </nav>
 
-            <div className={cn("flex flex-col gap-0.5 pt-3", !classic && "border-t border-line", !wide && "items-center")}>
+            <div className={cn("flex flex-col gap-0.5 border-t border-line pt-3", !wide && "items-center")}>
                 {/* Themes, notifications and Settings: three icons in a row (one
                     under the other in the icons-only sidebar), named by tooltips.
-                    The classic look and the TV keep their labelled rows. */}
-                {classic || tv ? (
+                    The TV keeps its labelled rows. */}
+                {tv ? (
                     <>
                         <ThemesMenu wide={wide} />
                         <PluginTrays />
@@ -356,8 +364,13 @@ export function Sidebar() {
                                     to="/settings"
                                     aria-label="Settings"
                                     className={cn(
-                                        "focus-ring grid size-9 shrink-0 place-items-center rounded-sm transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:stroke-[1.5]",
-                                        location.pathname.startsWith("/settings") ? "text-fg shadow-[inset_0_-1px_0_var(--text)]" : "text-muted hover:text-fg",
+                                        "focus-ring grid size-9 shrink-0 place-items-center transition-colors duration-200 [&>svg]:size-[18px]",
+                                        classic ? "rounded-[10px] [&>svg]:stroke-[1.75]" : "rounded-sm [&>svg]:stroke-[1.5]",
+                                        location.pathname.startsWith("/settings")
+                                            ? classic
+                                                ? "bg-white/[0.08] text-brand-strong"
+                                                : "text-fg shadow-[inset_0_-1px_0_var(--text)]"
+                                            : cn("text-muted hover:text-fg", classic && "hover:bg-white/[0.045]"),
                                     )}
                                 >
                                     <SettingsIcon />
@@ -371,19 +384,16 @@ export function Sidebar() {
                         <button
                             className={cn(
                                 "focus-ring flex items-center gap-2.5 text-left transition-colors",
-                                classic
-                                    ? cn("mt-1 h-10 rounded-md hover:bg-white/[0.04] data-[state=open]:bg-white/[0.06]", wide ? "px-2" : "w-10 justify-center")
-                                    : cn(
-                                          "mt-1.5 rounded-sm data-[state=open]:bg-white/[0.07]",
-                                          wide ? "h-12 px-2 hover:bg-white/[0.05]" : "size-10 justify-center hover:bg-white/[0.05]",
-                                      ),
+                                "mt-1.5 data-[state=open]:bg-white/[0.07]",
+                                classic ? "rounded-[10px]" : "rounded-sm",
+                                wide ? (classic ? "h-12 bg-white/[0.03] px-2 hover:bg-white/[0.055]" : "h-12 px-2 hover:bg-white/[0.05]") : "size-10 justify-center hover:bg-white/[0.05]",
                             )}
                             aria-label="Account"
                         >
                             {status?.user?.avatar?.large ? (
-                                <img src={img(status.user.avatar.large)} alt="" className={cn("shrink-0 rounded-full object-cover", classic ? "size-7" : "size-8")} />
+                                <img src={img(status.user.avatar.large)} alt="" className={cn("size-8 shrink-0 rounded-full object-cover", classic && "ring-1 ring-white/10")} />
                             ) : (
-                                <span className={cn("grid shrink-0 place-items-center rounded-full text-muted", classic ? "size-7 bg-surface-3" : "size-8 border border-line-strong")}>
+                                <span className={cn("grid size-8 shrink-0 place-items-center rounded-full text-muted", classic ? "bg-surface-3 ring-1 ring-white/10" : "border border-line-strong")}>
                                     <UserRound className="size-4" />
                                 </span>
                             )}
