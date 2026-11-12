@@ -1071,6 +1071,39 @@ function updateDesktopShortcuts() {
     }
 }
 
+// After an update on Linux the desktop can keep showing Aniko's icon from
+// before (the app menu, the panel): it keeps its own copy of every icon.
+// Once per version, tell it they changed: KDE's signal for it (what its own
+// settings send), and the menu's database built again. Nothing is deleted;
+// a desktop without these tools just doesn't answer.
+function refreshDesktopIcons() {
+    if (process.platform !== "linux") return
+    const seen = path.join(app.getPath("userData"), "icons-version")
+    // The server program's version: the app's own number doesn't change.
+    const version = installedVersion() || app.getVersion()
+    try {
+        if (fs.readFileSync(seen, "utf8") === version) return
+    } catch {
+        // first start, or an unreadable file: refresh
+    }
+    const run = (cmd, args) => {
+        try {
+            spawn(cmd, args, { stdio: "ignore", detached: true }).on("error", () => {}).unref()
+        } catch {
+            // not installed
+        }
+    }
+    run("dbus-send", ["--session", "--type=signal", "/KIconLoader", "org.kde.KIconLoader.iconChanged", "int32:0"])
+    run("kbuildsycoca6", ["--noincremental"])
+    run("kbuildsycoca5", ["--noincremental"])
+    run("xdg-desktop-menu", ["forceupdate"])
+    try {
+        fs.writeFileSync(seen, version)
+    } catch {
+        // asked again at the next start
+    }
+}
+
 // Aniko couldn't start: why, the server's last lines, and Try again.
 function startupFailed(err) {
     serverProc?.kill()
@@ -1111,6 +1144,7 @@ async function boot() {
     listenForAlerts()
     updateTray()
     updateDesktopShortcuts()
+    refreshDesktopIcons()
     powerMonitor.on("lock-screen", () => {
         clearTimeout(lockTimer)
         lockTimer = setTimeout(parkPage, PARK_AFTER)
