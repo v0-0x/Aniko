@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react"
 import type { Holiday } from "@/lib/themes"
-import { cn } from "@/lib/utils"
 
 // The holiday themes' decorations (lib/themes.ts), around the pages:
 // - HolidayBackdrop: the page panel's background, with the holiday's art
@@ -10,9 +9,9 @@ import { cn } from "@/lib/utils"
 //   every page shows it the same (Christmas lights, summer lanterns,
 //   Halloween's cobweb in the corner). Nothing can be clicked on either.
 
-export function HolidayBackdrop({ holiday, phone }: { holiday: Holiday | null; phone?: boolean }) {
+export function HolidayBackdrop({ holiday }: { holiday: Holiday | null }) {
     return (
-        <div aria-hidden className={cn("page-backdrop pointer-events-none absolute overflow-hidden bg-bg", phone ? "inset-0" : "inset-y-2 right-2 left-0 rounded-[14px]")}>
+        <div aria-hidden className="page-backdrop pointer-events-none absolute inset-0 overflow-hidden bg-bg">
             {holiday && (
                 <>
                     {/* The holiday's light, from the top. */}
@@ -43,7 +42,7 @@ export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; 
     if (holiday?.id === "halloween") return <Cobweb />
     if (!kind) return null
     return (
-        <div ref={ref} aria-hidden className="pointer-events-none absolute top-2 right-2 left-0 z-[5] h-16 overflow-hidden rounded-t-[14px]">
+        <div ref={ref} aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-16 overflow-hidden">
             {width > 0 && (kind === "lights" ? <Lights width={width} animate={animate} /> : <Lanterns width={width} animate={animate} />)}
         </div>
     )
@@ -53,7 +52,7 @@ export function HolidayGarland({ holiday, animate }: { holiday: Holiday | null; 
 // pages' margin.
 function Cobweb() {
     return (
-        <div aria-hidden className="pointer-events-none absolute top-2 left-0 z-[5] size-[170px] overflow-hidden rounded-tl-[14px]">
+        <div aria-hidden className="pointer-events-none absolute top-0 left-0 z-[5] size-[170px] overflow-hidden">
             <svg width="170" height="170">
                 <path d={cobweb(120)} fill="none" stroke="#e9d5ff" strokeOpacity="0.2" strokeWidth="0.9" />
                 <line x1="12" y1="12" x2="12" y2="136" stroke="#e9d5ff" strokeOpacity="0.24" strokeWidth="0.8" />

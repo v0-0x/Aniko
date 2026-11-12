@@ -54,7 +54,7 @@ import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
 import { useStore } from "@/lib/store"
 import { useFadeBelow } from "@/lib/hooks"
-import { activeHoliday, COLOR_THEMES, HOLIDAYS, themePreviewStore, useClassic } from "@/lib/themes"
+import { activeHoliday, colorTheme, HOLIDAYS, ownAccent, themePreviewStore, themesOf, useClassic } from "@/lib/themes"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { systemNotifications } from "@/lib/alerts"
 import { androidApp, setTvWidth, TV_WIDTHS, tv, tvWidth } from "@/lib/tv"
@@ -1124,10 +1124,11 @@ function TvSizeRow() {
     )
 }
 
-// Not #7c6cf2: saved by every install before 3.0.32 as its default, it stands for "the theme's own" (lib/themes.ts).
-const ACCENTS = ["#ff7eb6", "#8b7cf6", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#38bdf8", "#a3e635"]
+// Not #7c6cf2 or #ff7eb6: saved by every install as its default (before
+// 3.0.32, and since), they stand for "the theme's own" (lib/themes.ts).
+const ACCENTS = ["#ff6fae", "#8b7cf6", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#38bdf8", "#a3e635"]
 const ACCENT_NAMES: Record<string, string> = {
-    "#ff7eb6": "pink",
+    "#ff6fae": "pink",
     "#8b7cf6": "violet",
     "#5b8cff": "blue",
     "#22c3a6": "teal",
@@ -1141,6 +1142,10 @@ function UISection({ draft, set }: SectionProps) {
     const seasonal = draft.ui.seasonal ?? "auto"
     // The one on now with these settings (or that would be, for the hint).
     const holiday = activeHoliday(seasonal)
+    // The themes of the look being set, and the saved one as it draws it.
+    const classicLook = !!draft.ui.classicLook
+    const theme = colorTheme(draft.ui.colorTheme, classicLook)
+    const own = ownAccent(draft.ui.accentColor, classicLook)
     return (
         <>
             <Group title="Theme">
@@ -1149,14 +1154,14 @@ function UISection({ draft, set }: SectionProps) {
                 </Row>
                 <Stack label="Colors">
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                        {COLOR_THEMES.map(t => {
-                            const on = (draft.ui.colorTheme ?? "aniko") === t.id
+                        {themesOf(classicLook).map(t => {
+                            const on = theme.id === t.id
                             return (
                                 <button
                                     key={t.id}
                                     onClick={() => set("ui", { colorTheme: t.id, accentColor: t.accent })}
                                     aria-pressed={on}
-                                    className={cn("focus-ring flex flex-col gap-2 rounded-lg border p-2 text-left transition", on ? "border-white/70" : "border-line hover:border-white/25")}
+                                    className={cn("focus-ring flex flex-col gap-2 rounded-lg border p-2 text-left transition", on ? "border-transparent outline-2 outline-offset-2 outline-fg" : "border-line-strong hover:border-white/45")}
                                     style={{ background: t.palette.frame }}
                                 >
                                     {/* The window in small: the sidebar, a page with panels, the accent. */}
@@ -1175,7 +1180,7 @@ function UISection({ draft, set }: SectionProps) {
                                             </span>
                                         </span>
                                     </span>
-                                    <span className="px-0.5 text-[13px] font-medium" style={{ color: "#ececee" }}>
+                                    <span className="px-0.5 text-[13px] font-medium" style={{ color: t.palette.text ?? "#ececee" }}>
                                         {t.name}
                                     </span>
                                 </button>
@@ -1185,6 +1190,16 @@ function UISection({ draft, set }: SectionProps) {
                 </Stack>
                 <Stack label="Accent color" help={holiday ? `While the ${holiday.name} theme is on, its color is used instead.` : undefined}>
                     <div className="flex flex-wrap items-center gap-2.5">
+                        {/* The theme's own ink (this look's themes have one each). */}
+                        {!classicLook && (
+                            <button
+                                onClick={() => set("ui", { accentColor: theme.accent })}
+                                className={cn("label h-9 border px-3 text-[10px] transition", !own || own === theme.accent ? "border-fg text-fg" : "border-line-strong text-muted hover:border-white/45 hover:text-fg")}
+                                aria-pressed={!own || own === theme.accent}
+                            >
+                                Theme's own
+                            </button>
+                        )}
                         {ACCENTS.map(c => (
                             <button
                                 key={c}

@@ -4,7 +4,6 @@ import { Link } from "react-router-dom"
 import type { ListEntry, Media } from "@/lib/types"
 import { airedEpisodes, cn, cover, entryUrl, formatLabel, timeUntil, title, totalEpisodes } from "@/lib/utils"
 import { useClassic } from "@/lib/themes"
-import { tv } from "@/lib/tv"
 import { Dropdown, DropdownContent, DropdownTrigger, IconButton } from "./ui"
 
 type Props = {
@@ -40,7 +39,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
     const score = media.meanScore ?? media.averageScore
     // Before 2.0: flatter, squarer, a lighter hairline on hover, no lift.
     const classic = useClassic()
-    const label = classic ? "rounded bg-black/70" : "rounded-md bg-black/65 backdrop-blur-sm"
+    const label = classic ? "rounded bg-black/70" : "rounded-sm bg-black/75"
 
     const card = (
         <Link to={entryUrl(media)} data-tv-card className={cn("group/card focus-ring relative flex flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !menu && className)}>
@@ -48,8 +47,8 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
             <div
                 className={cn(
                     "relative aspect-[2/3] overflow-hidden bg-surface-2",
-                    classic ? "rounded-lg" : "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out",
-                    !tv && !classic && "group-hover/card:-translate-y-0.5 group-hover/card:shadow-[0_12px_28px_-14px_rgb(0_0_0/0.9)]",
+                    // What's on a cover is white on dark in a light theme too (on-dark).
+                    classic ? "rounded-lg" : "on-dark rounded-sm",
                 )}
             >
                 {cover(media) && (
@@ -70,9 +69,10 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     )}
                 />
 
-                <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+                {/* Inside the corner marks (index.css), in this look. */}
+                <div className={cn("absolute flex flex-col items-start gap-1", classic ? "top-2 left-2" : "top-3.5 left-3.5")}>
                     {behind > 0 && (
-                        <span className={cn("bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white", classic ? "rounded" : "rounded-md")}>{behind} new</span>
+                        <span className={cn("bg-brand px-1.5 py-0.5 text-white", classic ? "rounded text-[11px] font-semibold" : "label rounded-sm text-[10px] font-semibold")}>{behind} new</span>
                     )}
                     {!!localCount && localCount > 0 && (
                         <span className={cn("flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums", label)}>
@@ -84,9 +84,10 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                 {score ? (
                     <span
                         className={cn(
-                            "absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100 [@media(pointer:coarse)]:opacity-100",
+                            "absolute flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums opacity-0 transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100 [@media(pointer:coarse)]:opacity-100",
+                            classic ? "top-2 right-2" : "top-3.5 right-3.5",
                             label,
-                            menu && "right-10", // next to the menu button
+                            menu && (classic ? "right-10" : "right-11"), // next to the menu button
                         )}
                     >
                         <Star className="size-3 fill-amber-300 text-amber-300" />
@@ -94,7 +95,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     </span>
                 ) : null}
                 {nextAir && (
-                    <span className={cn("absolute bottom-2.5 left-2 px-1.5 py-0.5 text-[11px] font-medium text-white", label)}>
+                    <span className={cn("absolute px-1.5 py-0.5 text-[11px] font-medium text-white", classic ? "bottom-2.5 left-2" : "bottom-3.5 left-3.5", label)}>
                         Ep {nextAir.episode} in {timeUntil(nextAir.timeUntilAiring)}
                     </span>
                 )}
@@ -178,8 +179,8 @@ function CardMenu({ menu, className, children }: { menu: React.ReactNode; classN
                         label="More options"
                         size="xs"
                         className={cn(
-                            "absolute top-1.5 right-1.5 text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100",
-                            classic ? "rounded-md bg-black/70" : "rounded-lg bg-black/65 backdrop-blur-sm",
+                            "absolute text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100",
+                            classic ? "top-1.5 right-1.5 rounded-md bg-black/70" : "on-dark top-3 right-3 rounded-sm bg-black/75",
                         )}
                     >
                         <Ellipsis className="size-4" />

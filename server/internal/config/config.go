@@ -282,7 +282,7 @@ type UISettings struct {
 // ColorThemes and Holidays are the values UISettings takes (their colors are
 // in web/src/lib/themes.ts).
 var (
-	ColorThemes = []string{"aniko", "graphite", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black"}
+	ColorThemes = []string{"aniko", "graphite", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black", "white", "paper", "phosphor", "amber", "ice", "rose"}
 	Holidays    = []string{"newyear", "valentine", "sakura", "summer", "halloween", "christmas"}
 )
 

@@ -42,13 +42,33 @@ import { useQueryClient } from "@tanstack/react-query"
 import { toast as sonner } from "sonner"
 import { toast } from "@/lib/toast"
 
+const TILE =
+    "M59.86 59.86C59.27 60.45 58.63 60.95 57.87 61.4C57.12 61.85 56.31 62.23 55.33 62.56C54.36 62.88 53.35 63.15 52.01 63.36C50.66 63.58 50.57 63.74 47.24 63.84C43.9 63.95 37.08 64 32 64C26.92 64 20.1 63.95 16.76 63.84C13.43 63.74 13.34 63.58 11.99 63.36C10.65 63.15 9.64 62.88 8.67 62.56C7.69 62.23 6.88 61.85 6.13 61.4C5.37 60.95 4.73 60.45 4.14 59.86C3.55 59.27 3.05 58.63 2.6 57.87C2.15 57.12 1.77 56.31 1.44 55.33C1.12 54.36 0.85 53.35 0.64 52.01C0.42 50.66 0.26 50.57 0.16 47.24C0.05 43.9 0 37.08 0 32C0 26.92 0.05 20.1 0.16 16.76C0.26 13.43 0.42 13.34 0.64 11.99C0.85 10.65 1.12 9.64 1.44 8.67C1.77 7.69 2.15 6.88 2.6 6.13C3.05 5.37 3.55 4.73 4.14 4.14C4.73 3.55 5.37 3.05 6.13 2.6C6.88 2.15 7.69 1.77 8.67 1.44C9.64 1.12 10.65 0.85 11.99 0.64C13.34 0.42 13.43 0.26 16.76 0.16C20.1 0.05 26.92 0 32 0C37.08 0 43.9 0.05 47.24 0.16C50.57 0.26 50.66 0.42 52.01 0.64C53.35 0.85 54.36 1.12 55.33 1.44C56.31 1.77 57.12 2.15 57.87 2.6C58.63 3.05 59.27 3.55 59.86 4.14C60.45 4.73 60.95 5.37 61.4 6.13C61.85 6.88 62.23 7.69 62.56 8.67C62.88 9.64 63.15 10.65 63.36 11.99C63.58 13.34 63.74 13.43 63.84 16.76C63.95 20.1 64 26.92 64 32C64 37.08 63.95 43.9 63.84 47.24C63.74 50.57 63.58 50.66 63.36 52.01C63.15 53.35 62.88 54.36 62.56 55.33C62.23 56.31 61.85 57.12 61.4 57.87C60.95 58.63 60.45 59.27 59.86 59.86Z"
+
 // Aniko's logo: the A as a sitting cat (its peak the ears, its legs the
 // paws) with a spark, on a plum tile. The same as the app icon
 // (packaging/icons/aniko.svg) and the favicon (public/aniko.svg).
 export function AnikoLogo({ className }: { className?: string }) {
+    const classic = useClassic()
+    // In this look, drawn in the theme's ink: the tile an outline, the cat
+    // solid, its face the page's color.
+    if (!classic)
+        return (
+            <svg viewBox="0 0 64 64" className={cn("text-fg", className)} aria-hidden>
+                <path d={TILE} transform="translate(1.2 1.2) scale(0.9625)" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                <g transform="translate(-1.6 0)">
+                    <path d="M45 46.5C54.5 49.5 59.4 44.6 57.4 38.8 55.8 34.2 57.2 31 60.2 29.6" fill="none" stroke="currentColor" strokeWidth="4.4" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M23.5 10.5 29.6 18.4H34.4L40.5 10.5 50.5 49H41L32 39.5 23 49H13.5Z" fill="currentColor" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
+                    <path d="M30.9 33.9h2.2l-1.1 1.3Z" fill="var(--bg)" stroke="var(--bg)" strokeWidth=".9" strokeLinejoin="round" />
+                    <path d="M24.4 31.4q2.4-3 4.8 0M34.8 31.4q2.4-3 4.8 0" fill="none" stroke="var(--bg)" strokeWidth="1.9" strokeLinecap="round" />
+                    <path d="M29.2 36.3q1.4 1.9 2.8 0 1.4 1.9 2.8 0" fill="none" stroke="var(--bg)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M15.6 32.6 11.4 31.5M15.2 36 11 36.7M48.4 32.6 51.6 31.5M48.8 36 52 36.7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </g>
+            </svg>
+        )
     return (
         <svg viewBox="0 0 64 64" className={className} aria-hidden>
-            <path d="M59.86 59.86C59.27 60.45 58.63 60.95 57.87 61.4C57.12 61.85 56.31 62.23 55.33 62.56C54.36 62.88 53.35 63.15 52.01 63.36C50.66 63.58 50.57 63.74 47.24 63.84C43.9 63.95 37.08 64 32 64C26.92 64 20.1 63.95 16.76 63.84C13.43 63.74 13.34 63.58 11.99 63.36C10.65 63.15 9.64 62.88 8.67 62.56C7.69 62.23 6.88 61.85 6.13 61.4C5.37 60.95 4.73 60.45 4.14 59.86C3.55 59.27 3.05 58.63 2.6 57.87C2.15 57.12 1.77 56.31 1.44 55.33C1.12 54.36 0.85 53.35 0.64 52.01C0.42 50.66 0.26 50.57 0.16 47.24C0.05 43.9 0 37.08 0 32C0 26.92 0.05 20.1 0.16 16.76C0.26 13.43 0.42 13.34 0.64 11.99C0.85 10.65 1.12 9.64 1.44 8.67C1.77 7.69 2.15 6.88 2.6 6.13C3.05 5.37 3.55 4.73 4.14 4.14C4.73 3.55 5.37 3.05 6.13 2.6C6.88 2.15 7.69 1.77 8.67 1.44C9.64 1.12 10.65 0.85 11.99 0.64C13.34 0.42 13.43 0.26 16.76 0.16C20.1 0.05 26.92 0 32 0C37.08 0 43.9 0.05 47.24 0.16C50.57 0.26 50.66 0.42 52.01 0.64C53.35 0.85 54.36 1.12 55.33 1.44C56.31 1.77 57.12 2.15 57.87 2.6C58.63 3.05 59.27 3.55 59.86 4.14C60.45 4.73 60.95 5.37 61.4 6.13C61.85 6.88 62.23 7.69 62.56 8.67C62.88 9.64 63.15 10.65 63.36 11.99C63.58 13.34 63.74 13.43 63.84 16.76C63.95 20.1 64 26.92 64 32C64 37.08 63.95 43.9 63.84 47.24C63.74 50.57 63.58 50.66 63.36 52.01C63.15 53.35 62.88 54.36 62.56 55.33C62.23 56.31 61.85 57.12 61.4 57.87C60.95 58.63 60.45 59.27 59.86 59.86Z" fill="#2A1D45" />
+            <path d={TILE} fill="#2A1D45" />
             <g transform="translate(-1.6 0)">
                 <path d="M45 46.5C54.5 49.5 59.4 44.6 57.4 38.8 55.8 34.2 57.2 31 60.2 29.6" fill="none" stroke="#FFF1DC" strokeWidth="4.4" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M23.5 10.5 29.6 18.4H34.4L40.5 10.5 50.5 49H41L32 39.5 23 49H13.5Z" fill="#FFF1DC" stroke="#FFF1DC" strokeWidth="5" strokeLinejoin="round" />
@@ -236,24 +256,24 @@ export function Sidebar() {
                 // Icons only (narrow): named for screen readers too.
                 aria-label={wide ? undefined : it.label}
                 className={cn(
-                    "focus-ring relative flex h-9 shrink-0 items-center text-[13.5px] font-medium transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.75] [&>svg]:transition-colors [&>svg]:duration-200",
-                    classic ? "rounded-md" : "rounded-full font-display",
-                    wide ? (classic ? "gap-3 px-2.5" : "gap-3 px-3") : "w-10 justify-center",
+                    "focus-ring relative flex h-9 shrink-0 items-center font-medium transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:transition-colors [&>svg]:duration-200",
+                    classic ? "rounded-md text-[13.5px] [&>svg]:stroke-[1.75]" : "label rounded-sm [&>svg]:stroke-[1.5]",
+                    wide ? (classic ? "gap-3 px-2.5" : "gap-1.5 px-3") : "w-10 justify-center",
                     // The page it's on: tinted with the accent.
                     classic
                         ? active
                             ? "bg-white/[0.08] text-fg"
                             : "text-muted hover:bg-white/[0.04] hover:text-fg"
                         : active
-                          ? "bg-[color-mix(in_oklab,var(--brand)_20%,transparent)] text-fg [&>svg]:text-brand-strong" // the open page: a pill in the accent
-                          : "text-muted hover:bg-white/[0.045] hover:text-fg",
+                          ? cn("text-fg", !wide && "shadow-[inset_0_0_0_1px_var(--line-strong)]") // the open page: in brackets (index.css's nav-label); a box around the icon alone
+                          : "text-muted hover:text-fg",
                 )}
             >
                 {it.icon}
-                {wide && <span className="truncate">{it.label}</span>}
+                {wide && <span className={cn("truncate", !classic && "nav-label")}>{it.label}</span>}
                 {badge &&
                     (wide ? (
-                        <span className={cn("ml-auto bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums", classic ? "rounded" : "rounded-md")}>{badge}</span>
+                        <span className={cn("ml-auto px-1.5 text-fg/80 tabular-nums", classic ? "rounded bg-white/[0.08] text-[11px] leading-[18px]" : "border border-line-strong text-[10px] leading-4")}>{badge}</span>
                     ) : (
                         <span className="absolute top-0.5 right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white tabular-nums">{badge}</span>
                     ))}
@@ -282,7 +302,7 @@ export function Sidebar() {
                         <AnikoLogo className="size-8" />
                         <HolidayOnLogo holiday={holiday} />
                     </span>
-                    {wide && <AnikoWordmark className="h-[18px] w-auto text-fg" />}
+                    {wide && (classic ? <AnikoWordmark className="h-[18px] w-auto text-fg" /> : <span className="font-display text-[19px] leading-none font-semibold tracking-tight">Aniko</span>)}
                 </button>
                 {!tv && <BackButton wide={wide} />}
             </div>
@@ -295,16 +315,16 @@ export function Sidebar() {
                 <div className={cn("flex flex-col gap-0.5", !wide && "items-center")}>{main.map(link)}</div>
                 {/* The pages used less: under More, closed until asked for (open on one of them). */}
                 {rest.length > 0 && (
-                    <div className={cn("flex flex-col gap-0.5", !wide && "items-center", !classic && "border-t border-line/70 pt-3")}>
+                    <div className={cn("flex flex-col gap-0.5", !wide && "items-center", !classic && "border-t border-line pt-3")}>
                         {folds && (
                             <button
                                 onClick={() => setMoreOpen(!moreOpen)}
                                 aria-expanded={showRest}
-                                className="focus-ring flex h-9 shrink-0 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] font-medium text-muted transition-colors duration-200 hover:bg-white/[0.045] hover:text-fg"
+                                className="label focus-ring flex h-9 shrink-0 items-center gap-1.5 rounded-sm px-3 text-muted transition-colors duration-200 hover:text-fg"
                             >
-                                <ChevronDown className={cn("size-[18px] shrink-0 stroke-[1.75] transition-transform duration-200", !showRest && "-rotate-90")} />
-                                <span className="truncate">More</span>
-                                {!showRest && restBadge > 0 && <span className="ml-auto rounded-md bg-white/[0.08] px-1.5 text-[11px] leading-[18px] text-fg/80 tabular-nums">{restBadge > 99 ? "99+" : restBadge}</span>}
+                                <ChevronDown className={cn("size-[18px] shrink-0 stroke-[1.5] transition-transform duration-200", !showRest && "-rotate-90")} />
+                                <span className="nav-label truncate">More</span>
+                                {!showRest && restBadge > 0 && <span className="ml-auto border border-line-strong px-1.5 text-[10px] leading-4 text-fg/80 tabular-nums">{restBadge > 99 ? "99+" : restBadge}</span>}
                             </button>
                         )}
                         {showRest && rest.map(link)}
@@ -336,8 +356,8 @@ export function Sidebar() {
                                     to="/settings"
                                     aria-label="Settings"
                                     className={cn(
-                                        "focus-ring grid size-9 shrink-0 place-items-center rounded-[10px] transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:stroke-[1.75]",
-                                        location.pathname.startsWith("/settings") ? "bg-white/[0.08] text-brand-strong" : "text-muted hover:bg-white/[0.045] hover:text-fg",
+                                        "focus-ring grid size-9 shrink-0 place-items-center rounded-sm transition-colors duration-200 [&>svg]:size-[18px] [&>svg]:stroke-[1.5]",
+                                        location.pathname.startsWith("/settings") ? "text-fg shadow-[inset_0_0_0_1px_var(--line-strong)]" : "text-muted hover:text-fg",
                                     )}
                                 >
                                     <SettingsIcon />
@@ -354,16 +374,16 @@ export function Sidebar() {
                                 classic
                                     ? cn("mt-1 h-10 rounded-md hover:bg-white/[0.04] data-[state=open]:bg-white/[0.06]", wide ? "px-2" : "w-10 justify-center")
                                     : cn(
-                                          "mt-1.5 rounded-[10px] data-[state=open]:bg-white/[0.07]",
-                                          wide ? "h-12 bg-white/[0.03] px-2 hover:bg-white/[0.055]" : "size-10 justify-center hover:bg-white/[0.05]",
+                                          "mt-1.5 rounded-sm data-[state=open]:bg-white/[0.07]",
+                                          wide ? "h-12 px-2 hover:bg-white/[0.05]" : "size-10 justify-center hover:bg-white/[0.05]",
                                       ),
                             )}
                             aria-label="Account"
                         >
                             {status?.user?.avatar?.large ? (
-                                <img src={img(status.user.avatar.large)} alt="" className={cn("shrink-0 rounded-full object-cover", classic ? "size-7" : "size-8 ring-1 ring-white/10")} />
+                                <img src={img(status.user.avatar.large)} alt="" className={cn("shrink-0 rounded-full object-cover", classic ? "size-7" : "size-8")} />
                             ) : (
-                                <span className={cn("grid shrink-0 place-items-center rounded-full bg-surface-3 text-muted", classic ? "size-7" : "size-8 ring-1 ring-white/10")}>
+                                <span className={cn("grid shrink-0 place-items-center rounded-full text-muted", classic ? "size-7 bg-surface-3" : "size-8 border border-line-strong")}>
                                     <UserRound className="size-4" />
                                 </span>
                             )}
@@ -411,6 +431,7 @@ export function Sidebar() {
 // Mutes notifications (toasts), all but errors (lib/toast.ts), or turns them
 // back on.
 function MuteButton({ side }: { side: "top" | "right" }) {
+    const classic = useClassic()
     const muted = useStore(notificationsMutedStore)
     const label = muted ? "Unmute notifications" : "Mute notifications"
     const toggle = () => {
@@ -426,7 +447,8 @@ function MuteButton({ side }: { side: "top" | "right" }) {
                 aria-label={label}
                 aria-pressed={muted}
                 className={cn(
-                    "focus-ring grid size-9 shrink-0 place-items-center rounded-md transition-colors hover:bg-white/[0.04] [&>svg]:size-[18px] [&>svg]:stroke-[1.75]",
+                    "focus-ring grid size-9 shrink-0 place-items-center rounded-md transition-colors [&>svg]:size-[18px]",
+                    classic ? "hover:bg-white/[0.04] [&>svg]:stroke-[1.75]" : "[&>svg]:stroke-[1.5]",
                     muted ? "text-amber-300" : "text-muted hover:text-fg",
                 )}
             >

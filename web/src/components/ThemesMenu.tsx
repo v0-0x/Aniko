@@ -1,8 +1,8 @@
-import { Check, ChevronRight, ChevronUp, History, Palette, Settings2, Sparkles } from "lucide-react"
+import { Check, ChevronRight, History, Palette, Settings2, Sparkles } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useSaveUI, useSettings } from "@/lib/queries"
 import { useStore } from "@/lib/store"
-import { activeHoliday, COLOR_THEMES, HOLIDAYS, holidayStore, useClassic, type ColorTheme } from "@/lib/themes"
+import { activeHoliday, colorTheme, HOLIDAYS, holidayStore, themesOf, useClassic, type ColorTheme } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn } from "@/lib/utils"
 import { HolidayIcon } from "./HolidayBadge"
@@ -16,9 +16,6 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
     const holiday = useStore(holidayStore)
     // Drawn as it is now (one being tried in Settings too).
     const classic = useClassic()
-    // In the theme's own colors: its accent (the holiday's while one is on)
-    // tints it, and its drawing (or a palette) leads.
-    const icon = holiday ? <HolidayIcon id={holiday.id} className="size-4" /> : <Palette className="size-3.5 stroke-2 text-brand-strong" />
     const button = classic ? (
         // Like the other links, as the sidebar was before 2.0.
         <DropdownTrigger asChild>
@@ -34,27 +31,18 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
             </button>
         </DropdownTrigger>
     ) : (
-        // A link like the others, led by a small round chip in the accent
-        // (the holiday's drawing, or a palette); lit with the accent while
-        // open, the chevron turning.
+        // The palette alone in the sidebar's row of icons; on a TV a link
+        // like the others.
         <DropdownTrigger asChild>
             <button
                 aria-label="Themes"
                 className={cn(
-                    "focus-ring group flex shrink-0 items-center rounded-lg text-[13.5px] font-medium text-muted transition-[background-color,color] duration-200 ease-out",
-                    "hover:bg-white/[0.05] hover:text-fg data-[state=open]:bg-brand-soft data-[state=open]:text-fg",
-                    wide ? "h-9 gap-2.5 pr-2 pl-1.5" : "size-10 justify-center",
+                    "focus-ring flex shrink-0 items-center rounded-sm text-muted transition-colors duration-200 hover:text-fg data-[state=open]:text-fg [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:stroke-[1.5]",
+                    wide ? "label h-9 gap-1.5 px-3" : "size-9 justify-center data-[state=open]:shadow-[inset_0_0_0_1px_var(--line-strong)]",
                 )}
             >
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[color-mix(in_oklab,var(--brand)_16%,transparent)] transition-[transform,background-color] duration-300 ease-out group-hover:scale-105 group-hover:bg-[color-mix(in_oklab,var(--brand)_24%,transparent)]">
-                    {icon}
-                </span>
-                {wide && (
-                    <>
-                        <span className="min-w-0 flex-1 truncate text-left">Themes</span>
-                        <ChevronUp className="size-3.5 shrink-0 text-subtle transition-transform duration-200 ease-out group-data-[state=open]:rotate-180" />
-                    </>
-                )}
+                {holiday ? <HolidayIcon id={holiday.id} className="size-[18px] shrink-0" /> : <Palette />}
+                {wide && <span className="nav-label truncate">Themes</span>}
             </button>
         </DropdownTrigger>
     )
@@ -74,6 +62,13 @@ export function ThemesMenu({ wide }: { wide: boolean }) {
 
 // A switch, drawn: the item it's in is what's pressed.
 function MenuSwitch({ on }: { on: boolean }) {
+    const classic = useClassic()
+    if (!classic)
+        return (
+            <span aria-hidden className={cn("flex h-[18px] w-8 shrink-0 items-center border transition-colors", on ? "border-brand bg-brand" : "border-line-strong")}>
+                <span className={cn("size-2 transition-transform", on ? "translate-x-[19px] bg-[color:var(--on-brand)]" : "translate-x-[3px] bg-muted")} />
+            </span>
+        )
     return (
         <span aria-hidden className={cn("relative h-[18px] w-8 shrink-0 rounded-full transition-colors", on ? "bg-brand" : "bg-white/[0.14]")}>
             <span className={cn("absolute top-[3px] size-3 rounded-full bg-white transition-transform", on ? "translate-x-[17px]" : "translate-x-[3px]")} />
@@ -120,7 +115,8 @@ function useThemes() {
         saveUI,
         navigate: useNavigate(),
         holiday: useStore(holidayStore),
-        theme: ui?.colorTheme ?? "aniko",
+        // The saved one, as this look draws it (lib/themes.ts).
+        theme: colorTheme(ui?.colorTheme, !!ui?.classicLook).id,
         seasonal: ui?.seasonal ?? "auto",
         effects: ui?.seasonalEffects ?? true,
         classicLook: !!ui?.classicLook,
@@ -141,7 +137,7 @@ function ListMenu({ wide }: { wide: boolean }) {
             <DropdownLabel>Colors</DropdownLabel>
             {/* Two columns; one on a TV, where Up and Down go through them. */}
             <div className={cn("grid gap-0.5", tv ? "grid-cols-1" : "grid-cols-2")}>
-                {COLOR_THEMES.map(t => (
+                {themesOf(true).map(t => (
                     <DropdownItem key={t.id} keepOpen onSelect={() => saveUI({ colorTheme: t.id, accentColor: t.accent })} className="h-9 gap-2 px-2">
                         <Swatch theme={t} />
                         <span className="min-w-0 flex-1 truncate">{t.name}</span>
@@ -186,7 +182,8 @@ function ListMenu({ wide }: { wide: boolean }) {
 // the holiday themes a grid, and the colors fade from one theme to the next.
 function PanelMenu({ wide }: { wide: boolean }) {
     const { saveUI, navigate, holiday, theme, seasonal, effects, classicLook, today } = useThemes()
-    const current = COLOR_THEMES.find(t => t.id === theme) ?? COLOR_THEMES[0]
+    const themes = themesOf(false)
+    const current = themes.find(t => t.id === theme) ?? themes[0]
     const pick = (ui: Parameters<typeof saveUI>[0]) => {
         fadeColors()
         saveUI(ui)
@@ -196,12 +193,12 @@ function PanelMenu({ wide }: { wide: boolean }) {
             side={wide ? "top" : "right"}
             align={wide ? "start" : "end"}
             sideOffset={8}
-            className="max-h-[min(660px,var(--radix-dropdown-menu-content-available-height))] w-[336px] overflow-y-auto rounded-[14px] p-2"
+            className="max-h-[min(660px,var(--radix-dropdown-menu-content-available-height))] w-[336px] overflow-y-auto p-2"
         >
             <div className="flex items-center gap-3 px-1.5 pt-1 pb-1.5">
                 <Window theme={current} accent={holiday?.accent ?? current.accent} className="h-8 w-11 rounded-lg" />
                 <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold text-fg">Themes</p>
+                    <p className="font-display text-[15px] font-semibold text-fg">Themes</p>
                     <p className="truncate text-[12px] text-subtle">
                         {current.name}
                         {holiday ? ` with ${holiday.name}` : ""}
@@ -211,7 +208,7 @@ function PanelMenu({ wide }: { wide: boolean }) {
 
             <Section label="Colors">
                 <Grid cols={4}>
-                    {COLOR_THEMES.map(t => {
+                    {themes.map(t => {
                         const on = theme === t.id
                         return (
                             <DropdownItem
@@ -226,12 +223,12 @@ function PanelMenu({ wide }: { wide: boolean }) {
                                         accent={t.accent}
                                         className={cn(
                                             "h-9 w-full rounded-lg transition-[box-shadow,transform] duration-200 ease-out group-data-[highlighted]/tile:-translate-y-px",
-                                            on ? "shadow-[0_0_0_2px_var(--color-surface-2),0_0_0_3.5px_var(--brand)]" : "shadow-[0_0_0_1px_rgb(255_255_255/0.1)]",
+                                            on ? "shadow-[0_0_0_2px_var(--color-surface-1),0_0_0_3.5px_var(--text)]" : "shadow-[0_0_0_1px_var(--line-strong)]",
                                         )}
                                     />
                                     <span
                                         className={cn(
-                                            "absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-brand text-white shadow-[0_0_0_2px_var(--color-surface-2)] transition-[opacity,scale] duration-200 ease-out",
+                                            "absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-fg text-bg transition-[opacity,scale] duration-200 ease-out",
                                             on ? "scale-100 opacity-100" : "scale-50 opacity-0",
                                         )}
                                     >
@@ -276,7 +273,7 @@ function PanelMenu({ wide }: { wide: boolean }) {
                 </Grid>
             </Section>
 
-            <div className="mt-2 rounded-[10px] bg-white/[0.03] p-1">
+            <div className="mt-2 border-t border-line pt-1">
                 <DropdownItem keepOpen disabled={!holiday} onSelect={() => saveUI({ seasonalEffects: !effects })} icon={<Sparkles />} className="h-9 rounded-lg">
                     <span className="min-w-0 flex-1 truncate">{holiday ? `Animation: ${holiday.effectName}` : "Holiday animations"}</span>
                     <MenuSwitch on={effects && !!holiday} />
@@ -301,7 +298,7 @@ function PanelMenu({ wide }: { wide: boolean }) {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <div className="pt-2">
-            <p className="px-1.5 pb-1.5 text-[11.5px] font-medium text-subtle">{label}</p>
+            <p className="label px-1.5 pb-1.5 text-[10px] text-subtle">{label}</p>
             {children}
         </div>
     )
@@ -373,18 +370,16 @@ function HolidayTile({ on, onSelect, icon, name }: { on: boolean; onSelect: () =
     )
 }
 
-// A color theme as a small window: its frame, sidebar, page and accent.
+// A color theme in small: its ground, a title and lines in its inks, the
+// accent.
 function Window({ theme, accent, className }: { theme: ColorTheme; accent: string; className?: string }) {
     const p = theme.palette
     return (
-        <span aria-hidden className={cn("relative block shrink-0 overflow-hidden", className)} style={{ background: p.frame }}>
-            <span className="absolute top-[18%] left-[9%] h-[9%] w-[16%] rounded-full" style={{ background: accent }} />
-            <span className="absolute top-[38%] left-[9%] h-[7%] w-[14%] rounded-full" style={{ background: p.s4 }} />
-            <span className="absolute top-[56%] left-[9%] h-[7%] w-[14%] rounded-full" style={{ background: p.s4 }} />
-            <span className="absolute inset-y-[12%] right-[6%] left-[32%] rounded-[3px]" style={{ background: p.bg }}>
-                <span className="absolute inset-x-[10%] top-[14%] h-[34%] rounded-[2px]" style={{ background: p.s3 }} />
-                <span className="absolute bottom-[16%] left-[10%] h-[12%] w-[38%] rounded-full" style={{ background: accent }} />
-            </span>
+        <span aria-hidden className={cn("relative block shrink-0 overflow-hidden", className)} style={{ background: p.bg }}>
+            <span className="absolute top-[22%] left-[12%] h-[14%] w-[34%]" style={{ background: p.text }} />
+            <span className="absolute top-[50%] left-[12%] h-[7%] w-[52%]" style={{ background: p.subtle }} />
+            <span className="absolute top-[66%] left-[12%] h-[7%] w-[40%]" style={{ background: p.subtle }} />
+            <span className="absolute right-[12%] bottom-[20%] h-[22%] w-[14%]" style={{ background: accent }} />
         </span>
     )
 }

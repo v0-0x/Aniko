@@ -55,7 +55,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
             }}
             className={cn("group/ep focus-ring flex cursor-pointer flex-col gap-2.5 outline-none", classic ? "rounded-lg" : "rounded-[10px]", !aired && "cursor-default opacity-50", className)}
         >
-            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-lg" : "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)]")}>
+            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-lg" : "on-dark rounded-sm")}>
                 {image ? (
                     <img
                         src={img(image)}
@@ -79,20 +79,20 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                 />
                 {aired && (
                     <div className="absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-200 group-hover/ep:opacity-100">
-                        <span className={cn("grid place-items-center rounded-full bg-white/95 text-neutral-950 shadow-lg shadow-black/40", large ? "size-14" : "size-11")}>
+                        <span className={cn("grid place-items-center rounded-full", classic ? "bg-white/95 text-neutral-950 shadow-lg shadow-black/40" : "bg-white text-black", large ? "size-14" : "size-11")}>
                             <Play className={cn("ml-0.5 fill-current", large ? "size-5" : "size-4")} />
                         </span>
                     </div>
                 )}
                 {actions && (
-                    <div className={cn("absolute top-2 right-2 opacity-0 transition-opacity group-hover/ep:opacity-100 focus-within:opacity-100", !menu && "[@media(pointer:coarse)]:opacity-100")} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                    <div className={cn("absolute opacity-0 transition-opacity group-hover/ep:opacity-100 focus-within:opacity-100", classic ? "top-2 right-2" : "top-3.5 right-3.5", !menu && "[@media(pointer:coarse)]:opacity-100")} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                         {actions}
                     </div>
                 )}
                 {(onRemove || onInfo) && (
                     <div
                         // On hover, and always on touch screens, which can't hover.
-                        className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover/ep:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+                        className={cn("absolute flex gap-1 opacity-0 transition-opacity group-hover/ep:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100", classic ? "top-2 right-2" : "top-3.5 right-3.5")}
                         onClick={e => e.stopPropagation()}
                         onKeyDown={e => e.stopPropagation()}
                     >
@@ -117,10 +117,10 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
                     </div>
                 )}
                 {tag && (
-                    <span className={cn("absolute top-2 left-2 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase shadow-md shadow-black/40", tag === "Filler" ? "bg-amber-400 text-neutral-950" : "bg-sky-400 text-neutral-950")}>{tag}</span>
+                    <span className={cn("absolute px-1.5 py-0.5 font-semibold uppercase", classic ? "top-2 left-2 rounded-md text-[11px] tracking-wide shadow-md shadow-black/40" : "label top-3.5 left-3.5 rounded-sm text-[10px] font-semibold", tag === "Filler" ? "bg-amber-400 text-neutral-950" : "bg-sky-400 text-neutral-950")}>{tag}</span>
                 )}
                 {!facts && resumeAt !== undefined && resumeAt > 0 && (
-                    <span className="absolute right-2 bottom-2.5 flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums">
+                    <span className={cn("absolute flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums", classic ? "right-2 bottom-2.5" : "right-3.5 bottom-3.5")}>
                         <Clock className="size-3" /> {formatDuration(resumeAt)}
                     </span>
                 )}

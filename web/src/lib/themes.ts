@@ -7,17 +7,58 @@
 import type { SearchParams } from "./queries"
 import { createStore, useStore } from "./store"
 
-// The window (frame, where the sidebar is), the pages (bg), panels on them
-// (surface 1-4) and the grey text, as in index.css.
-type Palette = { frame: string; bg: string; s1: string; s2: string; s3: string; s4: string; muted: string; subtle: string }
+// The pages (bg; the window, frame, is the same color in this look), panels
+// on them (surface 1-4), the text and its greys, and the lines, as in
+// index.css. The classic look's palettes have no text or lines of their
+// own: white on dark, as it was.
+type Palette = { frame: string; bg: string; s1: string; s2: string; s3: string; s4: string; muted: string; subtle: string; text?: string; line?: string; lineStrong?: string }
 
-// glow: two more colors in the window's light (the accent alone without).
-export type ColorTheme = { id: string; name: string; accent: string; palette: Palette; glow?: [string, string] }
+// light: dark text on a light page (index.css turns the whites and blacks
+// the pages are drawn with around: html[data-scheme="light"]).
+export type ColorTheme = { id: string; name: string; accent: string; palette: Palette; light?: boolean }
 
+const dark = (bg: string, s: [string, string, string, string], text: string, muted: string, subtle: string, ink = "255 255 255"): Palette => ({
+    frame: bg,
+    bg,
+    s1: s[0],
+    s2: s[1],
+    s3: s[2],
+    s4: s[3],
+    text,
+    muted,
+    subtle,
+    line: `rgb(${ink} / 0.1)`,
+    lineStrong: `rgb(${ink} / 0.2)`,
+})
+
+// This look's themes: one ink on one ground. Black and White first, then a
+// few quiet ones.
 export const COLOR_THEMES: ColorTheme[] = [
-    // Aniko's own (3.0.32): plum, with the logo's pink, mint and butter.
-    { id: "aniko", name: "Aniko", accent: "#ff7eb6", glow: ["#7ce0d6", "#ffd86b"], palette: { frame: "#100b1a", bg: "#171024", s1: "#1e162e", s2: "#261c39", s3: "#2f2445", s4: "#392c52", muted: "#b5a8c6", subtle: "#80738f" } },
-    // Aniko's colors before that, and the classic look's.
+    { id: "black", name: "Black", accent: "#ededed", palette: dark("#0a0a0a", ["#111111", "#171717", "#1f1f1f", "#292929"], "#ededed", "#9a9a9a", "#6e6e6e") },
+    {
+        id: "white",
+        name: "White",
+        accent: "#111111",
+        light: true,
+        palette: { ...dark("#f6f6f4", ["#efefec", "#e8e8e4", "#dfdfda", "#d3d3cd"], "#111111", "#5c5c5c", "#85857f", "0 0 0"), line: "rgb(0 0 0 / 0.1)", lineStrong: "rgb(0 0 0 / 0.22)" },
+    },
+    { id: "graphite", name: "Graphite", accent: "#e6e6e8", palette: dark("#18181a", ["#1e1e21", "#252528", "#2c2c30", "#353539"], "#e6e6e8", "#a0a0a7", "#74747b") },
+    {
+        id: "paper",
+        name: "Paper",
+        accent: "#2a2620",
+        light: true,
+        palette: { ...dark("#f3eee3", ["#ebe5d8", "#e3dccd", "#d9d1c0", "#cdc4b1"], "#2a2620", "#6b6456", "#8f8575", "42 38 32"), line: "rgb(42 38 32 / 0.12)", lineStrong: "rgb(42 38 32 / 0.26)" },
+    },
+    { id: "phosphor", name: "Phosphor", accent: "#8dfab4", palette: dark("#07100b", ["#0b1610", "#101d15", "#15251b", "#1b2e22"], "#dff5e6", "#86ab93", "#5b7c67", "141 250 180") },
+    { id: "amber", name: "Amber", accent: "#ffc86b", palette: dark("#110c05", ["#171108", "#1e160b", "#261c0f", "#2f2313"], "#f5e9d3", "#ad9973", "#7d6d50", "255 200 107") },
+    { id: "ice", name: "Ice", accent: "#a9d8ff", palette: dark("#070c12", ["#0b121a", "#101923", "#15212d", "#1b2a38"], "#e1edf7", "#8a9fb3", "#5f7286", "169 216 255") },
+    { id: "rose", name: "Rose", accent: "#ff9ec0", palette: dark("#120a0d", ["#180d12", "#1f1218", "#27171f", "#301d27"], "#f7e4ea", "#b08f9b", "#80646e", "255 158 192") },
+]
+
+// The classic look's (before 2.0), as they were (3.0.32's plum was never
+// one of them).
+export const CLASSIC_THEMES: ColorTheme[] = [
     { id: "graphite", name: "Graphite", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#111113", s1: "#161618", s2: "#1c1c1f", s3: "#232326", s4: "#2b2b2f", muted: "#a1a1a8", subtle: "#707077" } },
     { id: "midnight", name: "Midnight", accent: "#5b8cff", palette: { frame: "#070a12", bg: "#0c111c", s1: "#111827", s2: "#172033", s3: "#1e2940", s4: "#26334d", muted: "#9aa4b8", subtle: "#6b7488" } },
     { id: "forest", name: "Forest", accent: "#34d399", palette: { frame: "#070b09", bg: "#0c120f", s1: "#111a15", s2: "#16211b", s3: "#1c2a22", s4: "#23342a", muted: "#9fb0a6", subtle: "#6d7f74" } },
@@ -29,7 +70,19 @@ export const COLOR_THEMES: ColorTheme[] = [
     { id: "black", name: "Black", accent: "#7c6cf2", palette: { frame: "#000000", bg: "#000000", s1: "#0b0b0c", s2: "#121214", s3: "#19191c", s4: "#212124", muted: "#a1a1a8", subtle: "#6e6e75" } },
 ]
 
-export const colorTheme = (id?: string) => COLOR_THEMES.find(t => t.id === id) ?? COLOR_THEMES[0]
+// A theme saved in one look, drawn in the other: its nearest there (the
+// saved name stays, so going back brings the same one).
+const IN_FRAME: Record<string, string> = { aniko: "black", midnight: "ice", ocean: "ice", forest: "phosphor", sakura: "rose", ember: "amber", dusk: "graphite" }
+const IN_CLASSIC: Record<string, string> = { aniko: "graphite", white: "graphite", paper: "graphite", phosphor: "forest", amber: "ember", ice: "midnight", rose: "sakura" }
+
+// The themes of the look, and the one of them a saved name means.
+export const themesOf = (classic: boolean) => (classic ? CLASSIC_THEMES : COLOR_THEMES)
+export function colorTheme(id: string | undefined, classic = false) {
+    const list = themesOf(classic)
+    const alias = classic ? IN_CLASSIC : IN_FRAME
+    // Nothing saved: this look's Black; the classic look's Graphite.
+    return list.find(t => t.id === id) ?? list.find(t => t.id === alias[id ?? ""]) ?? list[0]
+}
 
 export type Effect = "snow" | "bats" | "hearts" | "petals" | "fireworks" | "fireflies"
 
@@ -103,29 +156,36 @@ export function activeHoliday(setting: string | undefined, now = new Date()): Ho
 export type ThemeChoice = { colorTheme?: string; accentColor?: string; seasonal?: string; seasonalEffects?: boolean; classicLook?: boolean }
 
 // What's drawn: the colors, the accent (the holiday's while one is on), the
-// holiday (its glow, the sidebar's decoration and its animation), and
-// whether in the classic look (before 2.0).
+// holiday (the sidebar's decoration and its animation), and whether in the
+// classic look (before 2.0).
 export function resolveTheme(ui: ThemeChoice | undefined, now = new Date()) {
     const classic = !!ui?.classicLook
-    // The classic look keeps the colors it had (Graphite's), where the theme
-    // is the default one.
-    const theme = colorTheme(classic && (ui?.colorTheme || "aniko") === "aniko" ? "graphite" : ui?.colorTheme)
-    // The accent every install had saved as its default before 3.0.32 isn't
-    // a choice: the theme's own shows.
-    const own = ui?.accentColor && !(theme.id === "aniko" && ui.accentColor.toLowerCase() === OLD_ACCENT) ? ui.accentColor : ""
+    const theme = colorTheme(ui?.colorTheme, classic)
     const holiday = activeHoliday(ui?.seasonal ?? "auto", now)
-    return { theme, holiday, accent: holiday?.accent ?? (own || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true), classic }
+    return { theme, holiday, accent: holiday?.accent ?? (ownAccent(ui?.accentColor, classic) || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true), classic }
 }
 
-const OLD_ACCENT = "#7c6cf2"
+// The accent as a choice of the user's ("" when it isn't one): not what
+// every install had saved as its default (before 3.0.32, and since), and
+// in the classic look not an ink of this look's themes, which would be
+// white buttons with white text there.
+const OLD_ACCENTS = ["#7c6cf2", "#ff7eb6"]
+export function ownAccent(accent: string | undefined, classic: boolean) {
+    const a = (accent ?? "").toLowerCase()
+    if (!a) return ""
+    if (classic) return COLOR_THEMES.some(t => t.accent === a) ? "" : a
+    return OLD_ACCENTS.includes(a) ? "" : a
+}
 
-// Text on the accent: dark on a light one (pink, amber, cyan), white on the rest.
-function onAccent(hex: string) {
+function luminance(hex: string) {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
-    if (!m) return "#ffffff"
+    if (!m) return 0
     const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255).map(c => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.36 ? "#1b1426" : "#ffffff"
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
+
+// Text on the accent: dark on a light one, white on the rest.
+const onAccent = (hex: string) => (luminance(hex) > 0.36 ? "#0a0a0a" : "#ffffff")
 
 const CACHE_KEY = "aniko-theme"
 
@@ -137,13 +197,13 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
     // A holiday leans the colors toward its own, a little (the window most;
     // not in the classic look, whose holidays only brought their accent).
     const lean = (color: string, pct: number) => (t.holiday && !t.classic ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
+    const light = !!t.theme.light && !t.classic
     const vars: Record<string, string> = {
         "--brand": t.accent,
-        "--on-brand": onAccent(t.accent),
-        // The window's other lights: the theme's, not under a holiday's tint
-        // ("" takes them away: the accent alone).
-        "--glow-2": (!t.holiday && !t.classic && t.theme.glow?.[0]) || "",
-        "--glow-3": (!t.holiday && !t.classic && t.theme.glow?.[1]) || "",
+        "--on-brand": t.classic ? "#ffffff" : onAccent(t.accent),
+        // On what stays dark in a light theme (the player): an accent too
+        // dark to see there is drawn light.
+        "--brand-on-dark": luminance(t.accent) < 0.12 ? "#ededed" : t.accent,
         "--frame": lean(p.frame, 12),
         "--bg": lean(p.bg, 8),
         "--surface-1": lean(p.s1, 7),
@@ -152,21 +212,28 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
         "--surface-4": lean(p.s4, 6),
         "--muted": p.muted,
         "--subtle": p.subtle,
+        // The classic look's: white on dark ("" leaves index.css's).
+        "--text": p.text ?? "",
+        "--line": p.line ?? "",
+        "--line-strong": p.lineStrong ?? "",
     }
-    setVars(vars, t.holiday?.id ?? "", t.classic)
+    setVars(vars, t.holiday?.id ?? "", t.classic, light)
     // The browser's own bars (phones) in the window's color.
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", p.frame)
     if (!cache) return
     try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ vars, holiday: t.holiday?.id ?? "", classic: t.classic }))
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ vars, holiday: t.holiday?.id ?? "", classic: t.classic, light }))
     } catch {
         /* drawn with the default colors at the next start */
     }
 }
 
-function setVars(vars: Record<string, string>, holiday: string, classic: boolean) {
+function setVars(vars: Record<string, string>, holiday: string, classic: boolean, light: boolean) {
     const el = document.documentElement
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v)
+    // For index.css (data-scheme="light"): dark text on a light page.
+    if (light) el.dataset.scheme = "light"
+    else delete el.dataset.scheme
     if (holiday) el.dataset.holiday = holiday
     else delete el.dataset.holiday
     // For index.css (data-look="classic"); the components read classicStore.
@@ -178,8 +245,8 @@ function setVars(vars: Record<string, string>, holiday: string, classic: boolean
 // The colors used last time, at once (main.tsx, before the first render).
 export function applyCachedTheme() {
     try {
-        const c = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as { vars?: Record<string, string>; holiday?: string; classic?: boolean } | null
-        if (c?.vars) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "", c.classic === true)
+        const c = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as { vars?: Record<string, string>; holiday?: string; classic?: boolean; light?: boolean } | null
+        if (c?.vars) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "", c.classic === true, c.light === true)
     } catch {
         /* the default colors */
     }

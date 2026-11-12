@@ -177,13 +177,14 @@ function AnikoApp() {
                 {/* The pages: a panel inset in the window, next to the sidebar
                     (on a phone, the whole width). Its background is behind
                     them (with a holiday's art). */}
-                <div className={cn("relative min-h-0 min-w-0 flex-1", !phone && "py-2 pr-2")}>
-                    {!classic && <HolidayBackdrop holiday={ui ? look.holiday : null} phone={phone} />}
+                <div className={cn("relative min-h-0 min-w-0 flex-1", !phone && classic && "py-2 pr-2")}>
+                    {!classic && <HolidayBackdrop holiday={ui ? look.holiday : null} />}
                     <main
                         id="main-scroll"
                         className={cn(
                             "relative h-full overflow-x-hidden overflow-y-auto",
-                            phone ? classic && "bg-bg" : cn("border border-line", classic ? "rounded-xl bg-bg" : "rounded-[14px] shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]"),
+                            // This look: one plane, a line between the sidebar and the pages.
+                            phone ? classic && "bg-bg" : classic ? "rounded-xl border border-line bg-bg" : "border-l border-line-strong",
                         )}
                     >
                         <Suspense
@@ -241,11 +242,11 @@ function AnikoApp() {
             )}
             {tv && <TvMenu />}
             <Toaster
-                theme="dark"
+                theme={look.theme.light && !classic ? "light" : "dark"}
                 position="top-right"
                 richColors
                 closeButton
-                toastOptions={{ style: { background: "var(--surface-2)", border: "1px solid var(--line-strong)", borderRadius: 10 } }}
+                toastOptions={{ style: { background: "var(--surface-2)", border: "1px solid var(--line-strong)", borderRadius: classic ? 10 : 2 } }}
             />
         </TooltipProvider>
     )

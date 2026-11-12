@@ -19,6 +19,7 @@ import { fetchLanguageMode, useCollection, useScan, useStatus } from "@/lib/quer
 import { createStore, scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
 import { androidApp, tv } from "@/lib/tv"
+import { useClassic } from "@/lib/themes"
 import { banner, cn, cover, img as imgUrl, readLocal, title } from "@/lib/utils"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/lib/toast"
@@ -299,6 +300,7 @@ export default function HomePage() {
 const heroStore = createStore(0)
 
 function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boolean; toolbar: React.ReactNode }) {
+    const classic = useClassic()
     // Removing items can leave the index past the end.
     const count = items.length
     const index = Math.min(useStore(heroStore), Math.max(0, count - 1))
@@ -348,7 +350,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                                 <Button variant="white" icon={<Play className="size-4 fill-current" />} onClick={() => play(item)}>
                                     {started ? "Resume" : `Play episode ${item.episode}`}
                                 </Button>
-                                <Link to={`/entry?id=${item.media.id}`} className="focus-ring inline-flex h-9 items-center rounded-full bg-white/10 px-4 font-display text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20">
+                                <Link to={`/entry?id=${item.media.id}`} className={cn("focus-ring inline-flex h-9 items-center transition-colors", classic ? "rounded-full bg-white/10 px-4 text-sm font-medium text-white backdrop-blur hover:bg-white/20" : "label rounded-sm border border-white/35 px-3.5 text-white hover:border-white/70 hover:bg-white/10")}>
                                     Details
                                 </Link>
                             </div>

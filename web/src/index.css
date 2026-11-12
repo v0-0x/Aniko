@@ -1,38 +1,52 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
-@import "@fontsource/zen-maru-gothic/latin-700.css";
-@import "@fontsource/zen-maru-gothic/latin-900.css";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
 
-/* Runtime tokens: the colors and the accent change with Settings › User
-   Interface (lib/themes.ts sets them).
-   The window is --frame: the sidebar sits on it, the pages on --bg, a panel
-   inset in it. */
+/* Runtime tokens: the colors and the accent change with Settings ›
+   Appearance (lib/themes.ts sets them); these are the Black theme's, drawn
+   until it has.
+   The window is --frame (the sidebar sits on it), the pages --bg: one color
+   in this look, a panel inset in the window in the classic one. */
 :root {
-    --brand: #ff7eb6;
-    --on-brand: #1b1426; /* text on the accent */
-    --frame: #100b1a;
-    --bg: #171024;
-    --surface-1: #1e162e;
-    --surface-2: #261c39;
-    --surface-3: #2f2445;
-    --surface-4: #392c52;
+    --brand: #ededed;
+    --on-brand: #0a0a0a; /* text on the accent */
+    --brand-on-dark: #ededed; /* the accent on what stays dark in a light theme */
+    --frame: #0a0a0a;
+    --bg: #0a0a0a;
+    --surface-1: #111111;
+    --surface-2: #171717;
+    --surface-3: #1f1f1f;
+    --surface-4: #292929;
+    --line: rgb(255 255 255 / 0.1);
+    --line-strong: rgb(255 255 255 / 0.2);
+    --text: #ededed;
+    --muted: #9a9a9a;
+    --subtle: #6e6e6e;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    /* Titles, and the small capital labels (buttons, the sidebar, counts). */
+    --display-face: "Space Grotesk Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+    --mono-face: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color-scheme: dark;
+}
+/* The classic look (before 2.0): its own lines and text, its themes bring
+   only the rest; plain type. */
+html[data-look="classic"] {
     --line: rgb(255 255 255 / 0.06);
     --line-strong: rgb(255 255 255 / 0.1);
     --text: #ececee;
-    --muted: #b5a8c6;
-    --subtle: #80738f;
-    --ease: cubic-bezier(0.2, 0, 0, 1);
-    color-scheme: dark;
+    --display-face: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+    --mono-face: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 @theme inline {
     --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
-    /* Titles, buttons and the sidebar: rounded, like the logo (Latin only: other scripts fall to the next). */
-    --font-display: "Zen Maru Gothic", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--display-face);
+    --font-mono: var(--mono-face);
 
     --color-brand: var(--brand);
     --color-brand-soft: color-mix(in oklab, var(--brand) 16%, transparent);
-    --color-brand-strong: color-mix(in oklab, var(--brand) 70%, white);
+    --color-brand-strong: color-mix(in oklab, var(--brand) 70%, var(--color-white));
     --color-frame: var(--frame);
     --color-bg: var(--bg);
     --color-surface-1: var(--surface-1);
@@ -86,20 +100,20 @@
     }
     * {
         scrollbar-width: thin;
-        scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+        scrollbar-color: color-mix(in oklab, var(--text) 16%, transparent) transparent;
     }
     *::-webkit-scrollbar {
         width: 10px;
         height: 10px;
     }
     *::-webkit-scrollbar-thumb {
-        background: rgb(255 255 255 / 0.1);
+        background: color-mix(in oklab, var(--text) 12%, transparent);
         border-radius: 999px;
         border: 3px solid transparent;
         background-clip: padding-box;
     }
     *::-webkit-scrollbar-thumb:hover {
-        background-color: rgb(255 255 255 / 0.22);
+        background-color: color-mix(in oklab, var(--text) 26%, transparent);
     }
     button {
         cursor: pointer;
@@ -132,6 +146,15 @@
         -webkit-backdrop-filter: blur(12px);
         backdrop-filter: blur(12px);
         color: #fff;
+    }
+    /* A small capital label in the mono face: buttons, the sidebar's
+       links, counts, what names a group. */
+    .label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
     }
     .no-scrollbar {
         scrollbar-width: none;
@@ -285,7 +308,7 @@ html.reduce-motion .animate-spin {
 
 /* Holiday themes (lib/themes.ts): a glow of the holiday's color in the
    window around the pages, and at their top. */
-html[data-holiday] .app-frame {
+html[data-look="classic"][data-holiday] .app-frame {
     background-image:
         radial-gradient(900px 520px at 0% 0%, color-mix(in oklab, var(--brand) 16%, transparent), transparent 70%),
         radial-gradient(700px 420px at 100% 100%, color-mix(in oklab, var(--brand) 9%, transparent), transparent 70%);
@@ -427,85 +450,258 @@ html.tv .glass {
 }
 
 /* ---------------------------------------------------------------------------
-   Glass (3.0's look; not the classic look): the window has a soft light in
-   the theme's colour, and what sits on it is see-through and blurred: the
-   pages' panel, cards, menus, dialogs. On a TV the same without the blur,
-   which its WebView is too slow for (the rules at the end). Outside the layers on purpose, so it wins over the utilities
-   those parts are built with. */
-html:not([data-look="classic"]) .app-frame {
-    background:
-        radial-gradient(1000px 700px at 6% -10%, color-mix(in oklab, var(--brand) 34%, transparent), transparent 62%),
-        radial-gradient(900px 700px at 104% 108%, color-mix(in oklab, var(--glow-2, var(--brand)) 30%, transparent), transparent 60%),
-        radial-gradient(700px 520px at 62% 38%, color-mix(in oklab, var(--glow-3, var(--brand)) 12%, transparent), transparent 65%),
-        var(--frame);
+   Frame (3.0.34's look; not the classic look): one ink on one ground. Thin
+   lines and square corners, nothing filled in; pictures held by corner
+   marks, like a viewfinder's; small capital labels in a mono face. Outside
+   the layers on purpose, so it wins over the utilities the pages are built
+   with. */
+html:not([data-look="classic"]) {
+    --radius-xs: 2px;
+    --radius-sm: 2px;
+    --radius-md: 2px;
+    --radius-lg: 2px;
+    --radius-xl: 2px;
+    --radius-2xl: 2px;
+    --radius-3xl: 2px;
+    --radius-4xl: 2px;
 }
-html:not([data-look="classic"]) .page-backdrop {
-    background: color-mix(in oklab, var(--bg) 54%, transparent);
-    -webkit-backdrop-filter: blur(40px) saturate(1.3);
-    backdrop-filter: blur(40px) saturate(1.3);
-    border-radius: 18px;
+/* The corners written as numbers, and the round ones (pills, dots, avatars,
+   switches): square too. A spinner drawn with a border stays round, and
+   what asks to (data-round). */
+html:not([data-look="classic"]) :is(.rounded, .rounded-full, [class*="rounded-["]):not(.animate-spin):not([data-round]) {
+    border-radius: 2px;
 }
-html:not([data-look="classic"]) #main-scroll {
-    border-color: rgb(255 255 255 / 0.08);
-    border-radius: 18px;
-    box-shadow:
-        0 18px 50px -24px rgb(0 0 0 / 0.8),
-        inset 0 1px 0 rgb(255 255 255 / 0.05);
+html:not([data-look="classic"]) *::-webkit-scrollbar-thumb {
+    border-radius: 0;
 }
-/* A card is a sticker: a thicker edge, rounder, a solid shadow under it. */
-html:not([data-look="classic"]) .card {
-    background: rgb(255 255 255 / 0.05);
-    border: 1.5px solid rgb(255 255 255 / 0.1);
-    border-radius: 1.25rem;
-    box-shadow:
-        inset 0 1px 0 rgb(255 255 255 / 0.07),
-        0 3px 0 rgb(0 0 0 / 0.24);
-}
-/* Titles in the logo's rounded type. */
+
+/* Type: titles in the display face, numbers that line up in the mono one. */
 html:not([data-look="classic"]) :is(h1, h2, h3) {
-    font-family: "Zen Maru Gothic", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
-    font-weight: 900;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+html:not([data-look="classic"]) .tabular-nums {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
     letter-spacing: 0;
 }
-/* Text on the accent reads on a light one too (pink, amber, cyan). */
+
+/* A panel is its outline. One that's a link or a button answers the
+   pointer with a brighter line. */
+html:not([data-look="classic"]) .card {
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 2px;
+    box-shadow: none;
+}
+html:not([data-look="classic"]) :is(a, button).card:hover {
+    border-color: color-mix(in oklab, var(--text) 55%, transparent);
+}
+/* Buttons and links the pages fill faintly themselves (bg-white/[0.0x]):
+   outlined, like the Button of ui.tsx. */
+html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class*=" bg-white/[0.0"],
+html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class^="bg-white/[0.0"] {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class*=" bg-white/[0.0"]:hover,
+html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class^="bg-white/[0.0"]:hover {
+    background-color: color-mix(in oklab, var(--text) 6%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--text) 45%, transparent);
+}
+/* Flat: nothing casts a shadow (the pages' shadow-lg, shadow-[0_6px_...]).
+   Lines drawn as shadows stay: rings, and the ones written inset or as a
+   plain spread (shadow-[inset_...], shadow-[0_0_0_...]). */
+html:not([data-look="classic"]) [class*="shadow-"]:not([class*="shadow-[inset"]):not([class*="shadow-[0_0_0"]) {
+    --tw-shadow: 0 0 #0000;
+}
+/* Text on the accent reads on a light one too (this look's inks are). */
 html:not([data-look="classic"]) .bg-brand {
     color: var(--on-brand);
 }
-/* Menus, dialogs and popovers: the same glass, a little denser to read on. */
+/* What the keyboard is on: a line around it, a little off it. */
+html:not([data-look="classic"]) .focus-ring:focus-visible {
+    box-shadow: none;
+    outline: 1.5px solid var(--text);
+    outline-offset: 2px;
+}
+/* Controls over artwork (banners, covers): the page's color, see-through. */
+html:not([data-look="classic"]) .glass {
+    background: color-mix(in oklab, var(--bg) 62%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+    color: var(--text);
+}
+/* Menus, dialogs and popovers: the page's color, outlined; no blur. */
 html:not([data-look="classic"]) [role="menu"],
 html:not([data-look="classic"]) [role="dialog"],
 html:not([data-look="classic"]) [data-radix-popper-content-wrapper] > [data-state] {
-    background: color-mix(in oklab, var(--surface-2) 74%, transparent);
-    -webkit-backdrop-filter: blur(28px) saturate(1.3);
-    backdrop-filter: blur(28px) saturate(1.3);
-    border-color: rgb(255 255 255 / 0.1);
-    border-radius: 16px;
-}
-html:not([data-look="classic"]) .glass {
-    background: rgb(12 12 16 / 0.42);
-    -webkit-backdrop-filter: blur(20px) saturate(1.3);
-    backdrop-filter: blur(20px) saturate(1.3);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+    border-color: var(--line-strong);
+    border-radius: 2px;
+    box-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.55);
 }
 
-/* The TV: the same light and see-through panels, nothing blurred, and what
-   has text on it a little denser so it reads from the sofa. */
-html.tv:not([data-look="classic"]) .page-backdrop,
-html.tv:not([data-look="classic"]) .glass,
-html.tv:not([data-look="classic"]) [role="menu"],
-html.tv:not([data-look="classic"]) [role="dialog"],
-html.tv:not([data-look="classic"]) [data-radix-popper-content-wrapper] > [data-state] {
+/* Corner marks on every picture ([data-tv-ring] is the layer over a cover or
+   an episode's picture): four corners at rest; under the pointer, and where
+   the keyboard or the remote is, their arms run out and close the frame.
+   Always white: they're on artwork. */
+html:not([data-look="classic"]) [data-tv-ring] {
+    box-shadow: none;
+}
+html:not([data-look="classic"]) [data-tv-ring]::after {
+    --m: rgb(255 255 255 / 0.9);
+    --w: 1.5px;
+    --arm: 11px;
+    content: "";
+    position: absolute;
+    inset: 6px;
+    pointer-events: none;
+    opacity: 0.6;
+    background:
+        linear-gradient(var(--m), var(--m)) top left / var(--arm) var(--w),
+        linear-gradient(var(--m), var(--m)) top left / var(--w) var(--arm),
+        linear-gradient(var(--m), var(--m)) top right / var(--arm) var(--w),
+        linear-gradient(var(--m), var(--m)) top right / var(--w) var(--arm),
+        linear-gradient(var(--m), var(--m)) bottom left / var(--arm) var(--w),
+        linear-gradient(var(--m), var(--m)) bottom left / var(--w) var(--arm),
+        linear-gradient(var(--m), var(--m)) bottom right / var(--arm) var(--w),
+        linear-gradient(var(--m), var(--m)) bottom right / var(--w) var(--arm);
+    background-repeat: no-repeat;
+    transition:
+        background-size 0.32s var(--ease),
+        opacity 0.2s var(--ease);
+}
+html:not([data-look="classic"]) [data-tv-card]:is(:hover, :focus-visible) [data-tv-ring]::after,
+html.tv:not([data-look="classic"]) [data-tv-card]:focus [data-tv-ring]::after {
+    --arm: 51%;
+    opacity: 1;
+}
+/* A picture with marks and no card around it (a page's poster). */
+html:not([data-look="classic"]) .marks {
+    position: relative;
+}
+html:not([data-look="classic"]) .marks::after {
+    --m: rgb(255 255 255 / 0.9);
+    content: "";
+    position: absolute;
+    inset: 6px;
+    pointer-events: none;
+    opacity: 0.6;
+    background:
+        linear-gradient(var(--m), var(--m)) top left / 11px 1.5px,
+        linear-gradient(var(--m), var(--m)) top left / 1.5px 11px,
+        linear-gradient(var(--m), var(--m)) top right / 11px 1.5px,
+        linear-gradient(var(--m), var(--m)) top right / 1.5px 11px,
+        linear-gradient(var(--m), var(--m)) bottom left / 11px 1.5px,
+        linear-gradient(var(--m), var(--m)) bottom left / 1.5px 11px,
+        linear-gradient(var(--m), var(--m)) bottom right / 11px 1.5px,
+        linear-gradient(var(--m), var(--m)) bottom right / 1.5px 11px;
+    background-repeat: no-repeat;
+}
+
+/* The sidebar's links: the open page stands in brackets, [ HOME ]; the one
+   under the pointer gets them faintly. */
+html:not([data-look="classic"]) .nav-label::before,
+html:not([data-look="classic"]) .nav-label::after {
+    color: var(--subtle);
+    opacity: 0;
+    display: inline-block;
+    transition:
+        opacity 0.18s var(--ease),
+        transform 0.18s var(--ease);
+}
+html:not([data-look="classic"]) .nav-label::before {
+    content: "[";
+    margin-right: 0.6em;
+    transform: translateX(5px);
+}
+html:not([data-look="classic"]) .nav-label::after {
+    content: "]";
+    margin-left: 0.6em;
+    transform: translateX(-5px);
+}
+html:not([data-look="classic"]) a:hover > .nav-label::before,
+html:not([data-look="classic"]) a:hover > .nav-label::after {
+    opacity: 0.55;
+    transform: none;
+}
+html:not([data-look="classic"]) a[aria-current="page"] > .nav-label::before,
+html:not([data-look="classic"]) a[aria-current="page"] > .nav-label::after {
+    color: var(--muted);
+    opacity: 1;
+    transform: none;
+}
+
+/* Light themes (White, Paper): the pages are drawn with whites and blacks
+   at some strength (bg-white/[0.06], text-white, bg-black/60): turned
+   around, they're the same lines and veils in ink. The pale tints text is
+   written in on dark (amber for a warning, rose for an error) get their
+   deep ones. */
+html[data-scheme="light"] {
+    color-scheme: light;
+    --color-white: #000;
+    --color-black: #fff;
+    --color-amber-100: #78350f;
+    --color-amber-200: #92400e;
+    --color-amber-300: #b45309;
+    --color-amber-400: #b45309;
+    --color-rose-200: #9f1239;
+    --color-rose-300: #be123c;
+    --color-rose-400: #be123c;
+    --color-red-300: #b91c1c;
+    --color-emerald-300: #047857;
+    --color-emerald-400: #047857;
+    --color-sky-300: #0369a1;
+    --color-sky-400: #0369a1;
+    --color-lime-300: #4d7c0f;
+    --color-violet-400: #6d28d9;
+}
+/* What stays dark in a light theme: the player, the manga reader. Their
+   menus too (ui.tsx gives them the class). */
+html[data-scheme="light"] .on-dark {
+    color-scheme: dark;
+    --color-white: #fff;
+    --color-black: #000;
+    --color-amber-100: #fef3c7;
+    --color-amber-200: #fde68a;
+    --color-amber-300: #fcd34d;
+    --color-amber-400: #fbbf24;
+    --color-rose-200: #fecdd3;
+    --color-rose-300: #fda4af;
+    --color-rose-400: #fb7185;
+    --color-red-300: #fca5a5;
+    --color-emerald-300: #6ee7b7;
+    --color-emerald-400: #34d399;
+    --color-sky-300: #7dd3fc;
+    --color-sky-400: #38bdf8;
+    --color-lime-300: #bef264;
+    --color-violet-400: #a78bfa;
+    --brand: var(--brand-on-dark);
+    --on-brand: #0a0a0a;
+    --frame: #0a0a0a;
+    --bg: #0a0a0a;
+    --surface-1: #111111;
+    --surface-2: #171717;
+    --surface-3: #1f1f1f;
+    --surface-4: #292929;
+    --line: rgb(255 255 255 / 0.1);
+    --line-strong: rgb(255 255 255 / 0.2);
+    --text: #ededed;
+    --muted: #9a9a9a;
+    --subtle: #6e6e6e;
+    color: var(--text);
+}
+
+/* The TV: nothing blurred (its WebView is slow at it), what's over artwork
+   a little denser so it reads from the sofa. */
+html.tv:not([data-look="classic"]) .glass {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    background: color-mix(in oklab, var(--bg) 82%, transparent);
 }
-html.tv:not([data-look="classic"]) .page-backdrop {
-    background: color-mix(in oklab, var(--bg) 78%, transparent);
-}
-html.tv:not([data-look="classic"]) [role="menu"],
-html.tv:not([data-look="classic"]) [role="dialog"],
-html.tv:not([data-look="classic"]) [data-radix-popper-content-wrapper] > [data-state] {
-    background: color-mix(in oklab, var(--surface-2) 96%, transparent);
-}
-html.tv:not([data-look="classic"]) .glass {
-    background: rgb(10 10 12 / 0.72);
+/* A layer that's the picture's own box (not laid over it) holds the marks too. */
+html:not([data-look="classic"]) [data-tv-ring]:not(.absolute) {
+    position: relative;
 }
