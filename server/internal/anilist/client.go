@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -251,10 +252,14 @@ const qMedia = `query ($id: Int) {
 	}
 }`
 
-const qSearch = `query ($page: Int, $perPage: Int, $search: String, $type: MediaType, $genres: [String], $tags: [String], $season: MediaSeason, $seasonYear: Int, $formats: [MediaFormat], $status: MediaStatus, $sort: [MediaSort], $isAdult: Boolean, $ids: [Int]) {
+const qSearch = `query ($page: Int, $perPage: Int, $search: String, $type: MediaType, $genres: [String], $tags: [String], $season: MediaSeason, $seasonYear: Int, $formats: [MediaFormat], $status: MediaStatus, $sort: [MediaSort], $isAdult: Boolean, $ids: [Int],
+	$genresNot: [String], $tagsNot: [String], $statuses: [MediaStatus], $country: CountryCode, $sources: [MediaSource], $startAfter: FuzzyDateInt, $startBefore: FuzzyDateInt, $scoreAbove: Int,
+	$episodesAbove: Int, $episodesBelow: Int, $chaptersAbove: Int, $chaptersBelow: Int, $onList: Boolean) {
 	Page(page: $page, perPage: $perPage) {
 		pageInfo { total currentPage lastPage hasNextPage }
-		media(search: $search, type: $type, genre_in: $genres, tag_in: $tags, season: $season, seasonYear: $seasonYear, format_in: $formats, status: $status, sort: $sort, isAdult: $isAdult, id_in: $ids) {
+		media(search: $search, type: $type, genre_in: $genres, tag_in: $tags, season: $season, seasonYear: $seasonYear, format_in: $formats, status: $status, sort: $sort, isAdult: $isAdult, id_in: $ids,
+			genre_not_in: $genresNot, tag_not_in: $tagsNot, status_in: $statuses, countryOfOrigin: $country, source_in: $sources, startDate_greater: $startAfter, startDate_lesser: $startBefore,
+			averageScore_greater: $scoreAbove, episodes_greater: $episodesAbove, episodes_lesser: $episodesBelow, chapters_greater: $chaptersAbove, chapters_lesser: $chaptersBelow, onList: $onList) {
 			` + mediaFields + `
 			description(asHtml: false)
 		}
@@ -361,6 +366,7 @@ func (c *Client) Search(ctx context.Context, p SearchParams) (*MediaPage, error)
 	if p.IsAdult != nil {
 		vars["isAdult"] = *p.IsAdult
 	}
+	searchFilters(p, vars)
 	var out struct {
 		Page *MediaPage `json:"Page"`
 	}
@@ -371,6 +377,80 @@ func (c *Client) Search(ctx context.Context, p SearchParams) (*MediaPage, error)
 		return &MediaPage{}, nil
 	}
 	return out.Page, nil
+}
+
+// The values AniList takes for these filters: anything else is left out, as
+// a single wrong one would fail the whole search.
+var (
+	searchStatuses  = []string{"FINISHED", "RELEASING", "NOT_YET_RELEASED", "CANCELLED", "HIATUS"}
+	searchCountries = []string{"JP", "KR", "CN", "TW"}
+	searchSources   = []string{"ORIGINAL", "MANGA", "LIGHT_NOVEL", "VISUAL_NOVEL", "VIDEO_GAME", "OTHER", "NOVEL", "DOUJINSHI", "ANIME", "WEB_NOVEL", "LIVE_ACTION", "GAME", "COMIC", "MULTIMEDIA_PROJECT", "PICTURE_BOOK"}
+)
+
+// searchFilters puts Search's detailed filters into the query's variables.
+func searchFilters(p SearchParams, vars map[string]any) {
+	only := func(vals, allowed []string) []string {
+		var out []string
+		for _, v := range vals {
+			if slices.Contains(allowed, v) && !slices.Contains(out, v) {
+				out = append(out, v)
+			}
+		}
+		return out
+	}
+	if len(p.ExcludeGenres) > 0 {
+		vars["genresNot"] = p.ExcludeGenres
+	}
+	if len(p.ExcludeTags) > 0 {
+		vars["tagsNot"] = p.ExcludeTags
+	}
+	if st := only(p.Statuses, searchStatuses); len(st) > 0 {
+		vars["statuses"] = st
+		delete(vars, "status")
+	}
+	if slices.Contains(searchCountries, p.Country) {
+		vars["country"] = p.Country
+	}
+	if src := only(p.Sources, searchSources); len(src) > 0 {
+		vars["sources"] = src
+	}
+	// Dates as AniList keeps them, YYYYMMDD: a year alone is YYYY0000, so
+	// "after" starts just before it. Both ends are strict.
+	if p.YearFrom > 0 {
+		vars["startAfter"] = p.YearFrom*10000 - 1
+	}
+	if p.YearTo > 0 {
+		vars["startBefore"] = (p.YearTo + 1) * 10000
+	}
+	if p.MinScore > 0 {
+		vars["scoreAbove"] = min(p.MinScore, 100) - 1
+	}
+	above, below := "episodesAbove", "episodesBelow"
+	if p.Type == "MANGA" {
+		above, below = "chaptersAbove", "chaptersBelow"
+	}
+	if p.MinCount > 0 {
+		vars[above] = p.MinCount - 1
+	}
+	if p.MaxCount > 0 {
+		vars[below] = p.MaxCount + 1
+	}
+	if p.OnList != nil {
+		vars["onList"] = *p.OnList
+	}
+}
+
+const qTags = `{ MediaTagCollection { name description category isAdult } }`
+
+// Tags is every tag AniList has (some 430): public, the same for everyone.
+func (c *Client) Tags(ctx context.Context) ([]MediaTag, error) {
+	var out struct {
+		MediaTagCollection []MediaTag `json:"MediaTagCollection"`
+	}
+	if err := c.QueryAnon(ctx, qTags, nil, &out); err != nil {
+		return nil, err
+	}
+	return out.MediaTagCollection, nil
 }
 
 func (c *Client) Schedule(ctx context.Context, start, end int64) ([]*AiringEpisode, error) {

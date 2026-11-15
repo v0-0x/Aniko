@@ -422,6 +422,30 @@ type SearchParams struct {
 	Sort    []string `json:"sort"`
 	IsAdult *bool    `json:"isAdult"`
 	IDs     []int    `json:"ids"`
+
+	// Search's detailed filters. Several genres or tags mean all of them
+	// (AniList's genre_in and tag_in); the excluded ones none of them.
+	ExcludeGenres []string `json:"excludeGenres,omitempty"`
+	ExcludeTags   []string `json:"excludeTags,omitempty"`
+	Statuses      []string `json:"statuses,omitempty"` // any of them
+	Country       string   `json:"country,omitempty"`  // JP, KR, CN, TW
+	Sources       []string `json:"sources,omitempty"`  // any of them: MANGA, LIGHT_NOVEL…
+	YearFrom      int      `json:"yearFrom,omitempty"` // first aired or published, from…
+	YearTo        int      `json:"yearTo,omitempty"`   // …to, both included
+	MinScore      int      `json:"minScore,omitempty"` // average score, 0-100
+	// Episodes (anime) or chapters (manga), both included.
+	MinCount int `json:"minCount,omitempty"`
+	MaxCount int `json:"maxCount,omitempty"`
+	// true: only what's on your list; false: only what isn't (logged in).
+	OnList *bool `json:"onList,omitempty"`
+}
+
+// MediaTag is one of AniList's tags: Isekai, School, Shounen, Time Travel…
+type MediaTag struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Category    string `json:"category"`
+	IsAdult     bool   `json:"isAdult"`
 }
 
 // EntryUpdate is the payload to create/update a list entry.

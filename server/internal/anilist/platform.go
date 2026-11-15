@@ -681,6 +681,26 @@ func (p *Platform) MatureTags(ctx context.Context, ids []int) (map[int][]string,
 
 func matureKey(id int) string { return "mature-tags:" + strconv.Itoa(id) }
 
+// Tags is AniList's tag list, kept a week (it changes a few times a year).
+func (p *Platform) Tags(ctx context.Context) ([]MediaTag, error) {
+	var tags []MediaTag
+	if p.db.GetCache("tags", &tags) {
+		return tags, nil
+	}
+	got, err := p.client.Tags(ctx)
+	if err != nil || len(got) == 0 {
+		if p.db.GetStaleCache("tags", &tags) {
+			return tags, nil
+		}
+		if err == nil {
+			err = errors.New("anilist: no tags")
+		}
+		return nil, err
+	}
+	p.db.SetCache("tags", got, 7*24*time.Hour)
+	return got, nil
+}
+
 // Search queries AniList with caching.
 func (p *Platform) Search(ctx context.Context, params SearchParams) (*MediaPage, error) {
 	raw, _ := json.Marshal(params)

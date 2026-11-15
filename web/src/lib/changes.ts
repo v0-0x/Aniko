@@ -7,6 +7,22 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 50,
+        title: "Finer search",
+        changes: [
+            {
+                title: "Hundreds of tags",
+                text: "Isekai, School, Shounen, Time Loop and 400 more, as well as the genres. Pick one again to leave it out.",
+                to: "/search",
+            },
+            {
+                title: "More filters",
+                text: "Several formats and statuses, country (manhwa, manhua), source, a range of years, a lowest score, episode or chapter counts, and your list.",
+                to: "/search",
+            },
+        ],
+    },
+    {
         id: 49,
         title: "Touch-ups to the new look",
         changes: [

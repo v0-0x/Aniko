@@ -208,6 +208,25 @@ export type SearchParams = {
     formats?: string[]
     status?: string
     sort?: string[]
+    // Search's detailed filters (server/internal/anilist SearchParams).
+    excludeGenres?: string[]
+    excludeTags?: string[]
+    statuses?: string[]
+    country?: string
+    sources?: string[]
+    yearFrom?: number
+    yearTo?: number
+    minScore?: number
+    minCount?: number
+    maxCount?: number
+    onList?: boolean
+}
+
+// One of AniList's tags (Isekai, School, Shounen…), for Search's filters.
+export type MediaTag = { name: string; description: string; category: string; isAdult: boolean }
+
+export function useTags() {
+    return useQuery({ queryKey: ["anilist-tags"], queryFn: () => api.get<MediaTag[]>("/api/anilist/tags"), staleTime: 24 * 60 * 60_000 })
 }
 
 export function useSearch(params: SearchParams, enabled = true) {

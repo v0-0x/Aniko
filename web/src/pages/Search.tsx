@@ -3,11 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
-import { Button, EmptyState, ErrorState, IconButton, Input, Popover, Select } from "@/components/ui"
-import { useGenres, useSearch } from "@/lib/queries"
+import { ActiveFilters, FILTER_KEYS, filterCount, filtersQuery, formatsFor, SearchFilters } from "@/components/SearchFilters"
+import { Button, EmptyState, ErrorState, IconButton, Input, Select } from "@/components/ui"
+import { useSearch } from "@/lib/queries"
 import type { Media } from "@/lib/types"
 import { useClassic } from "@/lib/themes"
-import { cn, GENRES, SEASONS } from "@/lib/utils"
+import { cn, SEASONS } from "@/lib/utils"
 
 const SORTS = [
     { value: "", label: "Best match / trending" },
@@ -18,10 +19,8 @@ const SORTS = [
     { value: "FAVOURITES_DESC", label: "Favourites" },
     { value: "TITLE_ROMAJI", label: "Title" },
 ]
-const FORMATS = ["TV", "MOVIE", "OVA", "ONA", "SPECIAL", "TV_SHORT"]
-const MANGA_FORMATS = ["MANGA", "NOVEL", "ONE_SHOT"]
-const FILTERS = ["genre", "season", "year", "format", "status"]
-const formatsFor = (type: string) => (type === "MANGA" ? MANGA_FORMATS : FORMATS)
+// Cleared together: the panel's filters, and the season and year beside it.
+const FILTERS = [...FILTER_KEYS, "season", "year"]
 
 export default function SearchPage() {
     const classic = useClassic()
@@ -29,14 +28,13 @@ export default function SearchPage() {
     const q = params.get("q") ?? ""
     const [text, setText] = useState(q)
     const type = (params.get("type") as "ANIME" | "MANGA") || "ANIME"
-    const genres = params.getAll("genre")
-    const offered = useGenres(GENRES)
     const season = params.get("season") ?? ""
     const year = params.get("year") ?? ""
-    // A format of the other type (e.g. from an old link) isn't sent, as the select shows.
-    const format = formatsFor(type).find(f => f === params.get("format")) ?? ""
-    const status = params.get("status") ?? ""
     const sort = params.get("sort") ?? ""
+    const get = (k: string) => params.get(k) ?? ""
+    const getAll = (k: string) => params.getAll(k)
+    // The filters' panel: open from the start when the address has some.
+    const [open, setOpen] = useState(() => filterCount(new URLSearchParams(window.location.search)) > 0)
     const [page, setPage] = useState(1)
     const [acc, setAcc] = useState<Media[]>([])
 
@@ -83,13 +81,12 @@ export default function SearchPage() {
         () => ({
             search: params.get("q") ?? undefined,
             type,
-            genres: genres.length ? genres : undefined,
             season: season || undefined,
             year: year ? Number(year) : undefined,
-            formats: format ? [format] : undefined,
-            status: status || undefined,
             sort: sort ? [sort] : undefined,
             perPage: 36,
+            // A format of the other type (an old link) isn't sent.
+            ...filtersQuery(get, getAll, type),
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [params.toString()],
@@ -105,9 +102,9 @@ export default function SearchPage() {
     }, [data, page])
 
     const years = Array.from({ length: new Date().getFullYear() - 1959 }, (_, i) => String(new Date().getFullYear() + 1 - i))
-    const active = genres.length + (season ? 1 : 0) + (year ? 1 : 0) + (format ? 1 : 0) + (status ? 1 : 0)
-    // Those behind the Filters button; the season and year sit beside it.
-    const tucked = genres.length + (format ? 1 : 0) + (status ? 1 : 0)
+    // Those in the panel; the season and year sit beside its button.
+    const tucked = filterCount(params)
+    const active = tucked + (season ? 1 : 0) + (year ? 1 : 0)
 
     return (
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
@@ -124,7 +121,9 @@ export default function SearchPage() {
                                         if (t === "ANIME") p.delete("type")
                                         else p.set("type", t)
                                         // Anime and manga have different formats.
-                                        if (!formatsFor(t).includes(p.get("format") ?? "")) p.delete("format")
+                                        const keep = p.getAll("format").filter(f => formatsFor(t).includes(f))
+                                        p.delete("format")
+                                        keep.forEach(f => p.append("format", f))
                                     })
                                 }
                                 className={cn(
@@ -153,62 +152,17 @@ export default function SearchPage() {
                     <Select className="sm:w-32" value={year} onChange={v => set("year", v)} options={[{ value: "", label: "Any year" }, ...years.map(y => ({ value: y, label: y }))]} />
                     <Select className="sm:w-52" value={sort} onChange={v => set("sort", v)} options={SORTS} />
                     <div className="flex min-w-0 items-center gap-1">
-                        <Popover
-                            side="bottom"
-                            align="start"
-                            className="w-[min(24rem,calc(100vw-1.5rem))]"
-                            trigger={
-                                <Button variant={classic ? "ghost" : "outline"} className={cn("min-w-0 flex-1 sm:flex-none", classic && "rounded-xl border border-white/10 bg-white/[0.045]")} icon={<SlidersHorizontal className="size-4" />}>
-                                    Filters
-                                    {tucked > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-white/15 px-1.5 text-xs font-semibold text-fg">{tucked}</span>}
-                                </Button>
-                            }
+                        <Button
+                            variant={classic ? "ghost" : "outline"}
+                            aria-expanded={open}
+                            data-on={open || undefined}
+                            onClick={() => setOpen(o => !o)}
+                            className={cn("min-w-0 flex-1 sm:flex-none", classic && "rounded-xl border border-white/10 bg-white/[0.045]")}
+                            icon={<SlidersHorizontal className="size-4" />}
                         >
-                            <div className="flex flex-col gap-4">
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Select value={format} onChange={v => set("format", v)} options={[{ value: "", label: "Any format" }, ...formatsFor(type).map(f => ({ value: f, label: f.replace("_", " ") }))]} />
-                                    <Select
-                                        value={status}
-                                        onChange={v => set("status", v)}
-                                        options={[
-                                            { value: "", label: "Any status" },
-                                            { value: "RELEASING", label: "Airing" },
-                                            { value: "FINISHED", label: "Finished" },
-                                            { value: "NOT_YET_RELEASED", label: "Upcoming" },
-                                        ]}
-                                    />
-                                </div>
-                                <div>
-                                    <p className="mb-2 text-xs font-medium text-subtle">Genres</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {offered.map(g => {
-                                            const on = genres.includes(g)
-                                            return (
-                                                <button
-                                                    key={g}
-                                                    aria-pressed={on}
-                                                    onClick={() =>
-                                                        update(p => {
-                                                            const cur = p.getAll("genre")
-                                                            p.delete("genre")
-                                                            for (const v of cur.includes(g) ? cur.filter(c => c !== g) : [...cur, g]) p.append("genre", v)
-                                                        })
-                                                    }
-                                                    className={cn(
-                                                        "h-8 px-3 font-medium transition-colors",
-                                                        classic
-                                                            ? cn("rounded-full text-[13px]", on ? "bg-white/20 text-fg" : "bg-white/[0.05] text-muted hover:bg-white/[0.09] hover:text-fg")
-                                                            : cn("word label text-[10.5px]", on ? "text-fg" : "text-muted hover:text-fg"),
-                                                    )}
-                                                >
-                                                    {g}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        </Popover>
+                            Filters
+                            {tucked > 0 && <span className={cn("grid h-5 min-w-5 place-items-center px-1.5 text-xs font-semibold text-fg", classic ? "rounded-full bg-white/15" : "tabular-nums")}>{tucked}</span>}
+                        </Button>
                         {active > 0 && (
                             <IconButton label="Clear filters" onClick={() => update(p => FILTERS.forEach(k => p.delete(k)))}>
                                 <X className="size-4" />
@@ -216,6 +170,8 @@ export default function SearchPage() {
                         )}
                     </div>
                 </div>
+                {open && <SearchFilters type={type} get={get} getAll={getAll} update={update} />}
+                {!open && <ActiveFilters type={type} getAll={getAll} update={update} />}
             </div>
 
             {acc.length === 0 && isFetching ? (

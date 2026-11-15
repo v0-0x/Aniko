@@ -92,6 +92,7 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/watch-order/{key}", h(s.deleteWatchOrder))
 	m.HandleFunc("POST /api/watch-order/{key}/report", h(s.reportWatchOrder))
 	m.HandleFunc("POST /api/anilist/search", h(s.search))
+	m.HandleFunc("GET /api/anilist/tags", h(s.tags))
 	m.HandleFunc("GET /api/anilist/discover", h(s.discover))
 	m.HandleFunc("GET /api/anilist/schedule", h(s.schedule))
 	m.HandleFunc("GET /api/anilist/list", h(s.rawList))
@@ -833,6 +834,23 @@ func (s *Server) search(r *http.Request) (any, error) {
 		p.IsAdult = &f
 	}
 	return s.app.Platform.Search(r.Context(), p)
+}
+
+// tags is AniList's tag list for Search's filters: the adult ones only
+// where adult titles are shown.
+func (s *Server) tags(r *http.Request) (any, error) {
+	all, err := s.app.Platform.Tags(r.Context())
+	if err != nil {
+		return nil, err
+	}
+	showAdult := s.app.Settings.Get().UI.ShowAdult
+	out := make([]anilist.MediaTag, 0, len(all))
+	for _, t := range all {
+		if !t.IsAdult || showAdult {
+			out = append(out, t)
+		}
+	}
+	return out, nil
 }
 
 // discover is the Discover page, cached by the platform: only the very first

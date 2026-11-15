@@ -2,7 +2,9 @@ package anilist
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -95,5 +97,51 @@ func TestRejectedToken(t *testing.T) {
 		if _, err := c.Viewer(context.Background()); !errors.Is(err, ErrUnauthorized) {
 			t.Errorf("%s: err = %v, want ErrUnauthorized", name, err)
 		}
+	}
+}
+
+// Search's detailed filters reach AniList as its own arguments, and values
+// it wouldn't take are left out rather than failing the search.
+func TestSearchFilters(t *testing.T) {
+	var got map[string]any
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Query     string         `json:"query"`
+			Variables map[string]any `json:"variables"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		got = body.Variables
+		_, _ = w.Write([]byte(`{"data":{"Page":{"pageInfo":{},"media":[]}}}`))
+	})
+	no := false
+	_, err := c.Search(context.Background(), SearchParams{
+		Type: "MANGA", Genres: []string{"Romance"}, ExcludeGenres: []string{"Ecchi"}, Tags: []string{"Isekai"}, ExcludeTags: []string{"Harem"},
+		Status: "FINISHED", Statuses: []string{"RELEASING", "HIATUS", "nope"}, Country: "KR", Sources: []string{"WEB_NOVEL", "x"},
+		YearFrom: 2015, YearTo: 2020, MinScore: 75, MinCount: 10, MaxCount: 100, OnList: &no,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]any{
+		"genres": []any{"Romance"}, "genresNot": []any{"Ecchi"}, "tags": []any{"Isekai"}, "tagsNot": []any{"Harem"},
+		"statuses": []any{"RELEASING", "HIATUS"}, "country": "KR", "sources": []any{"WEB_NOVEL"},
+		"startAfter": float64(20149999), "startBefore": float64(20210000), "scoreAbove": float64(74),
+		"chaptersAbove": float64(9), "chaptersBelow": float64(101), "onList": false,
+	}
+	for k, v := range want {
+		if fmt.Sprint(got[k]) != fmt.Sprint(v) {
+			t.Errorf("%s = %v, want %v", k, got[k], v)
+		}
+	}
+	// Statuses take the place of the single status; episodes aren't asked of manga.
+	for _, k := range []string{"status", "episodesAbove", "episodesBelow"} {
+		if _, ok := got[k]; ok {
+			t.Errorf("%s sent: %v", k, got[k])
+		}
+	}
+	// An unknown country is left out.
+	_, _ = c.Search(context.Background(), SearchParams{Country: "US", MinCount: 12})
+	if _, ok := got["country"]; ok || fmt.Sprint(got["episodesAbove"]) != "11" {
+		t.Errorf("anime: country %v, episodesAbove %v", got["country"], got["episodesAbove"])
 	}
 }
