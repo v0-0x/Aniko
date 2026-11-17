@@ -8,15 +8,12 @@ func InstallHint(tool string) string {
 		return tool + " doesn't run on Android: play from a computer's shared library"
 	}
 	if runtime.GOOS == "windows" {
+		// Aniko downloads them itself (winsetup).
 		switch tool {
-		case "ffmpeg":
-			return "winget install Gyan.FFmpeg"
+		case "ffmpeg", "yt-dlp", "ani-cli":
+			return "Settings › Desktop app & programs › Install downloads it"
 		case "mpv":
-			return "scoop install mpv (extras bucket), or get it from mpv.io"
-		case "yt-dlp":
-			return "winget install yt-dlp.yt-dlp"
-		case "ani-cli":
-			return "install Git for Windows (winget install Git.Git), then scoop install ani-cli (extras bucket)"
+			return "Settings › Desktop app & programs › Install downloads it, or get it from mpv.io"
 		}
 		return "install " + tool
 	}

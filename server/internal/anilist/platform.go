@@ -747,6 +747,42 @@ func (p *Platform) Schedule(ctx context.Context, start, end int64) ([]*AiringEpi
 	return res, nil
 }
 
+// RelatedAdded is AniList's own notifications of anime and manga added that
+// are related to ones on the user's list (a sequel announced), newest
+// first: none when logged out. Kept a quarter of an hour; when AniList
+// doesn't answer, the copy kept (however old), and it isn't asked again for
+// a few minutes. A rejected token doesn't log out here: this is an extra,
+// and the list's own requests do that.
+func (p *Platform) RelatedAdded(ctx context.Context) ([]*MediaNotice, error) {
+	session, v := p.state()
+	if v == nil {
+		return nil, nil
+	}
+	key := fmt.Sprintf("related-added:%d", v.ID)
+	var out []*MediaNotice
+	if p.db.GetCache(key, &out) {
+		return out, nil
+	}
+	var failed bool
+	if p.db.GetCache(key+":failed", &failed) {
+		p.db.GetStaleCache(key, &out)
+		return out, nil
+	}
+	res, err := p.client.RelatedAdded(ctx)
+	if now, _ := p.state(); now != session {
+		return nil, nil // logged out or in again meanwhile: not this account's
+	}
+	if err != nil {
+		p.db.SetCache(key+":failed", true, 5*time.Minute)
+		if p.db.GetStaleCache(key, &out) {
+			return out, nil
+		}
+		return nil, err
+	}
+	p.db.SetCache(key, res, 15*time.Minute)
+	return res, nil
+}
+
 // ---------------------------------------------------------------------------
 // Updating the list
 

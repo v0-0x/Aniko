@@ -12,9 +12,9 @@ export function installHint(platform: string | undefined, tool: Tool) {
     if (platform === "windows") {
         return {
             ffmpeg: "winget install Gyan.FFmpeg",
-            mpv: "scoop install mpv",
+            mpv: "mpv.io",
             "yt-dlp": "winget install yt-dlp.yt-dlp",
-            "ani-cli": "scoop install ani-cli",
+            "ani-cli": "github.com/pystardust/ani-cli",
         }[tool]
     }
     if (platform === "darwin") return tool === "ani-cli" ? "brew tap pystardust/ani-cli https://github.com/pystardust/ani-cli.git && brew install ani-cli" : `brew install ${tool}`
@@ -23,7 +23,8 @@ export function installHint(platform: string | undefined, tool: Tool) {
 
 // Where the hint comes from, said before it.
 export function installSource(platform: string | undefined, tool: Tool) {
-    if (platform === "windows") return tool === "ani-cli" ? "With Git for Windows installed (winget install Git.Git), get it with Scoop (extras bucket)" : "Install it with"
+    // Aniko downloads them itself on the computer it runs on (Settings › Desktop app & programs).
+    if (platform === "windows") return tool === "ani-cli" || tool === "mpv" ? "Aniko can download it (Desktop app & programs › Install), or get it from" : "Install it with"
     if (platform === "darwin") return tool === "ani-cli" ? "Install it from its Homebrew tap (brew.sh):" : "Install it with Homebrew (brew.sh):"
     return tool === "ani-cli" ? "Install it from the AUR with" : "Install it with"
 }

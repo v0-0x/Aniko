@@ -5,14 +5,16 @@ import (
 	"net/http"
 	"runtime"
 
+	"github.com/v0-0x/Aniko/server/internal/events"
 	"github.com/v0-0x/Aniko/server/internal/macsetup"
 	"github.com/v0-0x/Aniko/server/internal/winsetup"
 )
 
-// installPrograms opens the setup that installs the programs Aniko uses on
-// this computer: on Windows with Scoop (Git, ani-cli, ffmpeg, mpv, yt-dlp...)
-// in a PowerShell window, on macOS by downloads into Aniko's folder, in
-// Terminal.
+// installPrograms starts the setup that installs the programs Aniko uses on
+// this computer, by downloads into Aniko's folder: on Windows Aniko
+// downloads them itself (ffmpeg, yt-dlp, Git's bash, ani-cli, mpv...) and
+// the pages show how far it is (setupProgress), on macOS a Terminal window
+// does.
 func (s *Server) installPrograms(r *http.Request) (any, error) {
 	if !isTrusted(r) {
 		return nil, forbidden("programs can only be installed from this computer")
@@ -20,7 +22,9 @@ func (s *Server) installPrograms(r *http.Request) (any, error) {
 	var err error
 	switch runtime.GOOS {
 	case "windows":
-		err = winsetup.Start()
+		if err = winsetup.Start(); err == nil {
+			go s.setupEnded()
+		}
 	case "darwin":
 		err = macsetup.Start()
 	default:
@@ -35,7 +39,30 @@ func (s *Server) installPrograms(r *http.Request) (any, error) {
 	return map[string]bool{"started": true}, nil
 }
 
-// setupRunning reports whether the setup's window is open.
+// setupEnded waits for the Windows setup to end and tells the pages how it
+// went, whichever one is open: what couldn't be installed and why.
+func (s *Server) setupEnded() {
+	ok, text := winsetup.Wait().Outcome()
+	// The pages read the status again: which programs are there now.
+	s.app.Hub.Publish(events.SettingsUpdated, nil)
+	if ok {
+		s.app.Hub.Success(text)
+	} else {
+		s.app.Hub.Error(text)
+	}
+}
+
+// setupProgress is how far the Windows setup is, program by program (the
+// one running, or the last one): for this computer's pages.
+func (s *Server) setupProgress(r *http.Request) (any, error) {
+	if !isTrusted(r) {
+		return nil, forbidden("programs can only be installed from this computer")
+	}
+	return winsetup.State(), nil
+}
+
+// setupRunning reports whether the setup is running (on macOS, whether its
+// window is open).
 func setupRunning() bool {
 	switch runtime.GOOS {
 	case "windows":

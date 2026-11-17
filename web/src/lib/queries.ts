@@ -241,6 +241,12 @@ export function useSearch(params: SearchParams, enabled = true) {
 
 type Discover = { trending: Media[]; thisSeason: Media[]; nextSeason: Media[]; popular: Media[]; topRated: Media[]; season: string; year: number; fetchedAt: number }
 
+// Discover's "Because you watched…": AniList's recommendations for an anime
+// of the list touched last, without what's on the list already.
+export function useRecommended() {
+    return useQuery({ queryKey: ["recommended"], queryFn: () => api.get<{ because: Media; items: Media[] }[]>("/api/anilist/recommended"), staleTime: 30 * 60_000 })
+}
+
 export function useDiscover() {
     return useQuery({
         queryKey: ["discover"],

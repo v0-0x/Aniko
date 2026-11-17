@@ -21,6 +21,10 @@ export function connectEvents(qc: QueryClient) {
 
     const handle = (ev: ServerEvent) => {
         const p = ev.payload
+        // What the server keeps as a system notification (Home's bell): the bell
+        // shows it now, not at its next look. A download says so when it ends.
+        if (["toast", "scan-done", "update-status", "anilist-pending"].includes(ev.type) || (ev.type === "download-progress" && (p?.status === "completed" || p?.status === "failed")))
+            setTimeout(() => qc.invalidateQueries({ queryKey: ["notifications"] }), 500)
         switch (ev.type) {
             case "toast": {
                 const fn = { success: toast.success, error: toast.error, warning: toast.warning, info: toast.info }[p.level as string] ?? toast

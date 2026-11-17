@@ -7,6 +7,37 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 56,
+        title: "Notifications, your year, kept searches",
+        changes: [
+            {
+                title: "Notifications",
+                text: "The bell at the top of Home: episodes that aired and new chapters for what's on your lists, and what Aniko did (downloads, scans, updates).",
+                to: "/",
+            },
+            {
+                title: "Discover: manga too",
+                text: "Switch between anime and manga at the top of Discover. Anime starts with recommendations from what you watched last.",
+                to: "/discover",
+            },
+            {
+                title: "Year in review",
+                text: "Your year in Aniko: hours, top genres, your longest binge, the first and last show. From Stats.",
+                to: "/year",
+            },
+            {
+                title: "Windows: no setup window",
+                text: "Aniko downloads ffmpeg, yt-dlp, ani-cli and mpv itself, from Home or Settings › Desktop app & programs. No PowerShell, no Scoop.",
+                to: "/settings?tab=desktop",
+            },
+            {
+                title: "Saved and recent searches",
+                text: "Save a search with the bookmark beside Filters. Your last searches are under the box; each has an x.",
+                to: "/search",
+            },
+        ],
+    },
+    {
         id: 55,
         title: "One look",
         changes: [

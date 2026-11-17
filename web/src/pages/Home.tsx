@@ -8,6 +8,7 @@ import { SleepingHosts } from "@/components/SleepingHosts"
 import { ListCardMenu } from "@/components/ListCardMenu"
 import { Carousel, MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
+import { NotificationsButton } from "@/components/Notifications"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { ProgramsNotice } from "@/components/ProgramsNotice"
 import { artButton, Backdrop, Button, Chip, ChipRow, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, HeadRule, IconButton, Skeleton } from "@/components/ui"
@@ -342,6 +343,10 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
             <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-bg/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/25 to-transparent" />
             <div className="absolute top-4 right-4 z-20">{toolbar}</div>
+            {/* Across from the toolbar, on its line; clear of the rail where the banner reaches under it. */}
+            <div className="rail-in absolute top-4 z-20 pl-4">
+                <NotificationsButton />
+            </div>
             <div className="rail-in absolute inset-x-0 bottom-28 px-6 md:px-8 xl:px-10">
                 {loading ? (
                     <Skeleton className="h-11 w-96" />

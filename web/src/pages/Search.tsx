@@ -1,4 +1,4 @@
-import { Search as SearchIcon, SlidersHorizontal, X } from "lucide-react"
+import { Bookmark, BookmarkCheck, Search as SearchIcon, SlidersHorizontal, X } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
@@ -6,6 +6,7 @@ import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { ActiveFilters, FILTER_KEYS, filterCount, filtersQuery, formatsFor, SearchFilters } from "@/components/SearchFilters"
 import { Button, EmptyState, ErrorState, IconButton, Input, Select } from "@/components/ui"
 import { useSearch } from "@/lib/queries"
+import { searchKey, searchLabel, useSearches } from "@/lib/searches"
 import type { Media } from "@/lib/types"
 import { useClassic } from "@/lib/themes"
 import { cn, SEASONS } from "@/lib/utils"
@@ -101,6 +102,22 @@ export default function SearchPage() {
         setAcc(prev => (page === 1 ? data.media! : [...prev, ...data.media!.filter(m => !prev.some(p => p.id === m.id))]))
     }, [data, page])
 
+    // Kept searches: the saved ones and the last ones made (lib/searches).
+    const kept = useSearches()
+    const key = searchKey(params)
+    // Something is looked for: a title, or a filter (anime or manga alone, or a sort, isn't).
+    const searching = q.trim().length >= 2 || filterCount(params) > 0 || !!season || !!year
+    const saved = kept.saved.some(s => s.query === key)
+    // A search stays a moment before it counts as made (not each letter typed).
+    const addRecent = useRef(kept.addRecent)
+    addRecent.current = kept.addRecent
+    useEffect(() => {
+        if (!searching) return
+        const t = setTimeout(() => addRecent.current(key), 2500)
+        return () => clearTimeout(t)
+    }, [key, searching])
+    const go = (query: string) => setParams(new URLSearchParams(query))
+
     const years = Array.from({ length: new Date().getFullYear() - 1959 }, (_, i) => String(new Date().getFullYear() + 1 - i))
     // Those in the panel; the season and year sit beside its button.
     const tucked = filterCount(params)
@@ -168,8 +185,39 @@ export default function SearchPage() {
                                 <X className="size-4" />
                             </IconButton>
                         )}
+                        {searching && (
+                            <IconButton label={saved ? "Remove from saved searches" : "Save this search"} aria-pressed={saved} onClick={() => (saved ? kept.unsave(key) : kept.save(key))}>
+                                {saved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
+                            </IconButton>
+                        )}
                     </div>
                 </div>
+                {/* Before anything is looked for: the searches kept, each a click away (and its x takes it off). */}
+                {!searching && !open && (kept.saved.length > 0 || kept.recent.length > 0) && (
+                    <div className="flex flex-col gap-2">
+                        {kept.saved.length > 0 && (
+                            <KeptRow label="Saved">
+                                {kept.saved.map(s => (
+                                    <KeptSearch key={s.id} name={s.name} onGo={() => go(s.query)} onRemove={() => kept.unsave(s.query)} />
+                                ))}
+                            </KeptRow>
+                        )}
+                        {kept.recent.length > 0 && (
+                            <KeptRow
+                                label="Recent"
+                                action={
+                                    <button onClick={kept.clearRecent} className={cn("h-8 shrink-0 px-2.5 text-muted transition-colors hover:text-fg", classic ? "rounded-lg text-xs" : "word label focus-ring text-[10.5px]")}>
+                                        Clear
+                                    </button>
+                                }
+                            >
+                                {kept.recent.map(r => (
+                                    <KeptSearch key={r.query} name={searchLabel(r.query)} onGo={() => go(r.query)} onRemove={() => kept.removeRecent(r.query)} />
+                                ))}
+                            </KeptRow>
+                        )}
+                    </div>
+                )}
                 {open && <SearchFilters type={type} get={get} getAll={getAll} update={update} />}
                 {!open && <ActiveFilters type={type} getAll={getAll} update={update} />}
             </div>
@@ -207,5 +255,30 @@ export default function SearchPage() {
                 </>
             )}
         </div>
+    )
+}
+
+// A row of kept searches under its name: Saved, Recent.
+function KeptRow({ label, action, children }: { label: string; action?: React.ReactNode; children: React.ReactNode }) {
+    return (
+        <div className="flex items-start gap-3">
+            <span className="label w-14 shrink-0 pt-2.5 text-subtle">{label}</span>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-0.5">{children}</div>
+            {action}
+        </div>
+    )
+}
+
+// One of them: its name runs it again, the x beside it takes it off.
+function KeptSearch({ name, onGo, onRemove }: { name: string; onGo: () => void; onRemove: () => void }) {
+    return (
+        <span className="flex max-w-full items-center">
+            <button onClick={onGo} className="word focus-ring h-8 max-w-72 truncate px-2.5 text-[13px] text-fg/85 transition-colors hover:text-fg">
+                {name}
+            </button>
+            <button onClick={onRemove} aria-label={`Remove ${name}`} className="focus-ring grid size-6 shrink-0 place-items-center rounded-sm text-subtle transition-colors hover:text-fg">
+                <X className="size-3" />
+            </button>
+        </span>
     )
 }

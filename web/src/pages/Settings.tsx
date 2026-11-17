@@ -45,6 +45,7 @@ import { toast } from "@/lib/toast"
 import { DirPicker } from "@/components/DirPicker"
 import { ParentalDialog } from "@/components/ParentalDialog"
 import { LoginDialog } from "@/components/LoginDialog"
+import { setupFailures, setupStep, useSetupProgress } from "@/components/ProgramsNotice"
 import { IconButton, Badge, Button, EmptyState, Input, Select, Switch, switchBox, switchItem, Textarea } from "@/components/ui"
 import { UpdateBanner, versionName } from "@/components/UpdateBanner"
 import { whatsNewStore } from "@/components/WhatsNew"
@@ -336,6 +337,7 @@ export default function SettingsPage() {
                 <p className="mt-6 hidden px-2.5 text-xs text-subtle md:block">
                     Aniko {status.version} · {platformName(status.platform)} · {status.client === "desktop" ? "Desktop" : status.client === "lan" ? "LAN" : "Web UI"}
                 </p>
+                <p className="mt-1 hidden px-2.5 text-xs text-subtle md:block">Made by simo :)</p>
             </aside>
 
             <section className="min-w-0 flex-1 lg:max-w-4xl">
@@ -925,6 +927,9 @@ function InstallProgramsButton() {
 function ProgramsGroup() {
     const { data: status } = useStatus()
     useWatchSetup(status)
+    // Windows: Aniko downloads them itself, and says here how far it is.
+    const progress = useSetupProgress(status)
+    const running = !!status?.setupRunning || !!progress?.running
     const f = status?.features
     const windows = status?.platform === "windows"
     const programs: { tool: Tool; ok?: boolean; use: string }[] = [
@@ -958,7 +963,9 @@ function ProgramsGroup() {
                     help={
                         status?.platform === "darwin"
                             ? "Opens a Terminal window. No Homebrew or password needed. mpv needs Homebrew."
-                            : "Opens a PowerShell window and installs with Scoop. No administrator rights needed."
+                            : running
+                              ? setupStep(progress)
+                              : setupFailures(progress) || "Downloads them into Aniko's folder. No administrator rights needed."
                     }
                 >
                     <InstallProgramsButton />

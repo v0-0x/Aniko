@@ -54,11 +54,6 @@ win:
   extraResources:
     - from: ../dist/windows/aniko.exe
       to: aniko.exe
-    # The setup that installs the programs Aniko uses (Scoop, Git, ani-cli,
-    # ffmpeg, mpv...): the installer offers to run it (installer.nsh), and
-    # aniko.exe has the same script built in for Settings > Desktop app & programs.
-    - from: ../server/internal/winsetup/install-tools.ps1
-      to: install-tools.ps1
 
 nsis:
   artifactName: Aniko-Setup-${version}-windows-${arch}.${ext}

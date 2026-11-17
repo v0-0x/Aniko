@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { ChartColumn, Table } from "lucide-react"
 import { useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 import { Button, EmptyState } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useCollection } from "@/lib/queries"
@@ -63,9 +64,15 @@ export default function StatsPage() {
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
             <div className="mb-8 flex items-center justify-between gap-4">
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Stats</h1>
-                <Button aria-pressed={asTable} icon={asTable ? <ChartColumn className="size-4" /> : <Table className="size-4" />} onClick={() => setAsTable(t => !t)}>
-                    {asTable ? "Charts" : "Tables"}
-                </Button>
+                <div className="flex items-center">
+                    {/* The year's page (pages/Year.tsx): a word, like the button beside it. */}
+                    <Link to="/year" className="word label focus-ring inline-flex h-9 items-center px-3.5 whitespace-nowrap text-fg/85 transition-colors hover:text-fg">
+                        Year in review
+                    </Link>
+                    <Button aria-pressed={asTable} icon={asTable ? <ChartColumn className="size-4" /> : <Table className="size-4" />} onClick={() => setAsTable(t => !t)}>
+                        {asTable ? "Charts" : "Tables"}
+                    </Button>
+                </div>
             </div>
             <div className="flex flex-col gap-10">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

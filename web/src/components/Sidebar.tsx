@@ -138,7 +138,8 @@ export function useNavGroups(): { label: string; items: NavItem[] }[] {
                 { to: "/library", label: "Library tools", icon: <FolderSearch />, badge: coll?.unmatchedCount ?? 0 },
                 { to: "/extensions", label: "Extensions", icon: <Puzzle /> },
                 { to: "/playlists", label: "Playlists", icon: <ListVideo /> },
-                { to: "/stats", label: "Stats", icon: <ChartColumn /> },
+                // Year in review is reached from it.
+                { to: "/stats", label: "Stats", icon: <ChartColumn />, match: p => p.startsWith("/stats") || p.startsWith("/year") },
                 // Your mediaserver, when this device uses one.
                 ...(hasServer ? [{ to: "/server", label: "Server", icon: <ServerIcon /> }] : []),
             ],

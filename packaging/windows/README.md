@@ -20,31 +20,41 @@ PC": click **More info**, then **Run anyway**.
 
 ## Programs Aniko uses
 
-Some features use other programs. **Aniko installs them for you**: at the end of
-the install, the installer asks whether to install them (also later from
-**Settings › Desktop app & programs › Install**, or the Install button Aniko shows on
-the Home page while ffmpeg or ani-cli is missing). A PowerShell window then
-installs, with [Scoop](https://scoop.sh) and for your Windows user only (no
-administrator rights):
+Some features use other programs. **Aniko downloads them for you**: click
+**Install** on the Home page (it shows while ffmpeg or ani-cli is missing), or
+**Settings › Desktop app & programs › Install**. Aniko then downloads their
+ready-made Windows builds from their projects' release pages into its own
+folder (`%APPDATA%\Aniko\bin`), for your Windows user only: no package
+manager, no administrator rights, no window to follow. The page says which
+program is downloading and how far it is.
 
-- Scoop itself and its extras bucket
-- Git for Windows (its bash runs ani-cli) and ani-cli
-- ffmpeg, mpv, yt-dlp, aria2 and fzf
+| Program | Downloaded from | Checked against |
+|---|---|---|
+| ffmpeg and ffprobe | [BtbN's builds](https://github.com/BtbN/FFmpeg-Builds/releases) of the newest ffmpeg release ([Gyan's](https://github.com/GyanD/codexffmpeg/releases) when those can't be had) | BtbN's `checksums.sha256` |
+| yt-dlp | [its releases](https://github.com/yt-dlp/yt-dlp/releases) | its `SHA2-256SUMS` |
+| Git for Windows (PortableGit, unpacked in `bin\git`): its bash runs ani-cli | [its releases](https://github.com/git-for-windows/git/releases) | nothing published |
+| ani-cli | the script in [its repository](https://github.com/pystardust/ani-cli) | nothing published |
+| aria2 and fzf, which ani-cli uses | [aria2's](https://github.com/aria2/aria2/releases) and [fzf's](https://github.com/junegunn/fzf/releases) releases | fzf's checksums; the SHA-256 of aria2 1.37.0 |
+| mpv, the optional external player | [mpv's releases](https://github.com/mpv-player/mpv/releases) | nothing published |
 
-Programs you already have are skipped, so you can run it again whenever
-something is missing. Aniko picks newly installed programs up by itself. The
-script is
-[`server/internal/winsetup/install-tools.ps1`](../../server/internal/winsetup/install-tools.ps1).
+That's about 310 MB to download on a computer with none of them (roughly
+800 MB once unpacked: ffmpeg and Git are large). Programs you already
+have (anywhere on your `PATH`; Git for Windows where its installer puts it)
+are skipped, so you can run it again whenever something is missing. A
+download that fails is named with the reason, and the others are installed
+all the same. mpv's own build needs Microsoft's Visual C++ runtime, which
+most computers have from another program: without it the setup says so and
+leaves mpv out. The code is
+[`server/internal/winsetup`](../../server/internal/winsetup).
 
-To install them yourself instead, from a terminal (PowerShell or Windows
-Terminal): **Settings** shows what Aniko found; for a program that isn't on
-your `PATH`, enter its full path there.
+To install them yourself instead: **Settings** shows what Aniko found; for a
+program that isn't on your `PATH`, enter its full path there.
 
 | For | Install |
 |---|---|
 | The in-app player, for most files (MKV, HEVC, AC3/DTS, several tracks…), and episode downloads | ffmpeg: `winget install Gyan.FFmpeg` |
 | Faster, more reliable episode downloads | yt-dlp: `winget install yt-dlp.yt-dlp` |
-| mpv as the player (optional) | `scoop install mpv` ([Scoop](#scoop), extras bucket) or [mpv.io](https://mpv.io/installation/); then choose it in **Settings › Playback** |
+| mpv as the player (optional) | [mpv.io](https://mpv.io/installation/); then choose it in **Settings › Playback** |
 | Sub/dub streaming with ani-cli | Git for Windows and ani-cli, [see below](#ani-cli) |
 | Torrents | qBittorrent: `winget install qBittorrent.qBittorrent`, [then turn on its Web UI](#qbittorrent) |
 
@@ -52,33 +62,16 @@ Hardware encoding for the in-app player (**Settings › Video conversion**):
 NVENC (NVIDIA) and Quick Sync (Intel) work on Windows; VA-API is
 Linux only.
 
-### Scoop
-
-[Scoop](https://scoop.sh) installs command-line programs for your user. In
-PowerShell:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-scoop bucket add extras    # needs Git: winget install Git.Git
-```
-
 ### ani-cli
 
-ani-cli is a bash script, so it runs in the bash that comes with Git for
-Windows (which also brings the curl, sed and grep it uses). With
-[Scoop](#scoop) set up:
-
-```powershell
-winget install Git.Git
-scoop install ani-cli
-```
-
-Without Scoop, save the `ani-cli` script from the
+ani-cli is a shell script, so it runs in the bash that comes with Git for
+Windows (which also brings the curl, sed and grep it uses). Aniko's setup
+downloads both. To do it by hand: `winget install Git.Git`, then save the
+`ani-cli` script from the
 [ani-cli repository](https://github.com/pystardust/ani-cli) in a folder on your
 `PATH`, or anywhere and put its full path in **Settings › Online streaming ›
-Executable**. Aniko finds Git's bash in its usual places (`C:\Program Files\Git`,
-Scoop's `git`).
+Executable**. Aniko finds Git's bash where Git's installer puts it
+(`C:\Program Files\Git`), or on your `PATH`.
 
 ### qBittorrent
 
@@ -94,7 +87,7 @@ is found by itself.
 
 | Folder | What's in it |
 |---|---|
-| `%APPDATA%\Aniko` | Your data: the database (lists, library matches, settings, watch progress), downloaded artwork, extension storage |
+| `%APPDATA%\Aniko` | Your data: the database (lists, library matches, settings, watch progress), downloaded artwork, extension storage; in `bin`, the [programs Aniko downloaded](#programs-aniko-uses) |
 | `%LOCALAPPDATA%\Aniko` | Cache and temporary files: the in-app player's segments (`hls`), the running server's address and token (`run`), the app window's browser data (`electron`), the last downloaded update (`update`) |
 | `%LOCALAPPDATA%\Programs\Aniko` | The app, when installed with the installer |
 

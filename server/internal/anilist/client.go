@@ -473,6 +473,49 @@ func (c *Client) Schedule(ctx context.Context, start, end int64) ([]*AiringEpiso
 	return all, nil
 }
 
+// MediaNotice is one of AniList's own notifications about an anime or a
+// manga: one related to something on the user's list was added to AniList
+// (a sequel announced).
+type MediaNotice struct {
+	ID        int    `json:"id"`
+	Context   string `json:"context"`
+	CreatedAt int64  `json:"createdAt"`
+	Media     *Media `json:"media"`
+}
+
+// Asking doesn't mark them read on AniList (resetNotificationCount).
+const qRelatedAdded = `query {
+	Page(page: 1, perPage: 25) {
+		notifications(type_in: [RELATED_MEDIA_ADDITION], resetNotificationCount: false) {
+			... on RelatedMediaAdditionNotification { id context createdAt media { ` + mediaLiteFields + ` } }
+		}
+	}
+}`
+
+// RelatedAdded is the logged-in user's latest "related anime added"
+// notifications, newest first.
+func (c *Client) RelatedAdded(ctx context.Context) ([]*MediaNotice, error) {
+	var out struct {
+		Page *struct {
+			Notifications []*MediaNotice `json:"notifications"`
+		} `json:"Page"`
+	}
+	if err := c.Query(ctx, qRelatedAdded, nil, &out); err != nil {
+		return nil, err
+	}
+	res := []*MediaNotice{}
+	if out.Page == nil {
+		return res, nil
+	}
+	for _, n := range out.Page.Notifications {
+		// A notification of another kind comes as an empty object.
+		if n != nil && n.ID != 0 && n.Media != nil {
+			res = append(res, n)
+		}
+	}
+	return res, nil
+}
+
 func (c *Client) SaveEntry(ctx context.Context, u EntryUpdate) (*ListEntryLite, error) {
 	vars := map[string]any{"mediaId": u.MediaID}
 	if u.Status != nil {

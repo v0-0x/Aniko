@@ -142,9 +142,9 @@ With linger on, the PC's library is there for the TV as soon as the PC is on, no
 
 ## Windows
 
-Aniko also runs on Windows 10/11 (64-bit), released separately from the Arch package: get the installer (`Aniko-Setup-X.Y.Z-windows-x64.exe`) or the portable zip from the newest **Aniko X.Y.Z for Windows** [release](https://github.com/v0-0x/Aniko/releases) (tag `windows-vX.Y.Z`). Those files are Windows-only; on Arch, use the PKGBUILD above. The installer also offers to install the programs Aniko uses (Git, ani-cli, ffmpeg, mpv, yt-dlp…) with Scoop, and the installed app updates itself from its Home page too.
+Aniko also runs on Windows 10/11 (64-bit), released separately from the Arch package: get the installer (`Aniko-Setup-X.Y.Z-windows-x64.exe`) or the portable zip from the newest **Aniko X.Y.Z for Windows** [release](https://github.com/v0-0x/Aniko/releases) (tag `windows-vX.Y.Z`). Those files are Windows-only; on Arch, use the PKGBUILD above. Aniko downloads the programs it uses (ffmpeg, yt-dlp, Git's bash, ani-cli, mpv…) itself, from **Install** on its Home page, and the installed app updates itself from its Home page too.
 
-What to install alongside it (ffmpeg, mpv, yt-dlp, ani-cli, qBittorrent), where it keeps its data, how to build it and how releases are made: [packaging/windows/README.md](packaging/windows/README.md).
+What it uses (ffmpeg, mpv, yt-dlp, ani-cli, qBittorrent), where it keeps its data, how to build it and how releases are made: [packaging/windows/README.md](packaging/windows/README.md).
 
 ## macOS
 

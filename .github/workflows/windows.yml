@@ -170,20 +170,24 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ffmpeg -hide_banner -version
 
-      # The setup that installs the programs Aniko uses (Scoop, Git, ani-cli,
-      # ffmpeg...) only runs on users' computers, in Windows PowerShell 5.1:
-      # check here that it parses there.
-      - name: Check the programs setup script
-        shell: powershell
+      # The programs Aniko downloads for its users (ffmpeg, yt-dlp, Git's
+      # bash, ani-cli, aria2, fzf, mpv: server/internal/winsetup) come from
+      # their projects' release pages, which only a real run shows to still
+      # work: download them all here into an empty folder, as on a computer
+      # with none of them, and start each one, ani-cli in the bash of the Git
+      # that was unpacked. A project that moved or renamed its downloads
+      # fails the build here, with its name in the log.
+      - name: Check the programs setup against the real downloads
+        working-directory: server
+        timeout-minutes: 20
+        env:
+          ANIKO_REALNET: "1"
         run: |
-          $script = "server/internal/winsetup/install-tools.ps1"
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path, [ref]$null, [ref]$errors) | Out-Null
-          if ($errors) {
-            $errors | ForEach-Object { "::error file=$script,line=$($_.Extent.StartLineNumber)::$($_.Message)" }
-            exit 1
+          go test -count 1 -timeout 15m -v -run '^TestRealDownloads$' ./internal/winsetup/
+          if ($LASTEXITCODE -ne 0) {
+            "::error title=Aniko's programs setup::The setup couldn't download or start a program Aniko installs for its users: see TestRealDownloads in this step's log."
+            exit $LASTEXITCODE
           }
-          "$script parses in Windows PowerShell $($PSVersionTable.PSVersion)"
 
       - name: go vet
         working-directory: server
@@ -278,7 +282,7 @@ jobs:
 
           Aniko finds newer releases by itself and updates from its Home page (**Update**): the installed app runs the new installer, the portable build puts the new zip in place once it has closed.
 
-          Some features use other programs: ffmpeg (needed by the in-app player for most files), mpv, yt-dlp, ani-cli and qBittorrent. What to install for what, and where Aniko keeps its data: [packaging/windows/README.md]({guide}).
+          Some features use other programs: ffmpeg (needed by the in-app player for most files), mpv, yt-dlp, ani-cli and qBittorrent. Aniko downloads them itself, all but qBittorrent, from **Install** on its Home page or **Settings › Desktop app & programs**, with no administrator rights needed. What each is for, and where Aniko keeps its data: [packaging/windows/README.md]({guide}).
 
           Built from {sha} by [workflow run {run}]({runurl}).
           '@

@@ -37,6 +37,7 @@ func (s *Server) routes() {
 	s.cleanupRoutes()
 	s.backupRoutes()
 	s.playlistRoutes()
+	s.notificationRoutes()
 
 	// --- core
 	m.HandleFunc("GET /api/status", h(s.status))
@@ -49,6 +50,14 @@ func (s *Server) routes() {
 		}
 		n = min(n, 36)
 		return s.app.History.Monthly(n, s.app.Settings.Get().Playback.CompletionThreshold, time.Now(), time.Local)
+	}))
+	// The Year in review page: a calendar year of it (this one without ?year).
+	m.HandleFunc("GET /api/stats/year", h(func(r *http.Request) (any, error) {
+		year := queryInt(r, "year")
+		if year < 1 || year > 9999 {
+			year = time.Now().Year()
+		}
+		return s.app.History.Year(year, s.app.Settings.Get().Playback.CompletionThreshold, time.Local)
 	}))
 	m.HandleFunc("PUT /api/settings", h(s.saveSettings))
 	m.HandleFunc("GET /api/events", s.events)
@@ -67,6 +76,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/fs/dirs", h(s.listDirs))
 	m.HandleFunc("POST /api/open", h(s.openPath))
 	m.HandleFunc("POST /api/setup/programs", h(s.installPrograms))
+	m.HandleFunc("GET /api/setup/programs", h(s.setupProgress))
 	m.HandleFunc("GET /api/logs", h(func(r *http.Request) (any, error) { return s.app.Logs.Lines(), nil }))
 	m.HandleFunc("POST /api/cache/clear", h(func(r *http.Request) (any, error) { return nil, s.app.DB.ClearCache() }))
 	m.HandleFunc("GET /api/cache/size", h(func(r *http.Request) (any, error) {
@@ -94,6 +104,10 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/anilist/search", h(s.search))
 	m.HandleFunc("GET /api/anilist/tags", h(s.tags))
 	m.HandleFunc("GET /api/anilist/discover", h(s.discover))
+	m.HandleFunc("GET /api/anilist/recommended", h(s.recommended))
+	// The Search page's saved and recent searches.
+	m.HandleFunc("GET /api/searches", h(s.getSearches))
+	m.HandleFunc("PUT /api/searches", h(s.putSearches))
 	m.HandleFunc("GET /api/anilist/schedule", h(s.schedule))
 	m.HandleFunc("GET /api/anilist/list", h(s.rawList))
 	// The profile page: a user's profile, feeds, likes and follows.
