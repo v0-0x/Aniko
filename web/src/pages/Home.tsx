@@ -1,5 +1,5 @@
 import { ArrowDownUp, ArrowLeftRight, ChevronLeft, ChevronRight, Dices, Info, Minus, Play, FolderOpen, FolderSync, HardDrive, ListFilter, LogIn, MoreVertical, Puzzle, RefreshCw, RotateCcw, Sparkles, X } from "lucide-react"
-import { Fragment, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { EpisodeCard } from "@/components/EpisodeCard"
 import { LoginDialog } from "@/components/LoginDialog"
@@ -221,6 +221,8 @@ export default function HomePage() {
                 <ProgramsNotice />
 
                 {continueItems.length > 0 && <ContinueRow items={continueItems} onFocus={heroStore.set} />}
+                {/* Not with "Only downloaded anime": that's about anime files. */}
+                {!onlyLocal && <ContinueReading genre={genre} />}
                 {isLoading && (
                     <div className="flex gap-5">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -267,12 +269,8 @@ export default function HomePage() {
                     </EmptyState>
                 )}
 
-                {/* The manga being read: under Currently watching (first without
-                    one). Not with "Only downloaded anime": that's about anime files. */}
-                {!onlyLocal && !lists.some(l => l.key === "CURRENT") && <ContinueReading genre={genre} />}
                 {lists.map(l => (
-                    <Fragment key={l.key}>
-                    <section className="fade-in">
+                    <section key={l.key} className="fade-in">
                         <div className="mb-4 flex items-baseline gap-2.5">
                             <h2 className={cn("font-semibold tracking-tight", cinema ? "text-2xl" : "text-xl")}>{l.name}</h2>
                             {!classic && <HeadRule />}
@@ -292,8 +290,6 @@ export default function HomePage() {
                             ))}
                         </MediaGrid>
                     </section>
-                    {l.key === "CURRENT" && !onlyLocal && <ContinueReading genre={genre} />}
-                    </Fragment>
                 ))}
 
                 <PluginSlot slot="home-screen-bottom" />
