@@ -164,7 +164,7 @@ function Header({ profile, onTab, onRefresh, refreshing }: { profile: Profile; o
     ].filter(Boolean)
     return (
         <div className="relative">
-            <div className="absolute inset-x-0 top-0 h-80 overflow-hidden">
+            <div className="rail-out absolute inset-x-0 top-0 h-80 overflow-hidden">
                 {profile.bannerImage ? (
                     <img src={img(profile.bannerImage)} alt="" className="size-full object-cover opacity-80 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
                 ) : (

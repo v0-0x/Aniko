@@ -11,6 +11,7 @@ type SharedPrefs struct {
 		Seasonal         string `json:"seasonal"`
 		SeasonalEffects  bool   `json:"seasonalEffects"`
 		ClassicLook      bool   `json:"classicLook"`
+		Look             string `json:"look"`
 		TitleLanguage    string `json:"titleLanguage"`
 		BannerType       string `json:"bannerType"`
 		ShowEpisodeTitle bool   `json:"showEpisodeTitle"`
@@ -33,7 +34,7 @@ func (s Settings) SharedPrefs() SharedPrefs {
 	u, pb := s.UI, s.Playback
 	p.UI.AccentColor, p.UI.ColorTheme, p.UI.Seasonal, p.UI.SeasonalEffects = u.AccentColor, u.ColorTheme, u.Seasonal, u.SeasonalEffects
 	p.UI.ClassicLook, p.UI.TitleLanguage, p.UI.BannerType = u.ClassicLook, u.TitleLanguage, u.BannerType
-	p.UI.ShowEpisodeTitle, p.UI.BlurUnwatched = u.ShowEpisodeTitle, u.BlurUnwatched
+	p.UI.ShowEpisodeTitle, p.UI.BlurUnwatched, p.UI.Look = u.ShowEpisodeTitle, u.BlurUnwatched, u.Look
 	p.Playback.AutoPlayNext, p.Playback.PreferredAudioLang, p.Playback.PreferredSubLang = pb.AutoPlayNext, pb.PreferredAudioLang, pb.PreferredSubLang
 	p.Playback.SkipIntroAniSkip, p.Playback.SkipOutroAniSkip, p.Playback.SkipRecapAniSkip = pb.SkipIntroAniSkip, pb.SkipOutroAniSkip, pb.SkipRecapAniSkip
 	p.Playback.SkipFiller = pb.SkipFiller
@@ -46,7 +47,7 @@ func (s Settings) WithSharedPrefs(p SharedPrefs) Settings {
 	u, pb := &s.UI, &s.Playback
 	u.AccentColor, u.ColorTheme, u.Seasonal, u.SeasonalEffects = p.UI.AccentColor, p.UI.ColorTheme, p.UI.Seasonal, p.UI.SeasonalEffects
 	u.ClassicLook, u.TitleLanguage, u.BannerType = p.UI.ClassicLook, p.UI.TitleLanguage, p.UI.BannerType
-	u.ShowEpisodeTitle, u.BlurUnwatched = p.UI.ShowEpisodeTitle, p.UI.BlurUnwatched
+	u.ShowEpisodeTitle, u.BlurUnwatched, u.Look = p.UI.ShowEpisodeTitle, p.UI.BlurUnwatched, p.UI.Look
 	pb.AutoPlayNext, pb.PreferredAudioLang, pb.PreferredSubLang = p.Playback.AutoPlayNext, p.Playback.PreferredAudioLang, p.Playback.PreferredSubLang
 	pb.SkipIntroAniSkip, pb.SkipOutroAniSkip, pb.SkipRecapAniSkip = p.Playback.SkipIntroAniSkip, p.Playback.SkipOutroAniSkip, p.Playback.SkipRecapAniSkip
 	pb.SkipFiller = p.Playback.SkipFiller

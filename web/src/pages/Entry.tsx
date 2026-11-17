@@ -160,7 +160,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
 
     return (
         <div className="relative">
-            <div className="absolute inset-x-0 top-0 h-[460px] overflow-hidden">
+            <div className="rail-out absolute inset-x-0 top-0 h-[460px] overflow-hidden">
                 {bannerImg && <img src={bannerImg} alt="" className="size-full object-cover opacity-80 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />}
                 <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/75 to-bg/10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-bg/90 via-bg/30 to-transparent" />

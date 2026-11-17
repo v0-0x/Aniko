@@ -19,7 +19,7 @@ import { fetchLanguageMode, useCollection, useScan, useStatus } from "@/lib/quer
 import { createStore, scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
 import { androidApp, tv } from "@/lib/tv"
-import { useClassic } from "@/lib/themes"
+import { useCinema, useClassic } from "@/lib/themes"
 import { banner, cn, cover, img as imgUrl, readLocal, title } from "@/lib/utils"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/lib/toast"
@@ -38,6 +38,7 @@ export default function HomePage() {
     const qc = useQueryClient()
     const libraryMenu = useLibraryCardMenu()
     const classic = useClassic()
+    const cinema = useCinema()
 
     const continueItems = data?.continueWatching ?? []
 
@@ -268,7 +269,7 @@ export default function HomePage() {
                 {lists.map(l => (
                     <section key={l.key} className="fade-in">
                         <div className="mb-4 flex items-baseline gap-2.5">
-                            <h2 className="text-xl font-semibold tracking-tight">{l.name}</h2>
+                            <h2 className={cn("font-semibold tracking-tight", cinema ? "text-2xl" : "text-xl")}>{l.name}</h2>
                             {!classic && <HeadRule />}
                             <span className="text-sm text-subtle tabular-nums">{l.items.length}</span>
                         </div>
@@ -302,6 +303,9 @@ const heroStore = createStore(0)
 
 function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boolean; toolbar: React.ReactNode }) {
     const classic = useClassic()
+    // Cinema (experimental): a taller banner out to the window's edge, a
+    // heavy heading over the title; the cards below are what's played.
+    const cinema = useCinema()
     // Removing items can leave the index past the end.
     const count = items.length
     const index = Math.min(useStore(heroStore), Math.max(0, count - 1))
@@ -314,7 +318,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
     // often small, blurry screenshots.
     const img = !item ? "" : item.media.bannerImage ? banner(item.media) : imgUrl(item.image) || cover(item.media)
     return (
-        <div className="relative h-[clamp(340px,50vh,540px)] w-full overflow-hidden max-sm:h-[440px]">
+        <div className={cn("rail-bleed relative w-full overflow-hidden max-sm:h-[440px]", cinema ? "h-[clamp(380px,56vh,620px)]" : "h-[clamp(340px,50vh,540px)]")}>
             {img ? (
                 <Backdrop src={img} className="absolute inset-0 size-full object-cover [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
             ) : (
@@ -323,15 +327,15 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
             <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-bg/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/25 to-transparent" />
             <div className="absolute top-4 right-4 z-20">{toolbar}</div>
-            <div className="absolute inset-x-0 bottom-28 px-6 md:px-8 xl:px-10">
+            <div className="rail-in absolute inset-x-0 bottom-28 px-6 md:px-8 xl:px-10">
                 {loading ? (
                     <Skeleton className="h-11 w-96" />
                 ) : item ? (
                     // Clear of the arrows at its right on a phone.
                     <div key={item.media.id} className="max-w-3xl rise-in max-sm:pr-20">
-                        <p className={cn(classic ? "text-sm font-medium" : "label", "text-white/65 max-sm:hidden")}>Continue watching</p>
+                        <p className={cn(cinema ? "text-2xl font-bold tracking-tight text-white" : cn(classic ? "text-sm font-medium" : "label", "text-white/65"), "max-sm:hidden")}>Continue watching</p>
                         {/* On a TV the cards below are what's picked (the banner follows them). */}
-                        <Link to={`/entry?id=${item.media.id}`} data-tv-skip-nav className="mt-1.5 line-clamp-2 text-4xl leading-[1.1] font-semibold tracking-tight text-white transition-colors hover:text-white/85 md:text-[2.75rem]">
+                        <Link to={`/entry?id=${item.media.id}`} data-tv-skip-nav className={cn("mt-1.5 line-clamp-2 text-4xl leading-[1.1] tracking-tight text-white transition-colors hover:text-white/85 md:text-[2.75rem]", cinema ? "font-extrabold" : "font-semibold")}>
                             {title(item.media)}
                         </Link>
                         {/* The next episode: what it is, how much is left, and play. */}
@@ -341,12 +345,12 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
                             {item.title && item.title !== `Episode ${item.episode}` && <span> · {item.title}</span>}
                             {left > 0 && <span className="text-white/50"> · {left} min{started ? " left" : ""}</span>}
                         </p>
-                        {started && item.duration > 0 && (
+                        {!cinema && started && item.duration > 0 && (
                             <div className="mt-3 h-1 w-64 max-w-full overflow-hidden rounded-full bg-white/20" role="progressbar" aria-label="Watched" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((item.resumeAt / item.duration) * 100)}>
                                 <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (item.resumeAt / item.duration) * 100)}%` }} />
                             </div>
                         )}
-                        {!tv && (
+                        {!tv && !cinema && (
                             <div className="mt-4 flex flex-wrap gap-2">
                                 <Button variant="white" icon={<Play className="size-4 fill-current" />} onClick={() => play(item)}>
                                     {started ? "Resume" : `Play episode ${item.episode}`}

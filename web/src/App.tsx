@@ -19,7 +19,7 @@ import { useCheckOnOpen, useStatus } from "./lib/queries"
 import { useMediaQuery } from "./lib/hooks"
 import { miniRequest, takeHandedPlay } from "./lib/pip"
 import { passwordStore, playerStore, useStore } from "./lib/store"
-import { applyTheme, holidayStore, resolveTheme, themePreviewStore, useClassic } from "./lib/themes"
+import { applyTheme, holidayStore, resolveTheme, themePreviewStore, useCinema, useClassic } from "./lib/themes"
 import { keepFocus, openPage } from "./lib/pages"
 import { initTV, tv } from "./lib/tv"
 import { cn, setTitleLanguage } from "./lib/utils"
@@ -150,6 +150,10 @@ function AnikoApp() {
     // The Classic look (before 3.0.37): the pages are a rounded panel inset
     // in the window.
     const classic = useClassic()
+    // Cinema (experimental): the Classic look's parts, but the pages fill
+    // the window, under a rail of icons.
+    const cinema = useCinema()
+    const inset = classic && !cinema
     // A phone (a narrow window, not a TV): the pages take the whole width,
     // with tabs along the bottom instead of the sidebar. What floats at the
     // bottom (the now playing bar) stays above them.
@@ -157,6 +161,12 @@ function AnikoApp() {
     useEffect(() => {
         document.documentElement.style.setProperty("--phone-bar", phone ? "calc(3.75rem + env(safe-area-inset-bottom))" : "0px")
     }, [phone])
+    // The rail's width, for the pages (index.css: banners reach under it).
+    // A TV keeps the sidebar with its names beside the pages.
+    const rail = cinema && !phone && !tv
+    useEffect(() => {
+        document.documentElement.style.setProperty("--rail", rail ? "4.5rem" : "0px")
+    }, [rail])
 
     // Anime titles in the language chosen in Settings, set before the pages
     // render: they're drawn again when it changes (keyed by it).
@@ -173,19 +183,19 @@ function AnikoApp() {
 
     return (
         <TooltipProvider>
-            <div className={cn("app-frame flex h-full bg-frame", phone && "flex-col")}>
+            <div className={cn("app-frame relative flex h-full bg-frame", phone && "flex-col")}>
                 {!phone && <Sidebar />}
                 {/* The pages: a panel inset in the window, next to the sidebar
                     (on a phone, the whole width). Its background is behind
                     them (with a holiday's art). */}
-                <div className={cn("relative min-h-0 min-w-0 flex-1", !phone && classic && "py-2 pr-2")}>
-                    <HolidayBackdrop holiday={ui ? look.holiday : null} inset={classic && !phone} />
+                <div className={cn("relative min-h-0 min-w-0 flex-1", !phone && inset && "py-2 pr-2")}>
+                    <HolidayBackdrop holiday={ui ? look.holiday : null} inset={inset && !phone} />
                     <main
                         id="main-scroll"
                         className={cn(
                             "relative h-full overflow-x-hidden overflow-y-auto",
                             // This look: one plane, a line between the sidebar and the pages.
-                            !phone && (classic ? "rounded-[14px] border border-line shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]" : "border-l border-line-strong"),
+                            !phone && (cinema ? "pl-[var(--rail)]" : classic ? "rounded-[14px] border border-line shadow-[0_12px_36px_-20px_rgb(0_0_0/0.75)]" : "border-l border-line-strong"),
                         )}
                     >
                         <Suspense
@@ -225,7 +235,7 @@ function AnikoApp() {
                             </PageError>
                         </Suspense>
                     </main>
-                    <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} inset={classic} />
+                    <HolidayGarland holiday={ui ? look.holiday : null} animate={look.effects && !playing && !ui?.reducedMotion} inset={inset} />
                 </div>
                 {phone && <PhoneNav />}
             </div>

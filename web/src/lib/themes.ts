@@ -74,17 +74,32 @@ export const CLASSIC_THEMES: ColorTheme[] = [
     { id: "black", name: "Black", accent: "#7c6cf2", palette: { frame: "#000000", bg: "#000000", s1: "#0b0b0c", s2: "#121214", s3: "#19191c", s4: "#212124", muted: "#a1a1a8", subtle: "#6e6e75" } },
 ]
 
+// The Cinema look's (experimental): near black with Aniko's violet, then
+// the Classic look's others.
+export const CINEMA_THEMES: ColorTheme[] = [
+    { id: "aniko", name: "Aniko", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#0a0a0b", s1: "#131316", s2: "#19191d", s3: "#212126", s4: "#2a2a30", muted: "#a3a3ad", subtle: "#74747e" } },
+    ...CLASSIC_THEMES.slice(1),
+]
+
 // A theme saved in one look, drawn in the other: its nearest there (the
 // saved name stays, so going back brings the same one).
 const IN_FRAME: Record<string, string> = { aniko: "black", midnight: "ice", ocean: "ice", forest: "phosphor", sakura: "rose", ember: "amber", dusk: "graphite" }
 const IN_CLASSIC: Record<string, string> = { white: "aniko", paper: "aniko", phosphor: "forest", amber: "ember", ice: "midnight", rose: "sakura" }
 
+// The looks: this one (Frame), the Classic one (before 3.0.37), and Cinema
+// (experimental: a rail of icons, banners to the window's edge). The server
+// keeps "" for this one, and classicLook for devices from before ui.look.
+export type Look = "frame" | "classic" | "cinema"
+export const lookOf = (ui: { look?: string; classicLook?: boolean } | undefined): Look => (ui?.look === "cinema" ? "cinema" : ui?.look === "classic" || (!ui?.look && ui?.classicLook) ? "classic" : "frame")
+// What a look is saved as.
+export const lookChoice = (look: Look) => ({ look: look === "frame" ? "" : look, classicLook: look === "classic" })
+
 // The themes of the look, and the one of them a saved name means.
-export const themesOf = (classic: boolean) => (classic ? CLASSIC_THEMES : COLOR_THEMES)
-export function colorTheme(id: string | undefined, classic = false) {
-    const list = themesOf(classic)
-    const alias = classic ? IN_CLASSIC : IN_FRAME
-    // Nothing saved: this look's Black; the Classic look's Aniko.
+export const themesOf = (look: Look) => (look === "classic" ? CLASSIC_THEMES : look === "cinema" ? CINEMA_THEMES : COLOR_THEMES)
+export function colorTheme(id: string | undefined, look: Look = "frame") {
+    const list = themesOf(look)
+    const alias = look === "frame" ? IN_FRAME : IN_CLASSIC
+    // Nothing saved: this look's Black; the other two's Aniko.
     return list.find(t => t.id === id) ?? list.find(t => t.id === alias[id ?? ""]) ?? list[0]
 }
 
@@ -157,16 +172,18 @@ export function activeHoliday(setting: string | undefined, now = new Date()): Ho
     return HOLIDAYS.find(h => h.month === m && (!h.days || (d >= h.days[0] && d <= h.days[1]))) ?? null
 }
 
-export type ThemeChoice = { colorTheme?: string; accentColor?: string; seasonal?: string; seasonalEffects?: boolean; classicLook?: boolean }
+export type ThemeChoice = { colorTheme?: string; accentColor?: string; seasonal?: string; seasonalEffects?: boolean; classicLook?: boolean; look?: string }
 
 // What's drawn: the colors, the accent (the holiday's while one is on), the
 // holiday (the sidebar's decoration and its animation), and whether in the
 // Classic look (before 3.0.37).
 export function resolveTheme(ui: ThemeChoice | undefined, now = new Date()) {
-    const classic = !!ui?.classicLook
-    const theme = colorTheme(ui?.colorTheme, classic)
+    const look = lookOf(ui)
+    // Cinema is built from the Classic look's parts (rounded, filled).
+    const classic = look !== "frame"
+    const theme = colorTheme(ui?.colorTheme, look)
     const holiday = activeHoliday(ui?.seasonal ?? "auto", now)
-    return { theme, holiday, accent: holiday?.accent ?? (ownAccent(ui?.accentColor, classic, theme.id) || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true), classic }
+    return { theme, holiday, accent: holiday?.accent ?? (ownAccent(ui?.accentColor, look, theme.id) || theme.accent), effects: !!holiday && (ui?.seasonalEffects ?? true), classic, look }
 }
 
 // The accent as a choice of the user's ("" when it isn't one): not what
@@ -175,10 +192,12 @@ export function resolveTheme(ui: ThemeChoice | undefined, now = new Date()) {
 // Aniko theme (theme: the id of the one drawn); nor is an ink of this look's
 // themes, which was never a choice there.
 const OLD_ACCENTS = ["#7c6cf2", "#ff7eb6"]
-export function ownAccent(accent: string | undefined, classic: boolean, theme?: string) {
+export function ownAccent(accent: string | undefined, look: Look, theme?: string) {
     const a = (accent ?? "").toLowerCase()
     if (!a) return ""
-    if (classic) return COLOR_THEMES.some(t => t.accent === a) || (theme === "aniko" && a === OLD_ACCENTS[0]) ? "" : a
+    if (look === "classic") return COLOR_THEMES.some(t => t.accent === a) || (theme === "aniko" && a === OLD_ACCENTS[0]) ? "" : a
+    // Cinema: neither the old defaults nor this look's inks.
+    if (look === "cinema") return COLOR_THEMES.some(t => t.accent === a) || OLD_ACCENTS.includes(a) ? "" : a
     return OLD_ACCENTS.includes(a) ? "" : a
 }
 
@@ -198,7 +217,7 @@ const CACHE_KEY = "aniko-theme"
 // Sets the colors on the page, and remembers them for the next start (drawn
 // before the settings come from the server: no flash of the default ones).
 // cache: remembered for the next start (not colors only being tried).
-export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; accent: string; classic: boolean }, cache = true) {
+export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; accent: string; classic: boolean; look: Look }, cache = true) {
     const p = t.theme.palette
     // A holiday leans the colors toward its own, a little (the window most).
     const lean = (color: string, pct: number) => (t.holiday ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
@@ -211,8 +230,8 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
         "--brand-on-dark": luminance(t.accent) < 0.12 ? "#ededed" : t.accent,
         // The Classic look's window has other lights: the theme's, not under
         // a holiday's tint ("" takes them away: the accent alone).
-        "--glow-2": (t.classic && !t.holiday && t.theme.glow?.[0]) || "",
-        "--glow-3": (t.classic && !t.holiday && t.theme.glow?.[1]) || "",
+        "--glow-2": (t.look === "classic" && !t.holiday && t.theme.glow?.[0]) || "",
+        "--glow-3": (t.look === "classic" && !t.holiday && t.theme.glow?.[1]) || "",
         "--frame": lean(p.frame, 12),
         "--bg": lean(p.bg, 8),
         "--surface-1": lean(p.s1, 7),
@@ -226,18 +245,19 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
         "--line": p.line ?? "",
         "--line-strong": p.lineStrong ?? "",
     }
-    setVars(vars, t.holiday?.id ?? "", t.classic, light)
+    setVars(vars, t.holiday?.id ?? "", t.look, light)
     // The browser's own bars (phones) in the window's color.
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", p.frame)
     if (!cache) return
     try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ vars, holiday: t.holiday?.id ?? "", classic: t.classic, light }))
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ vars, holiday: t.holiday?.id ?? "", classic: t.look === "classic", look: t.look, light }))
     } catch {
         /* drawn with the default colors at the next start */
     }
 }
 
-function setVars(vars: Record<string, string>, holiday: string, classic: boolean, light: boolean) {
+function setVars(vars: Record<string, string>, holiday: string, look: Look, light: boolean) {
+    const classic = look !== "frame"
     const el = document.documentElement
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v)
     // For index.css (data-scheme="light"): dark text on a light page. Never
@@ -246,17 +266,20 @@ function setVars(vars: Record<string, string>, holiday: string, classic: boolean
     else delete el.dataset.scheme
     if (holiday) el.dataset.holiday = holiday
     else delete el.dataset.holiday
-    // For index.css (data-look="classic"); the components read classicStore.
-    if (classic) el.dataset.look = "classic"
+    // For index.css (data-look="classic", "cinema"); the components read
+    // classicStore (Cinema is drawn with the Classic look's parts) and
+    // cinemaStore.
+    if (classic) el.dataset.look = look
     else delete el.dataset.look
     classicStore.set(classic)
+    cinemaStore.set(look === "cinema")
 }
 
 // The colors used last time, at once (main.tsx, before the first render).
 export function applyCachedTheme() {
     try {
-        const c = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as { vars?: Record<string, string>; holiday?: string; classic?: boolean; light?: boolean } | null
-        if (c?.vars) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "", c.classic === true, c.light === true)
+        const c = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as { vars?: Record<string, string>; holiday?: string; classic?: boolean; look?: string; light?: boolean } | null
+        if (c?.vars) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "", c.look === "cinema" ? "cinema" : c.classic === true ? "classic" : "frame", c.light === true)
     } catch {
         /* the default colors */
     }
@@ -272,3 +295,14 @@ export const holidayStore = createStore<Holiday | null>(null)
 // they were then (ui.tsx, the sidebar, cards, the Themes menu).
 export const classicStore = createStore(false)
 export const useClassic = () => useStore(classicStore)
+
+// The Cinema look (experimental) is on: the Classic look's parts, with its
+// own window (a rail of icons over banners that reach the edge).
+export const cinemaStore = createStore(false)
+export const useCinema = () => useStore(cinemaStore)
+// The look drawn.
+export function useLook(): Look {
+    const cinema = useStore(cinemaStore)
+    const classic = useStore(classicStore)
+    return cinema ? "cinema" : classic ? "classic" : "frame"
+}

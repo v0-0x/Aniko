@@ -7,6 +7,17 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 52,
+        title: "Cinema look (experimental)",
+        changes: [
+            {
+                title: "Another look to try",
+                text: "A rail of icons, banners out to the window's edge, rounded. Turn it on in Themes; off brings this look back.",
+                to: "/settings?tab=appearance",
+            },
+        ],
+    },
+    {
         id: 51,
         title: "Spruced up",
         changes: [

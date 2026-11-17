@@ -166,6 +166,18 @@ func TestThemeSettings(t *testing.T) {
 	if got, err := s.Save(next); err != nil || !got.UI.ClassicLook || !s.Get().UI.ClassicLook {
 		t.Fatalf("classic look: %+v, %v", got.UI, err)
 	}
+	// The experimental look turns the classic one off; one that isn't a
+	// look is the current one.
+	next = s.Get()
+	next.UI.Look = "cinema"
+	if got, err := s.Save(next); err != nil || got.UI.Look != "cinema" || got.UI.ClassicLook {
+		t.Fatalf("cinema look: %+v, %v", got.UI, err)
+	}
+	next = s.Get()
+	next.UI.Look = "nope"
+	if got, err := s.Save(next); err != nil || got.UI.Look != "" || got.UI.ClassicLook {
+		t.Fatalf("unknown look: %+v, %v", got.UI, err)
+	}
 	for _, c := range []struct{ theme, seasonal, wantTheme, wantSeasonal string }{
 		{"midnight", "off", "midnight", "off"},
 		{"black", "christmas", "black", "christmas"},

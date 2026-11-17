@@ -54,7 +54,7 @@ import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
 import { useStore } from "@/lib/store"
 import { useFadeBelow } from "@/lib/hooks"
-import { activeHoliday, colorTheme, HOLIDAYS, ownAccent, themePreviewStore, themesOf, useClassic } from "@/lib/themes"
+import { activeHoliday, colorTheme, HOLIDAYS, lookChoice, lookOf, ownAccent, themePreviewStore, themesOf, useClassic } from "@/lib/themes"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { systemNotifications } from "@/lib/alerts"
 import { androidApp, setTvWidth, TV_WIDTHS, tv, tvWidth } from "@/lib/tv"
@@ -184,7 +184,7 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 // Puts the fields edited in draft (compared with base, the server copy the
 // draft was made from) on top of a newer server copy.
 // The UI settings the Themes menu changes (saved at once).
-const THEME_KEYS = ["colorTheme", "accentColor", "seasonal", "seasonalEffects", "classicLook"] as const
+const THEME_KEYS = ["colorTheme", "accentColor", "seasonal", "seasonalEffects", "classicLook", "look"] as const
 
 function rebase(draft: Settings, base: Settings, server: Settings): Settings {
     const out: Record<string, any> = structuredClone(server)
@@ -251,8 +251,8 @@ export default function SettingsPage() {
     // ones again once the preview ends (Discard, leaving the page).
     const ui = draft?.ui
     useEffect(() => {
-        themePreviewStore.set(ui ? { colorTheme: ui.colorTheme, accentColor: ui.accentColor, seasonal: ui.seasonal, seasonalEffects: ui.seasonalEffects, classicLook: ui.classicLook } : null)
-    }, [ui?.colorTheme, ui?.accentColor, ui?.seasonal, ui?.seasonalEffects, ui?.classicLook])
+        themePreviewStore.set(ui ? { colorTheme: ui.colorTheme, accentColor: ui.accentColor, seasonal: ui.seasonal, seasonalEffects: ui.seasonalEffects, classicLook: ui.classicLook, look: ui.look } : null)
+    }, [ui?.colorTheme, ui?.accentColor, ui?.seasonal, ui?.seasonalEffects, ui?.classicLook, ui?.look])
     useEffect(() => () => themePreviewStore.set(null), [])
 
     useEffect(() => {
@@ -1150,18 +1150,23 @@ function UISection({ draft, set }: SectionProps) {
     // The one on now with these settings (or that would be, for the hint).
     const holiday = activeHoliday(seasonal)
     // The themes of the look being set, and the saved one as it draws it.
-    const classicLook = !!draft.ui.classicLook
-    const theme = colorTheme(draft.ui.colorTheme, classicLook)
-    const own = ownAccent(draft.ui.accentColor, classicLook, theme.id)
+    const look = lookOf(draft.ui)
+    // Cinema's themes are drawn and picked like the Classic look's.
+    const classicLook = look !== "frame"
+    const theme = colorTheme(draft.ui.colorTheme, look)
+    const own = ownAccent(draft.ui.accentColor, look, theme.id)
     return (
         <>
             <Group title="Theme">
                 <Row label="Classic look" help="Aniko as it looked before 3.0.37: plum and pink, rounded.">
-                    <Switch checked={!!draft.ui.classicLook} onChange={v => set("ui", { classicLook: v })} />
+                    <Switch checked={look === "classic"} onChange={v => set("ui", lookChoice(v ? "classic" : "frame"))} />
+                </Row>
+                <Row label="Cinema look" help="Experimental. A rail of icons, banners to the window's edge, rounded.">
+                    <Switch checked={look === "cinema"} onChange={v => set("ui", lookChoice(v ? "cinema" : "frame"))} />
                 </Row>
                 <Stack label="Colors">
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                        {themesOf(classicLook).map(t => {
+                        {themesOf(look).map(t => {
                             const on = theme.id === t.id
                             return (
                                 <button

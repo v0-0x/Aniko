@@ -145,14 +145,14 @@ function Featured({ media, index, count, onIndex, onHold }: { media: Media; inde
     const facts = [media.meanScore ? `${media.meanScore}%` : "", formatLabel(media.format), seasonLabel(media.season, media.seasonYear), media.genres?.slice(0, 3).join(", ") ?? ""].filter(Boolean)
     return (
         <div
-            className="relative h-[clamp(340px,50vh,540px)] overflow-hidden max-sm:h-[440px]"
+            className="rail-bleed relative h-[clamp(340px,50vh,540px)] overflow-hidden max-sm:h-[440px]"
             onFocus={() => onHold(true)}
             onBlur={e => !e.currentTarget.contains(e.relatedTarget as Node | null) && onHold(false)}
         >
             <Backdrop src={banner(media)} className="absolute inset-0 size-full object-cover [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
             <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-bg/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/25 to-transparent" />
-            <div key={media.id + "t"} className="absolute inset-x-0 bottom-24 max-w-3xl px-6 rise-in md:px-8 xl:px-10">
+            <div key={media.id + "t"} className="rail-in absolute inset-x-0 bottom-24 max-w-3xl px-6 rise-in md:px-8 xl:px-10">
                 <p className={cn(classic ? "text-sm font-medium" : "label", "text-white/65")}>Trending #{index + 1}</p>
                 <h1 className="mt-1.5 line-clamp-2 text-4xl leading-[1.1] font-semibold tracking-tight text-white md:text-[2.75rem]">{title(media)}</h1>
                 <p className="mt-2 line-clamp-1 text-[15px] text-white/80">{facts.join(" · ")}</p>

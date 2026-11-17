@@ -1,8 +1,8 @@
-import { Check, ChevronRight, ChevronUp, History, Palette, Settings2, Sparkles } from "lucide-react"
+import { Check, ChevronRight, ChevronUp, FlaskConical, History, Palette, Settings2, Sparkles } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useSaveUI, useSettings } from "@/lib/queries"
 import { useStore } from "@/lib/store"
-import { activeHoliday, colorTheme, HOLIDAYS, holidayStore, themesOf, useClassic, type ColorTheme } from "@/lib/themes"
+import { activeHoliday, colorTheme, HOLIDAYS, holidayStore, lookChoice, lookOf, themesOf, useClassic, useLook, type ColorTheme } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn } from "@/lib/utils"
 import { HolidayIcon } from "./HolidayBadge"
@@ -105,10 +105,10 @@ function useThemes() {
         navigate: useNavigate(),
         holiday: useStore(holidayStore),
         // The saved one, as this look draws it (lib/themes.ts).
-        theme: colorTheme(ui?.colorTheme, !!ui?.classicLook).id,
+        theme: colorTheme(ui?.colorTheme, lookOf(ui)).id,
         seasonal: ui?.seasonal ?? "auto",
         effects: ui?.seasonalEffects ?? true,
-        classicLook: !!ui?.classicLook,
+        look: lookOf(ui),
         // What "by the date" is now.
         today: activeHoliday("auto"),
     }
@@ -117,10 +117,10 @@ function useThemes() {
 // The menu: a panel. Each color theme is a small window in its colors, the
 // holiday themes a grid, and the colors fade from one theme to the next.
 function PanelMenu({ wide }: { wide: boolean }) {
-    const { saveUI, navigate, holiday, theme, seasonal, effects, classicLook, today } = useThemes()
+    const { saveUI, navigate, holiday, theme, seasonal, effects, look, today } = useThemes()
     // Drawn as the look is now, with its themes.
     const classic = useClassic()
-    const themes = themesOf(classic)
+    const themes = themesOf(useLook())
     const current = themes.find(t => t.id === theme) ?? themes[0]
     const pick = (ui: Parameters<typeof saveUI>[0]) => {
         fadeColors()
@@ -224,9 +224,15 @@ function PanelMenu({ wide }: { wide: boolean }) {
                     <span className="min-w-0 flex-1 truncate">{holiday ? `Animation: ${holiday.effectName}` : "Holiday animations"}</span>
                     <MenuSwitch on={effects && !!holiday} />
                 </DropdownItem>
-                <DropdownItem keepOpen onSelect={() => pick({ classicLook: !classicLook })} icon={<History />} className="h-9 rounded-lg">
+                <DropdownItem keepOpen onSelect={() => pick(lookChoice(look === "classic" ? "frame" : "classic"))} icon={<History />} className="h-9 rounded-lg">
                     <span className="min-w-0 flex-1">Classic look</span>
-                    <MenuSwitch on={classicLook} />
+                    <MenuSwitch on={look === "classic"} />
+                </DropdownItem>
+                <DropdownItem keepOpen onSelect={() => pick(lookChoice(look === "cinema" ? "frame" : "cinema"))} icon={<FlaskConical />} className="h-9 rounded-lg">
+                    <span className="min-w-0 flex-1">
+                        Cinema look <span className="text-subtle">· experimental</span>
+                    </span>
+                    <MenuSwitch on={look === "cinema"} />
                 </DropdownItem>
             </div>
 

@@ -531,14 +531,14 @@ html.tv[data-look="classic"] .glass {
 }
 
 /* ---------------------------------------------------------------------------
-   Frame (this look; not the classic one): one ink on one ground. Few boxes:
+   Frame (this look; not the classic one, nor Cinema): one ink on one ground. Few boxes:
    what can be clicked is a word, in small capitals in a mono face, that
    steps into brackets under the pointer, [ LIKE THIS ], and stays in them
    while it's the one chosen. Thin lines and square corners where there are
    any. Outside the
    layers on purpose, so it wins over the utilities the pages are built
    with. */
-html:not([data-look="classic"]) {
+html:not([data-look]) {
     --radius-xs: 2px;
     --radius-sm: 2px;
     --radius-md: 2px;
@@ -551,43 +551,43 @@ html:not([data-look="classic"]) {
 /* The corners written as numbers, and the round ones (pills, dots, avatars,
    switches): square too. A spinner drawn with a border stays round, and
    what asks to (data-round). */
-html:not([data-look="classic"]) :is(.rounded, .rounded-full, [class*="rounded-["]):not(.animate-spin):not([data-round]) {
+html:not([data-look]) :is(.rounded, .rounded-full, [class*="rounded-["]):not(.animate-spin):not([data-round]) {
     border-radius: 2px;
 }
-html:not([data-look="classic"]) *::-webkit-scrollbar-thumb {
+html:not([data-look]) *::-webkit-scrollbar-thumb {
     border-radius: 0;
 }
 
 /* Type: titles in the display face, numbers that line up in the mono one. */
-html:not([data-look="classic"]) :is(h1, h2, h3):not(.label) {
+html:not([data-look]) :is(h1, h2, h3):not(.label) {
     font-family: var(--font-display);
     font-weight: 600;
     letter-spacing: -0.025em;
 }
-html:not([data-look="classic"]) .tabular-nums {
+html:not([data-look]) .tabular-nums {
     font-family: var(--font-mono);
     letter-spacing: 0;
 }
 
 /* A panel is a faint outline. One that's a link or a button answers the
    pointer with a brighter line. */
-html:not([data-look="classic"]) .card {
+html:not([data-look]) .card {
     background: transparent;
     border: 1px solid var(--line);
     border-radius: 2px;
     box-shadow: none;
 }
-html:not([data-look="classic"]) :is(a, button).card:hover {
+html:not([data-look]) :is(a, button).card:hover {
     border-color: color-mix(in oklab, var(--text) 45%, transparent);
 }
 /* Buttons and links the pages fill faintly themselves (bg-white/[0.0x]):
    no box at rest, the fill comes under the pointer. */
-html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class*=" bg-white/[0.0"],
-html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class^="bg-white/[0.0"] {
+html:not([data-look]) :is(main, [role="dialog"]) :is(button, a)[class*=" bg-white/[0.0"],
+html:not([data-look]) :is(main, [role="dialog"]) :is(button, a)[class^="bg-white/[0.0"] {
     background-color: transparent;
 }
-html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class*=" bg-white/[0.0"]:hover,
-html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class^="bg-white/[0.0"]:hover {
+html:not([data-look]) :is(main, [role="dialog"]) :is(button, a)[class*=" bg-white/[0.0"]:hover,
+html:not([data-look]) :is(main, [role="dialog"]) :is(button, a)[class^="bg-white/[0.0"]:hover {
     background-color: color-mix(in oklab, var(--text) 7%, transparent);
 }
 
@@ -596,11 +596,11 @@ html:not([data-look="classic"]) :is(main, [role="dialog"]) :is(button, a)[class^
    is, brackets step in around it; they stay while it's the one chosen
    (aria-pressed, aria-current, aria-selected, data-on). They sit in the
    word's own padding, so nothing moves. */
-html:not([data-look="classic"]) .word {
+html:not([data-look]) .word {
     position: relative;
 }
-html:not([data-look="classic"]) .word::before,
-html:not([data-look="classic"]) .word::after {
+html:not([data-look]) .word::before,
+html:not([data-look]) .word::after {
     position: absolute;
     top: 50%;
     font-family: var(--font-mono);
@@ -613,33 +613,33 @@ html:not([data-look="classic"]) .word::after {
         opacity 0.18s var(--ease),
         transform 0.18s var(--ease);
 }
-html:not([data-look="classic"]) .word::before {
+html:not([data-look]) .word::before {
     content: "[" / "";
     left: 0.1em;
     transform: translate(6px, -54%);
 }
-html:not([data-look="classic"]) .word::after {
+html:not([data-look]) .word::after {
     content: "]" / "";
     right: 0.1em;
     transform: translate(-6px, -54%);
 }
 /* An icon alone has no brackets: a faint ground under the pointer. */
-html:not([data-look="classic"]) .word:is(.icon-only, [class*="px-0"])::before,
-html:not([data-look="classic"]) .word:is(.icon-only, [class*="px-0"])::after {
+html:not([data-look]) .word:is(.icon-only, [class*="px-0"])::before,
+html:not([data-look]) .word:is(.icon-only, [class*="px-0"])::after {
     content: none;
 }
-html:not([data-look="classic"]) .word:is(.icon-only, [class*="px-0"]):not([class*="bg-black"]):hover:not(:disabled) {
+html:not([data-look]) .word:is(.icon-only, [class*="px-0"]):not([class*="bg-black"]):hover:not(:disabled) {
     background-color: color-mix(in oklab, var(--text) 8%, transparent);
 }
-html:not([data-look="classic"]) .word[data-state="open"]::before,
-html:not([data-look="classic"]) .word[data-state="open"]::after,
-html:not([data-look="classic"]) .word:is(:hover, :focus-visible):not(:disabled)::before,
-html:not([data-look="classic"]) .word:is(:hover, :focus-visible):not(:disabled)::after {
+html:not([data-look]) .word[data-state="open"]::before,
+html:not([data-look]) .word[data-state="open"]::after,
+html:not([data-look]) .word:is(:hover, :focus-visible):not(:disabled)::before,
+html:not([data-look]) .word:is(:hover, :focus-visible):not(:disabled)::after {
     opacity: 0.75;
     transform: translate(0, -54%);
 }
-html:not([data-look="classic"]) .word:is([aria-pressed="true"], [aria-current="page"], [aria-current="true"], [aria-selected="true"], [data-on])::before,
-html:not([data-look="classic"]) .word:is([aria-pressed="true"], [aria-current="page"], [aria-current="true"], [aria-selected="true"], [data-on])::after {
+html:not([data-look]) .word:is([aria-pressed="true"], [aria-current="page"], [aria-current="true"], [aria-selected="true"], [data-on])::before,
+html:not([data-look]) .word:is([aria-pressed="true"], [aria-current="page"], [aria-current="true"], [aria-selected="true"], [data-on])::after {
     color: var(--text);
     opacity: 1;
     transform: translate(0, -54%);
@@ -647,30 +647,30 @@ html:not([data-look="classic"]) .word:is([aria-pressed="true"], [aria-current="p
 /* Flat: nothing casts a shadow (the pages' shadow-lg, shadow-[0_6px_...]).
    Lines drawn as shadows stay: rings, and the ones written inset or as a
    plain spread (shadow-[inset_...], shadow-[0_0_0_...]). */
-html:not([data-look="classic"]) [class*="shadow-"]:not([class*="shadow-[inset"]):not([class*="shadow-[0_0_0"]) {
+html:not([data-look]) [class*="shadow-"]:not([class*="shadow-[inset"]):not([class*="shadow-[0_0_0"]) {
     --tw-shadow: 0 0 #0000;
 }
 /* Text on the accent reads on a light one too (this look's inks are). */
-html:not([data-look="classic"]) .bg-brand {
+html:not([data-look]) .bg-brand {
     color: var(--on-brand);
 }
 /* What the keyboard is on: a line around it, a little off it. */
-html:not([data-look="classic"]) .focus-ring:focus-visible {
+html:not([data-look]) .focus-ring:focus-visible {
     box-shadow: none;
     outline: 1.5px solid var(--text);
     outline-offset: 2px;
 }
 /* Controls over artwork (banners, covers): the page's color, see-through. */
-html:not([data-look="classic"]) .glass {
+html:not([data-look]) .glass {
     background: color-mix(in oklab, var(--bg) 62%, transparent);
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     color: var(--text);
 }
 /* Menus, dialogs and popovers: the page's color, outlined; no blur. */
-html:not([data-look="classic"]) [role="menu"],
-html:not([data-look="classic"]) [role="dialog"],
-html:not([data-look="classic"]) [data-radix-popper-content-wrapper] > [data-state] {
+html:not([data-look]) [role="menu"],
+html:not([data-look]) [role="dialog"],
+html:not([data-look]) [data-radix-popper-content-wrapper] > [data-state] {
     border-color: var(--line-strong);
     border-radius: 2px;
     box-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.55);
@@ -681,20 +681,20 @@ html:not([data-look="classic"]) [data-radix-popper-content-wrapper] > [data-stat
    own ring). Nothing is drawn on the artwork. Pressed, it comes back down.
    The picture's box is what holds a [data-tv-ring] layer, or is one. Not on
    a TV, whose remote has its own mark. */
-html:not([data-look="classic"]):not(.tv) [data-tv-card] :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
+html:not([data-look]):not(.tv) [data-tv-card] :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
     transition: transform 0.2s var(--ease);
 }
-html:not([data-look="classic"]):not(.tv) [data-tv-card]:is(:hover, :focus-visible) :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
+html:not([data-look]):not(.tv) [data-tv-card]:is(:hover, :focus-visible) :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
     transform: translateY(-4px);
 }
-html:not([data-look="classic"]):not(.tv) [data-tv-card]:active :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
+html:not([data-look]):not(.tv) [data-tv-card]:active :is(:has(> [data-tv-ring]), [data-tv-ring]:not(.absolute)) {
     transform: translateY(-1px);
 }
 
 /* The sidebar's links: the open page stands in brackets, [ HOME ]; the one
    under the pointer gets them faintly. */
-html:not([data-look="classic"]) .nav-label::before,
-html:not([data-look="classic"]) .nav-label::after {
+html:not([data-look]) .nav-label::before,
+html:not([data-look]) .nav-label::after {
     color: var(--subtle);
     opacity: 0;
     display: inline-block;
@@ -702,23 +702,23 @@ html:not([data-look="classic"]) .nav-label::after {
         opacity 0.18s var(--ease),
         transform 0.18s var(--ease);
 }
-html:not([data-look="classic"]) .nav-label::before {
+html:not([data-look]) .nav-label::before {
     content: "[" / "";
     margin-right: 0.6em;
     transform: translateX(5px);
 }
-html:not([data-look="classic"]) .nav-label::after {
+html:not([data-look]) .nav-label::after {
     content: "]" / "";
     margin-left: 0.6em;
     transform: translateX(-5px);
 }
-html:not([data-look="classic"]) a:hover > .nav-label::before,
-html:not([data-look="classic"]) a:hover > .nav-label::after {
+html:not([data-look]) a:hover > .nav-label::before,
+html:not([data-look]) a:hover > .nav-label::after {
     opacity: 0.55;
     transform: none;
 }
-html:not([data-look="classic"]) a[aria-current="page"] > .nav-label::before,
-html:not([data-look="classic"]) a[aria-current="page"] > .nav-label::after {
+html:not([data-look]) a[aria-current="page"] > .nav-label::before,
+html:not([data-look]) a[aria-current="page"] > .nav-label::after {
     color: var(--muted);
     opacity: 1;
     transform: none;
@@ -786,7 +786,7 @@ html[data-scheme="light"] .on-dark {
 
 /* The TV: nothing blurred (its WebView is slow at it), what's over artwork
    a little denser so it reads from the sofa. */
-html.tv:not([data-look="classic"]) .glass {
+html.tv:not([data-look]) .glass {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: color-mix(in oklab, var(--bg) 82%, transparent);
@@ -816,18 +816,18 @@ html.tv:not([data-look="classic"]) .glass {
    button gives a little; menus and
    dialogs leave as they came, a touch faster. Not on a TV (its box is slow),
    and reduced motion ends them at once (the rules above). */
-html:not([data-look="classic"]) .word:active:not(:disabled)::before {
+html:not([data-look]) .word:active:not(:disabled)::before {
     transform: translate(3px, -54%);
     opacity: 1;
 }
-html:not([data-look="classic"]) .word:active:not(:disabled)::after {
+html:not([data-look]) .word:active:not(:disabled)::after {
     transform: translate(-3px, -54%);
     opacity: 1;
 }
-html:not([data-look="classic"]) a:active > .nav-label::before {
+html:not([data-look]) a:active > .nav-label::before {
     transform: translateX(3px);
 }
-html:not([data-look="classic"]) a:active > .nav-label::after {
+html:not([data-look]) a:active > .nav-label::after {
     transform: translateX(-3px);
 }
 html:not([data-look="classic"]):not(.tv) :is(.bg-brand, .bg-white):is(button, a):active:not(:disabled) {
@@ -873,3 +873,44 @@ html:not([data-look="classic"]):not(.tv) .fade-in[data-state="closed"] {
 .stagger > :nth-child(10) { --n: 9; }
 .stagger > :nth-child(11) { --n: 10; }
 .stagger > :nth-child(12) { --n: 11; }
+
+/* ---------------------------------------------------------------------------
+   Cinema (experimental; Settings › Appearance): the Classic look's rounded,
+   filled parts on a near-black ground, in one plain face with heavy titles.
+   The sidebar is a rail of icons over the pages (App sets --rail to its
+   width; 0 elsewhere), and banners reach under it to the window's edge. */
+html[data-look="cinema"] {
+    --line: rgb(255 255 255 / 0.07);
+    --line-strong: rgb(255 255 255 / 0.13);
+    --text: #f1f1f3;
+    --display-face: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+    --mono-face: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+html[data-look="cinema"] :is(h1, h2, h3) {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+html[data-look="cinema"] .bg-brand {
+    color: var(--on-brand);
+}
+html[data-look="cinema"] .card {
+    border-radius: 0.875rem;
+}
+html[data-look="cinema"] [role="menu"],
+html[data-look="cinema"] [role="dialog"],
+html[data-look="cinema"] [data-radix-popper-content-wrapper] > [data-state] {
+    border-color: var(--line-strong);
+    border-radius: 12px;
+}
+/* A banner at the top of a page: out under the rail. What's written on it
+   stays clear of the rail. */
+.rail-bleed {
+    margin-left: calc(-1 * var(--rail, 0px));
+    width: calc(100% + var(--rail, 0px));
+}
+.rail-out {
+    left: calc(-1 * var(--rail, 0px));
+}
+.rail-in {
+    left: var(--rail, 0px);
+}

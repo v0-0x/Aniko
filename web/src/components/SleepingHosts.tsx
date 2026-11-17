@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui"
 import { api } from "@/lib/api"
 import { useStatus } from "@/lib/queries"
-import { useClassic } from "@/lib/themes"
+import { useCinema, useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 
 // Home: a computer that shares its library with this device doesn't answer
@@ -12,6 +12,7 @@ import { toast } from "@/lib/toast"
 // here (Wake-on-LAN) gets a button for it.
 export function SleepingHosts() {
     const classic = useClassic()
+    const cinema = useCinema()
     const { data: status } = useStatus()
     const qc = useQueryClient()
     const [busy, setBusy] = useState("")
@@ -30,7 +31,7 @@ export function SleepingHosts() {
         }
     }
     // This look: a line each, not a box over the banner.
-    if (!classic)
+    if (!classic || cinema)
         return (
             <div className="flex flex-col px-6 md:px-8 xl:px-10">
                 {hosts.map(h => (

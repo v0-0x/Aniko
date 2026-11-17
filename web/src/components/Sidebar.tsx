@@ -30,7 +30,7 @@ import { api, desktop } from "@/lib/api"
 import { useMediaQuery, usePersisted } from "@/lib/hooks"
 import { useCollection, useDownloads, useSharing, useStatus } from "@/lib/queries"
 import { notificationsMutedStore, torrentCountStore, useStore } from "@/lib/store"
-import { holidayStore, useClassic } from "@/lib/themes"
+import { holidayStore, useCinema, useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import { cn, img } from "@/lib/utils"
 import { ThemesMenu } from "./ThemesMenu"
@@ -201,7 +201,10 @@ export function Sidebar() {
     const location = useLocation()
     const navigate = useNavigate()
     const qc = useQueryClient()
-    const wide = useMediaQuery(WIDE)
+    // Cinema (experimental): a rail of icons over the pages' left edge,
+    // whatever the window's width (a TV keeps the names).
+    const rail = useCinema() && !tv
+    const wide = useMediaQuery(WIDE) && !rail
     // The Classic look (before 3.0.37): rounded links, the open page a pill
     // in the accent. This look: words, the open page in brackets.
     const classic = useClassic()
@@ -290,7 +293,13 @@ export function Sidebar() {
     }
 
     return (
-        <aside className={cn("relative z-40 flex h-full shrink-0 flex-col py-3", wide ? "w-52 px-2.5" : "w-16 items-center px-2")}>
+        <aside
+            className={cn(
+                "z-40 flex shrink-0 flex-col py-3",
+                rail ? "absolute inset-y-0 left-0 w-[4.5rem] items-center bg-gradient-to-r from-bg/75 via-bg/40 to-transparent px-2" : "relative h-full",
+                !rail && (wide ? "w-52 px-2.5" : "w-16 items-center px-2"),
+            )}
+        >
             <div className={cn("mb-4 flex", wide ? "items-center gap-1" : "flex-col items-center gap-1")}>
                 {/* Home is the first link below: the remote skips this one. */}
                 <button

@@ -255,6 +255,7 @@ export type Settings = {
         seasonalEffects?: boolean
         // Aniko's look from before 3.0.37 (plum and pink, rounded).
         classicLook?: boolean
+        look?: string
     }
     discord: { richPresence: boolean; clientId: string }
     extensions: { marketplaceUrl: string; autoUpdate: boolean }
