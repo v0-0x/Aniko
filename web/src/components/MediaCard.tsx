@@ -116,10 +116,9 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                         {formatLabel(media.format)}
                         {media.seasonYear ? ` · ${media.seasonYear}` : ""}
                     </span>
-                    {listEntry && total > 0 && (
-                        <span className="ml-auto shrink-0 tabular-nums">
-                            {progress}/{total}
-                        </span>
+                    {/* A manga still coming out has no count yet: the chapter reached. */}
+                    {listEntry && (total > 0 || (media.type === "MANGA" && progress > 0)) && (
+                        <span className="ml-auto shrink-0 tabular-nums">{total > 0 ? `${progress}/${total}` : `Ch. ${progress}`}</span>
                     )}
                 </div>
             </div>

@@ -428,6 +428,14 @@ export function useAutoRules() {
     return useQuery({ queryKey: ["auto-rules"], queryFn: () => api.get<AutoRule[]>("/api/autodownloader/rules") })
 }
 
+// The manga lists (the Manga page's; Home's Continue reading).
+export function useMangaCollection() {
+    return useQuery({
+        queryKey: ["manga", "collection"],
+        queryFn: () => api.get<{ lists: { status: string; isCustomList: boolean; entries: ListEntry[] }[] | null }>("/api/manga/collection"),
+    })
+}
+
 export function useMangaChapters(mediaId: number, provider: string) {
     return useQuery({
         queryKey: ["manga", "chapters", mediaId, provider],

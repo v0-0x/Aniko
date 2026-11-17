@@ -7,15 +7,13 @@ import { DownloadedGrid } from "@/components/MangaDownloads"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { Button, EmptyState, ErrorState, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
+import { useMangaCollection } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
 import type { ListEntry } from "@/lib/types"
 import { LIST_STATUS_MANGA } from "@/lib/utils"
 
 export default function MangaPage() {
-    const { data, isLoading, error, refetch, isFetching } = useQuery({
-        queryKey: ["manga", "collection"],
-        queryFn: () => api.get<{ lists: { status: string; isCustomList: boolean; entries: ListEntry[] }[] | null }>("/api/manga/collection"),
-    })
+    const { data, isLoading, error, refetch, isFetching } = useMangaCollection()
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
     const [status, setStatus] = useState("CURRENT")
     const classic = useClassic()

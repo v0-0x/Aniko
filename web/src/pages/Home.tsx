@@ -5,7 +5,8 @@ import { EpisodeCard } from "@/components/EpisodeCard"
 import { LoginDialog } from "@/components/LoginDialog"
 import { DevicePrompts } from "@/components/DevicePrompts"
 import { SleepingHosts } from "@/components/SleepingHosts"
-import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
+import { ListCardMenu } from "@/components/ListCardMenu"
+import { Carousel, MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { ProgramsNotice } from "@/components/ProgramsNotice"
@@ -15,7 +16,7 @@ import { WatchPicker } from "@/components/WatchPicker"
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { usePlay } from "@/lib/play"
-import { fetchLanguageMode, useCollection, useScan, useStatus } from "@/lib/queries"
+import { fetchLanguageMode, useCollection, useMangaCollection, useScan, useStatus } from "@/lib/queries"
 import { createStore, scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
 import { androidApp, tv } from "@/lib/tv"
@@ -220,6 +221,8 @@ export default function HomePage() {
                 <ProgramsNotice />
 
                 {continueItems.length > 0 && <ContinueRow items={continueItems} onFocus={heroStore.set} />}
+                {/* Not with "Only downloaded anime": that's about anime files. */}
+                {!onlyLocal && <ContinueReading genre={genre} />}
                 {isLoading && (
                     <div className="flex gap-5">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -538,6 +541,44 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
             ))}
         </div>
         </div>
+    )
+}
+
+// The manga being read (AniList's Reading and Rereading), the last read
+// first: each opens its page, where reading goes on.
+function ContinueReading({ genre }: { genre: string | null }) {
+    const { data } = useMangaCollection()
+    const classic = useClassic()
+    const cinema = useCinema()
+    const items = useMemo(
+        () =>
+            (data?.lists ?? [])
+                .filter(l => !l.isCustomList && (l.status === "CURRENT" || l.status === "REPEATING"))
+                .flatMap(l => l.entries)
+                .filter(e => !genre || e.media.genres?.includes(genre))
+                .sort((a, b) => b.updatedAt - a.updatedAt),
+        [data, genre],
+    )
+    if (!items.length) return null
+    return (
+        <section className="fade-in">
+            <div className="mb-4 flex items-baseline gap-2.5">
+                <h2 className={cn("font-semibold tracking-tight", cinema ? "text-2xl" : "text-xl")}>Continue reading</h2>
+                {!classic && <HeadRule />}
+                <span className="text-sm text-subtle tabular-nums">{items.length}</span>
+            </div>
+            <Carousel>
+                {items.map(e => (
+                    <MediaCard
+                        key={e.mediaId}
+                        media={e.media}
+                        listEntry={e}
+                        // The menu tells the list status from the media's entry.
+                        menu={<ListCardMenu media={{ ...e.media, mediaListEntry: { id: e.id, status: e.status, progress: e.progress, score: e.score, repeat: e.repeat } }} />}
+                    />
+                ))}
+            </Carousel>
+        </section>
     )
 }
 
