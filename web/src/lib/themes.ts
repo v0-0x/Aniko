@@ -79,6 +79,8 @@ export const CLASSIC_THEMES: ColorTheme[] = [
 export const CINEMA_THEMES: ColorTheme[] = [
     { id: "aniko", name: "Aniko", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#0a0a0b", s1: "#131316", s2: "#19191d", s3: "#212126", s4: "#2a2a30", muted: "#a3a3ad", subtle: "#74747e" } },
     ...CLASSIC_THEMES.slice(1),
+    // Two light ones: this look's White and Paper, with a violet that reads on them.
+    ...COLOR_THEMES.filter(t => t.light).map(t => ({ ...t, accent: "#5b4bd6" })),
 ]
 
 // A theme saved in one look, drawn in the other: its nearest there (the
@@ -221,7 +223,7 @@ export function applyTheme(t: { theme: ColorTheme; holiday: Holiday | null; acce
     const p = t.theme.palette
     // A holiday leans the colors toward its own, a little (the window most).
     const lean = (color: string, pct: number) => (t.holiday ? `color-mix(in oklab, ${color} ${100 - pct}%, ${t.holiday.tint})` : color)
-    const light = !!t.theme.light && !t.classic
+    const light = !!t.theme.light && t.look !== "classic"
     const vars: Record<string, string> = {
         "--brand": t.accent,
         "--on-brand": onAccent(t.accent, t.classic),
@@ -262,7 +264,7 @@ function setVars(vars: Record<string, string>, holiday: string, look: Look, ligh
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v)
     // For index.css (data-scheme="light"): dark text on a light page. Never
     // in the Classic look, which has no light themes.
-    if (light && !classic) el.dataset.scheme = "light"
+    if (light && look !== "classic") el.dataset.scheme = "light"
     else delete el.dataset.scheme
     if (holiday) el.dataset.holiday = holiday
     else delete el.dataset.holiday

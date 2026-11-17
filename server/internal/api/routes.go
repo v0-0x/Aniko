@@ -343,6 +343,30 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/manga/collection", h(func(r *http.Request) (any, error) {
 		return s.app.Platform.Collection(r.Context(), "MANGA", r.URL.Query().Get("refresh") == "1")
 	}))
+	// The last chapter known of each manga being read (for the count of
+	// unread ones), from the chapter lists already looked up; the stale
+	// ones are looked up again behind it.
+	m.HandleFunc("GET /api/manga/latest", h(func(r *http.Request) (any, error) {
+		c, err := s.app.Platform.Collection(r.Context(), "MANGA", false)
+		if err != nil || c == nil {
+			return map[int]float64{}, nil
+		}
+		var ids []int
+		var medias []*anilist.Media
+		for _, l := range c.Lists {
+			if l.IsCustomList || (l.Status != "CURRENT" && l.Status != "REPEATING") {
+				continue
+			}
+			for _, e := range l.Entries {
+				if e.Media != nil {
+					ids = append(ids, e.MediaID)
+					medias = append(medias, e.Media)
+				}
+			}
+		}
+		go s.app.Manga.Recheck(medias)
+		return s.app.Manga.Latest(ids), nil
+	}))
 	m.HandleFunc("GET /api/manga/providers", h(s.mangaProviders))
 	m.HandleFunc("GET /api/manga/{id}", h(func(r *http.Request) (any, error) {
 		id, err := pathID(r, "id")

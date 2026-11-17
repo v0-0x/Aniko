@@ -436,6 +436,12 @@ export function useMangaCollection() {
     })
 }
 
+// The last chapter known of each manga being read, by its id (the chapter
+// lists already looked up): how many are unread.
+export function useMangaLatest() {
+    return useQuery({ queryKey: ["manga", "latest"], queryFn: () => api.get<Record<string, number>>("/api/manga/latest"), staleTime: 5 * 60_000 })
+}
+
 export function useMangaChapters(mediaId: number, provider: string) {
     return useQuery({
         queryKey: ["manga", "chapters", mediaId, provider],

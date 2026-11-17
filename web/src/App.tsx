@@ -253,7 +253,7 @@ function AnikoApp() {
             )}
             {tv && <TvMenu />}
             <Toaster
-                theme={look.theme.light && !classic ? "light" : "dark"}
+                theme={look.theme.light && look.look !== "classic" ? "light" : "dark"}
                 position="top-right"
                 richColors
                 closeButton

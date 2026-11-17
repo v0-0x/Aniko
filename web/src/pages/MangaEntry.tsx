@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { BookOpen, Download, MoreHorizontal, RefreshCw, Search, Wand2 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "@/lib/toast"
 import { ListStatusButton, ProgressEditor, ScoreEditor } from "@/components/entry/ListEditor"
 import { ChapterDownload, DownloadDialog, DownloadsPanel, LocalChapters, mangaDownloadActive, useChapterDownload, useMangaDownloads, useMangaLocal, useSharedManga } from "@/components/MangaDownloads"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
-import { Badge, Button, ContextArea, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Skeleton } from "@/components/ui"
+import { Badge, Button, ContextArea, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Skeleton, Spinner } from "@/components/ui"
 import { api, qs } from "@/lib/api"
 import { useMangaChapters, useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
@@ -24,7 +24,7 @@ export default function MangaEntryPage() {
     const [provider, setProvider] = useState<string>(() => localStorage.getItem(`aniko-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
     const effective = provider || providers?.[0]?.id || ""
     const { data: ch, isLoading: chLoading, error, refetch, isFetching } = useMangaChapters(id, effective)
-    const { data: position } = useQuery({
+    const { data: position, isLoading: positionLoading } = useQuery({
         queryKey: ["manga", "position", id],
         queryFn: () => api.get<MangaPosition | null>(`/api/manga/${id}/position`),
         enabled: id > 0,
@@ -34,7 +34,7 @@ export default function MangaEntryPage() {
     const [expanded, setExpanded] = useState(false)
     // Downloaded chapters (read from here, also offline), and those on
     // their way.
-    const { data: local } = useMangaLocal(id)
+    const { data: local, isLoading: localLoading } = useMangaLocal(id)
     // And on the Anikos and servers this one uses.
     const { data: onServers } = useSharedManga(id)
     const { data: downloads } = useMangaDownloads()
@@ -87,12 +87,13 @@ export default function MangaEntryPage() {
     const localChapters = local?.chapters ?? []
     const localByNumber = new Map(localChapters.map(c => [c.chapter, c]))
     const jobByNumber = new Map((downloads ?? []).filter(j => j.mediaId === id && j.state !== "done").map(j => [j.chapter, j]))
-    const readLocal = (c: LocalMangaChapter, page?: number) => navigate(`/manga/read${qs({ id, provider: "local", chapter: c.file, page: page ? String(page) : undefined })}`)
+    const readLocal = (c: LocalMangaChapter, page?: number, replace?: boolean) =>
+        navigate(`/manga/read${qs({ id, provider: "local", chapter: c.file, page: page ? String(page) : undefined })}`, { replace })
     // A downloaded chapter reads from here.
-    const read = (c: MangaChapter, page?: number) => {
+    const read = (c: MangaChapter, page?: number, replace?: boolean) => {
         const l = localByNumber.get(c.chapter)
-        if (l) return readLocal(l, page)
-        navigate(`/manga/read${qs({ id, provider: effective, chapter: c.id, page: page ? String(page) : undefined })}`)
+        if (l) return readLocal(l, page, replace)
+        navigate(`/manga/read${qs({ id, provider: effective, chapter: c.id, page: page ? String(page) : undefined })}`, { replace })
     }
     const desc = cleanDescription(media.description)
     const score = media.meanScore ?? media.averageScore
@@ -109,8 +110,20 @@ export default function MangaEntryPage() {
             .then(() => qc.invalidateQueries({ queryKey: ["manga-library"] }))
             .catch(e => toast.error(e.message))
 
+    // From Home's Continue reading (continue=1): straight into the reader
+    // where reading stopped, once that's known (the chapters, the saved
+    // place, what's downloaded). Without chapters to read, this page.
+    const wantContinue = params.get("continue") === "1"
+    const settling = chLoading || positionLoading || localLoading
+    if (wantContinue && settling)
+        return (
+            <div className="grid h-full place-items-center">
+                <Spinner className="size-7" />
+            </div>
+        )
     return (
         <div className="min-h-full pb-24">
+            {wantContinue && next && <Once run={() => read(next, resumePage, true)} />}
             <div className="relative">
                 <div className="rail-out absolute inset-x-0 top-0 h-[460px] overflow-hidden">
                     {banner(media) && <img src={banner(media)} alt="" className="size-full object-cover opacity-80 fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />}
@@ -341,4 +354,16 @@ function MangaMatchDialog({ open, onOpenChange, provider, mediaId, defaultQuery 
             </div>
         </Dialog>
     )
+}
+
+// Runs once, when it's first drawn.
+function Once({ run }: { run: () => void }) {
+    const done = useRef(false)
+    useEffect(() => {
+        if (done.current) return
+        done.current = true
+        run()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return null
 }

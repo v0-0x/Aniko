@@ -15,8 +15,9 @@ import { UpdateBanner } from "@/components/UpdateBanner"
 import { WatchPicker } from "@/components/WatchPicker"
 import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
+import { HOME_ROWS, homeOrder } from "@/lib/home"
 import { usePlay } from "@/lib/play"
-import { fetchLanguageMode, useCollection, useMangaCollection, useScan, useStatus } from "@/lib/queries"
+import { fetchLanguageMode, useCollection, useMangaCollection, useMangaLatest, useScan, useStatus } from "@/lib/queries"
 import { createStore, scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
 import { androidApp, tv } from "@/lib/tv"
@@ -140,6 +141,42 @@ export default function HomePage() {
         setOnlyLocal(false)
     }
 
+    const listSection = (l: (typeof lists)[number]) => (
+        <section key={l.key} className="fade-in">
+            <div className="mb-4 flex items-baseline gap-2.5">
+                <h2 className={cn("font-semibold tracking-tight", cinema ? "text-2xl" : "text-xl")}>{l.name}</h2>
+                {!classic && <HeadRule />}
+                <span className="text-sm text-subtle tabular-nums">{l.items.length}</span>
+            </div>
+            <MediaGrid size={status?.settings.ui.cardSize}>
+                {l.items.map(it => (
+                    <MediaCard
+                        key={it.media.id}
+                        media={it.media}
+                        listEntry={it.listEntry}
+                        localCount={it.localFiles}
+                        downloaded={it.downloaded}
+                        // Here only because of local files, which the menu acts on.
+                        menu={l.key === "LOCAL" ? libraryMenu.menu(it.media) : undefined}
+                    />
+                ))}
+            </MediaGrid>
+        </section>
+    )
+    // Home's rows: this device's order, and the ones it doesn't show.
+    const hidden = new Set(status?.settings.ui.homeHidden ?? [])
+    const rowOrder = homeOrder(status?.settings.ui.homeOrder)
+    const shownContinue = hidden.has("continue") ? [] : continueItems
+    const row = (id: string) => {
+        if (hidden.has(id)) return null
+        if (id === "continue") return shownContinue.length > 0 ? <ContinueRow key={id} items={shownContinue} onFocus={heroStore.set} /> : null
+        // Not with "Only downloaded anime": that's about anime files.
+        if (id === "reading") return onlyLocal ? null : <ContinueReading key={id} genre={genre} />
+        if (id === "genres") return (data?.genres?.length ?? 0) > 0 ? <GenreBar key={id} genres={data!.genres!} value={genre} onChange={setGenre} /> : null
+        const l = lists.find(x => x.key === id)
+        return l ? listSection(l) : null
+    }
+
     return (
         <div className="relative min-h-full pb-24">
             <WatchPicker open={picking} onOpenChange={setPicking} />
@@ -153,7 +190,7 @@ export default function HomePage() {
                 </p>
             )}
             <Hero
-                items={continueItems}
+                items={shownContinue}
                 loading={isLoading}
                 toolbar={
                     <div className="glass flex items-center gap-0.5 rounded-lg p-1 [&_button]:text-white/80 [&_button:hover]:bg-white/10 [&_button:hover]:text-white [&_button[data-state=open]]:bg-white/10">
@@ -220,9 +257,9 @@ export default function HomePage() {
                 <PluginSlot slot="after-home-screen-toolbar" />
                 <ProgramsNotice />
 
-                {continueItems.length > 0 && <ContinueRow items={continueItems} onFocus={heroStore.set} />}
-                {/* Not with "Only downloaded anime": that's about anime files. */}
-                {!onlyLocal && <ContinueReading genre={genre} />}
+                {/* The rows, in this device's order (Settings › Appearance › Home), without the ones it hides. */}
+                {rowOrder.map(row)}
+                {lists.filter(l => !HOME_ROWS.some(r => r.id === l.key)).map(listSection)}
                 {isLoading && (
                     <div className="flex gap-5">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -230,8 +267,6 @@ export default function HomePage() {
                         ))}
                     </div>
                 )}
-
-                {(data?.genres?.length ?? 0) > 0 && <GenreBar genres={data!.genres!} value={genre} onChange={setGenre} />}
 
                 {isEmpty && (
                     <Welcome
@@ -268,29 +303,6 @@ export default function HomePage() {
                         {genre ? `${onlyLocal ? "None of your downloaded anime" : "Nothing in your lists"} is tagged ${genre}.` : "None of the anime in your lists are downloaded yet."}
                     </EmptyState>
                 )}
-
-                {lists.map(l => (
-                    <section key={l.key} className="fade-in">
-                        <div className="mb-4 flex items-baseline gap-2.5">
-                            <h2 className={cn("font-semibold tracking-tight", cinema ? "text-2xl" : "text-xl")}>{l.name}</h2>
-                            {!classic && <HeadRule />}
-                            <span className="text-sm text-subtle tabular-nums">{l.items.length}</span>
-                        </div>
-                        <MediaGrid size={status?.settings.ui.cardSize}>
-                            {l.items.map(it => (
-                                <MediaCard
-                                    key={it.media.id}
-                                    media={it.media}
-                                    listEntry={it.listEntry}
-                                    localCount={it.localFiles}
-                                    downloaded={it.downloaded}
-                                    // Here only because of local files, which the menu acts on.
-                                    menu={l.key === "LOCAL" ? libraryMenu.menu(it.media) : undefined}
-                                />
-                            ))}
-                        </MediaGrid>
-                    </section>
-                ))}
 
                 <PluginSlot slot="home-screen-bottom" />
             </div>
@@ -545,9 +557,12 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
 }
 
 // The manga being read (AniList's Reading and Rereading), the last read
-// first: each opens its page, where reading goes on.
+// first: each opens the reader where reading stopped (its page does, once
+// it has the chapters), with how many chapters are new.
 function ContinueReading({ genre }: { genre: string | null }) {
     const { data } = useMangaCollection()
+    const { data: latest } = useMangaLatest()
+    const navigate = useNavigate()
     const classic = useClassic()
     const cinema = useCinema()
     const items = useMemo(
@@ -573,8 +588,18 @@ function ContinueReading({ genre }: { genre: string | null }) {
                         key={e.mediaId}
                         media={e.media}
                         listEntry={e}
-                        // The menu tells the list status from the media's entry.
-                        menu={<ListCardMenu media={{ ...e.media, mediaListEntry: { id: e.id, status: e.status, progress: e.progress, score: e.score, repeat: e.repeat } }} />}
+                        to={`/manga/entry?id=${e.mediaId}&continue=1`}
+                        latest={latest?.[e.mediaId]}
+                        menu={
+                            <>
+                                <DropdownItem icon={<Info />} onSelect={() => navigate(`/manga/entry?id=${e.mediaId}`)}>
+                                    Manga page
+                                </DropdownItem>
+                                <DropdownSeparator />
+                                {/* The menu tells the list status from the media's entry. */}
+                                <ListCardMenu media={{ ...e.media, mediaListEntry: { id: e.id, status: e.status, progress: e.progress, score: e.score, repeat: e.repeat } }} />
+                            </>
+                        }
                     />
                 ))}
             </Carousel>

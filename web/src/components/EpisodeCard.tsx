@@ -58,7 +58,7 @@ export function EpisodeCard({ image, number, title, subtitle, runtime, watched, 
             }}
             className={cn("group/ep focus-ring relative flex cursor-pointer flex-col gap-2.5 rounded-[10px] outline-none", !aired && "cursor-default opacity-50", className)}
         >
-            <div className={cn("relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)]" : "on-dark rounded-sm")}>
+            <div className={cn("on-dark relative aspect-video overflow-hidden bg-surface-2", classic ? "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)]" : "rounded-sm")}>
                 {image ? (
                     <img
                         src={img(image)}

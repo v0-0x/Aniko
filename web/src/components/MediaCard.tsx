@@ -17,6 +17,10 @@ type Props = {
     showProgress?: boolean
     size?: "sm" | "md" | "lg"
     menu?: React.ReactNode // items of a menu opened with a "⋯" button or a right-click
+    // Where it goes instead of the media's page (Home's Continue reading: the reader).
+    to?: string
+    // A manga's last chapter known: those after the one reached are new.
+    latest?: number
 }
 
 const statusDot: Record<string, string> = {
@@ -28,15 +32,13 @@ const statusDot: Record<string, string> = {
     DROPPED: "bg-rose-400",
 }
 
-export function MediaCard({ media, listEntry, localCount, downloaded, className, showProgress = true, menu }: Props) {
+export function MediaCard({ media, listEntry, localCount, downloaded, className, showProgress = true, menu, to, latest }: Props) {
     const total = media.type === "MANGA" ? media.chapters ?? 0 : totalEpisodes(media)
     const progress = listEntry?.progress ?? 0
     const aired = airedEpisodes(media)
     // "new" = aired episodes of an airing show the user hasn't watched yet
-    const behind =
-        media.type !== "MANGA" && media.status === "RELEASING" && listEntry && (listEntry.status === "CURRENT" || listEntry.status === "REPEATING")
-            ? Math.max(0, aired - progress)
-            : 0
+    const reading = !!listEntry && (listEntry.status === "CURRENT" || listEntry.status === "REPEATING")
+    const behind = !reading ? 0 : media.type === "MANGA" ? Math.max(0, Math.floor(latest ?? 0) - progress) : media.status === "RELEASING" ? Math.max(0, aired - progress) : 0
     const nextAir = media.nextAiringEpisode
     const score = media.meanScore ?? media.averageScore
     // The Classic look (before 3.0.37): rounder, a shadow under the cover,
@@ -45,13 +47,13 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
     const label = classic ? "rounded-md bg-black/65 backdrop-blur-sm" : "rounded-sm bg-black/75"
 
     const card = (
-        <Link to={entryUrl(media)} data-tv-card className="group/card focus-ring relative flex flex-col gap-2.5 rounded-[10px] outline-none">
+        <Link to={to ?? entryUrl(media)} data-tv-card className="group/card focus-ring relative flex flex-col gap-2.5 rounded-[10px] outline-none">
             {/* The Classic look's: lifted a little under the pointer (not on a TV: it's slow at it). */}
             <div
                 className={cn(
-                    "relative aspect-[2/3] overflow-hidden bg-surface-2",
+                    "on-dark relative aspect-[2/3] overflow-hidden bg-surface-2",
                     // What's on a cover is white on dark in a light theme too (on-dark).
-                    classic ? "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out" : "on-dark rounded-sm",
+                    classic ? "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out" : "rounded-sm",
                     !tv && classic && "group-hover/card:-translate-y-0.5 group-hover/card:shadow-[0_12px_28px_-14px_rgb(0_0_0/0.9)]",
                 )}
                 // The cover's color, until it's there (and when it doesn't come).
@@ -150,7 +152,7 @@ function CardMenu({ menu, className, children }: { menu: React.ReactNode; classN
                         size="xs"
                         className={cn(
                             "absolute text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/85 hover:text-white focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100",
-                            classic ? "top-1.5 right-1.5 rounded-lg bg-black/65 backdrop-blur-sm" : "on-dark top-3 right-3 rounded-sm bg-black/75",
+                            classic ? "on-dark top-1.5 right-1.5 rounded-lg bg-black/65 backdrop-blur-sm" : "on-dark top-3 right-3 rounded-sm bg-black/75",
                         )}
                     >
                         <Ellipsis className="size-4" />

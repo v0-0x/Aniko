@@ -249,6 +249,8 @@ export type Settings = {
         blurUnwatched: boolean
         titleLanguage?: "english" | "romaji"
         homeSections: string[]
+        homeOrder?: string[] | null
+        homeHidden?: string[] | null
         // lib/themes.ts: a COLOR_THEMES id; "auto", "off" or a HOLIDAYS id.
         colorTheme?: string
         seasonal?: string

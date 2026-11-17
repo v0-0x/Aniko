@@ -266,6 +266,11 @@ type UISettings struct {
 	ShowEpisodeTitle bool     `json:"showEpisodeTitle"`
 	BlurUnwatched    bool     `json:"blurUnwatched"` // spoiler protection
 	HomeSections     []string `json:"homeSections"`
+	// Home's rows on this device: the order they're in (those not named
+	// keep their own, after the named ones), and the ones not shown. The
+	// names are web/src/pages/Home.tsx's.
+	HomeOrder  []string `json:"homeOrder"`
+	HomeHidden []string `json:"homeHidden"`
 	// The anime titles: "english" (where AniList has one) or "romaji".
 	TitleLanguage string `json:"titleLanguage"`
 	// The colors of the app (ColorThemes), and the holiday themes: "auto"
@@ -444,6 +449,8 @@ func (c Settings) clone() Settings {
 	c.Library.ExtraDirs = slices.Clone(c.Library.ExtraDirs)
 	c.Library.IgnorePatterns = slices.Clone(c.Library.IgnorePatterns)
 	c.UI.HomeSections = slices.Clone(c.UI.HomeSections)
+	c.UI.HomeOrder = slices.Clone(c.UI.HomeOrder)
+	c.UI.HomeHidden = slices.Clone(c.UI.HomeHidden)
 	return c
 }
 

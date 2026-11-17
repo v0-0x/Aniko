@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/v0-0x/Aniko/server/internal/anilist"
@@ -22,6 +23,8 @@ type Service struct {
 	db       *db.DB
 	exts     *extensions.Manager
 	platform *anilist.Platform
+	// A Recheck is running.
+	rechecking atomic.Bool
 }
 
 func NewService(d *db.DB, e *extensions.Manager, p *anilist.Platform) *Service {
@@ -81,7 +84,7 @@ func (s *Service) Chapters(ctx context.Context, provider string, media *anilist.
 	if err != nil {
 		return nil, err
 	}
-	key := fmt.Sprintf("manga-ch:%s:%d", provider, media.ID)
+	key := chaptersKey(provider, media.ID)
 	var cached ChaptersResult
 	if !refresh && s.db.GetCache(key, &cached) {
 		return &cached, nil
@@ -138,6 +141,69 @@ func (s *Service) Chapters(ctx context.Context, provider string, media *anilist.
 		s.db.SetCache(key, res, time.Hour)
 	}
 	return res, nil
+}
+
+func chaptersKey(provider string, mediaID int) string {
+	return fmt.Sprintf("manga-ch:%s:%d", provider, mediaID)
+}
+
+// Latest is the last chapter known of each of these manga: the highest in
+// the chapter lists already looked up (any provider's, however old). A
+// manga never opened has none.
+func (s *Service) Latest(ids []int) map[int]float64 {
+	var providers []string
+	for _, p := range s.exts.MangaProviders() {
+		providers = append(providers, p.ID())
+	}
+	return latestChapters(s.db, providers, ids)
+}
+
+func latestChapters(d *db.DB, providers []string, ids []int) map[int]float64 {
+	out := map[int]float64{}
+	for _, p := range providers {
+		for _, id := range ids {
+			var c ChaptersResult
+			if !d.GetStaleCache(chaptersKey(p, id), &c) {
+				continue
+			}
+			for _, ch := range c.Chapters {
+				if n, err := strconv.ParseFloat(ch.Chapter, 64); err == nil && n > out[id] {
+					out[id] = n
+				}
+			}
+		}
+	}
+	return out
+}
+
+// Recheck looks the chapter lists of these manga up again where the one
+// kept has gone stale, one after the other, each at most every six hours.
+// Only a manga opened before (a list of it is kept): nothing is matched to
+// a provider by itself. One run at a time.
+func (s *Service) Recheck(medias []*anilist.Media) {
+	if !s.rechecking.CompareAndSwap(false, true) {
+		return
+	}
+	defer s.rechecking.Store(false)
+	for _, p := range s.exts.MangaProviders() {
+		for _, m := range medias {
+			key := chaptersKey(p.ID(), m.ID)
+			var c ChaptersResult
+			if s.db.GetCache(key, &c) || !s.db.GetStaleCache(key, &c) {
+				continue
+			}
+			mark := fmt.Sprintf("manga-recheck:%s:%d", p.ID(), m.ID)
+			var done bool
+			if s.db.GetCache(mark, &done) {
+				continue
+			}
+			s.db.SetCache(mark, true, 6*time.Hour)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			_, _ = s.Chapters(ctx, p.ID(), m, false)
+			cancel()
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 func (s *Service) Pages(ctx context.Context, provider, chapterID string) ([]extensions.MangaPage, error) {

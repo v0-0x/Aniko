@@ -36,7 +36,7 @@ import { isItem, playlistNext, playlistStore } from "@/lib/playlist"
 import { useFiller, useSettings } from "@/lib/queries"
 import { playerStore, useStore, type PlayerRequest } from "@/lib/store"
 import { formatDelay, setSubDelay, subDelay, subLine, subStyleStore, subStyleVars } from "@/lib/subtitles"
-import { useClassic } from "@/lib/themes"
+import { useCinema, useClassic } from "@/lib/themes"
 import type { EntryView, EpisodeView, Probe, StreamSource, TorrentStreamStatus, TrackPrefs } from "@/lib/types"
 import { android, androidApp, move, tv } from "@/lib/tv"
 import { cn, formatBytes, formatDuration, img, readLocal, title as animeTitle, writeLocal } from "@/lib/utils"
@@ -200,7 +200,10 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const [paused, setPaused] = useState(true)
     // This look's player (the classic one keeps 3.0's floating panel): a
     // mark in the middle for a moment when Play or Pause is pressed.
+    // Cinema has this one too, rounded (old: the Classic look alone).
     const classic = useClassic()
+    const cinema = useCinema()
+    const old = classic && !cinema
     const [mark, setMark] = useState<{ play: boolean; n: number } | null>(null)
     const [time, setTime] = useState(0) // absolute time
     const [duration, setDuration] = useState(0)
@@ -1099,12 +1102,14 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     // Episodes: one that can play here (a file for a file, aired for a
     // stream), and playing it; where this one's at is saved.
     const playable = (n: EpisodeView) => (req.kind === "local" ? !!n.file : n.aired || n.hasFile)
-    const playEpisode = (n: EpisodeView) => {
+    // fromStart (a row's right-click menu): not from where it was left.
+    const playEpisode = (n: EpisodeView, fromStart = false) => {
         setShowEpisodes(false)
+        if (n.number === episode && fromStart) startOver()
         if (n.number === episode || !playable(n)) return
         report(true)
-        if (req.kind === "local" && n.file) playerStore.set({ kind: "local", path: n.file.path, mediaId, episode: n.number })
-        else if (req.kind === "stream") playerStore.set({ ...req, episode: n.number, start: undefined })
+        if (req.kind === "local" && n.file) playerStore.set({ kind: "local", path: n.file.path, mediaId, episode: n.number, ...(fromStart && { start: 0 }) })
+        else if (req.kind === "stream") playerStore.set({ ...req, episode: n.number, start: fromStart ? 0 : undefined })
     }
     const toggleEpisodes = () => {
         if (showEpisodes) {
@@ -1704,9 +1709,9 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     if (f) loadSubFile(f)
                 }}
             />
-            {mark && !classic && started && !error && (
+            {mark && !old && started && !error && (
                 <div key={mark.n} aria-hidden onAnimationEnd={() => setMark(null)} className="player-mark pointer-events-none absolute inset-0 grid place-items-center">
-                    <span className={cn("grid place-items-center bg-black/55 text-white", mini ? "size-11" : "size-16")}>{mark.play ? <Play className={cn("fill-white", mini ? "size-5" : "size-7")} /> : <Pause className={cn("fill-white", mini ? "size-5" : "size-7")} />}</span>
+                    <span className={cn("grid place-items-center bg-black/55 text-white", mini ? "size-11" : "size-16", cinema && "rounded-full")}>{mark.play ? <Play className={cn("fill-white", mini ? "size-5" : "size-7")} /> : <Pause className={cn("fill-white", mini ? "size-5" : "size-7")} />}</span>
                 </div>
             )}
             {(loading || buffering || !started) && !error && (
@@ -1770,11 +1775,11 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 </div>
             )}
             <div data-tv-controls="top" hidden={mini} className={cn("absolute inset-x-0 top-0 flex items-center gap-4 bg-gradient-to-b from-black/80 to-transparent px-6 pt-5 pb-14 transition-opacity duration-300", controls || paused ? "opacity-100" : "pointer-events-none opacity-0")}>
-                <button onClick={close} className={cn("grid size-10 place-items-center text-white", classic ? "rounded-full bg-white/10 backdrop-blur hover:bg-white/20" : "-ml-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white")} aria-label="Close player">
+                <button onClick={close} className={cn("grid size-10 place-items-center text-white", old ? "rounded-full bg-white/10 backdrop-blur hover:bg-white/20" : "-ml-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white", cinema && "rounded-full")} aria-label="Close player">
                     <ArrowLeft className="size-5" />
                 </button>
                 <div className="min-w-0">
-                    <p className={cn("truncate text-lg font-semibold text-white", !classic && "font-display tracking-tight")}>{title}</p>
+                    <p className={cn("truncate text-lg font-semibold text-white", !old && "font-display tracking-tight")}>{title}</p>
                     {req.kind === "local" && probe && (
                         <p className={classic ? "text-xs text-white/60" : "label mt-0.5 text-[10px] text-white/55"}>
                             {method === "direct" ? "Direct play" : method === "remux" ? "Direct stream (remuxed)" : "Transcoding"} · {probe.video?.[0]?.codec?.toUpperCase()}{" "}
@@ -1800,17 +1805,18 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     // edge).
                     mini
                         ? "inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-10 pb-1.5"
-                        : classic
+                        : old
                           ? "inset-x-3 bottom-3 mx-auto max-w-5xl rounded-2xl bg-black/60 px-4 pt-3 pb-2 shadow-[0_16px_48px_-12px_rgb(0_0_0/0.8)] ring-1 ring-white/10 backdrop-blur-xl sm:inset-x-6 sm:bottom-5 sm:px-5"
                           : "inset-x-3 bottom-3 mx-auto max-w-5xl bg-black/65 px-4 pt-3 pb-2 backdrop-blur-xl sm:inset-x-6 sm:bottom-5 sm:px-5",
+                    cinema && !mini && "rounded-xl ring-1 ring-white/10",
                     controls || paused ? "opacity-100" : "pointer-events-none opacity-0",
                 )}
             >
                 {/* scrubber; in this look the time so far and the time left at its ends */}
-                <div className={cn(!classic && !mini && "mb-1.5 flex items-center gap-3")}>
-                {!classic && !mini && <span className="min-w-11 shrink-0 text-xs whitespace-nowrap text-white/90 tabular-nums">{formatDuration(time)}</span>}
+                <div className={cn(!old && !mini && "mb-1.5 flex items-center gap-3")}>
+                {!old && !mini && <span className="min-w-11 shrink-0 text-xs whitespace-nowrap text-white/90 tabular-nums">{formatDuration(time)}</span>}
                 <div
-                    className={cn("group/seek relative cursor-pointer", mini ? "mb-1 h-4" : classic ? "mb-1.5 h-5" : "h-5 min-w-0 flex-1")}
+                    className={cn("group/seek relative cursor-pointer", mini ? "mb-1 h-4" : old ? "mb-1.5 h-5" : "h-5 min-w-0 flex-1")}
                     onMouseMove={e => {
                         const r = e.currentTarget.getBoundingClientRect()
                         setHoverTime({ x: e.clientX - r.left, t: ((e.clientX - r.left) / r.width) * total })
@@ -1855,7 +1861,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                         </div>
                     )}
                 </div>
-                {!classic && !mini && <span className="min-w-11 shrink-0 text-right text-xs whitespace-nowrap text-white/55 tabular-nums">-{formatDuration(Math.max(0, total - time))}</span>}
+                {!old && !mini && <span className="min-w-11 shrink-0 text-right text-xs whitespace-nowrap text-white/55 tabular-nums">-{formatDuration(Math.max(0, total - time))}</span>}
                 </div>
 
                 <div className={cn("flex items-center text-white", mini ? "gap-0.5" : "gap-0.5 sm:gap-2")}>
@@ -1903,7 +1909,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                             className="w-0 accent-white opacity-0 transition-all duration-200 group-hover/vol:w-24 group-hover/vol:opacity-100"
                         />
                     </div>
-                    <span hidden={!classic && !mini} className={cn("font-medium whitespace-nowrap text-white/85 tabular-nums", mini ? "ml-1 text-xs" : "ml-1 text-sm sm:ml-2")}>
+                    <span hidden={!old && !mini} className={cn("font-medium whitespace-nowrap text-white/85 tabular-nums", mini ? "ml-1 text-xs" : "ml-1 text-sm sm:ml-2")}>
                         {formatDuration(time)} <span className="text-white/45">/ {formatDuration(total)}</span>
                     </span>
 
@@ -2237,7 +2243,7 @@ function EpisodesPanel({
     art: string
     leaving: boolean
     playable: (n: EpisodeView) => boolean
-    onPlay: (n: EpisodeView) => void
+    onPlay: (n: EpisodeView, fromStart?: boolean) => void
     onClose: () => void
 }) {
     const panel = useRef<HTMLDivElement>(null)
@@ -2247,7 +2253,7 @@ function EpisodesPanel({
     // second): through refs, the tiles aren't drawn again for that.
     const handlers = useRef({ onPlay, onClose })
     handlers.current = { onPlay, onClose }
-    const play = useCallback((n: EpisodeView) => handlers.current.onPlay(n), [])
+    const play = useCallback((n: EpisodeView, fromStart?: boolean) => handlers.current.onPlay(n, fromStart), [])
     // A long show a hundred at a time (a TV draws a long list slowly),
     // opening on the hundred with the one playing.
     const ranges = useMemo(() => {
@@ -2270,7 +2276,7 @@ function EpisodesPanel({
     useEffect(() => {
         const down = (e: PointerEvent) => {
             const t = e.target as HTMLElement | null
-            if (!t || panel.current?.contains(t) || t.closest(".data-episodes-toggle")) return
+            if (!t || panel.current?.contains(t) || t.closest(".data-episodes-toggle, .data-episodes-menu")) return
             handlers.current.onClose()
         }
         document.addEventListener("pointerdown", down, true)
@@ -2334,15 +2340,36 @@ function EpisodesPanel({
 
 // One episode in the grid. Drawn again only when what it shows changes
 // (the one playing as it goes on), not as the player ticks.
-const EpisodeTile = memo(function EpisodeTile({ ep: n, art, playing, ok, progress, onPlay }: { ep: EpisodeView; art: string; playing: boolean; ok: boolean; progress: number; onPlay: (n: EpisodeView) => void }) {
+const EpisodeTile = memo(function EpisodeTile({ ep: n, art, playing, ok, progress, onPlay }: { ep: EpisodeView; art: string; playing: boolean; ok: boolean; progress: number; onPlay: (n: EpisodeView, fromStart?: boolean) => void }) {
     const name = n.title || `Episode ${n.number}`
+    // A right-click: its menu, at the pointer (as ui.tsx's useContextMenu
+    // does it; that one's menu would open under the player). Made at the
+    // first one: a hundred tiles are drawn at a time.
+    const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null)
+    const [menuOpen, setMenuOpen] = useState(false)
+    const focused = useRef<Element | null>(null)
     return (
         <button
             data-current={playing || undefined}
             disabled={!ok}
-            onClick={() => onPlay(n)}
+            onClick={e => {
+                // Not a click in its menu (drawn elsewhere, but React brings it here).
+                if (e.currentTarget.contains(e.target as Node)) onPlay(n)
+            }}
+            onContextMenu={e => {
+                if (!ok || !e.currentTarget.contains(e.target as Node)) return
+                e.preventDefault()
+                e.stopPropagation()
+                const r = e.currentTarget.getBoundingClientRect()
+                const x = e.clientX - r.left
+                const y = e.clientY - r.top
+                focused.current = document.activeElement
+                // Opened with the menu key (a TV's remote) there's no pointer in it.
+                setMenuAt(x >= 0 && y >= 0 && x <= r.width && y <= r.height ? { x, y } : { x: r.width / 2, y: r.height / 3 })
+                setMenuOpen(true)
+            }}
             title={ok ? name : `${name}: ${n.aired ? "not downloaded" : "not out yet"}`}
-            className={cn("group/ep flex min-w-0 flex-col gap-1 rounded-lg p-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand", !ok && "opacity-40")}
+            className={cn("group/ep relative flex min-w-0 flex-col gap-1 rounded-lg p-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand", !ok && "opacity-40")}
         >
             <span
                 className={cn(
@@ -2370,6 +2397,39 @@ const EpisodeTile = memo(function EpisodeTile({ ep: n, art, playing, ok, progres
                 )}
             </span>
             <span className={cn("line-clamp-2 px-0.5 text-[11px] leading-tight", playing ? "font-semibold text-fg" : "text-muted group-hover/ep:text-fg")}>{name}</span>
+            {menuAt && (
+                <Dropdown open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
+                    <DropdownTrigger asChild>
+                        <span aria-hidden className="pointer-events-none absolute" style={{ left: menuAt.x, top: menuAt.y }} />
+                    </DropdownTrigger>
+                    <DropdownContent
+                        align="start"
+                        sideOffset={2}
+                        className="data-episodes-menu z-[90]"
+                        onCloseAutoFocus={e => {
+                            e.preventDefault()
+                            if (document.activeElement === document.body && focused.current instanceof HTMLElement) focused.current.focus()
+                        }}
+                    >
+                        {playing ? (
+                            <DropdownItem icon={<SkipBack />} onSelect={() => onPlay(n, true)}>
+                                Start over
+                            </DropdownItem>
+                        ) : (
+                            <>
+                                <DropdownItem icon={<Play />} onSelect={() => onPlay(n)}>
+                                    {n.resumeAt > 0 ? "Resume" : "Play"}
+                                </DropdownItem>
+                                {n.resumeAt > 0 && (
+                                    <DropdownItem icon={<RotateCcw />} onSelect={() => onPlay(n, true)}>
+                                        Play from the beginning
+                                    </DropdownItem>
+                                )}
+                            </>
+                        )}
+                    </DropdownContent>
+                </Dropdown>
+            )}
         </button>
     )
 })

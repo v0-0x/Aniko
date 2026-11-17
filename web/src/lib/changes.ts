@@ -7,6 +7,27 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 54,
+        title: "Manga and Home",
+        changes: [
+            {
+                title: "Straight into the reader",
+                text: "A manga under Continue reading opens where you stopped. Its cover counts the chapters that are new.",
+                to: "/",
+            },
+            {
+                title: "Home, your way",
+                text: "Put Home's rows in your own order, or hide the ones you don't use.",
+                to: "/settings?tab=appearance",
+            },
+            {
+                title: "Cinema look",
+                text: "Its rail opens out with the names under the pointer, it has the newer player, and two light themes.",
+                to: "/settings?tab=appearance",
+            },
+        ],
+    },
+    {
         id: 53,
         title: "Continue reading",
         changes: [

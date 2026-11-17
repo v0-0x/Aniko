@@ -6,6 +6,7 @@ import {
     Check,
     ChevronDown,
     ChevronRight,
+    ChevronUp,
     Clapperboard,
     Copy,
     Cpu,
@@ -44,7 +45,7 @@ import { toast } from "@/lib/toast"
 import { DirPicker } from "@/components/DirPicker"
 import { ParentalDialog } from "@/components/ParentalDialog"
 import { LoginDialog } from "@/components/LoginDialog"
-import { Badge, Button, EmptyState, Input, Select, Switch, switchBox, switchItem, Textarea } from "@/components/ui"
+import { IconButton, Badge, Button, EmptyState, Input, Select, Switch, switchBox, switchItem, Textarea } from "@/components/ui"
 import { UpdateBanner, versionName } from "@/components/UpdateBanner"
 import { whatsNewStore } from "@/components/WhatsNew"
 import { api, desktop, type DesktopPrefs } from "@/lib/api"
@@ -54,6 +55,7 @@ import type { Tool } from "@/lib/platform"
 import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/programs"
 import { useStore } from "@/lib/store"
 import { useFadeBelow } from "@/lib/hooks"
+import { HOME_ROWS, homeOrder } from "@/lib/home"
 import { activeHoliday, colorTheme, HOLIDAYS, lookChoice, lookOf, ownAccent, themePreviewStore, themesOf, useClassic } from "@/lib/themes"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { systemNotifications } from "@/lib/alerts"
@@ -1271,6 +1273,7 @@ function UISection({ draft, set }: SectionProps) {
                 </Row>
                 {tv && androidApp && <TvSizeRow />}
             </Group>
+            <HomeRowsGroup draft={draft} set={set} />
             <Group title="Content">
                 <Row label="Anime titles" help="Japanese titles are in romaji.">
                     <Select
@@ -1291,6 +1294,39 @@ function UISection({ draft, set }: SectionProps) {
                 </Row>
             </Group>
         </>
+    )
+}
+
+// Home's rows on this device: each can go up or down, or not be shown.
+function HomeRowsGroup({ draft, set }: Pick<SectionProps, "draft" | "set">) {
+    const order = homeOrder(draft.ui.homeOrder)
+    const hidden = draft.ui.homeHidden ?? []
+    const move = (i: number, by: -1 | 1) => {
+        const next = [...order]
+        ;[next[i], next[i + by]] = [next[i + by], next[i]]
+        set("ui", { homeOrder: next })
+    }
+    return (
+        <Group title="Home" description="The rows on Home, on this device: their order, and which are shown.">
+            {order.map((id, i) => {
+                const name = HOME_ROWS.find(r => r.id === id)?.name ?? id
+                return (
+                    <Row key={id} label={name}>
+                        <div className="flex items-center gap-1">
+                            <IconButton label={`Move ${name} up`} size="sm" disabled={i === 0} onClick={() => move(i, -1)}>
+                                <ChevronUp className="size-4" />
+                            </IconButton>
+                            <IconButton label={`Move ${name} down`} size="sm" disabled={i === order.length - 1} onClick={() => move(i, 1)}>
+                                <ChevronDown className="size-4" />
+                            </IconButton>
+                            <span className="ml-2">
+                                <Switch checked={!hidden.includes(id)} onChange={on => set("ui", { homeHidden: on ? hidden.filter(h => h !== id) : [...hidden, id] })} />
+                            </span>
+                        </div>
+                    </Row>
+                )
+            })}
+        </Group>
     )
 }
 

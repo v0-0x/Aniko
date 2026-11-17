@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
-import { BookOpen, Puzzle, Search } from "lucide-react"
+import { BookOpen, Dices, Puzzle, Search } from "lucide-react"
 import { useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { ListCardMenu } from "@/components/ListCardMenu"
 import { DownloadedGrid } from "@/components/MangaDownloads"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { Button, EmptyState, ErrorState, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
-import { useMangaCollection } from "@/lib/queries"
+import { useMangaCollection, useMangaLatest } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
 import type { ListEntry } from "@/lib/types"
 import { LIST_STATUS_MANGA } from "@/lib/utils"
@@ -16,6 +16,8 @@ export default function MangaPage() {
     const { data, isLoading, error, refetch, isFetching } = useMangaCollection()
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
     const [status, setStatus] = useState("CURRENT")
+    const navigate = useNavigate()
+    const { data: latest } = useMangaLatest()
     const classic = useClassic()
     const byStatus = useMemo(() => {
         const out: Record<string, ListEntry[]> = {}
@@ -28,9 +30,17 @@ export default function MangaPage() {
         <div className="min-h-full px-6 pt-8 pb-24 md:px-8 xl:px-10">
             <div className="mb-8 flex items-center justify-between gap-4">
                 <h1 className="text-[1.75rem] font-semibold tracking-tight">Manga</h1>
-                <Link to="/search?type=MANGA">
-                    <Button icon={<Search className="size-4" />}>Find manga</Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                    {/* One of the list shown, at random. */}
+                    {entries.length > 1 && (
+                        <Button icon={<Dices className="size-4" />} onClick={() => navigate(`/manga/entry?id=${entries[Math.floor(Math.random() * entries.length)].mediaId}`)}>
+                            Surprise me
+                        </Button>
+                    )}
+                    <Link to="/search?type=MANGA">
+                        <Button icon={<Search className="size-4" />}>Find manga</Button>
+                    </Link>
+                </div>
             </div>
             {providers && providers.length === 0 && (
                 <div className={classic ? "card mb-8 flex items-center gap-3 p-3 pl-4" : "mb-8 flex items-center gap-3 border-y border-line py-2"}>
@@ -78,6 +88,7 @@ export default function MangaPage() {
                             key={e.mediaId}
                             media={e.media}
                             listEntry={e}
+                            latest={latest?.[e.mediaId]}
                             // The menu tells the list status from the media's entry.
                             menu={<ListCardMenu media={{ ...e.media, mediaListEntry: { id: e.id, status: e.status, progress: e.progress, score: e.score, repeat: e.repeat } }} />}
                         />
