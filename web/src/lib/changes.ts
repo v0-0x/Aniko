@@ -12,7 +12,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Your manga on Home",
-                text: "What you're reading, the last read first, under Continue watching. A manga still coming out shows the chapter you reached.",
+                text: "What you're reading, the last read first, under Currently watching. A manga still coming out shows the chapter you reached.",
                 to: "/",
             },
         ],
