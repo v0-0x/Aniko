@@ -1,10 +1,11 @@
 import { keepPreviousData, type QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "@/lib/toast"
 import { api, qs } from "./api"
 import type { Filler } from "./filler"
 import { setUpdateLater } from "./store"
 import { installIfWanted, wantInstall } from "./tv"
+import { readLocal, writeLocal } from "./utils"
 import type {
     ActivityPage,
     AutoRule,
@@ -242,9 +243,22 @@ export function useSearch(params: SearchParams, enabled = true) {
 type Discover = { trending: Media[]; thisSeason: Media[]; nextSeason: Media[]; popular: Media[]; topRated: Media[]; season: string; year: number; fetchedAt: number }
 
 // Discover's "Because you watched…": AniList's recommendations for an anime
-// of the list touched last, without what's on the list already.
+// of the list, without what's on the list already. Another anime each time
+// Discover opens: n is where to start among the ones watched (the answer's
+// next is where to start the time after, kept in this browser).
+const RECOMMENDED_AT = "aniko-recommended-at"
 export function useRecommended() {
-    return useQuery({ queryKey: ["recommended"], queryFn: () => api.get<{ because: Media; items: Media[] }[]>("/api/anilist/recommended"), staleTime: 30 * 60_000 })
+    const [n] = useState(() => Number(readLocal(RECOMMENDED_AT)) || 0)
+    const q = useQuery({
+        queryKey: ["recommended", n],
+        queryFn: () => api.get<{ because: Media; items: Media[]; next?: number }[]>(`/api/anilist/recommended?n=${n}`),
+        staleTime: 30 * 60_000,
+    })
+    const next = q.data?.[0]?.next
+    useEffect(() => {
+        if (next !== undefined) writeLocal(RECOMMENDED_AT, String(next))
+    }, [next])
+    return q
 }
 
 export function useDiscover() {

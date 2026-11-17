@@ -12,6 +12,9 @@ import (
 type recommendedRow struct {
 	Because *anilist.Media   `json:"because"`
 	Items   []*anilist.Media `json:"items"`
+	// Next is where to start the time after (?n=), so another anime of the
+	// list is recommended from each time Discover opens.
+	Next int `json:"next"`
 }
 
 // recommendSeeds are the anime to recommend from, the first to try first:
@@ -46,8 +49,9 @@ func recommendedFor(m *anilist.Media, onList map[int]bool, adult bool) []*anilis
 	return out
 }
 
-// One row: the first of the last few anime touched that has enough to
-// recommend (each is one lookup, kept like the anime's page).
+// One row: from the n-th of the anime watched (?n=, going round them; the
+// last touched is the first), or the first after it that has enough to
+// recommend; a few are tried (each is one lookup, kept like the anime's page).
 func (s *Server) recommended(r *http.Request) (any, error) {
 	rows := []recommendedRow{}
 	c, err := s.app.Platform.Collection(r.Context(), "ANIME", false)
@@ -60,16 +64,23 @@ func (s *Server) recommended(r *http.Request) (any, error) {
 		onList[e.MediaID] = true
 	}
 	adult := s.app.Settings.Get().UI.ShowAdult
-	for i, e := range recommendSeeds(entries) {
-		if i >= 4 {
-			break
-		}
+	seeds := recommendSeeds(entries)
+	if len(seeds) == 0 {
+		return rows, nil
+	}
+	start := queryInt(r, "n")
+	if start < 0 {
+		start = 0
+	}
+	for try := 0; try < 4 && try < len(seeds); try++ {
+		at := (start + try) % len(seeds)
+		e := seeds[at]
 		m, err := s.app.Platform.Media(r.Context(), e.MediaID, false)
 		if err != nil {
 			continue
 		}
 		if items := recommendedFor(m, onList, adult); len(items) >= 4 {
-			rows = append(rows, recommendedRow{Because: e.Media, Items: items})
+			rows = append(rows, recommendedRow{Because: e.Media, Items: items, Next: (at + 1) % len(seeds)})
 			break
 		}
 	}
