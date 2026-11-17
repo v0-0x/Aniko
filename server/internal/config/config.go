@@ -279,13 +279,10 @@ type UISettings struct {
 	ColorTheme      string `json:"colorTheme"`
 	Seasonal        string `json:"seasonal"`
 	SeasonalEffects bool   `json:"seasonalEffects"`
-	// Aniko's look from before the current one (plum and pink, before
-	// 3.0.37), instead of it.
-	ClassicLook bool `json:"classicLook"`
-	// Which look: "" (the current one), "classic" (ClassicLook says the
-	// same to devices from before this) or "cinema" (experimental: a
-	// rail of icons, banners to the window's edge).
-	Look string `json:"look"`
+	// The other looks there were until 3.0.51 (Classic, Cinema): kept for
+	// devices from before, always off.
+	ClassicLook bool   `json:"classicLook"`
+	Look        string `json:"look"`
 }
 
 // ColorThemes and Holidays are the values UISettings takes (their colors are
@@ -576,14 +573,9 @@ func sanitize(s Settings) Settings {
 	if !slices.Contains(UpdateChannels, s.Updates.Channel) {
 		s.Updates.Channel = d.Updates.Channel
 	}
-	if s.UI.Look != "cinema" && s.UI.Look != "classic" {
-		s.UI.Look = ""
-		// From a device that only knows the switch.
-		if s.UI.ClassicLook {
-			s.UI.Look = "classic"
-		}
-	}
-	s.UI.ClassicLook = s.UI.Look == "classic"
+	// One look since 3.0.51: the Classic and Cinema ones are gone, and what
+	// was saved for them with them.
+	s.UI.Look, s.UI.ClassicLook = "", false
 	if !slices.Contains(ColorThemes, s.UI.ColorTheme) {
 		s.UI.ColorTheme = d.UI.ColorTheme
 	}

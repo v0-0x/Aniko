@@ -7,6 +7,17 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 55,
+        title: "One look",
+        changes: [
+            {
+                title: "Classic and Cinema are gone",
+                text: "Aniko has the one look now. If you used either, you're on it, with its nearest theme.",
+                to: "/settings?tab=appearance",
+            },
+        ],
+    },
+    {
         id: 54,
         title: "Manga and Home",
         changes: [
@@ -20,11 +31,6 @@ export const RELEASES: Release[] = [
                 text: "Put Home's rows in your own order, or hide the ones you don't use.",
                 to: "/settings?tab=appearance",
             },
-            {
-                title: "Cinema look",
-                text: "It has the newer player, and two light themes.",
-                to: "/settings?tab=appearance",
-            },
         ],
     },
     {
@@ -35,17 +41,6 @@ export const RELEASES: Release[] = [
                 title: "Your manga on Home",
                 text: "What you're reading, the last read first, under Continue watching. A manga still coming out shows the chapter you reached.",
                 to: "/",
-            },
-        ],
-    },
-    {
-        id: 52,
-        title: "Cinema look (experimental)",
-        changes: [
-            {
-                title: "Another look to try",
-                text: "A rail of icons, banners out to the window's edge, rounded. Turn it on in Themes; off brings this look back.",
-                to: "/settings?tab=appearance",
             },
         ],
     },
@@ -85,11 +80,6 @@ export const RELEASES: Release[] = [
         title: "Touch-ups to the new look",
         changes: [
             {
-                title: "Classic look is the last one",
-                text: "The switch brings back plum and pink, as Aniko looked before this look.",
-                to: "/settings?tab=appearance",
-            },
-            {
                 title: "Pictures stay clear",
                 text: "Pointing at a cover or an episode lifts it a little. Nothing is drawn over it.",
             },
@@ -121,7 +111,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Eight themes, two of them light",
-                text: "Black, White, Graphite, Paper, Phosphor, Amber, Ice and Rose. The Classic look switch brings back the one before.",
+                text: "Black, White, Graphite, Paper, Phosphor, Amber, Ice and Rose.",
                 to: "/settings?tab=appearance",
             },
         ],

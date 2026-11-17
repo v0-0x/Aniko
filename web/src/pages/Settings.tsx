@@ -56,7 +56,7 @@ import { canInstallPrograms, useInstallPrograms, useWatchSetup } from "@/lib/pro
 import { useStore } from "@/lib/store"
 import { useFadeBelow } from "@/lib/hooks"
 import { HOME_ROWS, homeOrder } from "@/lib/home"
-import { activeHoliday, colorTheme, HOLIDAYS, lookChoice, lookOf, ownAccent, themePreviewStore, themesOf, useClassic } from "@/lib/themes"
+import { activeHoliday, colorTheme, HOLIDAYS, lookOf, ownAccent, themePreviewStore, themesOf, useClassic } from "@/lib/themes"
 import { setSubStyle, SUB_BACKGROUNDS, SUB_POSITIONS, SUB_SIZES, subStyleStore, subStyleVars, type SubStyle } from "@/lib/subtitles"
 import { systemNotifications } from "@/lib/alerts"
 import { androidApp, setTvWidth, TV_WIDTHS, tv, tvWidth } from "@/lib/tv"
@@ -1160,12 +1160,6 @@ function UISection({ draft, set }: SectionProps) {
     return (
         <>
             <Group title="Theme">
-                <Row label="Classic look" help="Aniko as it looked before 3.0.37: plum and pink, rounded.">
-                    <Switch checked={look === "classic"} onChange={v => set("ui", lookChoice(v ? "classic" : "frame"))} />
-                </Row>
-                <Row label="Cinema look" help="Experimental. A rail of icons, banners to the window's edge, rounded.">
-                    <Switch checked={look === "cinema"} onChange={v => set("ui", lookChoice(v ? "cinema" : "frame"))} />
-                </Row>
                 <Stack label="Colors">
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                         {themesOf(look).map(t => {

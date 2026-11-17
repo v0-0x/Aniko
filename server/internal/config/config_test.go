@@ -160,23 +160,14 @@ func TestThemeSettings(t *testing.T) {
 	if ui.ColorTheme != "aniko" || ui.Seasonal != "auto" || !ui.SeasonalEffects || ui.AccentColor != "#22c3a6" || ui.ClassicLook {
 		t.Fatalf("old settings: %+v", ui)
 	}
-	// The classic look is kept.
+	// There's one look: the Classic and Cinema ones (until 3.0.51) aren't
+	// kept, whatever a device from before sends.
 	next := s.Get()
-	next.UI.ClassicLook = true
-	if got, err := s.Save(next); err != nil || !got.UI.ClassicLook || !s.Get().UI.ClassicLook {
-		t.Fatalf("classic look: %+v, %v", got.UI, err)
-	}
-	// The experimental look turns the classic one off; one that isn't a
-	// look is the current one.
-	next = s.Get()
-	next.UI.Look = "cinema"
-	if got, err := s.Save(next); err != nil || got.UI.Look != "cinema" || got.UI.ClassicLook {
-		t.Fatalf("cinema look: %+v, %v", got.UI, err)
-	}
-	next = s.Get()
-	next.UI.Look = "nope"
-	if got, err := s.Save(next); err != nil || got.UI.Look != "" || got.UI.ClassicLook {
-		t.Fatalf("unknown look: %+v, %v", got.UI, err)
+	for _, look := range []string{"classic", "cinema", ""} {
+		next.UI.Look, next.UI.ClassicLook = look, true
+		if got, err := s.Save(next); err != nil || got.UI.Look != "" || got.UI.ClassicLook || s.Get().UI.ClassicLook {
+			t.Fatalf("look %q kept: %+v, %v", look, got.UI, err)
+		}
 	}
 	for _, c := range []struct{ theme, seasonal, wantTheme, wantSeasonal string }{
 		{"midnight", "off", "midnight", "off"},

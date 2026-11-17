@@ -92,7 +92,10 @@ const IN_CLASSIC: Record<string, string> = { white: "aniko", paper: "aniko", pho
 // (experimental: a rail of icons, banners to the window's edge). The server
 // keeps "" for this one, and classicLook for devices from before ui.look.
 export type Look = "frame" | "classic" | "cinema"
-export const lookOf = (ui: { look?: string; classicLook?: boolean } | undefined): Look => (ui?.look === "cinema" ? "cinema" : ui?.look === "classic" || (!ui?.look && ui?.classicLook) ? "classic" : "frame")
+// One look since 3.0.51: the other two are gone (what a device from before
+// saved for them isn't read).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const lookOf = (_ui?: { look?: string; classicLook?: boolean }): Look => "frame"
 // What a look is saved as.
 export const lookChoice = (look: Look) => ({ look: look === "frame" ? "" : look, classicLook: look === "classic" })
 
@@ -281,7 +284,8 @@ function setVars(vars: Record<string, string>, holiday: string, look: Look, ligh
 export function applyCachedTheme() {
     try {
         const c = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as { vars?: Record<string, string>; holiday?: string; classic?: boolean; look?: string; light?: boolean } | null
-        if (c?.vars) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "", c.look === "cinema" ? "cinema" : c.classic === true ? "classic" : "frame", c.light === true)
+        // Not the colors of a look that's gone (Classic, Cinema: until 3.0.51).
+        if (c?.vars && c.look !== "cinema" && c.classic !== true) setVars(c.vars, HOLIDAYS.some(h => h.id === c.holiday) ? c.holiday! : "", "frame", c.light === true)
     } catch {
         /* the default colors */
     }
