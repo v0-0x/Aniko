@@ -530,8 +530,7 @@ export function MangaReader({
                     <DropdownContent className="z-[80]" onCloseAutoFocus={e => e.preventDefault()}>
                         <DropdownLabel>Reading mode</DropdownLabel>
                         {MODES.map(([m, label]) => (
-                            <DropdownItem key={m} onSelect={() => pickMode(m)}>
-                                {mode === m ? "● " : ""}
+                            <DropdownItem key={m} checked={mode === m} onSelect={() => pickMode(m)}>
                                 {label}
                             </DropdownItem>
                         ))}
@@ -545,8 +544,7 @@ export function MangaReader({
                                         ["ltr", "Left to right"],
                                     ] as const
                                 ).map(([d, label]) => (
-                                    <DropdownItem key={d} onSelect={() => pickDirection(d)}>
-                                        {rtl === (d === "rtl") ? "● " : ""}
+                                    <DropdownItem key={d} checked={rtl === (d === "rtl")} onSelect={() => pickDirection(d)}>
                                         {label}
                                     </DropdownItem>
                                 ))}
@@ -557,8 +555,7 @@ export function MangaReader({
                             (narrow ? (
                                 <p className="max-w-52 px-2 py-1.5 text-xs text-subtle">One page at a time in a tall window</p>
                             ) : (
-                                <DropdownItem onSelect={() => setShifted(s => (s === chapterId ? "" : chapterId))}>
-                                    {shifted === chapterId ? "● " : ""}
+                                <DropdownItem checked={shifted === chapterId} onSelect={() => setShifted(s => (s === chapterId ? "" : chapterId))}>
                                     Shift pairs by one page
                                 </DropdownItem>
                             ))}

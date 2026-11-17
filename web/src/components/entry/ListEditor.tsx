@@ -32,8 +32,7 @@ export function ListStatusButton({ media, entry }: { media: Media; entry: Entry 
             </DropdownTrigger>
             <DropdownContent align="start">
                 {Object.entries(labels).map(([k, v]) => (
-                    <DropdownItem key={k} onSelect={() => update.mutate({ status: k })}>
-                        {entry?.status === k ? "● " : ""}
+                    <DropdownItem key={k} checked={entry?.status === k} onSelect={() => update.mutate({ status: k })}>
                         {v}
                     </DropdownItem>
                 ))}

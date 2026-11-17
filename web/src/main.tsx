@@ -20,6 +20,23 @@ try {
     // no storage (a private window): nothing kept either
 }
 
+// A picture that didn't load (offline, a cover that's gone): nothing in its
+// place, not the browser's broken-picture mark. Back when it loads.
+window.addEventListener(
+    "error",
+    e => {
+        if (e.target instanceof HTMLImageElement) e.target.style.visibility = "hidden"
+    },
+    true,
+)
+window.addEventListener(
+    "load",
+    e => {
+        if (e.target instanceof HTMLImageElement && e.target.style.visibility) e.target.style.visibility = ""
+    },
+    true,
+)
+
 // The colors used last time, before the settings come from the server.
 applyCachedTheme()
 

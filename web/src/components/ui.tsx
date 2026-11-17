@@ -3,7 +3,7 @@ import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 import * as SwitchPrimitive from "@radix-ui/react-switch"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Loader2, RefreshCw, X } from "lucide-react"
+import { AlertTriangle, Check, ChevronDown, ChevronLeft, ChevronRight, Loader2, RefreshCw, X } from "lucide-react"
 import React, { createContext, forwardRef, useContext, useEffect, useRef, useState } from "react"
 import { useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
@@ -333,14 +333,42 @@ export function ErrorState({
 }
 
 export function SectionHeader({ title, subtitle, action, className }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode; className?: string }) {
+    const classic = useClassic()
     return (
         <div className={cn("mb-4 flex items-end justify-between gap-4", className)}>
             <div>
                 <h2 className="text-xl leading-tight font-semibold tracking-tight">{title}</h2>
                 {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
             </div>
+            {!classic && <HeadRule />}
             {action}
         </div>
+    )
+}
+
+// A hairline from a section's title to the end of its row (to what's at
+// its right, when there is something).
+export function HeadRule() {
+    return <span aria-hidden className="mb-[0.55em] h-px min-w-4 flex-1 self-end bg-line" />
+}
+
+// A banner that changes (Home's, Discover's): the next picture fades in
+// over the one before, not from the page's color, and only once it has
+// loaded.
+export function Backdrop({ src, className }: { src: string; className?: string }) {
+    const [cur, setCur] = useState(src)
+    const [prev, setPrev] = useState("")
+    const [loaded, setLoaded] = useState(false)
+    if (src !== cur) {
+        if (loaded) setPrev(cur)
+        setCur(src)
+        setLoaded(false)
+    }
+    return (
+        <>
+            {prev && <img key={prev} src={prev} alt="" className={className} />}
+            <img key={cur} src={cur} alt="" onLoad={() => setLoaded(true)} className={cn(className, "transition-opacity duration-500", loaded ? "opacity-100" : "opacity-0")} />
+        </>
     )
 }
 
@@ -625,6 +653,7 @@ export function DropdownItem({
     danger,
     disabled,
     keepOpen,
+    checked,
     className,
 }: {
     children: React.ReactNode
@@ -632,6 +661,8 @@ export function DropdownItem({
     icon?: React.ReactNode
     danger?: boolean
     disabled?: boolean
+    // The one chosen of several: a check at its right (the Classic look's dot before it).
+    checked?: boolean
     // The menu stays open (a step of several, like moving the subtitles).
     keepOpen?: boolean
     className?: string
@@ -652,7 +683,9 @@ export function DropdownItem({
             )}
         >
             {icon && <span className={cn("text-muted [&>svg]:size-4", classic ? "[&>svg]:stroke-[1.75]" : "[&>svg]:stroke-[1.5]")}>{icon}</span>}
+            {classic && checked && "● "}
             {children}
+            {!classic && checked && <Check aria-label="Chosen" className="ml-auto size-3.5 shrink-0" />}
         </DropdownPrimitive.Item>
     )
 }

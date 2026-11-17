@@ -9,7 +9,7 @@ import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { useLibraryCardMenu } from "@/components/library/LibraryCardMenu"
 import { PluginSlot } from "@/components/plugins/PluginSlot"
 import { ProgramsNotice } from "@/components/ProgramsNotice"
-import { artButton, Button, Chip, ChipRow, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, IconButton, Skeleton } from "@/components/ui"
+import { artButton, Backdrop, Button, Chip, ChipRow, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, EmptyState, HeadRule, IconButton, Skeleton } from "@/components/ui"
 import { UpdateBanner } from "@/components/UpdateBanner"
 import { WatchPicker } from "@/components/WatchPicker"
 import { api } from "@/lib/api"
@@ -37,6 +37,7 @@ export default function HomePage() {
     const [loginOpen, setLoginOpen] = useState(false)
     const qc = useQueryClient()
     const libraryMenu = useLibraryCardMenu()
+    const classic = useClassic()
 
     const continueItems = data?.continueWatching ?? []
 
@@ -174,11 +175,11 @@ export default function HomePage() {
                             </DropdownTrigger>
                             <DropdownContent>
                                 <DropdownLabel>Show</DropdownLabel>
-                                <DropdownItem icon={<HardDrive />} onSelect={() => setOnlyLocal(!onlyLocal)}>
-                                    {onlyLocal ? "● " : ""}Only downloaded anime
+                                <DropdownItem icon={<HardDrive />} checked={onlyLocal} onSelect={() => setOnlyLocal(!onlyLocal)}>
+                                    Only downloaded anime
                                 </DropdownItem>
-                                <DropdownItem icon={<ListFilter />} onSelect={() => setOnlyLocal(false)}>
-                                    {!onlyLocal ? "● " : ""}Everything in my lists
+                                <DropdownItem icon={<ListFilter />} checked={!onlyLocal} onSelect={() => setOnlyLocal(false)}>
+                                    Everything in my lists
                                 </DropdownItem>
                                 <DropdownSeparator />
                                 <DropdownLabel>Sort by</DropdownLabel>
@@ -191,8 +192,7 @@ export default function HomePage() {
                                         ["airing", "Next airing"],
                                     ] as [SortKey, string][]
                                 ).map(([k, l]) => (
-                                    <DropdownItem key={k} icon={<ArrowDownUp />} onSelect={() => setSort(k)}>
-                                        {sort === k ? "● " : ""}
+                                    <DropdownItem key={k} icon={<ArrowDownUp />} checked={sort === k} onSelect={() => setSort(k)}>
                                         {l}
                                     </DropdownItem>
                                 ))}
@@ -269,6 +269,7 @@ export default function HomePage() {
                     <section key={l.key} className="fade-in">
                         <div className="mb-4 flex items-baseline gap-2.5">
                             <h2 className="text-xl font-semibold tracking-tight">{l.name}</h2>
+                            {!classic && <HeadRule />}
                             <span className="text-sm text-subtle tabular-nums">{l.items.length}</span>
                         </div>
                         <MediaGrid size={status?.settings.ui.cardSize}>
@@ -315,7 +316,7 @@ function Hero({ items, loading, toolbar }: { items: ContinueItem[]; loading: boo
     return (
         <div className="relative h-[clamp(340px,50vh,540px)] w-full overflow-hidden max-sm:h-[440px]">
             {img ? (
-                <img key={img} src={img} alt="" className="absolute inset-0 size-full object-cover fade-in [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
+                <Backdrop src={img} className="absolute inset-0 size-full object-cover [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]" />
             ) : (
                 <div className="absolute inset-0 bg-surface-1" />
             )}
@@ -450,7 +451,7 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
             data-tv-skip-nav
             aria-label={dir < 0 ? "Back" : "More"}
             className={cn(
-                "absolute top-[calc((min(82vw,400px)*9/16)/2)] z-10 grid size-10 -translate-y-1/2 place-items-center rounded-full border border-white/10 bg-black/60 text-white/85 shadow-lg backdrop-blur transition-colors hover:bg-black/80 hover:text-white fade-in",
+                "absolute top-[calc((min(82vw,400px)*9/16)/2)] z-10 grid size-10 -translate-y-1/2 place-items-center rounded-full border border-white/10 bg-black/60 text-white/85 shadow-lg backdrop-blur transition-colors hover:bg-black/80 hover:text-white fade-in [@media(hover:none)]:hidden",
                 dir < 0 ? "left-1" : "right-1",
             )}
         >
@@ -486,7 +487,7 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
         <div className="relative">
             {!tv && edges.left && arrow(-1)}
             {!tv && edges.right && arrow(1)}
-        <div ref={ref} className="no-scrollbar -mx-2 -mt-1.5 flex snap-x scroll-px-2 gap-5 overflow-x-auto px-2 pt-1.5 pb-2">
+        <div ref={ref} className="stagger no-scrollbar -mx-2 -mt-1.5 flex snap-x scroll-px-2 gap-5 overflow-x-auto px-2 pt-1.5 pb-2">
             {items.map((it, i) => (
                 <div key={it.media.id} className="w-[min(82vw,400px)] shrink-0 snap-start" onMouseEnter={() => onFocus(i)} onFocus={() => onFocus(i)} data-tv-autofocus={i === 0 || undefined}>
                     <EpisodeCard

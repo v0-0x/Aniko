@@ -29,6 +29,33 @@ export function SleepingHosts() {
             setBusy("")
         }
     }
+    // This look: a line each, not a box over the banner.
+    if (!classic)
+        return (
+            <div className="flex flex-col px-6 md:px-8 xl:px-10">
+                {hosts.map(h => (
+                    <div key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line py-2.5 text-[13px] rise-in">
+                        <Moon className="size-4 shrink-0 stroke-[1.5] text-muted" />
+                        <p className="min-w-0 flex-1">
+                            <span className="font-medium">{h.waking ? `Waking ${h.name}…` : `${h.name} is asleep or off`}</span>
+                            <span className="text-muted">
+                                {" · "}
+                                {h.waking
+                                    ? "Its library shows up when it answers."
+                                    : h.canWake
+                                      ? "Wake it to see its library."
+                                      : `To wake it from here, update Aniko on ${h.name} and turn on Wake-on-LAN in its BIOS.`}
+                            </span>
+                        </p>
+                        {h.canWake && (
+                            <Button size="sm" loading={busy === h.id || h.waking} onClick={() => wake(h.id, h.name)}>
+                                Wake {h.name}
+                            </Button>
+                        )}
+                    </div>
+                ))}
+            </div>
+        )
     return (
         <div className="flex flex-col gap-3 px-6 pt-6 md:px-8 xl:px-10">
             {hosts.map(h => (

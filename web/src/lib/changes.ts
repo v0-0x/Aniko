@@ -7,6 +7,21 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 51,
+        title: "Spruced up",
+        changes: [
+            {
+                title: "Smoother Home and Discover",
+                text: "The banner fades from one picture to the next, and covers settle in one after another.",
+                to: "/",
+            },
+            {
+                title: "Tidier",
+                text: "Section titles have a line to their end, menus tick what's chosen, and a picture that didn't load leaves no broken mark.",
+            },
+        ],
+    },
+    {
         id: 50,
         title: "Finer search",
         changes: [

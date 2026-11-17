@@ -850,3 +850,26 @@ html:not([data-look="classic"]):not(.tv) .fade-in[data-state="closed"] {
         opacity: 0;
     }
 }
+
+/* Covers and episodes arriving (a grid, a row): each a moment after the one
+   before, the first dozen; the next ones with the last of them, and what's
+   further down (out of sight) is just there. Not on a TV, nor with reduced
+   motion (the delays would only hold them back). */
+@media (prefers-reduced-motion: no-preference) {
+    html:not([data-look="classic"]):not(.tv):not(.reduce-motion) .stagger > :nth-child(-n + 40) {
+        animation: rise-in 0.3s var(--ease) backwards;
+        animation-delay: calc(var(--n, 11) * 0.02s);
+    }
+}
+.stagger > :nth-child(1) { --n: 0; }
+.stagger > :nth-child(2) { --n: 1; }
+.stagger > :nth-child(3) { --n: 2; }
+.stagger > :nth-child(4) { --n: 3; }
+.stagger > :nth-child(5) { --n: 4; }
+.stagger > :nth-child(6) { --n: 5; }
+.stagger > :nth-child(7) { --n: 6; }
+.stagger > :nth-child(8) { --n: 7; }
+.stagger > :nth-child(9) { --n: 8; }
+.stagger > :nth-child(10) { --n: 9; }
+.stagger > :nth-child(11) { --n: 10; }
+.stagger > :nth-child(12) { --n: 11; }

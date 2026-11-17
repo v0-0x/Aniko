@@ -54,6 +54,8 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                     classic ? "rounded-[10px] shadow-[0_6px_18px_-12px_rgb(0_0_0/0.8)] transition-[transform,box-shadow] duration-300 ease-out" : "on-dark rounded-sm",
                     !tv && classic && "group-hover/card:-translate-y-0.5 group-hover/card:shadow-[0_12px_28px_-14px_rgb(0_0_0/0.9)]",
                 )}
+                // The cover's color, until it's there (and when it doesn't come).
+                style={{ backgroundColor: media.coverImage?.color || undefined }}
             >
                 {cover(media) && (
                     <img
@@ -61,7 +63,6 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                         alt=""
                         loading="lazy"
                         className="size-full object-cover transition-[filter] duration-300 group-hover/card:brightness-110"
-                        style={{ backgroundColor: media.coverImage?.color || undefined }}
                     />
                 )}
                 {/* A hairline, so dark covers don't melt into the page. */}
@@ -171,7 +172,7 @@ export function MediaGrid({ children, className, size = "md", start }: { childre
               ? "grid-cols-[repeat(auto-fill,minmax(200px,1fr))]"
               : "grid-cols-[repeat(auto-fill,minmax(160px,1fr))]"
     return (
-        <div className={cn("grid gap-x-4 gap-y-6", cols, className)} data-tv-autofocus={start || undefined}>
+        <div className={cn("stagger grid gap-x-4 gap-y-6", cols, className)} data-tv-autofocus={start || undefined}>
             {children}
         </div>
     )
@@ -197,7 +198,7 @@ export function Carousel({ children, className, itemClassName }: { children: Rea
     const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.85, behavior: "smooth" })
     return (
         <div className={cn("group/carousel relative", className)}>
-            <div ref={ref} onScroll={update} className="no-scrollbar -mx-2 flex snap-x scroll-px-2 gap-4 overflow-x-auto scroll-smooth px-2 pt-1.5 -mt-0.5 pb-3">
+            <div ref={ref} onScroll={update} className="stagger no-scrollbar -mx-2 flex snap-x scroll-px-2 gap-4 overflow-x-auto scroll-smooth px-2 pt-1.5 -mt-0.5 pb-3">
                 {children.map((c, i) => (
                     <div key={i} className={cn("w-[160px] shrink-0 snap-start", itemClassName)}>
                         {c}
