@@ -22,7 +22,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Cinema look",
-                text: "Its rail opens out with the names under the pointer, it has the newer player, and two light themes.",
+                text: "It has the newer player, and two light themes.",
                 to: "/settings?tab=appearance",
             },
         ],

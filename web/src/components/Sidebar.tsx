@@ -204,23 +204,7 @@ export function Sidebar() {
     // Cinema (experimental): a rail of icons over the pages' left edge,
     // whatever the window's width (a TV keeps the names).
     const rail = useCinema() && !tv
-    // Under the pointer, or with the keyboard in it, the rail opens out over
-    // the page with the names (a moment later, so crossing it doesn't; and it
-    // stays out while a menu of its own is open: Themes, the account).
-    const [railOpen, setRailOpen] = useState(false)
-    const railRef = useRef<HTMLElement>(null)
-    const railTimer = useRef(0)
-    const openRail = (on: boolean) => {
-        window.clearTimeout(railTimer.current)
-        const tick = () => {
-            if (!on && railRef.current?.querySelector('[data-state="open"]')) railTimer.current = window.setTimeout(tick, 300)
-            else setRailOpen(on)
-        }
-        railTimer.current = window.setTimeout(tick, on ? 120 : 220)
-    }
-    useEffect(() => () => window.clearTimeout(railTimer.current), [])
-    const wideWindow = useMediaQuery(WIDE)
-    const wide = rail ? railOpen : wideWindow
+    const wide = useMediaQuery(WIDE) && !rail
     // The Classic look (before 3.0.37): rounded links, the open page a pill
     // in the accent. This look: words, the open page in brackets.
     const classic = useClassic()
@@ -310,19 +294,9 @@ export function Sidebar() {
 
     return (
         <aside
-            ref={railRef}
-            onMouseEnter={rail ? () => openRail(true) : undefined}
-            onMouseLeave={rail ? () => openRail(false) : undefined}
-            onFocus={rail ? () => openRail(true) : undefined}
-            onBlur={rail ? e => !e.currentTarget.contains(e.relatedTarget as Node | null) && openRail(false) : undefined}
             className={cn(
                 "z-40 flex shrink-0 flex-col py-3",
-                rail
-                    ? cn(
-                          "absolute inset-y-0 left-0 transition-[width,background-color] duration-200",
-                          wide ? "w-56 border-r border-line bg-bg/95 px-2.5 shadow-[0_0_60px_rgb(0_0_0/0.6)] backdrop-blur-xl" : "w-[4.5rem] items-center bg-gradient-to-r from-bg/75 via-bg/40 to-transparent px-2",
-                      )
-                    : "relative h-full",
+                rail ? "absolute inset-y-0 left-0 w-[4.5rem] items-center bg-gradient-to-r from-bg/75 via-bg/40 to-transparent px-2" : "relative h-full",
                 !rail && (wide ? "w-52 px-2.5" : "w-16 items-center px-2"),
             )}
         >
