@@ -433,3 +433,25 @@ func TestNotifFromHub(t *testing.T) {
 	}
 	t.Fatal("the hub's events weren't noted")
 }
+
+// A cover's "new": chapters out since the manga was first looked at and not
+// read, never the backlog it had then (a series not started, a finished one).
+func TestNewChapterCount(t *testing.T) {
+	e := &anilist.ListEntry{MediaID: 1, Progress: 10}
+	for _, c := range []struct {
+		last float64
+		rec  noticed
+		want int
+	}{
+		{1198, noticed{Latest: 1198}, 0},               // first look: a backlog
+		{14, noticed{Latest: 14, At: 5, Since: 13}, 1}, // one came, four unread
+		{17, noticed{Latest: 17, At: 5, Since: 14}, 3}, // three came
+		{12, noticed{Latest: 12, At: 5, Since: 5}, 2},  // seven came, two left to read
+		{10, noticed{Latest: 10, At: 5, Since: 9}, 0},  // read up to it
+		{15, noticed{Latest: 14, At: 5, Since: 13}, 0}, // not looked at since it changed
+	} {
+		if got := newChapterCount(e, c.last, c.rec); got != c.want {
+			t.Errorf("last %v, %+v: %d, want %d", c.last, c.rec, got, c.want)
+		}
+	}
+}

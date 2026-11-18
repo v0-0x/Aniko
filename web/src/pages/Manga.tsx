@@ -7,7 +7,7 @@ import { DownloadedGrid } from "@/components/MangaDownloads"
 import { MediaCard, MediaCardSkeleton, MediaGrid } from "@/components/MediaCard"
 import { Button, EmptyState, ErrorState, Tabs } from "@/components/ui"
 import { api } from "@/lib/api"
-import { useMangaCollection, useMangaLatest } from "@/lib/queries"
+import { useMangaCollection, useMangaNew } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
 import type { ListEntry } from "@/lib/types"
 import { LIST_STATUS_MANGA } from "@/lib/utils"
@@ -17,7 +17,7 @@ export default function MangaPage() {
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
     const [status, setStatus] = useState("CURRENT")
     const navigate = useNavigate()
-    const { data: latest } = useMangaLatest()
+    const { data: fresh } = useMangaNew()
     const classic = useClassic()
     const byStatus = useMemo(() => {
         const out: Record<string, ListEntry[]> = {}
@@ -88,7 +88,7 @@ export default function MangaPage() {
                             key={e.mediaId}
                             media={e.media}
                             listEntry={e}
-                            latest={latest?.[e.mediaId]}
+                            fresh={fresh?.[e.mediaId]}
                             // The menu tells the list status from the media's entry.
                             menu={<ListCardMenu media={{ ...e.media, mediaListEntry: { id: e.id, status: e.status, progress: e.progress, score: e.score, repeat: e.repeat } }} />}
                         />

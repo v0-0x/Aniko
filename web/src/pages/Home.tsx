@@ -18,7 +18,7 @@ import { api } from "@/lib/api"
 import { usePersisted } from "@/lib/hooks"
 import { HOME_ROWS, homeOrder } from "@/lib/home"
 import { usePlay } from "@/lib/play"
-import { fetchLanguageMode, useCollection, useMangaCollection, useMangaLatest, useScan, useStatus } from "@/lib/queries"
+import { fetchLanguageMode, useCollection, useMangaCollection, useMangaNew, useScan, useStatus } from "@/lib/queries"
 import { createStore, scanStore, useStore } from "@/lib/store"
 import type { CollectionItem, CollectionView, ContinueItem } from "@/lib/types"
 import { androidApp, tv } from "@/lib/tv"
@@ -566,7 +566,7 @@ function ContinueRow({ items, onFocus }: { items: ContinueItem[]; onFocus: (i: n
 // it has the chapters), with how many chapters are new.
 function ContinueReading({ genre }: { genre: string | null }) {
     const { data } = useMangaCollection()
-    const { data: latest } = useMangaLatest()
+    const { data: fresh } = useMangaNew()
     const navigate = useNavigate()
     const classic = useClassic()
     const cinema = useCinema()
@@ -594,7 +594,7 @@ function ContinueReading({ genre }: { genre: string | null }) {
                         media={e.media}
                         listEntry={e}
                         to={`/manga/entry?id=${e.mediaId}&continue=1`}
-                        latest={latest?.[e.mediaId]}
+                        fresh={fresh?.[e.mediaId]}
                         menu={
                             <>
                                 <DropdownItem icon={<Info />} onSelect={() => navigate(`/manga/entry?id=${e.mediaId}`)}>

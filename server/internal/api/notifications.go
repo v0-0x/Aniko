@@ -593,3 +593,36 @@ func plural(n int, what string) string {
 	}
 	return fmt.Sprintf("%d %ss", n, what)
 }
+
+// newChapterCount is how many chapters of a manga being read came out since
+// it was last looked at (rec, from chapterItems) and aren't read yet. None
+// for what it had the first time it was looked at.
+func newChapterCount(e *anilist.ListEntry, last float64, rec noticed) int {
+	if rec.At == 0 || rec.Latest != last {
+		return 0
+	}
+	n := int(math.Floor(last)) - e.Progress
+	if came := int(math.Floor(last)) - int(math.Floor(rec.Since)); came < n {
+		n = came
+	}
+	return max(n, 0)
+}
+
+// newChapters is newChapterCount for each manga being read, by its id, with
+// the record the notifications keep (and brought up to date here).
+func (s *Server) newChapters(reading []*anilist.ListEntry, latest map[int]float64) map[int]int {
+	notifMu.Lock()
+	defer notifMu.Unlock()
+	seen := map[int]noticed{}
+	_, _ = s.app.DB.GetKV(kvNotifChapters, &seen)
+	if _, changed := chapterItems(reading, latest, seen, time.Now().Unix()); changed {
+		_ = s.app.DB.SetKV(kvNotifChapters, seen)
+	}
+	out := map[int]int{}
+	for _, e := range reading {
+		if n := newChapterCount(e, latest[e.MediaID], seen[e.MediaID]); n > 0 {
+			out[e.MediaID] = n
+		}
+	}
+	return out
+}

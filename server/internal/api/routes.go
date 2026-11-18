@@ -381,6 +381,31 @@ func (s *Server) routes() {
 		go s.app.Manga.Recheck(medias)
 		return s.app.Manga.Latest(ids), nil
 	}))
+	// How many chapters of each manga being read are new: out since Aniko
+	// first looked at it, and not read yet (its cover's count). Not the
+	// whole of what's unread: a series never started isn't 1198 new.
+	m.HandleFunc("GET /api/manga/new", h(func(r *http.Request) (any, error) {
+		out := map[int]int{}
+		c, err := s.app.Platform.Collection(r.Context(), "MANGA", false)
+		if err != nil || c == nil {
+			return out, nil
+		}
+		var reading []*anilist.ListEntry
+		var ids []int
+		var medias []*anilist.Media
+		for _, e := range c.Entries() {
+			if e.Media != nil && (e.Status == "CURRENT" || e.Status == "REPEATING") {
+				reading = append(reading, e)
+				ids = append(ids, e.MediaID)
+				medias = append(medias, e.Media)
+			}
+		}
+		if len(ids) == 0 {
+			return out, nil
+		}
+		go s.app.Manga.Recheck(medias)
+		return s.newChapters(reading, s.app.Manga.Latest(ids)), nil
+	}))
 	m.HandleFunc("GET /api/manga/providers", h(s.mangaProviders))
 	m.HandleFunc("GET /api/manga/{id}", h(func(r *http.Request) (any, error) {
 		id, err := pathID(r, "id")

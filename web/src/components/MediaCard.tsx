@@ -19,8 +19,8 @@ type Props = {
     menu?: React.ReactNode // items of a menu opened with a "⋯" button or a right-click
     // Where it goes instead of the media's page (Home's Continue reading: the reader).
     to?: string
-    // A manga's last chapter known: those after the one reached are new.
-    latest?: number
+    // A manga's new chapters: out since Aniko first looked at it, not read yet.
+    fresh?: number
 }
 
 const statusDot: Record<string, string> = {
@@ -32,13 +32,13 @@ const statusDot: Record<string, string> = {
     DROPPED: "bg-rose-400",
 }
 
-export function MediaCard({ media, listEntry, localCount, downloaded, className, showProgress = true, menu, to, latest }: Props) {
+export function MediaCard({ media, listEntry, localCount, downloaded, className, showProgress = true, menu, to, fresh }: Props) {
     const total = media.type === "MANGA" ? media.chapters ?? 0 : totalEpisodes(media)
     const progress = listEntry?.progress ?? 0
     const aired = airedEpisodes(media)
     // "new" = aired episodes of an airing show the user hasn't watched yet
     const reading = !!listEntry && (listEntry.status === "CURRENT" || listEntry.status === "REPEATING")
-    const behind = !reading ? 0 : media.type === "MANGA" ? Math.max(0, Math.floor(latest ?? 0) - progress) : media.status === "RELEASING" ? Math.max(0, aired - progress) : 0
+    const behind = !reading ? 0 : media.type === "MANGA" ? Math.max(0, fresh ?? 0) : media.status === "RELEASING" ? Math.max(0, aired - progress) : 0
     const nextAir = media.nextAiringEpisode
     const score = media.meanScore ?? media.averageScore
     // The Classic look (before 3.0.37): rounder, a shadow under the cover,

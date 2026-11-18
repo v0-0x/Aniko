@@ -116,7 +116,9 @@ func (s *Service) Entry(ctx context.Context, mediaID int, refresh bool) (*EntryV
 	files = append(files, s.sharedFor(mediaID, files)...)
 	hist := s.History.ForMedia(mediaID)
 
-	v := &EntryView{Media: media, ListEntry: entry, LocalCount: localCount, SharedCount: len(files) - localCount}
+	// Lists, also with nothing in them (an anime that isn't out yet): the page reads them as lists.
+	v := &EntryView{Media: media, ListEntry: entry, LocalCount: localCount, SharedCount: len(files) - localCount,
+		Episodes: []*EpisodeView{}, Specials: []*EpisodeView{}, Others: []*EpisodeView{}}
 	if meta != nil {
 		v.Images, v.Mappings = meta.Images, meta.Mappings
 	}

@@ -103,7 +103,12 @@ export function useCollection() {
 export function useEntry(id: number) {
     return useQuery({
         queryKey: ["entry", id],
-        queryFn: () => api.get<EntryView>(`/api/anime/${id}`),
+        // An anime that isn't out yet has no episodes: lists all the same (a
+        // server before 3.0.54, another computer's, sends none at all).
+        queryFn: async () => {
+            const e = await api.get<EntryView>(`/api/anime/${id}`)
+            return { ...e, episodes: e.episodes ?? [], specials: e.specials ?? [], others: e.others ?? [] }
+        },
         enabled: id > 0,
         staleTime: 30_000,
     })
@@ -458,6 +463,12 @@ export function useMangaCollection() {
 
 // The last chapter known of each manga being read, by its id (the chapter
 // lists already looked up): how many are unread.
+// How many chapters of each manga being read are new (out since Aniko first
+// looked at it, not read yet), by its id: the count on its cover.
+export function useMangaNew() {
+    return useQuery({ queryKey: ["manga", "new"], queryFn: () => api.get<Record<string, number>>("/api/manga/new"), staleTime: 5 * 60_000 })
+}
+
 export function useMangaLatest() {
     return useQuery({ queryKey: ["manga", "latest"], queryFn: () => api.get<Record<string, number>>("/api/manga/latest"), staleTime: 5 * 60_000 })
 }
