@@ -249,21 +249,43 @@ type Discover = { trending: Media[]; thisSeason: Media[]; nextSeason: Media[]; p
 
 // Discover's "Because you watched…": AniList's recommendations for an anime
 // of the list, without what's on the list already. Another anime each time
-// Discover opens: n is where to start among the ones watched (the answer's
-// next is where to start the time after, kept in this browser).
+// Discover opens: n is where to start among the ones watched. The row takes a
+// few lookups, so the one for the next time is fetched ahead and kept in this
+// browser: it is there at once when Discover opens.
+type Recommended = { because: Media; items: Media[]; next?: number }
 const RECOMMENDED_AT = "aniko-recommended-at"
+const RECOMMENDED_ROW = "aniko-recommended-row"
+function keptRecommended(): Recommended | undefined {
+    try {
+        const r = JSON.parse(readLocal(RECOMMENDED_ROW) || "null")
+        return r?.because && Array.isArray(r.items) ? r : undefined
+    } catch {
+        return undefined
+    }
+}
 export function useRecommended() {
+    const [kept] = useState(keptRecommended)
     const [n] = useState(() => Number(readLocal(RECOMMENDED_AT)) || 0)
     const q = useQuery({
         queryKey: ["recommended", n],
-        queryFn: () => api.get<{ because: Media; items: Media[]; next?: number }[]>(`/api/anilist/recommended?n=${n}`),
+        queryFn: async () => {
+            const get = (at: number) => api.get<Recommended[]>(`/api/anilist/recommended?n=${at}`)
+            let show = kept
+            let at = n
+            if (!show) {
+                show = (await get(at))[0]
+                // Nothing from these: start further on the next time.
+                at = show?.next ?? at + 4
+            }
+            const ahead = (await get(at))[0]
+            writeLocal(RECOMMENDED_AT, String(ahead?.next ?? at + 4))
+            // Kept only while it differs from what's shown now.
+            writeLocal(RECOMMENDED_ROW, ahead && ahead.because.id !== show?.because.id ? JSON.stringify(ahead) : "")
+            return show ? [show] : []
+        },
         staleTime: 30 * 60_000,
     })
-    const next = q.data?.[0]?.next
-    useEffect(() => {
-        if (next !== undefined) writeLocal(RECOMMENDED_AT, String(next))
-    }, [next])
-    return q
+    return { ...q, data: q.data ?? (kept ? [kept] : undefined) }
 }
 
 export function useDiscover() {
