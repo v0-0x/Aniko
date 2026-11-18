@@ -23,6 +23,7 @@ import {
     Server as ServerIcon,
     Settings as SettingsIcon,
     UserRound,
+    WifiOff,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
@@ -245,6 +246,22 @@ export function Sidebar() {
     // List changes made while AniList couldn't be reached, not sent yet.
     const waiting = status?.user ? (status.anilistPending ?? 0) : 0
 
+    // Offline mode (Settings › Web UI & network): this computer's, so not
+    // switched from another device.
+    const offline = !!status?.settings.server.offline
+    const canOffline = !!status && status.client !== "lan"
+    const toggleOffline = async () => {
+        const s = status?.settings
+        if (!s) return
+        try {
+            await api.put("/api/settings", { ...s, server: { ...s.server, offline: !offline } })
+            toast.success(offline ? "Back online" : "Offline mode: Aniko uses what it has here, and list changes wait")
+        } catch (e: any) {
+            toast.error(e.message)
+        }
+        qc.invalidateQueries()
+    }
+
     const logout = async () => {
         await api.post("/api/auth/logout")
         qc.invalidateQueries()
@@ -411,7 +428,7 @@ export function Sidebar() {
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-[13px] font-medium">{status?.user ? status.user.name : "Not logged in"}</span>
                                     <span className="block truncate text-[11px] text-subtle" title={waiting ? `${waiting} change${waiting === 1 ? "" : "s"} waiting for AniList` : undefined}>
-                                        {status?.user ? (waiting ? `${waiting} change${waiting === 1 ? "" : "s"} to sync` : "AniList") : "Log in to sync"}
+                                        {offline ? "Offline" : status?.user ? (waiting ? `${waiting} change${waiting === 1 ? "" : "s"} to sync` : "AniList") : "Log in to sync"}
                                     </span>
                                 </span>
                             )}
@@ -430,15 +447,27 @@ export function Sidebar() {
                                         Open on AniList
                                     </DropdownItem>
                                 )}
+                                {canOffline && (
+                                    <DropdownItem icon={<WifiOff />} checked={offline} onSelect={toggleOffline}>
+                                        Offline mode
+                                    </DropdownItem>
+                                )}
                                 <DropdownSeparator />
                                 <DropdownItem icon={<LogOut />} danger onSelect={logout}>
                                     Log out
                                 </DropdownItem>
                             </>
                         ) : (
-                            <DropdownItem icon={<LogIn />} onSelect={() => setLoginOpen(true)}>
-                                Log in with AniList
-                            </DropdownItem>
+                            <>
+                                <DropdownItem icon={<LogIn />} onSelect={() => setLoginOpen(true)}>
+                                    Log in with AniList
+                                </DropdownItem>
+                                {canOffline && (
+                                    <DropdownItem icon={<WifiOff />} checked={offline} onSelect={toggleOffline}>
+                                        Offline mode
+                                    </DropdownItem>
+                                )}
+                            </>
                         )}
                     </DropdownContent>
                 </Dropdown>

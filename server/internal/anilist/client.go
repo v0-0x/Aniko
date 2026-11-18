@@ -80,6 +80,10 @@ func (c *Client) query(ctx context.Context, query string, vars map[string]any, o
 	if err != nil {
 		return err
 	}
+	// Offline mode: not tried (the copies kept are used, changes wait).
+	if util.Offline() {
+		return fmt.Errorf("anilist: %w", util.ErrOffline)
+	}
 	const attempts = 4
 	for attempt := 0; attempt < attempts; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
@@ -174,7 +178,7 @@ func Unreachable(err error) bool {
 	// No answer: http.Client.Do fails with a *url.Error (DNS, refused,
 	// reset, TLS, timeout), waiting with the context's error.
 	var ue *url.Error
-	return errors.Is(err, errRateLimited) || errors.As(err, &ue) ||
+	return errors.Is(err, errRateLimited) || errors.Is(err, util.ErrOffline) || errors.As(err, &ue) ||
 		errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
 }
 

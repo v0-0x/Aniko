@@ -8,9 +8,24 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
+
+// ErrOffline: offline mode is on (Settings), and nothing goes to the internet.
+var ErrOffline = errors.New("offline mode is on")
+
+var offline atomic.Bool
+
+// SetOffline turns offline mode on or off: the public clients (they all
+// dial through PublicDialContext) fail at once instead of trying, and what
+// Aniko kept is used. The home network (other devices, the torrent client)
+// isn't the internet: it stays.
+func SetOffline(on bool) { offline.Store(on) }
+
+// Offline reports offline mode.
+func Offline() bool { return offline.Load() }
 
 // ErrPrivateAddress is returned when something tries to reach the LAN.
 var ErrPrivateAddress = errors.New("connections to local/private network addresses are not allowed")
@@ -68,6 +83,9 @@ func PublicDialContext(timeout time.Duration) func(ctx context.Context, network,
 		},
 	}
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if Offline() {
+			return nil, ErrOffline
+		}
 		if proxies[strings.ToLower(addr)] {
 			return plain.DialContext(ctx, network, addr)
 		}

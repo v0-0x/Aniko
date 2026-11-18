@@ -28,6 +28,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 const (
@@ -161,6 +163,9 @@ func Magnet(link, infoHash, name string) (string, error) {
 // from its peers, picks the file to play, and has it downloaded, the start
 // first. The same file of the same torrent is the same session.
 func (e *Engine) Open(ctx context.Context, magnet string, pick Pick) (Status, error) {
+	if util.Offline() {
+		return Status{}, util.ErrOffline
+	}
 	cl, err := e.start()
 	if err != nil {
 		return Status{}, err

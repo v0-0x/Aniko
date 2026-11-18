@@ -7,6 +7,16 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 58,
+        title: "Offline mode",
+        changes: [
+            {
+                title: "Offline mode",
+                text: "In the menu under your name, or Settings › Web UI & network: Aniko stops using the internet and works from what it has here. List changes wait and go to AniList once you're back online.",
+            },
+        ],
+    },
+    {
         id: 57,
         title: "Safer sharing between devices",
         changes: [

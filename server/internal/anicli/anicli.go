@@ -219,6 +219,9 @@ func Ready(path string) bool {
 }
 
 func (d *Driver) exec(ctx context.Context, args ...string) (*run, error) {
+	if util.Offline() {
+		return nil, util.ErrOffline
+	}
 	if err := d.init(); err != nil {
 		return nil, err
 	}

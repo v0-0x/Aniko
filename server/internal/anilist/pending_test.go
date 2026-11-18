@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // fakeList is AniList for the pending tests: one user's list, and whether
@@ -263,5 +265,33 @@ func TestPendingDelete(t *testing.T) {
 	defer f.mu.Unlock()
 	if f.deletes != 1 || len(f.status) != 0 {
 		t.Errorf("deletes %d, list %v", f.deletes, f.status)
+	}
+}
+
+// Offline mode: AniList isn't asked at all (it answers here), a change is
+// kept, the list kept is shown; back online, the change goes.
+func TestOfflineModeKeepsChanges(t *testing.T) {
+	p, f := newPendingTest(t)
+	f.set(func() { f.down = false })
+	util.SetOffline(true)
+	t.Cleanup(func() { util.SetOffline(false) })
+	ctx := context.Background()
+
+	if ok, err := p.UpdateProgress(ctx, 1, 4); err != nil || !ok {
+		t.Fatalf("UpdateProgress offline = %v, %v; want kept", ok, err)
+	}
+	if c, err := p.Collection(ctx, "ANIME", true); err != nil || c.Find(1) == nil || c.Find(1).Progress != 4 {
+		t.Fatalf("list offline: %v (want the one kept, progress 4)", err)
+	}
+	if n := len(f.savesCopy()); n != 0 || p.PendingCount() != 1 {
+		t.Fatalf("%d saves sent, %d waiting (want none sent, one waiting)", n, p.PendingCount())
+	}
+
+	util.SetOffline(false)
+	if left, err := p.SyncPending(ctx); left != 0 || err != nil {
+		t.Fatalf("SyncPending back online = %d, %v", left, err)
+	}
+	if saves := f.savesCopy(); len(saves) != 1 || saves[0]["progress"] != 4.0 {
+		t.Fatalf("saves = %v, want progress 4", saves)
 	}
 }

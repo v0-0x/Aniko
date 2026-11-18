@@ -255,6 +255,10 @@ type ServerSettings struct {
 	// Serve the web UI to browsers (http://127.0.0.1:<port>). The desktop
 	// window always works.
 	WebUI bool `json:"webUi"`
+	// Offline: nothing goes to the internet (AniList, extensions, covers,
+	// torrents, updates); what was kept is used and list changes wait.
+	// The home network stays.
+	Offline bool `json:"offline"`
 }
 
 type UISettings struct {

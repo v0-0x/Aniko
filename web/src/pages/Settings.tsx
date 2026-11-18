@@ -790,6 +790,13 @@ function NetworkSection({ draft, set }: SectionProps) {
                         <Password value={draft.server.password} onChange={v => set("server", { password: v })} placeholder="Leave empty for no password" />
                     </Stack>
                 )}
+                <Row
+                    label="Offline mode"
+                    help="Nothing goes to the internet: Aniko uses what it has here (your list, downloads, covers seen) and list changes wait. Other devices at home still work."
+                    keywords="internet no connection plane"
+                >
+                    <Switch checked={!!draft.server.offline} disabled={lan} onChange={v => set("server", { offline: v })} />
+                </Row>
                 {!androidApp && (
                     <Row label="Port" help="Changes when you save. No restart needed.">
                         <Input type="number" className="w-28" disabled={lan} value={draft.server.port} onChange={e => set("server", { port: Number(e.target.value) })} />

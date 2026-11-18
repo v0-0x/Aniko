@@ -458,10 +458,21 @@ func (a *App) wire() {
 	anilist.SetTitleLanguage(a.Settings.Get().UI.TitleLanguage)
 	// Stable releases, or betas too (Settings › Updates & about).
 	a.Update.Channel = func() string { return a.Settings.Get().Updates.Channel }
+	util.SetOffline(a.Settings.Get().Server.Offline)
 	a.Settings.OnChange(func(old, cur config.Settings) {
 		// Listeners run apart: two saves close together may arrive in either
 		// order, so what's set follows the settings now.
 		anilist.SetTitleLanguage(a.Settings.Get().UI.TitleLanguage)
+		util.SetOffline(a.Settings.Get().Server.Offline)
+		// Back online: the list changes made meanwhile go to AniList now,
+		// not at the next minute.
+		if old.Server.Offline && !cur.Server.Offline && a.Platform.PendingCount() > 0 {
+			a.background(func() {
+				ctx, cancel := context.WithTimeout(a.ctx, 3*time.Minute)
+				defer cancel()
+				_, _ = a.Platform.SyncPending(ctx)
+			})
+		}
 		if !cur.Discord.RichPresence || cur.Discord.ClientID != old.Discord.ClientID {
 			clearPresence() // turned off: don't leave "Watching…" behind
 		}

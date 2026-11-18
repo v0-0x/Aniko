@@ -229,7 +229,7 @@ export type Settings = {
     // dir: where downloaded manga go ("": the default, ~/Manga).
     manga: { enabled: boolean; defaultProvider: string; readingMode: "long-strip" | "paged" | "double"; direction: string; dir?: string }
     anilist: { clientId: string; hideAdult: boolean }
-    server: { host: string; port: number; allowLan: boolean; password: string; webUi: boolean }
+    server: { host: string; port: number; allowLan: boolean; password: string; webUi: boolean; offline?: boolean }
     // downloadTo: the Aniko this one's downloads go to (its ID; "" here).
     // keepAwake: don't let this computer sleep while another device plays its
     // files. autoSync: sync watch history when a paired device comes back.
