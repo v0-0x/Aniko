@@ -472,7 +472,16 @@ func (s *Service) Sources(ctx context.Context, provider string, media *anilist.M
 			res.Errors = append(res.Errors, servers[i]+": "+o.err.Error())
 			continue
 		}
+		if o.srv == nil {
+			continue
+		}
 		for _, vs := range o.srv.VideoSources {
+			// What an extension gives to play goes to the players and to
+			// ffmpeg and yt-dlp: a web address, nothing else of theirs (a
+			// file here, an option).
+			if !strings.HasPrefix(vs.URL, "http://") && !strings.HasPrefix(vs.URL, "https://") {
+				continue
+			}
 			src := Source{URL: vs.URL, Type: vs.Type, Quality: vs.Quality, Label: vs.Label, Headers: o.srv.Headers, Server: o.srv.Server}
 			if src.Headers == nil {
 				src.Headers = map[string]string{}

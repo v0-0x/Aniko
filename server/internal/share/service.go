@@ -191,12 +191,17 @@ type peer struct {
 	account, downloads bool
 
 	// As a host: whether it shares its library with this Aniko, and its files.
-	shares   bool
-	files    []*library.LocalFile
-	filesVer string
-	asked    time.Time
-	asking   bool
-	fails    int
+	shares bool
+	// offers: it says it shares with this Aniko; accepted: this Aniko's
+	// owner took that (asked on Home, or by adding it by hand). What a
+	// host says is believed only once accepted: any device on the network
+	// can say it's one.
+	offers, accepted bool
+	files            []*library.LocalFile
+	filesVer         string
+	asked            time.Time
+	asking           bool
+	fails            int
 	// filesStale: it answered, but its list of files didn't come (a busy
 	// server, a long list): what this Aniko has of it stays, and it's asked
 	// again soon.
@@ -360,7 +365,10 @@ type savedPeer struct {
 	Manual  string `json:"manual,omitempty"`
 	Allowed bool   `json:"allowed,omitempty"`
 	Shares  bool   `json:"shares,omitempty"`
-	Seen    int64  `json:"seen"`
+	// Accepted as a host by the owner. Nil: saved before that was asked,
+	// when a host that shared (or was added by hand) was taken as one.
+	Accepted *bool `json:"accepted,omitempty"`
+	Seen     int64 `json:"seen"`
 	// Granted to it (allowed): this Aniko's AniList login, downloading here.
 	Account   bool `json:"account,omitempty"`
 	Downloads bool `json:"downloads,omitempty"`
@@ -393,7 +401,8 @@ func (s *Service) load() {
 		s.peers[id] = &peer{
 			id: id, name: sp.Name, pub: pub, addr: net.ParseIP(sp.Addr), port: sp.Port,
 			manual: sp.Manual, allowed: sp.Allowed, shares: sp.Shares, lastSeen: time.Unix(sp.Seen, 0),
-			account: sp.Account, downloads: sp.Downloads, hostDownloads: sp.TakesDownloads,
+			accepted: sp.Accepted != nil && *sp.Accepted || sp.Accepted == nil && (sp.Shares || sp.Manual != ""),
+			account:  sp.Account, downloads: sp.Downloads, hostDownloads: sp.TakesDownloads,
 			user: sp.User, callerUser: sp.CallerUser, historySeq: sp.HistorySeq, pushedSeq: sp.PushedSeq,
 			wakeMACs: cleanMACs(sp.Wake), platform: cleanPlatform(sp.Platform), declined: sp.Declined, role: cleanRole(sp.Role),
 			rules: sp.Rules,
@@ -407,11 +416,12 @@ func (s *Service) load() {
 func (s *Service) save() {
 	out := map[string]savedPeer{}
 	for id, p := range s.peers {
-		if !p.allowed && !p.shares && p.manual == "" && !p.declined {
+		if !p.allowed && !p.shares && p.manual == "" && !p.declined && !p.accepted {
 			continue
 		}
+		accepted := p.accepted
 		sp := savedPeer{
-			Name: p.name, Key: base64.StdEncoding.EncodeToString(p.pub), Port: p.port, Manual: p.manual, Allowed: p.allowed, Shares: p.shares, Seen: p.lastAround().Unix(),
+			Name: p.name, Key: base64.StdEncoding.EncodeToString(p.pub), Port: p.port, Manual: p.manual, Allowed: p.allowed, Shares: p.shares, Accepted: &accepted, Seen: p.lastAround().Unix(),
 			Account: p.account, Downloads: p.downloads, TakesDownloads: p.hostDownloads,
 			User: p.user, CallerUser: p.callerUser, HistorySeq: p.historySeq, PushedSeq: p.pushedSeq,
 			Wake: p.wakeMACs, Platform: p.platform, Declined: p.declined, Role: p.role, Rules: p.rules,
@@ -979,6 +989,18 @@ func (s *Service) askHosts(ctx context.Context) {
 // files when they changed.
 func (s *Service) ask(ctx context.Context, p *peer) {
 	h, err := s.hello(ctx, p)
+	// What it says it shares counts once this Aniko's owner accepted it as
+	// a host: till then it only offers (asked on Home), and nothing of its
+	// answer is followed (its files, rules, account, where downloads go).
+	offers := err == nil && h.Shares
+	if err == nil {
+		s.mu.Lock()
+		accepted := p.accepted
+		s.mu.Unlock()
+		if !accepted {
+			h.Shares, h.Parental = false, nil
+		}
+	}
 	var files []*library.LocalFile
 	var filesErr error
 	if err == nil && h.Shares {
@@ -1027,7 +1049,8 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	}
 	// It answered again after it didn't (or for the first time this run).
 	back := p.fails > 0 || !p.online(time.Now())
-	visible = back || p.shares != h.Shares || (p.name != h.Name && h.Name != "") || p.waking(time.Now())
+	visible = back || p.shares != h.Shares || p.offers != offers || (p.name != h.Name && h.Name != "") || p.waking(time.Now())
+	p.offers = offers
 	p.fails, p.seen, p.wakeUntil = 0, time.Now(), time.Time{}
 	if p.answeredAt.IsZero() {
 		p.answeredAt = time.Now()
@@ -1766,7 +1789,9 @@ type PeerView struct {
 	// Allowed: this Aniko shares its library with it.
 	Allowed bool `json:"allowed"`
 	// Shares: it shares its library with this Aniko (Files of them).
-	Shares bool   `json:"shares"`
+	Shares bool `json:"shares"`
+	// Offers: it says it shares with this Aniko, which hasn't accepted it.
+	Offers bool   `json:"offers,omitempty"`
 	Files  int    `json:"files"`
 	Manual bool   `json:"manual"`
 	Error  string `json:"error,omitempty"`
@@ -1797,7 +1822,7 @@ type PeerView struct {
 func (s *Service) view(p *peer, now time.Time) PeerView {
 	v := PeerView{
 		ID: p.id, Name: p.name, Online: p.online(now), LastSeen: p.lastAround().Unix(), Version: p.version,
-		Allowed: p.allowed, Shares: p.shares, Files: len(p.files), Manual: p.manual != "",
+		Allowed: p.allowed, Shares: p.shares, Offers: p.offers && !p.accepted, Files: len(p.files), Manual: p.manual != "",
 		Account: p.account, Downloads: p.downloads,
 		SharesAccount: p.shares && p.hostAccount != "", TakesDownloads: p.shares && p.hostDownloads,
 		CanWake: p.shares && len(p.wakeMACs) > 0, Waking: p.waking(now),
@@ -1898,6 +1923,8 @@ type Grants struct {
 	Downloads *bool `json:"downloads"`
 	// Declined: "not now", asked whether to share with it (Home).
 	Declined *bool `json:"declined"`
+	// Accepted: its library is used here (it offers it): true only.
+	Accepted *bool `json:"accepted"`
 }
 
 // SetAllowed shares this Aniko's library with another one, or stops.
@@ -1927,6 +1954,10 @@ func (s *Service) SetGrants(id string, g Grants) error {
 		if g.Declined != nil {
 			p.declined = *g.Declined
 		}
+		if g.Accepted != nil && *g.Accepted {
+			p.accepted, p.declined = true, false
+			p.asked = time.Time{}
+		}
 		// Shared with after all: the "not now" is over.
 		if p.allowed {
 			p.declined = false
@@ -1938,6 +1969,9 @@ func (s *Service) SetGrants(id string, g Grants) error {
 		return errors.New("no Aniko app with that ID")
 	}
 	s.hub.Publish("sharing-updated", nil)
+	if g.Accepted != nil && *g.Accepted {
+		s.wake()
+	}
 	// Tell it to ask again now (it does every 30s anyway).
 	s.mu.Lock()
 	r := s.running
@@ -2111,6 +2145,8 @@ func (s *Service) Connect(ctx context.Context, address string) (PeerView, error)
 		p.platform = pl
 	}
 	p.manual = net.JoinHostPort(host, strconv.Itoa(port))
+	// Added by hand: taken as a host.
+	p.accepted = true
 	p.asked, p.fails = time.Time{}, 0
 	s.save()
 	v := s.view(p, time.Now())

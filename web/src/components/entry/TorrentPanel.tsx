@@ -8,7 +8,7 @@ import { useStatus, useTorrentSearch } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
 import { tv } from "@/lib/tv"
 import type { EntryView, TorrentResult } from "@/lib/types"
-import { cn, copyText, relativeTime } from "@/lib/utils"
+import { cn, copyText, openExternal, relativeTime } from "@/lib/utils"
 import { Button, ContextArea, Dropdown, DropdownContent, DropdownItem, DropdownTrigger, EmptyState, ErrorState, IconButton, Input, Select, Switch } from "../ui"
 
 // episode: the one to look for first (a missing one), else the next to watch.
@@ -123,7 +123,7 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
 
             {results.length > 0 && (
                 <div className={classic ? "flex flex-col gap-2" : "flex flex-col divide-y divide-line border-y border-line"}>
-                    {results.map(r => {
+                    {results.map((r, i) => {
                         const k = key(r)
                         const isSel = selected.has(k)
                         const canStream = !!(r.infoHash || r.magnetLink) && (tv ? viaHost : true)
@@ -154,7 +154,7 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                                     </DropdownItem>
                                 )}
                                 {r.link && (
-                                    <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(r.link, "_blank", "noopener,noreferrer")}>
+                                    <DropdownItem icon={<ExternalLink />} onSelect={() => openExternal(r.link)}>
                                         Open page
                                     </DropdownItem>
                                 )}
@@ -172,7 +172,7 @@ export function TorrentPanel({ entry, episode: wanted }: { entry: EntryView; epi
                             </>
                         )
                         return (
-                            <ContextArea key={k} menu={menu} className={cn("flex items-center gap-3 p-3 transition-colors", classic && "card", isSel && (classic ? "bg-brand-soft" : "shadow-[inset_2px_0_0_0_var(--text)]"))}>
+                            <ContextArea key={`${k}-${i}`} menu={menu} className={cn("flex items-center gap-3 p-3 transition-colors", classic && "card", isSel && (classic ? "bg-brand-soft" : "shadow-[inset_2px_0_0_0_var(--text)]"))}>
                                 <input
                                     type="checkbox"
                                     aria-label={`Select ${r.name}`}

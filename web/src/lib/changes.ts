@@ -7,6 +7,21 @@ export type Release = { id: number; title: string; changes: Change[]; hub?: bool
 
 export const RELEASES: Release[] = [
     {
+        id: 57,
+        title: "Safer sharing between devices",
+        changes: [
+            {
+                title: "A new device asks first",
+                text: "When another Aniko offers its library, Home asks before this one uses it. The ones you already use stay as they are.",
+                to: "/",
+            },
+            {
+                title: "Security fixes",
+                text: "A review of the whole app: tighter limits for other devices on your network, parental controls that are harder to get around, and fixes for a few crashes.",
+            },
+        ],
+    },
+    {
         id: 56,
         title: "Notifications, your year, kept searches",
         changes: [

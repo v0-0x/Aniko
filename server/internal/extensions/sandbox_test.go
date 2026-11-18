@@ -648,6 +648,10 @@ setTimeout(function() {
   check('badOffsets', function() { return $toString({ buffer: new ArrayBuffer(4), byteOffset: -1, byteLength: 2 }); });
   check('hugeOffsets', function() { return $toString({ buffer: new ArrayBuffer(4), byteOffset: 9007199254740991, byteLength: 9007199254740991 }); });
   check('docPlainObject', function() { return LoadDoc('<p>x</p>')({}).length(); });
+  check('isNone', function() { return LoadDoc('<a>x</a>')('a').is(); });
+  check('eachNone', function() { return LoadDoc('<a>x</a>')('a').each(); });
+  check('mapNone', function() { return LoadDoc('<a>x</a>')('a').map(); });
+  check('getOrSetNone', function() { return $store.getOrSet('none'); });
   check('shortIV', function() { return CryptoJS.AES.encrypt('x', 'key', { iv: 'short' }).toString(); });
   check('vanishingMessage', function() {
     var o = { stack: 's' };
@@ -683,6 +687,7 @@ class Provider {}`, RuntimeOptions{})
 	}
 	want := map[string]string{
 		"fakeBuffer": "ok:", "badOffsets": "ok:", "hugeOffsets": "ok:", "docPlainObject": "ok:0",
+		"isNone": "ok:false", "eachNone": "threw", "mapNone": "threw", "getOrSetNone": "threw",
 		"shortIV": "threw", "vanishingMessage": "ok:1", "logWithoutJSON": "ok:1", "toStringWithoutJSON": "ok:",
 		"storeWithBadJSON": "ok:1", "fakeFormData": "rejected", "hugeFormData": "rejected", "vanishingHeader": "rejected",
 	}

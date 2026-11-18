@@ -10,7 +10,8 @@ import (
 )
 
 // Prompt is what Home asks about another Aniko on the network: whether to
-// share this Aniko's library with one that's new ("new"), or to update one
+// share this Aniko's library with one that's new ("new"), to use the library
+// one offers ("offer"), or to update one
 // of the two, their versions differing ("older": its Aniko is older than
 // this one, "newer": this one is).
 type Prompt struct {
@@ -35,12 +36,21 @@ func (s *Service) Prompts() []Prompt {
 		if !p.online(now) {
 			continue
 		}
+		pr := Prompt{ID: p.id, Name: s.view(p, now).Name, Platform: p.platform, Version: p.version}
+		// It says it shares its library with this Aniko: used once the
+		// owner says so here.
+		if p.offers && !p.accepted {
+			if !p.declined {
+				pr.Kind = "offer"
+				out = append(out, pr)
+			}
+			continue
+		}
 		// A server (mediaserver's anime side): its owner shares its library
 		// from its dashboard, and updates it there.
 		if p.role == RoleHub {
 			continue
 		}
-		pr := Prompt{ID: p.id, Name: s.view(p, now).Name, Platform: p.platform, Version: p.version}
 		// One that shares its library with this Aniko isn't new here.
 		if !p.allowed && !p.shares && !p.declined {
 			pr.Kind = "new"

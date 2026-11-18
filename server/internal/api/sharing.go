@@ -480,7 +480,7 @@ func (s *Server) peerDownload(r *http.Request) (any, error) {
 			return nil, err
 		}
 		for _, u := range body.URIs {
-			if !strings.HasPrefix(u, "magnet:") && !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
+			if !torrentURI(u) {
 				return nil, badRequest("not a magnet link or a .torrent URL")
 			}
 		}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -100,16 +101,34 @@ func (s *Server) parentalAsked(rules *parental.Rules, r *http.Request) string {
 	}
 	paths := q["path"]
 	if r.Body != nil && (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) && isJSON(r) {
+		// Read as the handlers read it: the first JSON value (what follows
+		// is ignored), its keys in any case. The rest of a long body stays
+		// for the handler.
 		raw, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-		_ = r.Body.Close()
-		r.Body = io.NopCloser(bytes.NewReader(raw))
+		r.Body = struct {
+			io.Reader
+			io.Closer
+		}{io.MultiReader(bytes.NewReader(raw), r.Body), r.Body}
 		var body map[string]any
-		if err == nil && json.Unmarshal(raw, &body) == nil {
-			if id, ok := body["mediaId"].(float64); ok && id > 0 {
-				ids = append(ids, int(id))
-			}
-			if p, ok := body["path"].(string); ok {
-				paths = append(paths, p)
+		if err == nil && json.NewDecoder(bytes.NewReader(raw)).Decode(&body) == nil {
+			for k, v := range body {
+				switch strings.ToLower(k) {
+				case "mediaid":
+					if id, ok := v.(float64); ok && id > 0 {
+						ids = append(ids, int(id))
+					}
+				case "path":
+					if p, ok := v.(string); ok {
+						paths = append(paths, p)
+					}
+				case "paths":
+					list, _ := v.([]any)
+					for _, x := range list {
+						if p, ok := x.(string); ok {
+							paths = append(paths, p)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -188,7 +207,8 @@ func (s *Server) findMediaOfPath(p string) int {
 		}
 		return 0
 	}
-	if f, err := s.app.Files.Get(p); err == nil && f != nil {
+	// As the file is then looked up to be played (cleaned).
+	if f, err := s.app.Files.Get(filepath.Clean(p)); err == nil && f != nil {
 		return f.MediaID
 	}
 	return 0
@@ -264,15 +284,15 @@ func (s *Server) parentalRoutes() {
 			return nil, err
 		}
 		ip := clientIP(r).String()
-		if wait := s.logins.wait(ip, time.Now()); wait > 0 {
+		if wait := s.unlocks.wait(ip, time.Now()); wait > 0 {
 			return nil, &apiError{status: http.StatusTooManyRequests, msg: "too many wrong PINs: try again in a few minutes"}
 		}
 		if s.app.Share.UnlockParental(strings.TrimSpace(body.PIN)) == 0 {
-			s.logins.failed(ip, time.Now())
+			s.unlocks.failed(ip, time.Now())
 			time.Sleep(time.Second)
 			return nil, forbidden("that isn't the PIN")
 		}
-		s.logins.passed(ip)
+		s.unlocks.passed(ip)
 		return nil, nil
 	}))
 	// A device's, set here (this computer, or a hub's owner).

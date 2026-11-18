@@ -5,6 +5,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 // videosFolder is the home folder for videos (the library's default is its
@@ -24,7 +25,26 @@ func runtimeDir() string {
 	if base == "" {
 		base = os.TempDir()
 	}
-	return filepath.Join(base, "aniko")
+	dir := filepath.Join(base, "aniko")
+	// In a folder everyone writes to (no XDG_RUNTIME_DIR: a service),
+	// another account could have made it first, and own what Aniko keeps
+	// and runs from it: then it's a folder of Aniko's own data instead.
+	_ = os.MkdirAll(dir, 0o700)
+	if !ownFolder(dir) {
+		dir = filepath.Join(DataDir(), "run")
+	}
+	return dir
+}
+
+// ownFolder reports a real folder of this account's that nobody else can
+// write to.
+func ownFolder(dir string) bool {
+	st, err := os.Lstat(dir)
+	if err != nil || !st.IsDir() || st.Mode().Perm()&0o022 != 0 {
+		return false
+	}
+	sys, ok := st.Sys().(*syscall.Stat_t)
+	return ok && int(sys.Uid) == os.Getuid()
 }
 
 // findQbittorrent prefers a native qBittorrent and falls back to the

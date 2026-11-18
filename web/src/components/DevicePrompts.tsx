@@ -21,7 +21,8 @@ function readHidden(): string[] {
 }
 
 // Home, on the computer: an Aniko new on the network (a TV, say), to share
-// this computer's library with; and a paired one on another version than
+// this computer's library with; one that offers its library, to use it (what
+// a host says is followed only once accepted here); and a paired one on another version than
 // this one, to update.
 export function DevicePrompts() {
     const classic = useClassic()
@@ -33,14 +34,15 @@ export function DevicePrompts() {
     // A TV has no library to share, nor does a computer without a folder
     // (or with its library off).
     const canShare = status.platform !== "android" && !!status.settings.library.dir && !status.settings.library.off
-    const prompts = (status.devicePrompts ?? []).filter(p => (p.kind === "new" ? canShare : !hidden.includes(`${p.id}@${p.version}`)))
+    const prompts = (status.devicePrompts ?? []).filter(p => (p.kind === "offer" ? true : p.kind === "new" ? canShare : !hidden.includes(`${p.id}@${p.version}`)))
     if (!prompts.length) return null
 
     const answer = async (p: DevicePrompt, share: boolean) => {
         setBusy(p.id)
         try {
-            await api.post(`/api/sharing/peers/${encodeURIComponent(p.id)}`, share ? { allowed: true } : { declined: true })
-            if (share) toast.success(`Sharing this library with ${p.name}. More in Settings › Other devices.`)
+            const offer = p.kind === "offer"
+            await api.post(`/api/sharing/peers/${encodeURIComponent(p.id)}`, !share ? { declined: true } : offer ? { accepted: true } : { allowed: true })
+            if (share) toast.success(offer ? `Using ${p.name}'s library. More in Settings › Other devices.` : `Sharing this library with ${p.name}. More in Settings › Other devices.`)
             await qc.invalidateQueries({ queryKey: ["status"] })
             qc.invalidateQueries({ queryKey: ["sharing"] })
         } catch (e: any) {
@@ -63,7 +65,8 @@ export function DevicePrompts() {
         <div className="flex flex-col gap-3 px-6 pt-6 md:px-8 xl:px-10">
             {prompts.map(p => {
                 const tvApp = p.platform === "android"
-                const isNew = p.kind === "new"
+                const offer = p.kind === "offer"
+                const isNew = p.kind === "new" || offer
                 return (
                     <div key={`${p.kind}:${p.id}`} className="card flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4 rise-in">
                         <span className={classic ? "grid size-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-fg/80 [&>svg]:size-[18px]" : "shrink-0 text-muted [&>svg]:size-5 [&>svg]:stroke-[1.5]"}>
@@ -71,10 +74,12 @@ export function DevicePrompts() {
                         </span>
                         <div className="min-w-0 flex-1">
                             <p className="font-medium">
-                                {isNew ? `Share this library with ${p.name}?` : p.kind === "older" ? `${p.name} runs an older Aniko` : `${p.name} runs a newer Aniko`}
+                                {offer ? `Use ${p.name}'s library?` : isNew ? `Share this library with ${p.name}?` : p.kind === "older" ? `${p.name} runs an older Aniko` : `${p.name} runs a newer Aniko`}
                             </p>
                             <p className="mt-0.5 text-sm text-muted">
-                                {isNew
+                                {offer
+                                    ? `It offers its anime to this device. Say yes only if it's one of yours.`
+                                    : isNew
                                     ? `Aniko${tvApp ? "'s TV app" : ""} on ${p.name} can then play this computer's anime.`
                                     : p.kind === "older"
                                       ? `Aniko ${p.version} there, ${status.version} here. Update it on ${p.name}, from its Home page.`
@@ -87,7 +92,7 @@ export function DevicePrompts() {
                                     Not now
                                 </Button>
                                 <Button size="sm" variant="primary" loading={busy === p.id} onClick={() => answer(p, true)}>
-                                    Share my library
+                                    {offer ? "Use it" : "Share my library"}
                                 </Button>
                             </div>
                         ) : (

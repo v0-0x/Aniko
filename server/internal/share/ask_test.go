@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/parental"
 )
 
 // hostFor puts a host behind srv in guest's peers, as one that shares.
 func hostFor(t *testing.T, guest, host *Service, srv *httptest.Server) *peer {
 	t.Helper()
 	addr := srv.Listener.Addr().(*net.TCPAddr)
-	p := &peer{id: host.id.ID, name: "Pi", addr: addr.IP, port: addr.Port, shares: true}
+	p := &peer{id: host.id.ID, name: "Pi", addr: addr.IP, port: addr.Port, shares: true, accepted: true}
 	p.pub, _ = parsePublicKey(host.id.ID, host.id.PublicKey())
 	guest.mu.Lock()
 	guest.peers[p.id] = p
@@ -194,5 +195,65 @@ func TestHostWithoutBeaconsSaidSo(t *testing.T) {
 	}
 	if v2.NoBeacons {
 		t.Error("a host whose beacon came: said to have none")
+	}
+}
+
+// A device that says it shares with this Aniko is only offering till the
+// owner accepts it here: none of its answer is followed (its files, its
+// rules, where downloads go), and Home asks. Accepted, it's a host.
+func TestAHostIsBelievedOnceAccepted(t *testing.T) {
+	host := hostWithSharing(t)
+	guest := hostWithSharing(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := host.Verify(w, r); err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		switch r.URL.Path {
+		case "/api/peer/hello":
+			_ = json.NewEncoder(w).Encode(Hello{ID: host.id.ID, Name: "Pi", Key: host.id.PublicKey(), Shares: true, Files: "v1", Downloads: true, Role: RoleHub, User: 7,
+				Parental: &parental.Rules{OnlyAllowed: true, PIN: "x:y", SetAt: 1}})
+		case "/api/peer/files":
+			_ = json.NewEncoder(w).Encode([]*library.LocalFile{{Path: "/anime/x.mkv", MediaID: 1, Episode: 1}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	p := hostFor(t, guest, host, srv)
+	guest.mu.Lock()
+	p.shares, p.accepted, p.seen = false, false, time.Now()
+	guest.mu.Unlock()
+
+	guest.ask(t.Context(), p)
+	guest.mu.Lock()
+	shares, offers, files, takes, user, rules := p.shares, p.offers, len(p.files), p.hostDownloads, p.user, len(guest.received)
+	guest.mu.Unlock()
+	if shares || !offers || files != 0 || takes || user != 0 || rules != 0 {
+		t.Fatalf("not accepted: shares %v, offers %v, %d files, downloads %v, user %d, %d rules (want only the offer)", shares, offers, files, takes, user, rules)
+	}
+	if to := guest.settings.Get().Sharing.DownloadTo; to != "" {
+		t.Fatalf("downloads go to %q, unasked", to)
+	}
+	if c := (Caller{Paired: p.paired()}); c.Paired {
+		t.Fatal("paired with a device that only offers")
+	}
+	guest.mu.Lock()
+	offered := guest.view(p, time.Now()).Offers
+	guest.mu.Unlock()
+	if !offered {
+		t.Fatal("the offer isn't shown")
+	}
+
+	yes := true
+	if err := guest.SetGrants(p.id, Grants{Accepted: &yes}); err != nil {
+		t.Fatal(err)
+	}
+	guest.ask(t.Context(), p)
+	guest.mu.Lock()
+	shares, files = p.shares, len(p.files)
+	guest.mu.Unlock()
+	if !shares || files != 1 {
+		t.Fatalf("accepted: shares %v, %d files (want its library)", shares, files)
 	}
 }

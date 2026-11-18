@@ -109,6 +109,9 @@ func NewDownloader(svc *Service, lib *Library, media func(ctx context.Context, i
 	}
 }
 
+// chapterNumber is a chapter's number: 7, 12.5 ("" for one without).
+var chapterNumber = regexp.MustCompile(`^(\d{1,6}(\.\d{1,4})?)?$`)
+
 // ErrNoChapters: nothing to download.
 var ErrNoChapters = errors.New("no chapters to download")
 
@@ -125,7 +128,9 @@ func (d *Downloader) Add(mediaID int, title, provider string, chapters []Chapter
 	d.mu.Lock()
 	added := 0
 	for _, c := range chapters {
-		if c.ID == "" || len(c.ID) > 2048 || len(c.Chapter) > 64 {
+		// The number names the chapter's file: digits only (a provider, or a
+		// request, could name a path with it).
+		if c.ID == "" || len(c.ID) > 2048 || !chapterNumber.MatchString(c.Chapter) {
 			continue
 		}
 		if target == "" && d.lib.Has(mediaID, c.Chapter) {

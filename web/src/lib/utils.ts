@@ -254,6 +254,12 @@ export function entryUrl(m: { id: number; type?: string }) {
     return m.type === "MANGA" ? `/manga/entry?id=${m.id}` : `/entry?id=${m.id}`
 }
 
+// Opens a link from outside Aniko (an extension, a torrent site, AniList) in
+// the browser. Web pages only (not javascript: or file: links).
+export function openExternal(url?: string | null) {
+    if (typeof url === "string" && /^https?:\/\//i.test(url)) window.open(url, "_blank", "noopener,noreferrer")
+}
+
 // This browser's storage, read and written without failing when it can't be
 // (site data blocked, a private window): null, and nothing kept, then.
 export function readLocal(key: string): string | null {

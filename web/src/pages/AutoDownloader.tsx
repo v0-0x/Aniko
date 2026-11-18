@@ -115,7 +115,7 @@ function RuleCard({ rule, onEdit, onTest }: { rule: AutoRule; onEdit: () => void
         }
     }
     const name = media?.media ? title(media.media) : rule.title
-    const facts = [...rule.releaseGroups, ...rule.resolutions.map(r => `${r}p`), rule.episodeType === "all" ? "All episodes" : "New episodes"]
+    const facts = [...(rule.releaseGroups ?? []), ...(rule.resolutions ?? []).map(r => `${r}p`), rule.episodeType === "all" ? "All episodes" : "New episodes"]
     if (rule.delayMinutes) facts.push(`Waits ${rule.delayMinutes} min`)
     // The "⋯" button's items, and a right-click's on the row.
     const menu = (
@@ -205,13 +205,13 @@ function RuleDialog({ rule, onClose }: { rule: AutoRule; onClose: () => void }) 
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Release groups" help="Preferred first, e.g. SubsPlease, Erai-raws">
-                        <Input defaultValue={r.releaseGroups.join(", ")} onChange={e => setR({ ...r, releaseGroups: list(e.target.value) })} />
+                        <Input defaultValue={(r.releaseGroups ?? []).join(", ")} onChange={e => setR({ ...r, releaseGroups: list(e.target.value) })} />
                     </Field>
                     <Field label="Resolutions" help="Preferred first, e.g. 1080, 720">
-                        <Input defaultValue={r.resolutions.join(", ")} onChange={e => setR({ ...r, resolutions: list(e.target.value) })} />
+                        <Input defaultValue={(r.resolutions ?? []).join(", ")} onChange={e => setR({ ...r, resolutions: list(e.target.value) })} />
                     </Field>
                     <Field label="Must contain" help="Extra words, comma separated">
-                        <Input defaultValue={r.additionalTerms.join(", ")} onChange={e => setR({ ...r, additionalTerms: list(e.target.value) })} />
+                        <Input defaultValue={(r.additionalTerms ?? []).join(", ")} onChange={e => setR({ ...r, additionalTerms: list(e.target.value) })} />
                     </Field>
                     <Field label="Must not contain" help="Comma separated">
                         <Input defaultValue={(r.excludeTerms ?? []).join(", ")} onChange={e => setR({ ...r, excludeTerms: list(e.target.value) })} />

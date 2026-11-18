@@ -46,8 +46,12 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     const openAnilist = async () => {
         const d = desktop()
         if (d) {
-            const t = await d.anilistLogin(url)
-            if (t) await submit(t)
+            try {
+                const t = await d.anilistLogin(url)
+                if (t) await submit(t)
+            } catch (e: any) {
+                toast.error(e.message)
+            }
             return
         }
         loginStarted()

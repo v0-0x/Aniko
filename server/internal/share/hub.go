@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -294,7 +295,7 @@ func (s *Service) postJSON(ctx context.Context, p *peer, path string, in, out an
 		return err
 	}
 	if out != nil {
-		return json.NewDecoder(resp.Body).Decode(out)
+		return json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(out)
 	}
 	return nil
 }

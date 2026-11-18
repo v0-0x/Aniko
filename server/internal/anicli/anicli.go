@@ -485,6 +485,11 @@ func (e noSourcesError) Is(target error) bool { return target == ErrNoSources }
 // with ani-cli's message: for a Remote's answer.
 func NoSources(msg string) error { return noSourcesError(strings.TrimPrefix(msg, "ani-cli: ")) }
 
+var (
+	episodeArg = regexp.MustCompile(`^\d{1,5}(\.\d{1,2})?([ -]\d{1,5}(\.\d{1,2})?)?$`)
+	qualityArg = regexp.MustCompile(`^[0-9a-zA-Z]{0,12}$`)
+)
+
 // Resolve asks ani-cli for the stream of one episode.
 func (d *Driver) Resolve(ctx context.Context, query string, index int, episode, mode, quality string) (*Stream, error) {
 	q, err := queryArg(query)
@@ -493,6 +498,11 @@ func (d *Driver) Resolve(ctx context.Context, query string, index int, episode, 
 	}
 	if quality == "" {
 		quality = d.settings.Get().AniCli.Quality
+	}
+	// They go into ani-cli's own commands (a script): an episode's number
+	// (or a range of them), a quality's name, and nothing else.
+	if !episodeArg.MatchString(episode) || !qualityArg.MatchString(quality) {
+		return nil, errors.New("ani-cli: not an episode or a quality")
 	}
 	if r := d.via(); r != nil {
 		return r.Resolve(ctx, query, index, episode, mode, quality)

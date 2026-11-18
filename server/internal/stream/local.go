@@ -640,11 +640,14 @@ func (l *Local) SeekPoint(ctx context.Context, path string, t float64, audio int
 // With burn >= 0 (image subtitles drawn on), the video is converted and
 // starts at t exactly.
 func (l *Local) Seek(ctx context.Context, path string, t float64, audio int, method string, caps Caps, hls bool, burn int) (float64, string, error) {
+	// Probed as it was asked for (a torrent playing by its id: what it
+	// resolves to, an address on this computer, isn't a file to resolve).
+	asked := path
 	path, err := l.resolve(path)
 	if err != nil {
 		return 0, "", err
 	}
-	p, err := l.Probe(ctx, path)
+	p, err := l.Probe(ctx, asked)
 	if err != nil {
 		return 0, "", err
 	}
@@ -751,7 +754,11 @@ func (l *Local) ServeFile(w http.ResponseWriter, r *http.Request, path string) {
 		return
 	}
 	defer f.Close()
-	st, _ := f.Stat()
+	st, err := f.Stat()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 	// Set the type explicitly so a mislabelled file is never sniffed as HTML.
 	ct := mime.TypeByExtension(strings.ToLower(filepath.Ext(path)))
 	if strings.EqualFold(filepath.Ext(path), ".mkv") {
@@ -769,13 +776,14 @@ func (l *Local) ServeFile(w http.ResponseWriter, r *http.Request, path string) {
 // ServeTranscode converts the file from start for the player; burn >= 0 draws
 // that subtitle track (an image one) onto the video.
 func (l *Local) ServeTranscode(w http.ResponseWriter, r *http.Request, path string, start float64, audio int, method string, caps Caps, burn int) {
+	asked := path
 	path, err := l.resolve(path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 	cfg := l.settings.Get()
-	p, err := l.Probe(r.Context(), path)
+	p, err := l.Probe(r.Context(), asked)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

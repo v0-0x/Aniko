@@ -30,7 +30,7 @@ import { api } from "@/lib/api"
 import { useExtensions, useMarketplace, useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
 import type { ExtensionInfo, LogLineT, MarketEntry } from "./extensionTypes"
-import { cn } from "@/lib/utils"
+import { cn, openExternal } from "@/lib/utils"
 
 const TYPES: Record<string, { label: string; icon: React.ReactNode }> = {
     plugin: { label: "Plugin", icon: <Puzzle className="size-3.5" /> },
@@ -39,8 +39,6 @@ const TYPES: Record<string, { label: string; icon: React.ReactNode }> = {
     "manga-provider": { label: "Manga", icon: <BookOpen className="size-3.5" /> },
     "custom-source": { label: "Custom source", icon: <Globe className="size-3.5" /> },
 }
-
-const openLink = (url: string) => window.open(url, "_blank", "noopener,noreferrer")
 
 // The extensions, in columns: in this look rows on hairlines, not a box each.
 const grid = (classic: boolean) => cn("grid lg:grid-cols-2 2xl:grid-cols-3", classic ? "gap-2" : "grid-cols-1 gap-x-8 border-t border-line")
@@ -205,7 +203,7 @@ function InstalledRow({ ext, update, onChange }: { ext: ExtensionInfo; update?: 
                 Logs
             </DropdownItem>
             {m.website && (
-                <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(m.website)}>
+                <DropdownItem icon={<ExternalLink />} onSelect={() => openExternal(m.website)}>
                     Website
                 </DropdownItem>
             )}
@@ -539,12 +537,12 @@ function MarketRow({ e }: { e: MarketEntry }) {
     const menu = (e.website || e.permalink) && (
         <>
             {e.website && (
-                <DropdownItem icon={<ExternalLink />} onSelect={() => openLink(e.website)}>
+                <DropdownItem icon={<ExternalLink />} onSelect={() => openExternal(e.website)}>
                     Website
                 </DropdownItem>
             )}
             {e.permalink && (
-                <DropdownItem icon={<ShieldCheck />} onSelect={() => openLink(e.permalink)}>
+                <DropdownItem icon={<ShieldCheck />} onSelect={() => openExternal(e.permalink)}>
                     VirusTotal scan{e.flags ? ` · ${e.flags}` : ""}
                 </DropdownItem>
             )}

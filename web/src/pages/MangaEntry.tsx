@@ -12,7 +12,7 @@ import { useMangaChapters, useStatus } from "@/lib/queries"
 import { useClassic } from "@/lib/themes"
 import type { LocalMangaChapter, MangaChapter, MangaPosition, Media } from "@/lib/types"
 import { tv } from "@/lib/tv"
-import { banner, cleanDescription, cn, cover, formatLabel, otherTitle, scoreColor, statusLabel, title } from "@/lib/utils"
+import { banner, cleanDescription, cn, cover, formatLabel, otherTitle, readLocal as readStored, scoreColor, statusLabel, title, writeLocal } from "@/lib/utils"
 
 export default function MangaEntryPage() {
     const [params] = useSearchParams()
@@ -21,7 +21,7 @@ export default function MangaEntryPage() {
     const classic = useClassic()
     const { data: media, isLoading, error: mediaError, refetch: refetchMedia, isFetching: mediaFetching } = useQuery({ queryKey: ["manga", "media", id], queryFn: () => api.get<Media>(`/api/manga/${id}`), enabled: id > 0 })
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
-    const [provider, setProvider] = useState<string>(() => localStorage.getItem(`aniko-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
+    const [provider, setProvider] = useState<string>(() => readStored(`aniko-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
     const effective = provider || providers?.[0]?.id || ""
     const { data: ch, isLoading: chLoading, error, refetch, isFetching } = useMangaChapters(id, effective)
     const { data: position, isLoading: positionLoading } = useQuery({
@@ -208,7 +208,7 @@ export default function MangaEntryPage() {
                             value={effective}
                             onChange={v => {
                                 setProvider(v)
-                                localStorage.setItem(`aniko-manga-provider-${id}`, v)
+                                writeLocal(`aniko-manga-provider-${id}`, v)
                             }}
                             options={(providers ?? []).map(p => ({ value: p.id, label: p.name }))}
                         />

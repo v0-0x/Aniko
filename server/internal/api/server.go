@@ -41,6 +41,9 @@ type Server struct {
 	addr string
 	// Wrong server passwords, by address (serverLogin).
 	logins loginGuard
+	// unlocks: wrong parental PINs, counted apart (signing in to the
+	// server, which needs no password when none is set, doesn't clear them).
+	unlocks loginGuard
 	// One rebind at a time (Start).
 	rebindMu sync.Mutex
 	// The players' notes (POST /api/playback/note).
@@ -297,6 +300,16 @@ func (s *Server) webUIEnabled() bool {
 	return s.ForceWebUI || s.app.Settings.Get().Server.WebUI
 }
 
+// forwarded reports a request a proxy passed on (the headers they add).
+func forwarded(r *http.Request) bool {
+	for _, h := range []string{"X-Forwarded-For", "Forwarded", "X-Real-Ip", "Cf-Connecting-Ip", "Tailscale-User-Login"} {
+		if r.Header.Get(h) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Server) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Other Aniko apps (library sharing) are checked apart from browsers.
@@ -308,9 +321,12 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		ip := clientIP(r)
 		var kind clientKind
 		switch {
-		case ip != nil && ip.IsLoopback():
+		case ip != nil && ip.IsLoopback() && !forwarded(r):
 			kind = clientLocal
-		case cfg.Server.AllowLAN && isLANIP(ip):
+		// Through a proxy or a tunnel on this computer (it says for whom it
+		// asks): someone elsewhere, not the app here. A device on the
+		// network at most, with what that takes (allowed, the password).
+		case cfg.Server.AllowLAN && (isLANIP(ip) || ip != nil && ip.IsLoopback()):
 			kind = clientLAN
 		default:
 			http.Error(w, "Aniko only accepts connections from this computer and your local network.", http.StatusForbidden)

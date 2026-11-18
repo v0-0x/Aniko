@@ -13,6 +13,8 @@ export type RecentSearch = { query: string; at: number }
 export type Searches = { saved: SavedSearch[]; recent: RecentSearch[] }
 
 const LOCAL = "aniko-searches"
+// Set once this browser's searches and the server's have been the same.
+const SYNCED = "aniko-searches-synced"
 const MAX_RECENT = 12
 const EMPTY: Searches = { saved: [], recent: [] }
 
@@ -78,11 +80,14 @@ export function useSearches() {
                 // The server can't be reached (or is one from before this): this browser's.
                 return kept
             }
-            // Made here while it couldn't be reached: the server gets them.
-            if (got.saved.length + got.recent.length === 0 && kept.saved.length + kept.recent.length > 0) {
-                api.put("/api/searches", kept).catch(() => {})
+            // Made here before the server kept any: it gets them, the first
+            // time only. After that, none on the server means they were
+            // cleared (on another device) and they go from here too.
+            if (!readLocal(SYNCED) && got.saved.length + got.recent.length === 0 && kept.saved.length + kept.recent.length > 0) {
+                api.put("/api/searches", kept).then(() => writeLocal(SYNCED, "1"), () => {})
                 return kept
             }
+            writeLocal(SYNCED, "1")
             writeLocal(LOCAL, JSON.stringify(got))
             return got
         },

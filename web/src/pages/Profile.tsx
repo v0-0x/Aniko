@@ -13,7 +13,7 @@ import { useClassic } from "@/lib/themes"
 import { toast } from "@/lib/toast"
 import { focusEl, tv } from "@/lib/tv"
 import type { Activity, CollectionItem, Profile, UserLite } from "@/lib/types"
-import { cn, cover, entryUrl, img, relativeTime, title } from "@/lib/utils"
+import { cn, cover, entryUrl, img, openExternal, relativeTime, title } from "@/lib/utils"
 
 // An AniList profile: the logged-in user's (/profile), or another's
 // (/profile?user=Name). Its numbers, what the people followed have been
@@ -200,7 +200,7 @@ function Header({ profile, onTab, onRefresh, refreshing }: { profile: Profile; o
                         </IconButton>
                         {/* A TV has no browser to open it in. */}
                         {!tv && (
-                            <IconButton label="Open on AniList" variant="subtle" onClick={() => window.open(profile.siteUrl, "_blank", "noopener")}>
+                            <IconButton label="Open on AniList" variant="subtle" onClick={() => openExternal(profile.siteUrl)}>
                                 <ExternalLink className="size-4" />
                             </IconButton>
                         )}
@@ -349,7 +349,7 @@ function ActivityRow({ activity: a, showUser }: { activity: Activity; showUser: 
             )}
             {/* A TV has no browser to open it in. */}
             {!tv && a.siteUrl && (
-                <DropdownItem icon={<ExternalLink />} onSelect={() => window.open(a.siteUrl, "_blank", "noopener,noreferrer")}>
+                <DropdownItem icon={<ExternalLink />} onSelect={() => openExternal(a.siteUrl)}>
                     View on AniList
                 </DropdownItem>
             )}

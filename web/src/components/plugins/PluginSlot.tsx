@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef } from "react"
 import { pluginStore, useStore } from "@/lib/store"
+import type { PluginState } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Button } from "../ui"
-import { sendPluginEvent } from "./PluginRenderer"
+import { PluginBoundary } from "./PluginBoundary"
+import { pluginStyle, sendPluginEvent } from "./PluginRenderer"
 
 // Bridge injected into plugin webviews: exposes window.webview.channel.
 const BRIDGE = `<script>(function(){var h={};window.webview={channel:{on:function(n,cb){(h[n]=h[n]||[]).push(cb)},send:function(n,p){parent.postMessage({__kumoWebview:true,name:n,payload:p},'*')}}};window.addEventListener('message',function(e){var d=e.data;if(d&&d.__kumoToWebview){(h[d.name]||[]).forEach(function(cb){try{cb(d.payload)}catch(err){console.error(err)}})}});})();</script>`
@@ -46,8 +48,16 @@ export function WebviewFrame({ pluginId, id, html, options, className }: { plugi
 }
 
 // Renders plugin webviews registered for a given screen slot.
-export function PluginSlot({ slot, className }: { slot: string; className?: string }) {
+export function PluginSlot(props: { slot: string; className?: string }) {
     const plugins = useStore(pluginStore)
+    return (
+        <PluginBoundary resetKey={plugins}>
+            <Slot {...props} plugins={plugins} />
+        </PluginBoundary>
+    )
+}
+
+function Slot({ slot, className, plugins }: { slot: string; className?: string; plugins: Record<string, PluginState> }) {
     const views = useMemo(
         () =>
             Object.values(plugins).flatMap(p =>
@@ -59,31 +69,42 @@ export function PluginSlot({ slot, className }: { slot: string; className?: stri
     return (
         <div className={cn("flex flex-col gap-4", className)}>
             {views.map(v => (
-                <WebviewFrame key={v.pluginId + v.id} pluginId={v.pluginId} id={v.id} html={v.html} options={v.options} />
+                <PluginBoundary key={v.pluginId + v.id} resetKey={plugins}>
+                    <WebviewFrame pluginId={v.pluginId} id={v.id} html={v.html} options={v.options} />
+                </PluginBoundary>
             ))}
         </div>
     )
 }
 
 // Buttons plugins mounted on media pages (ctx.action.newAnimePageButton).
-export function PluginActions({ kind, mediaId }: { kind: string; mediaId: number }) {
+export function PluginActions(props: { kind: string; mediaId: number }) {
     const plugins = useStore(pluginStore)
+    return (
+        <PluginBoundary resetKey={plugins}>
+            <Actions {...props} plugins={plugins} />
+        </PluginBoundary>
+    )
+}
+
+function Actions({ kind, mediaId, plugins }: { kind: string; mediaId: number; plugins: Record<string, PluginState> }) {
     const actions = Object.values(plugins).flatMap(p => (p.state?.actions ?? []).filter(a => a.kind === kind).map(a => ({ pluginId: p.id, ...a })))
     return (
         <>
             {actions.map(a => (
-                <Button
-                    key={a.pluginId + a.id}
-                    size="md"
-                    variant="subtle"
-                    loading={!!a.props.loading}
-                    disabled={!!a.props.disabled}
-                    style={a.props.style}
-                    title={a.props.tooltipText}
-                    onClick={() => sendPluginEvent(a.pluginId, { kind: "action", actionId: a.id, mediaId })}
-                >
-                    {a.props.label}
-                </Button>
+                <PluginBoundary key={a.pluginId + a.id} resetKey={plugins}>
+                    <Button
+                        size="md"
+                        variant="subtle"
+                        loading={!!a.props.loading}
+                        disabled={!!a.props.disabled}
+                        style={pluginStyle(a.props.style)}
+                        title={a.props.tooltipText}
+                        onClick={() => sendPluginEvent(a.pluginId, { kind: "action", actionId: a.id, mediaId })}
+                    >
+                        {a.props.label}
+                    </Button>
+                </PluginBoundary>
             ))}
         </>
     )

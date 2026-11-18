@@ -1441,6 +1441,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                                         p.version && p.role !== "hub" && `Aniko ${p.version}${p.platform === "android" ? " for Android" : ""}`,
                                         !p.online && p.lastSeen > 0 && `seen ${relativeTime(p.lastSeen)}`,
                                         p.shares && `shares its library with you${p.files ? ` (${p.files} ${p.files === 1 ? "file" : "files"})` : ""}`,
+                                        p.offers && "offers its library",
                                         p.error,
                                         p.noBeacons && "found by address only, check its firewall or a network set to Public",
                                     ]
@@ -1453,6 +1454,11 @@ function SharingGroup({ draft, set }: SectionProps) {
                                 {p.shares && p.takesDownloads && trusted && !tv && (
                                     <Button size="sm" variant="ghost" icon={<Upload className="size-4" />} onClick={() => setUploadTo(p.id)}>
                                         Upload
+                                    </Button>
+                                )}
+                                {p.offers && trusted && (
+                                    <Button size="sm" variant="ghost" onClick={() => call(() => api.post(`/api/sharing/peers/${p.id}`, { accepted: true }))}>
+                                        Use its library
                                     </Button>
                                 )}
                                 {!p.online && p.canWake && (

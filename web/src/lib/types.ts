@@ -307,7 +307,7 @@ export type Status = {
     settings: Settings
 }
 
-export type DevicePrompt = { kind: "new" | "older" | "newer"; id: string; name: string; platform?: string; version: string }
+export type DevicePrompt = { kind: "new" | "offer" | "older" | "newer"; id: string; name: string; platform?: string; version: string }
 
 export type PlaybackSession = {
     id: string
@@ -645,6 +645,7 @@ export type SharingPeer = {
     version: string
     allowed: boolean // this Aniko shares its library with it
     shares: boolean // it shares its library with this Aniko
+    offers?: boolean // it says it does, and this Aniko hasn't accepted it yet
     files: number
     manual: boolean
     error?: string

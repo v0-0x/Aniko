@@ -100,7 +100,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/anime/{id}/filler", h(s.filler))
 	m.HandleFunc("PUT /api/watch-order/{key}", h(s.putWatchOrder))
 	m.HandleFunc("DELETE /api/watch-order/{key}", h(s.deleteWatchOrder))
-	m.HandleFunc("POST /api/watch-order/{key}/report", h(s.reportWatchOrder))
+	m.HandleFunc("POST /api/watch-order/{key}/report", h(trusted(s.reportWatchOrder)))
 	m.HandleFunc("POST /api/anilist/search", h(s.search))
 	m.HandleFunc("GET /api/anilist/tags", h(s.tags))
 	m.HandleFunc("GET /api/anilist/discover", h(s.discover))
@@ -331,7 +331,13 @@ func (s *Server) routes() {
 		return list, nil
 	}))
 	m.HandleFunc("GET /api/extensions/marketplace", h(func(r *http.Request) (any, error) {
-		return s.app.Extensions.Marketplace(r.Context(), r.URL.Query().Get("url"), r.URL.Query().Get("refresh") == "1")
+		// Another list than the one in Settings: for this computer to ask
+		// (a device on the network would have it fetch any address).
+		from := r.URL.Query().Get("url")
+		if !isTrusted(r) {
+			from = ""
+		}
+		return s.app.Extensions.Marketplace(r.Context(), from, r.URL.Query().Get("refresh") == "1")
 	}))
 	m.HandleFunc("GET /api/extensions/updates", h(func(r *http.Request) (any, error) { return s.app.Extensions.CheckUpdates(r.Context()), nil }))
 	m.HandleFunc("POST /api/extensions/install", h(trusted(s.installExtension)))
@@ -340,7 +346,8 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/extensions/{id}/grant", h(trusted(func(r *http.Request) (any, error) { return nil, s.app.Extensions.Grant(r.PathValue("id")) })))
 	m.HandleFunc("POST /api/extensions/{id}/update", h(trusted(func(r *http.Request) (any, error) { return s.app.Extensions.Update(r.Context(), r.PathValue("id")) })))
 	m.HandleFunc("DELETE /api/extensions/{id}", h(trusted(func(r *http.Request) (any, error) { return nil, s.app.Extensions.Uninstall(r.PathValue("id")) })))
-	m.HandleFunc("GET /api/extensions/{id}/logs", h(func(r *http.Request) (any, error) { return s.app.Extensions.Logs(r.PathValue("id")), nil }))
+	// Its log can hold the addresses it asked, keys in them.
+	m.HandleFunc("GET /api/extensions/{id}/logs", h(trusted(func(r *http.Request) (any, error) { return s.app.Extensions.Logs(r.PathValue("id")), nil })))
 	m.HandleFunc("GET /api/plugins/ui", h(func(r *http.Request) (any, error) { return s.app.Extensions.PluginStates(), nil }))
 	m.HandleFunc("POST /api/plugins/{id}/event", h(s.pluginEvent))
 	m.HandleFunc("POST /api/plugins/navigate", h(func(r *http.Request) (any, error) {
@@ -580,6 +587,7 @@ func (s *Server) saveSettings(r *http.Request) (any, error) {
 		// pointing the client at another host would send it the password.
 		next.Qbittorrent, next.Transmission = cur.Qbittorrent, cur.Transmission
 		next.Library.Off, next.Library.Dir, next.Library.ExtraDirs = cur.Library.Off, cur.Library.Dir, cur.Library.ExtraDirs
+		next.Manga.Dir = cur.Manga.Dir
 		// Who this computer's library is shared with is its own business.
 		next.Sharing = cur.Sharing
 		// Where extensions come from, and the apps AniList and Discord
@@ -617,6 +625,13 @@ func (s *Server) anilistLogin(r *http.Request) (any, error) {
 	}
 	if err := decode(r, &body); err != nil {
 		return nil, err
+	}
+	// The account is this computer's: a device on the network logs in when
+	// nobody is, and can't put its own account in place of the one here.
+	if !isTrusted(r) {
+		if s.app.Platform.Viewer() != nil {
+			return nil, forbidden("this computer is logged in to AniList already: change the account on the computer Aniko runs on")
+		}
 	}
 	tok := strings.TrimSpace(body.Token)
 	// Accept a pasted redirect URL too (…#access_token=XYZ&token_type=…).

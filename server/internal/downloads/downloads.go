@@ -350,8 +350,19 @@ func (m *Manager) ClearFinished() {
 
 func (m *Manager) worker() {
 	for {
-		m.execute(m.next())
+		m.run(m.next())
 	}
+}
+
+// run downloads one: an extension gone wrong in it (a panic) fails that
+// download, not Aniko.
+func (m *Manager) run(r *run) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("downloads: %v", err)
+		}
+	}()
+	m.execute(r)
 }
 
 // next waits for a queued item and claims it.
@@ -581,7 +592,8 @@ func (m *Manager) ytdlp(r *run, res *Resolved, out string) error {
 		}
 		args = append(args, "--add-header", k+":"+v)
 	}
-	args = append(args, res.URL)
+	// After "--": an address, never one of yt-dlp's options.
+	args = append(args, "--", res.URL)
 	cmd := exec.CommandContext(r.ctx, "yt-dlp", args...)
 	// An interrupt lets yt-dlp stop the ffmpeg it may have started; it gets
 	// killed if it's still running 10s later.

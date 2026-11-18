@@ -161,6 +161,7 @@ func (s *MemStore) Bind(r *Runtime, vm *goja.Runtime) *goja.Object {
 	_ = o.Set("values", values)
 	_ = o.Set("valuesUnsafe", values)
 	_ = o.Set("getOrSet", func(key string, fn goja.Callable) goja.Value {
+		needFunc(vm, fn)
 		s.mu.Lock()
 		raw, ok := s.data[key]
 		s.mu.Unlock()

@@ -153,9 +153,13 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
     }
 
     const refresh = async () => {
-        await api.get(`/api/anime/${media.id}?refresh=1`)
-        qc.invalidateQueries({ queryKey: ["entry", media.id] })
-        toast.success("Metadata refreshed")
+        try {
+            await api.get(`/api/anime/${media.id}?refresh=1`)
+            qc.invalidateQueries({ queryKey: ["entry", media.id] })
+            toast.success("Metadata refreshed")
+        } catch (e: any) {
+            toast.error(e.message)
+        }
     }
 
     return (
@@ -263,7 +267,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
                                 {dropdownActions.length > 0 && <DropdownSeparator />}
                                 {dropdownActions.map(a => (
                                     <DropdownItem key={a.pluginId + a.id} onSelect={() => sendPluginEvent(a.pluginId, { kind: "action", actionId: a.id, mediaId: media.id })}>
-                                        {a.props.label}
+                                        {String(a.props?.label ?? "")}
                                     </DropdownItem>
                                 ))}
                             </DropdownContent>
@@ -583,7 +587,7 @@ function DetailsTab({ entry }: { entry: EntryView }) {
                                         <p className="text-xs text-subtle capitalize">{c.role.toLowerCase()}</p>
                                     </div>
                                 </div>
-                                {c.voiceActors[0] && (
+                                {c.voiceActors?.[0] && (
                                     <div className="flex items-center gap-3 text-right">
                                         <div>
                                             <p className="text-sm font-medium">{c.voiceActors[0].name.full}</p>

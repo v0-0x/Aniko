@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/adrg/strutil"
 	"github.com/adrg/strutil/metrics"
@@ -58,7 +59,7 @@ func GetJSON(ctx context.Context, url string, headers map[string]string, out any
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		return fmt.Errorf("GET %s: %s: %s", url, resp.Status, strings.TrimSpace(string(body)))
 	}
-	return json.NewDecoder(resp.Body).Decode(out)
+	return json.NewDecoder(io.LimitReader(resp.Body, 64<<20)).Decode(out)
 }
 
 // GetBytes performs a GET request and returns the body.
@@ -192,8 +193,14 @@ func SanitizeFilename(s string) string {
 	}, s)
 	s = strings.TrimSpace(s)
 	s = strings.Trim(s, ".")
+	// Cut between characters (a Japanese title), and not to end on what
+	// Windows won't have a name end with.
 	if len(s) > 180 {
 		s = s[:180]
+		for !utf8.ValidString(s) {
+			s = s[:len(s)-1]
+		}
+		s = strings.TrimRight(s, ". ")
 	}
 	if s == "" {
 		s = "untitled"

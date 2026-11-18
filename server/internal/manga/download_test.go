@@ -242,3 +242,18 @@ func TestNames(t *testing.T) {
 		}
 	}
 }
+
+// A chapter's number names its file: one that would name a path isn't taken.
+func TestChapterNumberIsANumber(t *testing.T) {
+	site := testSite(t)
+	defer site.Close()
+	d, _ := testDownloader(t, site, nil)
+	for _, n := range []string{"/../../../x", "..", "1/2", "a", `1\2`} {
+		if got, _ := d.Add(42, "", "prov", []ChapterRef{{ID: "c1", Chapter: n}}, "", ""); got != 0 {
+			t.Errorf("chapter %q was taken", n)
+		}
+	}
+	if n, err := d.Add(42, "", "prov", []ChapterRef{{ID: "c1", Chapter: "12.5"}, {ID: "c2", Chapter: ""}}, "", ""); err != nil || n != 2 {
+		t.Errorf("chapters 12.5 and none: %d, %v", n, err)
+	}
+}

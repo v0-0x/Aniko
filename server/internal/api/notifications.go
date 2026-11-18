@@ -232,7 +232,7 @@ func (s *Server) showNotifications(ctx context.Context, now time.Time) []notifIt
 			var ids []int
 			var medias []*anilist.Media
 			for _, e := range coll.Entries() {
-				if (e.Status != "CURRENT" && e.Status != "REPEATING") || (e.Media.IsAdult && !showAdult) {
+				if (e.Status != "CURRENT" && e.Status != "REPEATING") || e.Media == nil || (e.Media.IsAdult && !showAdult) {
 					continue
 				}
 				reading = append(reading, e)

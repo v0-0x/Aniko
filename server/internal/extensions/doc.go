@@ -46,6 +46,14 @@ func optSel(call goja.FunctionCall, i int) (string, bool) {
 	return a.String(), true
 }
 
+// needFunc throws (to the script) when a callback wasn't given: called as
+// it is, a nil one would take the whole server down from a timer.
+func needFunc(vm *goja.Runtime, fn goja.Callable) {
+	if fn == nil {
+		panic(vm.NewTypeError("a function is expected"))
+	}
+}
+
 // selPredicate converts a selector string or (i, el) => bool callback.
 func selPredicate(vm *goja.Runtime, v goja.Value) (string, func(int, *goquery.Selection) bool) {
 	if fn, ok := goja.AssertFunction(v); ok {
@@ -56,6 +64,10 @@ func selPredicate(vm *goja.Runtime, v goja.Value) (string, func(int, *goquery.Se
 			}
 			return res.ToBoolean()
 		}
+	}
+	// Called without one (a nil here, not undefined).
+	if v == nil {
+		return "", nil
 	}
 	return v.String(), nil
 }
@@ -199,6 +211,7 @@ func wrapSelection(vm *goja.Runtime, s *goquery.Selection) goja.Value {
 	})
 	_ = o.Set("has", func(sel string) goja.Value { return wrap(s.Has(sel)) })
 	_ = o.Set("each", func(fn goja.Callable) {
+		needFunc(vm, fn)
 		s.EachWithBreak(func(i int, x *goquery.Selection) bool {
 			res, err := fn(goja.Undefined(), vm.ToValue(i), wrap(x))
 			if err != nil {
@@ -212,6 +225,7 @@ func wrapSelection(vm *goja.Runtime, s *goquery.Selection) goja.Value {
 		})
 	})
 	_ = o.Set("map", func(fn goja.Callable) goja.Value {
+		needFunc(vm, fn)
 		out := make([]any, 0, s.Length())
 		s.Each(func(i int, x *goquery.Selection) {
 			res, err := fn(goja.Undefined(), vm.ToValue(i), wrap(x))

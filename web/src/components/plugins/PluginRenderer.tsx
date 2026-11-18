@@ -3,6 +3,7 @@ import { api } from "@/lib/api"
 import { useClassic } from "@/lib/themes"
 import type { UINode } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { PluginBoundary } from "./PluginBoundary"
 import { Badge, Button, Dialog, Dropdown, DropdownContent, DropdownItem, DropdownLabel, DropdownSeparator, DropdownTrigger, Popover, Select, Switch, Tooltip } from "../ui"
 
 // Renders the component trees produced by plugin trays (the marketplace's
@@ -14,6 +15,18 @@ export function sendPluginEvent(pluginId: string, evt: Record<string, unknown>) 
     return api.post(`/api/plugins/${encodeURIComponent(pluginId)}/event`, evt).catch(() => {})
 }
 
+// A style a plugin gives: a plain object only, without what would put it
+// over the rest of the app (position, inset, top…, z-index).
+const PLACES = /^(position|zindex|top|left|right|bottom|inset.*)$/
+export function pluginStyle(style: unknown): React.CSSProperties | undefined {
+    if (!style || typeof style !== "object" || Array.isArray(style)) return undefined
+    const out: Record<string, string | number> = {}
+    for (const [k, v] of Object.entries(style)) {
+        if ((typeof v === "string" || typeof v === "number") && !PLACES.test(k.replace(/-/g, "").toLowerCase())) out[k] = v
+    }
+    return out as React.CSSProperties
+}
+
 function useSend() {
     const pluginId = useContext(PluginCtx)
     return (evt: Record<string, unknown>) => sendPluginEvent(pluginId, evt)
@@ -22,6 +35,7 @@ function useSend() {
 export function PluginTree({ pluginId, node }: { pluginId: string; node: UINode | null }) {
     if (!node) return null
     return (
+        <PluginBoundary resetKey={node}>
         <PluginCtx.Provider value={pluginId}>
             {/* A plugin draws in its own box: its styles and classes (fixed,
                 z-index…) can't put anything over the rest of the app. */}
@@ -29,6 +43,7 @@ export function PluginTree({ pluginId, node }: { pluginId: string; node: UINode 
                 <Node node={node} />
             </div>
         </PluginCtx.Provider>
+        </PluginBoundary>
     )
 }
 
@@ -68,7 +83,7 @@ function Node({ node }: { node: UINode }) {
     const classic = useClassic()
     const send = useSend()
     const p = node.props ?? {}
-    const style = p.style as React.CSSProperties | undefined
+    const style = pluginStyle(p.style)
     const cls = p.className as string | undefined
     const click = (e?: React.MouseEvent) => {
         e?.stopPropagation()
@@ -250,7 +265,7 @@ function FieldNode({ node }: { node: UINode }) {
     switch (node.type) {
         case "input":
             return (
-                <label className={cn("flex flex-col gap-1.5", p.className)} style={p.style}>
+                <label className={cn("flex flex-col gap-1.5", p.className)} style={pluginStyle(p.style)}>
                     {label}
                     {p.textarea ? (
                         <textarea

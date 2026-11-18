@@ -25,7 +25,7 @@ function proxied(p: Page) {
     // A downloaded chapter's pages are Aniko's own.
     if (p.url.startsWith("/api/")) return p.url
     const u = btoa(unescape(encodeURIComponent(p.url))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-    const h = Object.keys(p.headers ?? {}).length ? btoa(JSON.stringify(p.headers)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : ""
+    const h = Object.keys(p.headers ?? {}).length ? btoa(unescape(encodeURIComponent(JSON.stringify(p.headers)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : ""
     return `/api/proxy?u=${u}${h ? `&h=${h}` : ""}`
 }
 
@@ -224,16 +224,17 @@ export function MangaReader({
         else if (idx > 0) go(idx - 1, END)
     }
 
-    // Opening a chapter puts the manga on the Reading list (the server leaves
-    // it where it is when it's there already, or rereading, or completed).
+    // Reading a chapter (its pages have loaded) puts the manga on the Reading
+    // list (the server leaves it where it is when it's there already, or
+    // rereading, or completed).
     const started = useRef(0)
     useEffect(() => {
-        if (!track || !(id > 0) || started.current === id) return
+        if (!track || !(id > 0) || !total || started.current === id) return
         started.current = id
         api.post<{ added: boolean }>(`/api/manga/${id}/reading`)
             .then(r => r?.added && toast.success("Added to Reading"))
             .catch(() => {})
-    }, [id, track])
+    }, [id, track, total])
 
     const canBack = at > 0 || idx > 0
     const canForward = at < spreads.length - 1 || idx < list.length - 1
@@ -390,7 +391,10 @@ export function MangaReader({
                 onScroll={e => {
                     if (view !== "long-strip") return
                     const el = e.currentTarget
-                    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 400) markRead()
+                    // The end only once the last page has loaded: until
+                    // then the pages have no height and the strip is short.
+                    const end = el.querySelector<HTMLImageElement>(`img[data-page="${total - 1}"]`)
+                    if (end?.complete && end.naturalHeight > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 400) markRead()
                     const top = el.getBoundingClientRect().top + 80
                     for (const img of el.querySelectorAll<HTMLImageElement>("img[data-page]")) {
                         if (img.getBoundingClientRect().bottom > top) {
