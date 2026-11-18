@@ -84,7 +84,10 @@ func TestBlobsMerge(t *testing.T) {
 	}
 	// From the future: brought back to now, give or take.
 	far := Blob{Items: map[string]json.RawMessage{"9": item(now+3600*1000, false, `"status":"CURRENT"`)}}
-	if merged, _, _ := s.MergeBlob(0, "lists", far); itemOf(merged.Items["9"]).At > now+int64(maxAhead/time.Millisecond)+1000 {
+	// (Up to now when it's merged: a slow machine gets there seconds
+	// after the test began.)
+	merged, _, _ = s.MergeBlob(0, "lists", far)
+	if itemOf(merged.Items["9"]).At > time.Now().Add(maxAhead).UnixMilli() {
 		t.Fatalf("a future item kept its time: %v", itemOf(merged.Items["9"]))
 	}
 }
