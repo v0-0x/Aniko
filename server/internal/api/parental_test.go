@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/history"
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 )
 
-// A host sets a guest's parental controls: the guest gets them, its Aniko
+// A host sets a guest's parental controls: the guest gets them, its Nyakuro
 // hides and refuses what they block (and keeps sharing on), the host shares
 // nothing blocked with it, hears what it watches, and can lift them; a PIN
 // lifts them on the guest.

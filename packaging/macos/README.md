@@ -1,29 +1,29 @@
-# Aniko for macOS
+# Nyakuro for macOS
 
-Aniko runs on macOS 13 Ventura or newer, on Apple silicon and Intel Macs: one
-universal app for both. It's the same Aniko as on Linux and Windows: a local
+Nyakuro runs on macOS 13 Ventura or newer, on Apple silicon and Intel Macs: one
+universal app for both. It's the same Nyakuro as on Linux and Windows: a local
 server with the app's window on top of it.
 
 ## Install
 
-1. Download `Aniko-X.Y.Z-macos-universal.dmg` from the newest **Aniko X.Y.Z for
-   macOS** [release](https://github.com/v0-0x/Aniko/releases) (tag
+1. Download `Nyakuro-X.Y.Z-macos-universal.dmg` from the newest **Nyakuro X.Y.Z for
+   macOS** [release](https://github.com/v0-0x/Nyakuro/releases) (tag
    `macos-vX.Y.Z`).
-2. Open it and drag **Aniko** onto **Applications**.
-3. Open Aniko from your Applications folder.
+2. Open it and drag **Nyakuro** onto **Applications**.
+3. Open Nyakuro from your Applications folder.
 
-Aniko isn't notarized by Apple (that takes a paid Apple Developer account), so
-the first time macOS says it can't check Aniko for malicious software:
+Nyakuro isn't notarized by Apple (that takes a paid Apple Developer account), so
+the first time macOS says it can't check Nyakuro for malicious software:
 
 - **macOS 15 Sequoia and newer:** click **Done**, then go to **System Settings
-  › Privacy & Security**, scroll down to the message about Aniko and click
+  › Privacy & Security**, scroll down to the message about Nyakuro and click
   **Open Anyway** (macOS asks for your password).
-- **macOS 13 and 14:** Control-click Aniko in Applications, choose **Open**, then
+- **macOS 13 and 14:** Control-click Nyakuro in Applications, choose **Open**, then
   **Open** again.
 
-Or, in Terminal, once: `xattr -dr com.apple.quarantine /Applications/Aniko.app`
+Or, in Terminal, once: `xattr -dr com.apple.quarantine /Applications/Nyakuro.app`
 
-## Programs Aniko uses
+## Programs Nyakuro uses
 
 | Program | For |
 |---|---|
@@ -34,43 +34,43 @@ Or, in Terminal, once: `xattr -dr com.apple.quarantine /Applications/Aniko.app`
 
 **Settings › Desktop app & programs › Install missing programs** downloads ready-made
 ffmpeg, ffprobe, yt-dlp and ani-cli for your Mac (Apple silicon or Intel) into
-Aniko's own folder, `~/Library/Application Support/Aniko/bin`, in a Terminal
+Nyakuro's own folder, `~/Library/Application Support/Nyakuro/bin`, in a Terminal
 window: no Homebrew, no password. ffmpeg comes from
 [Martin Riedl's builds](https://ffmpeg.martin-riedl.de) (and
 [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) on GitHub when that site fails), yt-dlp and ani-cli from
 their GitHub projects.
 
-mpv, the external player, is optional (Aniko's own player doesn't need it). On
+mpv, the external player, is optional (Nyakuro's own player doesn't need it). On
 an Apple silicon Mac with [Homebrew](https://brew.sh) the setup installs it
 with `brew install mpv`; otherwise get it from
 [mpv.io](https://mpv.io/installation/). Homebrew no longer builds ready-made
 packages for Intel Macs, so there it would compile everything for a long time.
 
-Aniko also finds programs installed with Homebrew (`/opt/homebrew/bin` on Apple
+Nyakuro also finds programs installed with Homebrew (`/opt/homebrew/bin` on Apple
 silicon, `/usr/local/bin` on Intel), even when it's opened from the Dock, which
 doesn't give apps those folders.
 
-For torrents, Aniko talks to qBittorrent's Web UI (or Transmission): install
+For torrents, Nyakuro talks to qBittorrent's Web UI (or Transmission): install
 [qBittorrent](https://www.qbittorrent.org), turn on its Web UI, and set the
 address and login in **Settings › Torrents**.
 
-## Where Aniko keeps its files
+## Where Nyakuro keeps its files
 
 | What | Where |
 |---|---|
-| Settings, database, artwork, extensions | `~/Library/Application Support/Aniko` |
-| The window's own data (cookies of the AniList login) | `~/Library/Application Support/Aniko/electron` |
-| Programs the setup downloaded | `~/Library/Application Support/Aniko/bin` |
-| Updates being downloaded | `~/Library/Caches/aniko/update` |
+| Settings, database, artwork, extensions | `~/Library/Application Support/Nyakuro` |
+| The window's own data (cookies of the AniList login) | `~/Library/Application Support/Nyakuro/electron` |
+| Programs the setup downloaded | `~/Library/Application Support/Nyakuro/bin` |
+| Updates being downloaded | `~/Library/Caches/nyakuro/update` |
 | The local library, by default | `~/Movies/Anime` |
 
 ## Updates
 
-Aniko checks GitHub for a newer macOS release, and the **Update** button on its
-Home page installs it: Aniko downloads the new app, puts it in place of the old
-one, closes and opens again. That works once Aniko is in a folder you can write
+Nyakuro checks GitHub for a newer macOS release, and the **Update** button on its
+Home page installs it: Nyakuro downloads the new app, puts it in place of the old
+one, closes and opens again. That works once Nyakuro is in a folder you can write
 to (your Applications folder): not from the disk image, nor from your Downloads
-folder before you've moved it. If macOS says Aniko was prevented from modifying
+folder before you've moved it. If macOS says Nyakuro was prevented from modifying
 apps, allow it in **System Settings › Privacy & Security › App Management**, or
 download the new version from its release page.
 
@@ -91,7 +91,7 @@ needs a Mac.
 ## How releases are made
 
 The **macOS release** workflow (`.github/workflows/macos.yml`) builds, tests
-and packages Aniko on a GitHub-hosted Mac for every push to the default branch,
+and packages Nyakuro on a GitHub-hosted Mac for every push to the default branch,
 checks the app (both architectures, its signature, the zip as an update
 unpacks it, and that it starts), and publishes the release
 `macos-v<version>`. The version is `2.0.<commits since 2.0.0's>`, like the Windows

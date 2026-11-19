@@ -58,7 +58,7 @@ export function connectEvents(qc: QueryClient) {
                 qc.invalidateQueries()
                 break
             case "history-updated":
-                // Watched on another Aniko of the same account: Continue
+                // Watched on another Nyakuro of the same account: Continue
                 // watching and the episodes' positions.
                 qc.invalidateQueries({ queryKey: ["collection"] })
                 qc.invalidateQueries({ queryKey: ["entry"] })
@@ -175,7 +175,7 @@ export function connectEvents(qc: QueryClient) {
     connect()
 
     // The app shown again (a TV's, back from its home screen; a tab): watch
-    // history synced with the paired Anikos, if that's on (the server skips
+    // history synced with the paired Nyakuros, if that's on (the server skips
     // those synced a moment ago). Only this computer's app asks.
     const resumed = () => {
         if (qc.getQueryData<Status>(["status"])?.client === "lan") return
@@ -231,7 +231,7 @@ function handlePluginEvent(p: { pluginId: string; type: string; payload: any }) 
             navigator.clipboard?.writeText(p.payload?.text ?? "").catch(() => {})
             break
         case "webview-message":
-            window.dispatchEvent(new CustomEvent("aniko-webview-message", { detail: { pluginId: p.pluginId, ...p.payload } }))
+            window.dispatchEvent(new CustomEvent("nyakuro-webview-message", { detail: { pluginId: p.pluginId, ...p.payload } }))
             break
     }
 }

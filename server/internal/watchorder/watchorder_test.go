@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
 )
 
 func date(y, m, d int) anilist.FuzzyDate {

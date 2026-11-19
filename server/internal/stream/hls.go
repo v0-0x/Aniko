@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // HLS serves converted (remuxed or transcoded) library files as HLS, a
@@ -128,7 +128,7 @@ func (h *HLS) Start(ctx context.Context, req HLSRequest) (*HLSSession, error) {
 	h.mu.Lock()
 	if h.closed {
 		h.mu.Unlock()
-		return nil, errors.New("Aniko is shutting down")
+		return nil, errors.New("Nyakuro is shutting down")
 	}
 	var s *hlsSession
 	var old []*hlsSession
@@ -300,7 +300,7 @@ func (h *HLS) Stop(id string) {
 	}
 }
 
-// Close ends every session, when Aniko quits.
+// Close ends every session, when Nyakuro quits.
 func (h *HLS) Close() {
 	h.mu.Lock()
 	if h.closed {

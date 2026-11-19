@@ -82,7 +82,7 @@ export function useSaveUI() {
     }
 }
 
-// The list as AniList has it (at most a minute old), asked again when Aniko's
+// The list as AniList has it (at most a minute old), asked again when Nyakuro's
 // window comes back to the front: what was watched on another device, on
 // the same account, shows up in Continue watching.
 export function useCollection() {
@@ -253,8 +253,8 @@ type Discover = { trending: Media[]; thisSeason: Media[]; nextSeason: Media[]; p
 // few lookups, so the one for the next time is fetched ahead and kept in this
 // browser: it is there at once when Discover opens.
 type Recommended = { because: Media; items: Media[]; next?: number }
-const RECOMMENDED_AT = "aniko-recommended-at"
-const RECOMMENDED_ROW = "aniko-recommended-row"
+const RECOMMENDED_AT = "nyakuro-recommended-at"
+const RECOMMENDED_ROW = "nyakuro-recommended-row"
 function keptRecommended(): Recommended | undefined {
     try {
         const r = JSON.parse(readLocal(RECOMMENDED_ROW) || "null")
@@ -303,7 +303,7 @@ export function useDiscover() {
     })
 }
 
-// Library sharing: the Aniko apps on the network. Opened, the hosts are asked
+// Library sharing: the Nyakuro apps on the network. Opened, the hosts are asked
 // again what they share (refresh=1); then shown as they answer in their own
 // time, so a page open for an hour doesn't have every server answer every
 // few seconds.
@@ -338,7 +338,7 @@ export function useGenres(all: readonly string[]) {
     return all.filter(g => !b.has(g.toLowerCase()))
 }
 
-// The libraries other Aniko apps share with this one.
+// The libraries other Nyakuro apps share with this one.
 export function useSharedLibraries() {
     return useQuery({ queryKey: ["sharing", "libraries"], queryFn: () => api.get<SharedLibrary[]>("/api/sharing/libraries"), refetchInterval: 30_000 })
 }
@@ -485,7 +485,7 @@ export function useMangaCollection() {
 
 // The last chapter known of each manga being read, by its id (the chapter
 // lists already looked up): how many are unread.
-// How many chapters of each manga being read are new (out since Aniko first
+// How many chapters of each manga being read are new (out since Nyakuro first
 // looked at it, not read yet), by its id: the count on its cover.
 export function useMangaNew() {
     return useQuery({ queryKey: ["manga", "new"], queryFn: () => api.get<Record<string, number>>("/api/manga/new"), staleTime: 5 * 60_000 })
@@ -508,13 +508,13 @@ export function useMangaChapters(mediaId: number, provider: string) {
     })
 }
 
-// Aniko's own updates. The "update-status" event keeps ["update"] current
+// Nyakuro's own updates. The "update-status" event keeps ["update"] current
 // (lib/events.ts), also while one is being installed.
 export function useUpdateStatus() {
     return useQuery({ queryKey: ["update"], queryFn: () => api.get<UpdateStatus>("/api/update"), staleTime: 5 * 60_000 })
 }
 
-// Aniko opened (started, its window opened again, back in front, the TV app
+// Nyakuro opened (started, its window opened again, back in front, the TV app
 // reopened): a check for updates, unless one ran in the last 10 minutes.
 // Unlike Check for updates, an update put off with Later stays put off.
 export function useCheckOnOpen(enabled: boolean) {
@@ -527,7 +527,7 @@ export function useCheckOnOpen(enabled: boolean) {
             running = true
             try {
                 const u = await api.get<UpdateStatus>("/api/update")
-                // Never checked yet: Aniko has just started and checks by
+                // Never checked yet: Nyakuro has just started and checks by
                 // itself in a moment.
                 if (u.checking || !u.checkedAt || Date.now() / 1000 - u.checkedAt < 600) return
                 qc.setQueryData(["update"], await api.post<UpdateStatus>("/api/update/check"))

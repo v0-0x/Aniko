@@ -1,4 +1,4 @@
-// Command aniko is the Aniko anime server. It serves the API and the web UI on
+// Command nyakuro is the Nyakuro anime server. It serves the API and the web UI on
 // 127.0.0.1 (and optionally your LAN) and is started by the desktop app.
 package main
 
@@ -13,17 +13,17 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/v0-0x/Aniko/server/internal/api"
-	"github.com/v0-0x/Aniko/server/internal/app"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/lifecycle"
-	"github.com/v0-0x/Aniko/server/internal/util"
-	"github.com/v0-0x/Aniko/server/internal/webui"
+	"github.com/v0-0x/Nyakuro/server/internal/api"
+	"github.com/v0-0x/Nyakuro/server/internal/app"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/lifecycle"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/webui"
 )
 
 func main() {
 	var (
-		dataDir = flag.String("data-dir", config.DataDir(), "where Aniko stores its database")
+		dataDir = flag.String("data-dir", config.DataDir(), "where Nyakuro stores its database")
 		port    = flag.Int("port", 0, "override the port (default from settings, 43211)")
 		webUI   = flag.Bool("web-ui", false, "force-enable the browser web UI for this run")
 		desktop = flag.Bool("desktop", false, "started by the desktop app")
@@ -38,10 +38,10 @@ func main() {
 		fmt.Println(config.AppName, config.AppVersion)
 		return
 	}
-	// Whatever Aniko starts (ffmpeg, ani-cli, mpv) ends with it, even when
+	// Whatever Nyakuro starts (ffmpeg, ani-cli, mpv) ends with it, even when
 	// it's killed.
 	if err := util.BindChildren(); err != nil {
-		log.Printf("child processes won't end with Aniko: %v", err)
+		log.Printf("child processes won't end with Nyakuro: %v", err)
 	}
 	if err := os.MkdirAll(*dataDir, 0o700); err != nil {
 		log.Fatal(err)
@@ -59,6 +59,7 @@ func main() {
 	if t := config.Getenv("SHELL_TOKEN"); len(t) >= 32 {
 		a.ShellToken, appWindow = t, true
 	}
+	_ = os.Unsetenv("NYAKURO_SHELL_TOKEN")
 	_ = os.Unsetenv("ANIKO_SHELL_TOKEN")
 	_ = os.Unsetenv("KUMO_SHELL_TOKEN")
 	if *port > 0 {
@@ -75,7 +76,7 @@ func main() {
 	srv.ForceWebUI = *webUI || (!*desktop && !appWindow)
 	srv.AppOnly = appWindow
 	if err := srv.Start(); err != nil {
-		log.Fatalf("could not start the server: %v (is Aniko already running?)", err)
+		log.Fatalf("could not start the server: %v (is Nyakuro already running?)", err)
 	}
 	a.Start()
 	cfg := a.Settings.Get()
@@ -100,7 +101,7 @@ func main() {
 			sig <- syscall.SIGTERM
 		}()
 	}
-	// A signal, or a request from inside Aniko (the updater restarting it
+	// A signal, or a request from inside Nyakuro (the updater restarting it
 	// into a new version): both shut down the same way.
 	var exit lifecycle.Exit
 	select {
@@ -115,12 +116,12 @@ func main() {
 	end(exit, *desktop)
 }
 
-// end finishes the process the way exit asks, once Aniko has shut down.
+// end finishes the process the way exit asks, once Nyakuro has shut down.
 func end(exit lifecycle.Exit, desktop bool) {
 	restart := exit.Restart
 	if exit.Before != nil {
 		if err := exit.Before(); err != nil {
-			log.Printf("%v; starting Aniko again", err)
+			log.Printf("%v; starting Nyakuro again", err)
 			restart = true
 		}
 	}
@@ -135,7 +136,7 @@ func end(exit lifecycle.Exit, desktop bool) {
 	// runs itself again, in place, where the system can.
 	if !desktop && canReexec {
 		err := reexec()
-		log.Printf("could not start Aniko again: %v", err)
+		log.Printf("could not start Nyakuro again: %v", err)
 	}
 	os.Exit(lifecycle.CodeRestart)
 }

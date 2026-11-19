@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/extensions"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/extensions"
 )
 
 func pngBytes(t *testing.T, c color.Color) []byte {

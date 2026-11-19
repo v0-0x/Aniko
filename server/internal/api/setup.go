@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/v0-0x/Aniko/server/internal/events"
-	"github.com/v0-0x/Aniko/server/internal/macsetup"
-	"github.com/v0-0x/Aniko/server/internal/winsetup"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/macsetup"
+	"github.com/v0-0x/Nyakuro/server/internal/winsetup"
 )
 
-// installPrograms starts the setup that installs the programs Aniko uses on
-// this computer, by downloads into Aniko's folder: on Windows Aniko
+// installPrograms starts the setup that installs the programs Nyakuro uses on
+// this computer, by downloads into Nyakuro's folder: on Windows Nyakuro
 // downloads them itself (ffmpeg, yt-dlp, Git's bash, ani-cli, mpv...) and
 // the pages show how far it is (setupProgress), on macOS a Terminal window
 // does.
@@ -28,7 +28,7 @@ func (s *Server) installPrograms(r *http.Request) (any, error) {
 	case "darwin":
 		err = macsetup.Start()
 	default:
-		return nil, badRequest("Aniko installs its programs itself on Windows and macOS only: install them with your package manager")
+		return nil, badRequest("Nyakuro installs its programs itself on Windows and macOS only: install them with your package manager")
 	}
 	if err != nil {
 		if errors.Is(err, winsetup.ErrRunning) || errors.Is(err, macsetup.ErrRunning) {

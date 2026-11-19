@@ -20,7 +20,7 @@ var offline atomic.Bool
 
 // SetOffline turns offline mode on or off: the public clients (they all
 // dial through PublicDialContext) fail at once instead of trying, and what
-// Aniko kept is used. The home network (other devices, the torrent client)
+// Nyakuro kept is used. The home network (other devices, the torrent client)
 // isn't the internet: it stays.
 func SetOffline(on bool) { offline.Store(on) }
 

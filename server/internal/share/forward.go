@@ -14,17 +14,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/stream"
+	"github.com/v0-0x/Nyakuro/server/internal/stream"
 )
 
-// A host's files are played through this Aniko's server: the player asks it
+// A host's files are played through this Nyakuro's server: the player asks it
 // as for a local file, and it forwards the request to the host (signed),
-// and the answer back. The host converts the video for this Aniko's player
+// and the answer back. The host converts the video for this Nyakuro's player
 // when needed, like for one of its own.
 
-var errNotShared = errors.New("that library isn't shared with this Aniko any more")
+var errNotShared = errors.New("that library isn't shared with this Nyakuro any more")
 
-// host is an Aniko that shares its library with this one.
+// host is a Nyakuro that shares its library with this one.
 func (s *Service) host(id string) *peer {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -191,7 +191,7 @@ func remoteSession(id string) (host, session string, ok bool) {
 	return host, session, ok && sessionID.MatchString(host) && sessionID.MatchString(session)
 }
 
-// IsRemoteSession reports an HLS session on another Aniko.
+// IsRemoteSession reports an HLS session on another Nyakuro.
 func IsRemoteSession(id string) bool {
 	_, _, ok := remoteSession(id)
 	return ok
@@ -297,7 +297,7 @@ func (s *Service) Note(ctx context.Context, path, text string) error {
 }
 
 // BurnsSubtitles reports whether the host of a shared file draws image
-// subtitles onto the video (?sub=, since Aniko 2.0.63 and mediaserver
+// subtitles onto the video (?sub=, since Nyakuro 2.0.63 and mediaserver
 // 1.0.22), and its name for a message. A version that can't be read
 // counts as able: a build from source.
 func (s *Service) BurnsSubtitles(path string) (bool, string) {
@@ -318,7 +318,7 @@ func (s *Service) BurnsSubtitles(path string) (bool, string) {
 	return true, name
 }
 
-// ForwardPath forwards a GET to an Aniko this one uses (its ID) at path
+// ForwardPath forwards a GET to a Nyakuro this one uses (its ID) at path
 // (with its query), and passes its answer on as it is (a manga page, a
 // cover).
 func (s *Service) ForwardPath(w http.ResponseWriter, r *http.Request, host, path string) {

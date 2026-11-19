@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/player"
+	"github.com/v0-0x/Nyakuro/server/internal/player"
 )
 
 func TestLanguageMode(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
 )
 
 type notifAnswer struct {
@@ -182,7 +182,7 @@ func TestNotifRelated(t *testing.T) {
 	}
 }
 
-// Shows over the API, from this Aniko's own list and the schedule it keeps
+// Shows over the API, from this Nyakuro's own list and the schedule it keeps
 // (nothing is asked of AniList: logged out, the schedule is in the cache).
 func TestNotifShowsRoute(t *testing.T) {
 	s := newTestServer(t)
@@ -289,7 +289,7 @@ func TestNotifSystem(t *testing.T) {
 	s.systemEvent(upd("3.0.2", true), later.Add(time.Minute))
 	s.systemEvent(upd("3.0.2", true), later.Add(time.Hour))
 	a = getNotifications(t, s)
-	if len(a.System) != 10 || a.System[0].Title != "Update available" || a.System[0].Text != "Aniko 3.0.2" || a.System[0].To != "/settings?tab=updates" {
+	if len(a.System) != 10 || a.System[0].Title != "Update available" || a.System[0].Text != "Nyakuro 3.0.2" || a.System[0].To != "/settings?tab=updates" {
 		t.Fatalf("update: %+v", a.System[:min(2, len(a.System))])
 	}
 	if w := do(s, "DELETE", "/api/notifications/system", local, "", nil); w.Code != http.StatusOK {
@@ -300,7 +300,7 @@ func TestNotifSystem(t *testing.T) {
 		t.Fatalf("after Clear: %+v", a.System)
 	}
 	s.systemEvent(upd("3.0.3", true), later.Add(3*time.Hour))
-	if a = getNotifications(t, s); len(a.System) != 1 || a.System[0].Text != "Aniko 3.0.3" {
+	if a = getNotifications(t, s); len(a.System) != 1 || a.System[0].Text != "Nyakuro 3.0.3" {
 		t.Fatalf("the next version: %+v", a.System)
 	}
 

@@ -44,8 +44,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * Aniko for Android, made for TVs (a Fire TV Stick) and the libraries the
- * computers at home share: it runs Aniko's server (AnikoServer) and shows its
+ * Nyakuro for Android, made for TVs (a Fire TV Stick) and the libraries the
+ * computers at home share: it runs Nyakuro's server (NyakuroServer) and shows its
  * web UI, which on a TV is driven by the remote (TV mode, web/src/lib/tv.ts).
  */
 public class MainActivity extends Activity {
@@ -65,13 +65,13 @@ public class MainActivity extends Activity {
     private boolean loaded;
     private boolean starting;
     private boolean resumed;
-    // Checks the server runs, while Aniko shows (see watch).
+    // Checks the server runs, while Nyakuro shows (see watch).
     private final Runnable watcher = this::watch;
     // Android's own player, behind the page (the Fire TV's WebView shows no picture).
     private final NativeVideo video = new NativeVideo(this);
 
     // The window's color: the page's (its --frame), so nothing flashes a
-    // different black between the start and Aniko showing.
+    // different black between the start and Nyakuro showing.
     static final int FRAME = Color.rgb(10, 10, 11);
 
     @Override
@@ -82,7 +82,7 @@ public class MainActivity extends Activity {
         web = newWebView();
         root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         // The starting screen: the logo, a spinner and what's happening;
-        // or why Aniko didn't start (scrolling, with the server's last lines).
+        // or why Nyakuro didn't start (scrolling, with the server's last lines).
         float dp = getResources().getDisplayMetrics().density;
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -102,7 +102,7 @@ public class MainActivity extends Activity {
         message.setGravity(Gravity.CENTER);
         int pad = (int) (32 * dp);
         message.setPadding(pad, (int) (16 * dp), pad, pad);
-        message.setText("Starting Aniko…");
+        message.setText("Starting Nyakuro…");
         // A tap tries again (phones have no OK key).
         message.setOnClickListener(v -> retry());
         box.addView(message, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -113,11 +113,11 @@ public class MainActivity extends Activity {
         root.addView(messageScroll, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
 
-        // The other Aniko apps announce themselves by multicast, which Wi-Fi
+        // The other Nyakuro apps announce themselves by multicast, which Wi-Fi
         // drops for apps without this.
         WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifi != null) {
-            multicast = wifi.createMulticastLock("aniko");
+            multicast = wifi.createMulticastLock("nyakuro");
             multicast.setReferenceCounted(false);
             multicast.acquire();
         }
@@ -164,7 +164,7 @@ public class MainActivity extends Activity {
                 return leave(Uri.parse(url));
             }
 
-            // Another page (Aniko's opened again): its video goes with the old one.
+            // Another page (Nyakuro's opened again): its video goes with the old one.
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (view == MainActivity.this.web) video.close();
@@ -172,8 +172,8 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                // Not the WebView's own error page, if Aniko's didn't load.
-                if (!loaded && !pageFailed && url.startsWith(AnikoServer.URL)) {
+                // Not the WebView's own error page, if Nyakuro's didn't load.
+                if (!loaded && !pageFailed && url.startsWith(NyakuroServer.URL)) {
                     loaded = true;
                     web.setVisibility(View.VISIBLE);
                     messageScroll.setVisibility(View.GONE);
@@ -185,17 +185,17 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError err) {
                 if (!req.isForMainFrame() || loaded) return;
                 pageFailed = true;
-                if (!AnikoServer.get(MainActivity.this).running()) restartServer("Starting Aniko…");
-                else failed("Aniko's page didn't open: " + err.getDescription());
+                if (!NyakuroServer.get(MainActivity.this).running()) restartServer("Starting Nyakuro…");
+                else failed("Nyakuro's page didn't open: " + err.getDescription());
             }
 
             // The page's process crashed (or Android ended it for memory):
-            // a new WebView, the page opened again, rather than Aniko closing.
+            // a new WebView, the page opened again, rather than Nyakuro closing.
             @TargetApi(26)
             @Override
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 if (view != MainActivity.this.web) return true;
-                Log.e("aniko", "the page stopped" + (detail.didCrash() ? " (crashed)" : "") + ": opening it again");
+                Log.e("nyakuro", "the page stopped" + (detail.didCrash() ? " (crashed)" : "") + ": opening it again");
                 video.close();
                 exitFullscreen();
                 letScreenSleep();
@@ -205,8 +205,8 @@ public class MainActivity extends Activity {
                 root.addView(MainActivity.this.web, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 loaded = false;
                 messageScroll.setVisibility(View.VISIBLE);
-                showMessage("Opening Aniko again…", false);
-                if (AnikoServer.get(MainActivity.this).running()) openPage(AnikoServer.get(MainActivity.this));
+                showMessage("Opening Nyakuro again…", false);
+                if (NyakuroServer.get(MainActivity.this).running()) openPage(NyakuroServer.get(MainActivity.this));
                 else startServer();
                 return true;
             }
@@ -243,9 +243,9 @@ public class MainActivity extends Activity {
         });
     }
 
-    /** Only Aniko's pages show here: anything else (AniList, GitHub…) opens in a browser, if there's one, so the bridge stays Aniko's own. */
+    /** Only Nyakuro's pages show here: anything else (AniList, GitHub…) opens in a browser, if there's one, so the bridge stays Nyakuro's own. */
     private boolean leave(Uri u) {
-        if ("127.0.0.1".equals(u.getHost()) && u.getPort() == AnikoServer.PORT) return false;
+        if ("127.0.0.1".equals(u.getHost()) && u.getPort() == NyakuroServer.PORT) return false;
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, u));
         } catch (Exception e) {
@@ -276,11 +276,11 @@ public class MainActivity extends Activity {
                 : 0);
     }
 
-    /** Starts the server if needed, and shows Aniko once it answers. */
+    /** Starts the server if needed, and shows Nyakuro once it answers. */
     private void startServer() {
         if (starting) return;
         starting = true;
-        final AnikoServer server = AnikoServer.get(this);
+        final NyakuroServer server = NyakuroServer.get(this);
         new Thread(() -> {
             String failure = null;
             try {
@@ -288,18 +288,18 @@ public class MainActivity extends Activity {
                 long until = System.currentTimeMillis() + 40_000;
                 while (!server.ready()) {
                     if (!server.running()) {
-                        failure = "Aniko's server stopped.\n\n" + server.whyStopped();
+                        failure = "Nyakuro's server stopped.\n\n" + server.whyStopped();
                         break;
                     }
                     if (System.currentTimeMillis() > until) {
                         String lines = server.lastLines();
-                        failure = "Aniko's server doesn't answer." + (lines.isEmpty() ? "" : "\n\n" + lines);
+                        failure = "Nyakuro's server doesn't answer." + (lines.isEmpty() ? "" : "\n\n" + lines);
                         break;
                     }
                     Thread.sleep(250);
                 }
             } catch (Exception e) {
-                failure = "Aniko's server couldn't start: " + e.getMessage();
+                failure = "Nyakuro's server couldn't start: " + e.getMessage();
             }
             final String error = failure;
             main.post(() -> {
@@ -308,10 +308,10 @@ public class MainActivity extends Activity {
                     failed(error);
                     return;
                 }
-                showMessage("Starting Aniko…", false);
+                showMessage("Starting Nyakuro…", false);
                 openPage(server);
             });
-        }, "aniko-start").start();
+        }, "nyakuro-start").start();
     }
 
     /** The screen may turn off again: the player that kept it on is gone with
@@ -321,30 +321,30 @@ public class MainActivity extends Activity {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
-    /** Why Aniko didn't open, and how to try again: first, then the details. */
+    /** Why Nyakuro didn't open, and how to try again: first, then the details. */
     private void failed(String why) {
-        Log.e("aniko", why);
+        Log.e("nyakuro", why);
         String how = isTV() ? "Press OK to try again, or Back to close." : "Tap here to try again, or go back to close.";
-        showMessage("Aniko couldn't start.\n" + how + "\n\n" + why, true);
+        showMessage("Nyakuro couldn't start.\n" + how + "\n\n" + why, true);
     }
 
-    /** OK, or a tap, on why Aniko didn't start: again. */
+    /** OK, or a tap, on why Nyakuro didn't start: again. */
     private void retry() {
         if (loaded || starting) return;
-        showMessage("Starting Aniko…", false);
+        showMessage("Starting Nyakuro…", false);
         startServer();
     }
 
-    /** Opens Aniko's page (the server answers). */
-    private void openPage(AnikoServer server) {
+    /** Opens Nyakuro's page (the server answers). */
+    private void openPage(NyakuroServer server) {
         pageFailed = false;
         letScreenSleep();
-        // The cookie that proves the WebView is Aniko's (AnikoServer.token).
+        // The cookie that proves the WebView is Nyakuro's (NyakuroServer.token).
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
-        cookies.setCookie(AnikoServer.URL, "kumo_shell=" + server.token() + "; Path=/; HttpOnly; SameSite=Strict");
+        cookies.setCookie(NyakuroServer.URL, "kumo_shell=" + server.token() + "; Path=/; HttpOnly; SameSite=Strict");
         cookies.flush();
-        web.loadUrl(AnikoServer.URL);
+        web.loadUrl(NyakuroServer.URL);
     }
 
     /** The server stopped: the starting screen, and the server again. */
@@ -357,18 +357,18 @@ public class MainActivity extends Activity {
         startServer();
     }
 
-    /** While Aniko shows: the server stopped (crashed, or Android ended it), it's started again. */
+    /** While Nyakuro shows: the server stopped (crashed, or Android ended it), it's started again. */
     private void watch() {
         main.removeCallbacks(watcher);
         if (!resumed) return;
-        if (loaded && !starting && !AnikoServer.get(this).running()) {
-            Log.e("aniko", "the server stopped: starting it again");
-            restartServer("Aniko's server stopped: starting it again…");
+        if (loaded && !starting && !NyakuroServer.get(this).running()) {
+            Log.e("nyakuro", "the server stopped: starting it again");
+            restartServer("Nyakuro's server stopped: starting it again…");
         }
         main.postDelayed(watcher, 5000);
     }
 
-    /** The screen before Aniko shows: starting, or why it didn't. */
+    /** The screen before Nyakuro shows: starting, or why it didn't. */
     private void showMessage(String text, boolean error) {
         message.setText(text);
         // An error has the details (the server's last lines): smaller, from the top, scrolling.
@@ -389,8 +389,8 @@ public class MainActivity extends Activity {
         web.onResume();
         // Back from the home screen: the page syncs with the computers (Auto-Sync).
         js("window.kumoResumed&&window.kumoResumed()");
-        // Android may have stopped it while Aniko was in the background.
-        if (!starting && !AnikoServer.get(this).running()) restartServer("Starting Aniko…");
+        // Android may have stopped it while Nyakuro was in the background.
+        if (!starting && !NyakuroServer.get(this).running()) restartServer("Starting Nyakuro…");
         main.postDelayed(watcher, 5000);
     }
 
@@ -409,7 +409,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         main.removeCallbacks(watcher);
         if (multicast != null && multicast.isHeld()) multicast.release();
-        if (isFinishing()) AnikoServer.get(this).stop();
+        if (isFinishing()) NyakuroServer.get(this).stop();
         video.close();
         web.destroy();
         super.onDestroy();
@@ -464,7 +464,7 @@ public class MainActivity extends Activity {
                 return true;
             case KeyEvent.KEYCODE_DPAD_CENTER:
             case KeyEvent.KEYCODE_ENTER:
-                // Aniko didn't start: OK tries again.
+                // Nyakuro didn't start: OK tries again.
                 if (!loaded && !starting && down) {
                     retry();
                     return true;
@@ -479,7 +479,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Back: the page closes what's open or goes back; at Home, Aniko goes to
+     * Back: the page closes what's open or goes back; at Home, Nyakuro goes to
      * the background (to the TV's home), its server still there: opened
      * again, it's as it was, and the other devices still reach it.
      */
@@ -540,7 +540,7 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         if (intent == null || !Installer.ACTION.equals(intent.getAction())) return;
-        // Only the answer to an install Aniko asked for: any app may start
+        // Only the answer to an install Nyakuro asked for: any app may start
         // this activity, and have it start what it gives (EXTRA_INTENT).
         if (!Installer.isOurs(this, intent)) return;
         int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);

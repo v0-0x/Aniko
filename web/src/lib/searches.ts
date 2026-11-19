@@ -12,9 +12,9 @@ export type SavedSearch = { id: string; name: string; query: string }
 export type RecentSearch = { query: string; at: number }
 export type Searches = { saved: SavedSearch[]; recent: RecentSearch[] }
 
-const LOCAL = "aniko-searches"
+const LOCAL = "nyakuro-searches"
 // Set once this browser's searches and the server's have been the same.
-const SYNCED = "aniko-searches-synced"
+const SYNCED = "nyakuro-searches-synced"
 const MAX_RECENT = 12
 const EMPTY: Searches = { saved: [], recent: [] }
 

@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/parental"
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/parental"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 )
 
 // Parental controls (internal/parental) in the API. On a device that has
-// them, what's asked of its Aniko is checked (an anime's page, playing or
+// them, what's asked of its Nyakuro is checked (an anime's page, playing or
 // streaming or downloading one) and what it answers has the blocked anime
 // taken out; on a host, the same for the requests of a device with parental
 // controls set there.
@@ -174,7 +174,7 @@ type memoed[T any] struct {
 const memoFor = time.Minute
 
 // mediaOfPath is the anime of a file: one of the library, or one shared
-// with this Aniko (kumo://…).
+// with this Nyakuro (kumo://…).
 func (s *Server) mediaOfPath(p string) int {
 	if p == "" {
 		return 0
@@ -215,7 +215,7 @@ func (s *Server) findMediaOfPath(p string) int {
 }
 
 // parentalLookup finds anime's 18+ flag and genres, and with tags whether
-// they're tagged with sexual content, from what Aniko keeps of AniList
+// they're tagged with sexual content, from what Nyakuro keeps of AniList
 // (asking it for the rest, briefly).
 func (s *Server) parentalLookup(ctx context.Context, ids []int, tags bool) map[int]parental.Media {
 	out := map[int]parental.Media{}

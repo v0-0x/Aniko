@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/library"
-	"github.com/v0-0x/Aniko/server/internal/parental"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/parental"
 )
 
 // hostFor puts a host behind srv in guest's peers, as one that shares.
@@ -26,7 +26,7 @@ func hostFor(t *testing.T, guest, host *Service, srv *httptest.Server) *peer {
 }
 
 // A host that answers but whose list of files doesn't come (a server busy
-// with a scan) is still online: what this Aniko has of its files stays, and
+// with a scan) is still online: what this Nyakuro has of its files stays, and
 // the list is asked for again soon.
 func TestHostOnlineWhenItsFilesAreLate(t *testing.T) {
 	host := hostWithSharing(t)
@@ -198,7 +198,7 @@ func TestHostWithoutBeaconsSaidSo(t *testing.T) {
 	}
 }
 
-// A device that says it shares with this Aniko is only offering till the
+// A device that says it shares with this Nyakuro is only offering till the
 // owner accepts it here: none of its answer is followed (its files, its
 // rules, where downloads go), and Home asks. Accepted, it's a host.
 func TestAHostIsBelievedOnceAccepted(t *testing.T) {

@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/v0-0x/Aniko/server/internal/playlist"
+	"github.com/v0-0x/Nyakuro/server/internal/playlist"
 )
 
-// Your playlists (internal/playlist): kept on this Aniko, and kept in step
+// Your playlists (internal/playlist): kept on this Nyakuro, and kept in step
 // with your other devices through a hub, as the list and watch-order
 // edits are (share.BlobHooks, kind "playlists").
 func (s *Server) playlistRoutes() {

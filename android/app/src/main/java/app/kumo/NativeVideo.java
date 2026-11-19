@@ -39,7 +39,7 @@ import java.util.Collections;
  *
  * The page drives it as it would its video element (web/src/lib/nativeVideo.ts):
  * commands come in by KumoAndroid.video(json); what the player does goes back
- * to window.__anikoVideo(json), with the page's id for that video, so a video
+ * to window.__nyakuroVideo(json), with the page's id for that video, so a video
  * the page already closed can't be taken for the next one.
  */
 @OptIn(markerClass = UnstableApi.class)
@@ -112,8 +112,8 @@ final class NativeVideo implements Player.Listener {
 
     private void open(JSONObject o) {
         String url = o.optString("url");
-        // Only videos from Aniko's own server (which has the token).
-        if (!url.startsWith(AnikoServer.URL)) return;
+        // Only videos from Nyakuro's own server (which has the token).
+        if (!url.startsWith(NyakuroServer.URL)) return;
         close();
         id = o.optString("id");
         this.url = url;
@@ -122,15 +122,15 @@ final class NativeVideo implements Player.Listener {
         videoWidth = 0;
         videoHeight = 0;
         pixelRatio = 1f;
-        // Aniko's server answers its own app only (AnikoServer.token): the
+        // Nyakuro's server answers its own app only (NyakuroServer.token): the
         // WebView proves it with a cookie, this player with the header.
         DefaultHttpDataSource.Factory http = new DefaultHttpDataSource.Factory()
-                .setUserAgent("Aniko/" + activity.versionName() + " (Android player)")
+                .setUserAgent("Nyakuro/" + activity.versionName() + " (Android player)")
                 .setConnectTimeoutMs(15_000)
                 // A converted video's first bytes can take a while (the
                 // computer's or the hub's disk waking up, the converter starting).
                 .setReadTimeoutMs(90_000)
-                .setDefaultRequestProperties(Collections.singletonMap("X-Kumo-Shell", AnikoServer.get(activity).token()));
+                .setDefaultRequestProperties(Collections.singletonMap("X-Kumo-Shell", NyakuroServer.get(activity).token()));
         player = new ExoPlayer.Builder(activity)
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(http))
                 .setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
@@ -155,7 +155,7 @@ final class NativeVideo implements Player.Listener {
                 // A playlist that grows while the video is converted plays on
                 // at its own speed, not sped up to its end like live TV.
                 .setLiveConfiguration(new MediaItem.LiveConfiguration.Builder().setMinPlaybackSpeed(1f).setMaxPlaybackSpeed(1f).build());
-        // Aniko's addresses don't end in .m3u8: the page says what it is.
+        // Nyakuro's addresses don't end in .m3u8: the page says what it is.
         if (hls) item.setMimeType(MimeTypes.APPLICATION_M3U8);
         return item.build();
     }
@@ -258,7 +258,7 @@ final class NativeVideo implements Player.Listener {
         } catch (JSONException ignored) {
             return;
         }
-        activity.js("window.__anikoVideo&&window.__anikoVideo(" + o + ")");
+        activity.js("window.__nyakuroVideo&&window.__nyakuroVideo(" + o + ")");
     }
 
     @Override
@@ -303,7 +303,7 @@ final class NativeVideo implements Player.Listener {
     @Override
     public void onPlayerError(PlaybackException e) {
         int code = e.errorCode;
-        Log.e("aniko", "Android's player: " + e.getErrorCodeName(), e);
+        Log.e("nyakuro", "Android's player: " + e.getErrorCodeName(), e);
         // An online stream that's a playlist without saying so (the web
         // view's player found that out by itself): once more, as one.
         if (code == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED && !hls && player != null) {

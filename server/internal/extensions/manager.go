@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/events"
-	"github.com/v0-0x/Aniko/server/internal/torrent"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/torrent"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // Loaded is an installed extension.
@@ -645,7 +645,7 @@ type MarketEntry struct {
 	InstalledVersion string `json:"installedVersion,omitempty"`
 	HasUpdate        bool   `json:"hasUpdate"`
 	Supported        bool   `json:"supported"`
-	// Unsupported: a plugin's permission scopes Aniko doesn't have (its
+	// Unsupported: a plugin's permission scopes Nyakuro doesn't have (its
 	// manifest asks for them): what it does with them won't work here.
 	Unsupported []string `json:"unsupported,omitempty"`
 }
@@ -693,7 +693,7 @@ func (m *Manager) Marketplace(ctx context.Context, url string, refresh bool) ([]
 	return entries, nil
 }
 
-// knownScopes are the plugin permission scopes Aniko has (plugin.go): a
+// knownScopes are the plugin permission scopes Nyakuro has (plugin.go): a
 // plugin asking for others (Seanime's playback, system, os…) does things
 // that won't work here.
 var knownScopes = map[string]bool{"anilist": true, "anilist-token": true, "database": true, "storage": true}

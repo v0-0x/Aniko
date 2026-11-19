@@ -14,10 +14,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/manga"
-	fileup "github.com/v0-0x/Aniko/server/internal/upload"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/manga"
+	fileup "github.com/v0-0x/Nyakuro/server/internal/upload"
 )
 
 // MangaChanged is the event the page hears when a manga download moves.
@@ -48,7 +48,7 @@ func (a *App) wireManga() {
 }
 
 // SendManga sends a downloaded chapter's files to a media server's manga
-// folder (the Aniko target), a piece at a time, as uploads go.
+// folder (the Nyakuro target), a piece at a time, as uploads go.
 func (a *App) SendManga(ctx context.Context, target, folder string, files []string, progress func(int)) error {
 	// The server says whether it takes manga (an older one doesn't).
 	status, raw, err := a.Share.AskUpload(ctx, target, http.MethodGet, "", nil)

@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // Mapping links an AniList entry to an ani-cli search result. The result is

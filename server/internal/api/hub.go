@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/library"
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 )
 
-// An Aniko Hub's dashboard (aniko --hub): what the hub's owner sees from a
+// An Nyakuro Hub's dashboard (nyakuro --hub): what the hub's owner sees from a
 // browser on the network, signed in with its password (set the first time
 // with the setup code, see middleware).
 
@@ -23,7 +23,7 @@ func (s *Server) hubRoutes() {
 	owner := func(fn func(r *http.Request) (any, error)) http.HandlerFunc {
 		return h(func(r *http.Request) (any, error) {
 			if s.app.HubStore == nil {
-				return nil, notFound("this Aniko isn't a hub")
+				return nil, notFound("this Nyakuro isn't a hub")
 			}
 			if !isTrusted(r) {
 				return nil, forbidden("sign in to the hub first")
@@ -64,7 +64,7 @@ func (s *Server) hubRoutes() {
 			return nil, err
 		}
 		by, ip := auditBy(r)
-		s.app.HubStore.Log(anikohub.Event{Kind: "account", By: by, IP: ip, User: user, Text: "removed an AniList login from the hub"})
+		s.app.HubStore.Log(nyakurohub.Event{Kind: "account", By: by, IP: ip, User: user, Text: "removed an AniList login from the hub"})
 		s.app.Hub.Publish("hub-updated", nil)
 		return nil, nil
 	}))
@@ -98,7 +98,7 @@ func (s *Server) hubRoutes() {
 	m.HandleFunc("POST /api/hub/signout", func(w http.ResponseWriter, r *http.Request) {
 		if s.app.HubStore != nil && isTrusted(r) {
 			by, ip := auditBy(r)
-			s.app.HubStore.Log(anikohub.Event{Kind: "signout", By: by, IP: ip, Text: "signed out"})
+			s.app.HubStore.Log(nyakurohub.Event{Kind: "signout", By: by, IP: ip, Text: "signed out"})
 		}
 		http.SetCookie(w, &http.Cookie{Name: "kumo_session", Value: "", Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -109,7 +109,7 @@ func (s *Server) hubRoutes() {
 // and signs this browser in.
 func (s *Server) hubSetup(w http.ResponseWriter, r *http.Request) {
 	if s.app.HubStore == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "this Aniko isn't a hub"})
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "this Nyakuro isn't a hub"})
 		return
 	}
 	var body struct {
@@ -188,16 +188,16 @@ type hubOverview struct {
 	Addresses []string `json:"addresses"`
 	Port      int      `json:"port"`
 
-	System  anikohub.System       `json:"system"`
-	Streams []anikohub.StreamView `json:"streams"`
-	Recent  []anikohub.StreamView `json:"recent"`
-	Sent    int64                 `json:"sent"`
-	Playing []hubPlaying          `json:"playing"`
+	System  nyakurohub.System       `json:"system"`
+	Streams []nyakurohub.StreamView `json:"streams"`
+	Recent  []nyakurohub.StreamView `json:"recent"`
+	Sent    int64                   `json:"sent"`
+	Playing []hubPlaying            `json:"playing"`
 
-	Devices  []share.HubDevice `json:"devices"`
-	Accounts []hubAccount      `json:"accounts"`
-	Activity []anikohub.Event  `json:"activity"`
-	Library  hubLibrary        `json:"library"`
+	Devices  []share.HubDevice  `json:"devices"`
+	Accounts []hubAccount       `json:"accounts"`
+	Activity []nyakurohub.Event `json:"activity"`
+	Library  hubLibrary         `json:"library"`
 	// Encoder: what converts video when a device can't play a file as it
 	// is ("" none: ffmpeg isn't there).
 	Encoder   string `json:"encoder"`
@@ -216,7 +216,7 @@ type hubPlaying struct {
 }
 
 type hubAccount struct {
-	anikohub.Account
+	nyakurohub.Account
 	Devices int `json:"devices"` // using it now
 	History int `json:"history"` // episodes with a position
 }

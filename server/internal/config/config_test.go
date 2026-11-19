@@ -4,11 +4,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
 )
 
 func TestMigrateDefaultPlayer(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestMigrateDefaultPlayer(t *testing.T) {
 
 func TestMigrateMangaReadingMode(t *testing.T) {
 	for mode, want := range map[string]string{"long-strip": "double", "paged": "paged", "double": "double"} {
-		d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+		d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +82,7 @@ func TestMigrateMangaReadingMode(t *testing.T) {
 }
 
 func TestMigrateMangaDirection(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestMigrateMangaDirection(t *testing.T) {
 
 func TestMigrateSkipEndings(t *testing.T) {
 	for _, intro := range []bool{true, false} {
-		d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+		d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -143,7 +143,7 @@ func TestMigrateSkipEndings(t *testing.T) {
 }
 
 func TestThemeSettings(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestThemeSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	ui := s.Get().UI
-	if ui.ColorTheme != "aniko" || ui.Seasonal != "auto" || !ui.SeasonalEffects || ui.AccentColor != "#22c3a6" || ui.ClassicLook {
+	if ui.ColorTheme != "nyakuro" || ui.Seasonal != "auto" || !ui.SeasonalEffects || ui.AccentColor != "#22c3a6" || ui.ClassicLook {
 		t.Fatalf("old settings: %+v", ui)
 	}
 	// There's one look: the Classic and Cinema ones (until 3.0.51) aren't
@@ -174,8 +174,8 @@ func TestThemeSettings(t *testing.T) {
 		{"black", "christmas", "black", "christmas"},
 		{"white", "off", "white", "off"}, // a light theme of the look after 3.0.33
 		{"phosphor", "auto", "phosphor", "auto"},
-		{"nope", "easter", "aniko", "auto"},
-		{"", "", "aniko", "auto"},
+		{"nope", "easter", "nyakuro", "auto"},
+		{"", "", "nyakuro", "auto"},
 	} {
 		next := s.Get()
 		next.UI.ColorTheme, next.UI.Seasonal, next.UI.SeasonalEffects = c.theme, c.seasonal, false

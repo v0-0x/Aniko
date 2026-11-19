@@ -16,12 +16,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/library"
-	"github.com/v0-0x/Aniko/server/internal/share"
-	"github.com/v0-0x/Aniko/server/internal/stream"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/stream"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 func (s *Server) routes() {
@@ -42,7 +42,7 @@ func (s *Server) routes() {
 	// --- core
 	m.HandleFunc("GET /api/status", h(s.status))
 	m.HandleFunc("GET /api/settings", h(func(r *http.Request) (any, error) { return settingsFor(r, s.app.Settings.Get()), nil }))
-	// The Stats page: what was watched in Aniko, month by month.
+	// The Stats page: what was watched in Nyakuro, month by month.
 	m.HandleFunc("GET /api/stats/monthly", h(func(r *http.Request) (any, error) {
 		n := queryInt(r, "months")
 		if n <= 0 {
@@ -66,7 +66,7 @@ func (s *Server) routes() {
 		// The account is this computer's: a phone on the network logging
 		// out would log it out too.
 		if !isTrusted(r) {
-			return nil, forbidden("log out on the computer Aniko runs on: from here, it would log that computer out")
+			return nil, forbidden("log out on the computer Nyakuro runs on: from here, it would log that computer out")
 		}
 		s.app.Platform.Logout()
 		s.app.Share.LoggedOut()
@@ -244,7 +244,7 @@ func (s *Server) routes() {
 
 	// --- downloads
 	m.HandleFunc("GET /api/downloads", h(func(r *http.Request) (any, error) { return s.app.Downloads.List(), nil }))
-	// The downloads of the Aniko this one's go to (a TV's computer): its list,
+	// The downloads of the Nyakuro this one's go to (a TV's computer): its list,
 	// and cancel or retry there.
 	m.HandleFunc("GET /api/downloads/host", h(func(r *http.Request) (any, error) {
 		raw, host, ok, err := s.app.Share.DownloadsHost(r.Context(), "list", nil)
@@ -279,7 +279,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/torrents/providers", h(func(r *http.Request) (any, error) { return s.app.Torrents.Providers(), nil }))
 	m.HandleFunc("POST /api/torrents/search", h(s.torrentSearch))
 	m.HandleFunc("POST /api/torrents/download", h(s.torrentDownload))
-	// When this Aniko's downloads go to another (a TV's to its computer), its
+	// When this Nyakuro's downloads go to another (a TV's to its computer), its
 	// torrents are that one's (hostTorrents).
 	m.HandleFunc("GET /api/torrent-client/status", h(func(r *http.Request) (any, error) {
 		if st, ok := s.hostTorrentStatus(r); ok {
@@ -388,7 +388,7 @@ func (s *Server) routes() {
 		go s.app.Manga.Recheck(medias)
 		return s.app.Manga.Latest(ids), nil
 	}))
-	// How many chapters of each manga being read are new: out since Aniko
+	// How many chapters of each manga being read are new: out since Nyakuro
 	// first looked at it, and not read yet (its cover's count). Not the
 	// whole of what's unread: a series never started isn't 1198 new.
 	m.HandleFunc("GET /api/manga/new", h(func(r *http.Request) (any, error) {
@@ -446,7 +446,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/update", h(s.updateStatus))
 	m.HandleFunc("POST /api/update/check", h(s.checkUpdate))
 	m.HandleFunc("POST /api/update/apply", h(s.applyUpdate))
-	m.HandleFunc("POST /api/update/restart", s.restartAniko)
+	m.HandleFunc("POST /api/update/restart", s.restartNyakuro)
 
 	// --- web UI (SPA)
 	m.HandleFunc("/", s.serveUI)
@@ -501,7 +501,7 @@ type featureStatus struct {
 	Ffmpeg  bool `json:"ffmpeg"`
 	Ffprobe bool `json:"ffprobe"`
 	AniCli  bool `json:"aniCli"`
-	// AniCliHost: the computer that runs ani-cli for this Aniko, when it
+	// AniCliHost: the computer that runs ani-cli for this Nyakuro, when it
 	// doesn't run here (Android).
 	AniCliHost string `json:"aniCliHost,omitempty"`
 	YtDlp      bool   `json:"ytDlp"`
@@ -528,7 +528,7 @@ func (s *Server) status(r *http.Request) (any, error) {
 	if cfg.Server.AllowLAN {
 		lan = lanURLs(cfg.Server.Port)
 	}
-	// Home's questions about the other Anikos: for this computer, which
+	// Home's questions about the other Nyakuros: for this computer, which
 	// decides about sharing.
 	var prompts []share.Prompt
 	if isTrusted(r) {
@@ -541,7 +541,7 @@ func (s *Server) status(r *http.Request) (any, error) {
 		"loggedIn":       s.app.Platform.LoggedIn(),
 		"anilistAuthUrl": "https://anilist.co/api/v2/oauth/authorize?client_id=" + cfg.Anilist.ClientID + "&response_type=token",
 		"features":       feat,
-		// The Anikos this one is paired with (Home's Sync).
+		// The Nyakuros this one is paired with (Home's Sync).
 		"paired": s.app.Share.Paired(),
 		// The computers sharing with this one that don't answer (asleep).
 		"asleep": s.app.Share.Asleep(),
@@ -630,7 +630,7 @@ func (s *Server) anilistLogin(r *http.Request) (any, error) {
 	// nobody is, and can't put its own account in place of the one here.
 	if !isTrusted(r) {
 		if s.app.Platform.Viewer() != nil {
-			return nil, forbidden("this computer is logged in to AniList already: change the account on the computer Aniko runs on")
+			return nil, forbidden("this computer is logged in to AniList already: change the account on the computer Nyakuro runs on")
 		}
 	}
 	tok := strings.TrimSpace(body.Token)

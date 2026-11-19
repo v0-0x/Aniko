@@ -1,8 +1,8 @@
 #!/bin/bash
-# Aniko setup for macOS: puts the programs Aniko uses in Aniko's own folder,
+# Nyakuro setup for macOS: puts the programs Nyakuro uses in Nyakuro's own folder,
 # ready-made for this Mac (Apple silicon or Intel), with no Homebrew and no
-# password. Aniko opens it in Terminal from Settings > Desktop app & programs
-# (server/internal/macsetup), with ANIKO_BIN set to that folder.
+# password. Nyakuro opens it in Terminal from Settings > Desktop app & programs
+# (server/internal/macsetup), with NYAKURO_BIN set to that folder.
 #
 #   ffmpeg, ffprobe  the in-app player (most files) and episode downloads
 #   yt-dlp           faster, more reliable episode downloads
@@ -10,13 +10,13 @@
 #   mpv              the external player: with Homebrew, on Apple silicon
 #                    (Homebrew has no ready-made mpv for Intel Macs)
 #
-# Programs that are there already are left alone. Aniko sees the setup
+# Programs that are there already are left alone. Nyakuro sees the setup
 # running while <this file>.pid holds its process ID.
 #
-# ANIKO_SETUP_NO_BREW=1 leaves Homebrew out, programs it installed included
+# NYAKURO_SETUP_NO_BREW=1 leaves Homebrew out, programs it installed included
 # (for the tests).
 
-ANIKO_BIN='@ANIKO_BIN@'
+NYAKURO_BIN='@NYAKURO_BIN@'
 
 echo $$ >"$0.pid"
 tmp=$(mktemp -d)
@@ -32,16 +32,16 @@ finish() {
 
 arch=$(uname -m) # arm64 or x86_64
 brew=""
-if [ "$ANIKO_SETUP_NO_BREW" != 1 ]; then
+if [ "$NYAKURO_SETUP_NO_BREW" != 1 ]; then
 	for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
 		if [ -x "$b" ]; then
 			brew=$b
 			break
 		fi
 	done
-	export PATH="$ANIKO_BIN:/opt/homebrew/bin:/usr/local/bin:$PATH"
+	export PATH="$NYAKURO_BIN:/opt/homebrew/bin:/usr/local/bin:$PATH"
 else
-	export PATH="$ANIKO_BIN:/usr/bin:/bin:/usr/sbin:/sbin"
+	export PATH="$NYAKURO_BIN:/usr/bin:/bin:/usr/sbin:/sbin"
 fi
 
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -50,15 +50,15 @@ fetch() {
 	curl -fL --retry 3 --connect-timeout 20 --progress-bar -o "$2" "$1"
 }
 
-# put makes a downloaded program runnable and moves it to Aniko's folder.
+# put makes a downloaded program runnable and moves it to Nyakuro's folder.
 put() {
 	chmod 755 "$1" || return 1
 	# Apple silicon only runs signed programs: sign it here if it isn't.
 	codesign -v "$1" >/dev/null 2>&1 || codesign --force -s - "$1" >/dev/null 2>&1
-	mv -f "$1" "$ANIKO_BIN/$2"
+	mv -f "$1" "$NYAKURO_BIN/$2"
 }
 
-# from_zip puts the program called name from a downloaded zip in Aniko's
+# from_zip puts the program called name from a downloaded zip in Nyakuro's
 # folder.
 from_zip() {
 	rm -rf "$tmp/x"
@@ -83,10 +83,10 @@ ffmpeg_tool() {
 }
 
 clear 2>/dev/null
-title "Aniko setup"
-echo "Puts the programs Aniko uses in its folder:"
-echo "$ANIKO_BIN"
-mkdir -p "$ANIKO_BIN" || finish 1
+title "Nyakuro setup"
+echo "Puts the programs Nyakuro uses in its folder:"
+echo "$NYAKURO_BIN"
+mkdir -p "$NYAKURO_BIN" || finish 1
 
 failed=""
 
@@ -109,7 +109,7 @@ if have ani-cli; then
 else
 	title "Downloading ani-cli"
 	if fetch https://raw.githubusercontent.com/pystardust/ani-cli/master/ani-cli "$tmp/ani-cli" && head -1 "$tmp/ani-cli" | grep -q '^#!'; then
-		chmod 755 "$tmp/ani-cli" && mv -f "$tmp/ani-cli" "$ANIKO_BIN/ani-cli" || failed="$failed ani-cli"
+		chmod 755 "$tmp/ani-cli" && mv -f "$tmp/ani-cli" "$NYAKURO_BIN/ani-cli" || failed="$failed ani-cli"
 	else
 		failed="$failed ani-cli"
 	fi
@@ -127,13 +127,13 @@ fi
 
 if [ -n "$failed" ]; then
 	title "These couldn't be installed:$failed"
-	echo "Check the internet connection and run the setup again from Aniko's Settings."
+	echo "Check the internet connection and run the setup again from Nyakuro's Settings."
 	finish 1
 fi
-title "Done: Aniko finds the programs by itself, go back to it."
+title "Done: Nyakuro finds the programs by itself, go back to it."
 if [ -n "$mpv_note" ]; then
 	echo
-	echo "mpv, the external player, isn't installed: Aniko's own player doesn't need it."
+	echo "mpv, the external player, isn't installed: Nyakuro's own player doesn't need it."
 	echo "To use it, get mpv from https://mpv.io/installation/"
 fi
 finish 0

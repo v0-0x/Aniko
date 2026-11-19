@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
 )
 
 func TestYear(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestYear(t *testing.T) {
 // Two days as busy as each other: the earlier one. And a year with only
 // episodes started: the first and the last of those.
 func TestYearTies(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestYearTies(t *testing.T) {
 
 // Nothing watched: twelve empty months, and lists (not null) for the page.
 func TestYearEmpty(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

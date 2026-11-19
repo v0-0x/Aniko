@@ -26,31 +26,31 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/events"
-	"github.com/v0-0x/Aniko/server/internal/history"
-	"github.com/v0-0x/Aniko/server/internal/library"
-	"github.com/v0-0x/Aniko/server/internal/parental"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Nyakuro/server/internal/parental"
 )
 
 const (
 	beaconEvery = 5 * time.Second
-	// An Aniko not heard from for this long is offline.
+	// A Nyakuro not heard from for this long is offline.
 	onlineFor = 16 * time.Second
 	// How often a guest asks a host whether its library changed.
 	askEvery = 30 * time.Second
-	// An Aniko that proved who it is this lately keeps its address: beacons
+	// A Nyakuro that proved who it is this lately keeps its address: beacons
 	// don't move it (see heard).
 	verifiedFor = time.Minute
 	// How often Settings (open, or the library page) may have the hosts
 	// asked again before their turn (Refresh): they answer from their
 	// library's version, but each answer costs a server a little.
 	refreshEvery = 15 * time.Second
-	// How many Anikos only heard of (not paired, not added by hand) are kept.
+	// How many Nyakuros only heard of (not paired, not added by hand) are kept.
 	maxStrangers = 64
-	// The largest request body read from an Aniko that isn't paired.
+	// The largest request body read from a Nyakuro that isn't paired.
 	maxUnpairedBody = 1 << 20
 	// Failed requests in a row after which a host's library is gone.
 	maxFails = 3
@@ -66,7 +66,7 @@ type Library interface {
 }
 
 // History is the watch history (where each episode was stopped), which
-// Anikos on the same AniList account keep in step (see syncHistory).
+// Nyakuros on the same AniList account keep in step (see syncHistory).
 type History interface {
 	Since(t int64, limit int) []*history.Entry
 	After(seq int64, limit int) []*history.Entry
@@ -84,38 +84,38 @@ type Service struct {
 	media    *http.Client // forwarded video: no time limit
 	slow     *http.Client // requests a host takes long to answer (ani-cli)
 
-	// OnFiles runs when the files shared with this Aniko change (in the
+	// OnFiles runs when the files shared with this Nyakuro change (in the
 	// background).
 	OnFiles func()
-	// User is the AniList account this Aniko is logged into (0: none), and
-	// History its watch history: kept in step with the Anikos it shares
+	// User is the AniList account this Nyakuro is logged into (0: none), and
+	// History its watch history: kept in step with the Nyakuros it shares
 	// with on the same account. Both nil: not kept in step.
 	User    func() int
 	History History
-	// OnWatchedElsewhere runs when another Aniko on the account says an
+	// OnWatchedElsewhere runs when another Nyakuro on the account says an
 	// episode was finished there: AniList has the new progress.
 	OnWatchedElsewhere func()
-	// AniCliReady reports whether ani-cli runs here, for the Anikos this one
+	// AniCliReady reports whether ani-cli runs here, for the Nyakuros this one
 	// shares with (anicli.go).
 	AniCliReady func() bool
 
-	// The AniList login, for sharing it with an Aniko (as a host) and using a
+	// The AniList login, for sharing it with a Nyakuro (as a host) and using a
 	// host's (as a guest, see account.go): its token ("" logged out), and
 	// logging in and out. Nil: not shared.
 	AccountToken func() string
 	UseAccount   func(ctx context.Context, token string) error
 	DropAccount  func()
 
-	// Hub: this Aniko is an Aniko Hub (hub.go), keeping every account's watch
+	// Hub: this Nyakuro is a Nyakuro Hub (hub.go), keeping every account's watch
 	// history, logins and settings; and how it checks a login it's given.
-	Hub          *anikohub.Store
+	Hub          *nyakurohub.Store
 	CheckAccount CheckAccount
 	// OwnPrefs and ApplyPrefs: this device's shared settings, kept in step
 	// with its account's on a hub (hub.go). Nil: not kept in step.
 	OwnPrefs   PrefsSource
 	ApplyPrefs PrefsSink
 	// Blobs: what else this device keeps in step through a hub, by kind
-	// (anikohub.BlobKinds): its list and watch-order edits (hub.go). Set
+	// (nyakurohub.BlobKinds): its list and watch-order edits (hub.go). Set
 	// by the app; nil: not kept in step.
 	Blobs map[string]BlobHooks
 	// The blobs waiting to be sent (BlobChanged), by kind.
@@ -150,7 +150,7 @@ type Service struct {
 	pending   map[[2]int]history.Entry
 	pushTimer *time.Timer
 
-	// Parental controls (parental.go): the rules hosts set for this Aniko,
+	// Parental controls (parental.go): the rules hosts set for this Nyakuro,
 	// what it watched waiting to be told them, and, on a host, where what
 	// its devices watched is kept.
 	received     map[string]receivedRules
@@ -178,21 +178,21 @@ type run struct {
 type peer struct {
 	id, name, version string
 	platform          string // what it runs on ("android": a TV), as it says
-	role              string // RoleHub: an Aniko Hub, as it says
+	role              string // RoleHub: a Nyakuro Hub, as it says
 	pub               []byte
 	addr              net.IP
 	port              int
 	seen              time.Time // last heard from (beacon, request or answer)
 	lastSeen          time.Time // before this run: when it was last around
 	manual            string    // the address it was added with by hand
-	allowed           bool      // this Aniko shares its library with it
-	// And with it (allowed), this Aniko's AniList login, and downloading
-	// onto this Aniko.
+	allowed           bool      // this Nyakuro shares its library with it
+	// And with it (allowed), this Nyakuro's AniList login, and downloading
+	// onto this Nyakuro.
 	account, downloads bool
 
-	// As a host: whether it shares its library with this Aniko, and its files.
+	// As a host: whether it shares its library with this Nyakuro, and its files.
 	shares bool
-	// offers: it says it shares with this Aniko; accepted: this Aniko's
+	// offers: it says it shares with this Nyakuro; accepted: this Nyakuro's
 	// owner took that (asked on Home, or by adding it by hand). What a
 	// host says is believed only once accepted: any device on the network
 	// can say it's one.
@@ -203,7 +203,7 @@ type peer struct {
 	asking           bool
 	fails            int
 	// filesStale: it answered, but its list of files didn't come (a busy
-	// server, a long list): what this Aniko has of it stays, and it's asked
+	// server, a long list): what this Nyakuro has of it stays, and it's asked
 	// again soon.
 	filesStale bool
 	// beaconAt: when one of its beacons last came; answeredAt: when it first
@@ -211,22 +211,22 @@ type peer struct {
 	// announcing itself is one whose beacons don't get through (a firewall).
 	beaconAt, answeredAt time.Time
 	// historySeq: the last of its history entries (in the order it stored
-	// them) this Aniko has; pushedSeq: the last of this Aniko's it sent it.
+	// them) this Nyakuro has; pushedSeq: the last of this Nyakuro's it sent it.
 	historySeq, pushedSeq int64
 	// user: the AniList account it's logged into, as it told (it shares
-	// with this Aniko).
+	// with this Nyakuro).
 	user int
-	// hostAccount: it shares its AniList login with this Aniko (a tag of it,
-	// "" when not); hostDownloads: this Aniko may download onto it.
+	// hostAccount: it shares its AniList login with this Nyakuro (a tag of it,
+	// "" when not); hostDownloads: this Nyakuro may download onto it.
 	hostAccount   string
 	hostDownloads bool
-	// hostAniCli: it runs ani-cli for this Aniko.
+	// hostAniCli: it runs ani-cli for this Nyakuro.
 	hostAniCli bool
 	// verified: when it last proved who it is (a request or an answer
 	// signed); offset: how far its clock is ahead of this one's.
 	verified time.Time
 	offset   time.Duration
-	// callerUser: the AniList account it said it's on, asking this Aniko.
+	// callerUser: the AniList account it said it's on, asking this Nyakuro.
 	callerUser int
 	// wakeMACs: its network cards (it shares), what wakes it (wake.go);
 	// wakeUntil: it's being woken up until then.
@@ -234,14 +234,14 @@ type peer struct {
 	wakeUntil time.Time
 	// autoSynced: when the watch history was last synced with it by itself.
 	autoSynced time.Time
-	// declined: asked whether to share this Aniko's library with it, the
+	// declined: asked whether to share this Nyakuro's library with it, the
 	// answer was "not now" (Home doesn't ask again).
 	declined bool
 	// rules: its parental controls, set here (nil: none).
 	rules *parental.Rules
 }
 
-// paired: this Aniko shares its library with it, or it with this one.
+// paired: this Nyakuro shares its library with it, or it with this one.
 func (p *peer) paired() bool { return p.allowed || p.shares }
 
 // displayName is its name, or what it is when it has none.
@@ -249,16 +249,16 @@ func (p *peer) displayName() string {
 	if p.name != "" {
 		return p.name
 	}
-	return "Another Aniko"
+	return "Another Nyakuro"
 }
 
-// online: heard from lately. A host that shares with this Aniko is asked
+// online: heard from lately. A host that shares with this Nyakuro is asked
 // every askEvery, and its answer counts until the next one is due: also when
 // its beacons don't come through (the Wi-Fi of some TVs drops them, a
 // firewall on a PC), it doesn't look gone half of the time. One ask that
 // failed (a server busy with a scan, a disk waking up) doesn't make it
 // offline either: the ask 10s later decides. The same the other way: a
-// device this Aniko shares with asks it as often (a hub's devices, which it
+// device this Nyakuro shares with asks it as often (a hub's devices, which it
 // never asks).
 func (p *peer) online(now time.Time) bool {
 	d := now.Sub(p.seen)
@@ -288,7 +288,7 @@ func (p *peer) baseURL() string {
 	return "http://" + net.JoinHostPort(p.addr.String(), strconv.Itoa(p.port))
 }
 
-// New loads this Aniko's identity and the Anikos it knows.
+// New loads this Nyakuro's identity and the Nyakuros it knows.
 func New(d *db.DB, settings *config.Store, lib Library, hub *events.Hub) (*Service, error) {
 	id, err := LoadIdentity(d)
 	if err != nil {
@@ -326,10 +326,10 @@ func New(d *db.DB, settings *config.Store, lib Library, hub *events.Hub) (*Servi
 	return s, nil
 }
 
-// ID is this Aniko's ID.
+// ID is this Nyakuro's ID.
 func (s *Service) ID() string { return s.id.ID }
 
-// Name is what the others call this Aniko.
+// Name is what the others call this Nyakuro.
 func (s *Service) Name() string {
 	if n := cleanName(s.settings.Get().Sharing.Name); n != "" {
 		return n
@@ -347,7 +347,7 @@ func Hostname() string {
 	h, _ := os.Hostname()
 	h, _, _ = strings.Cut(h, ".")
 	if h == "" {
-		return "Aniko"
+		return "Nyakuro"
 	}
 	return h
 }
@@ -369,10 +369,10 @@ type savedPeer struct {
 	// when a host that shared (or was added by hand) was taken as one.
 	Accepted *bool `json:"accepted,omitempty"`
 	Seen     int64 `json:"seen"`
-	// Granted to it (allowed): this Aniko's AniList login, downloading here.
+	// Granted to it (allowed): this Nyakuro's AniList login, downloading here.
 	Account   bool `json:"account,omitempty"`
 	Downloads bool `json:"downloads,omitempty"`
-	// It takes this Aniko's downloads (it shares, see downloads.go).
+	// It takes this Nyakuro's downloads (it shares, see downloads.go).
 	TakesDownloads bool `json:"takesDownloads,omitempty"`
 	// Its AniList account, as it told; where the watch histories are at.
 	User       int   `json:"user,omitempty"`
@@ -410,7 +410,7 @@ func (s *Service) load() {
 	}
 }
 
-// save keeps the Anikos worth knowing next time: those this one shares with,
+// save keeps the Nyakuros worth knowing next time: those this one shares with,
 // those that share with it, and those added by hand. Must be called with
 // s.mu held.
 func (s *Service) save() {
@@ -451,7 +451,7 @@ func (s *Service) Start() {
 	})
 }
 
-// Stop ends sharing (Aniko is quitting).
+// Stop ends sharing (Nyakuro is quitting).
 func (s *Service) Stop() {
 	s.flushPush()
 	s.apply(config.Settings{})
@@ -481,8 +481,8 @@ func (s *Service) apply(cfg config.Settings) {
 	r := &run{cancel: cancel, wake: make(chan struct{}, 1), done: make(chan struct{})}
 	disc, err := listen()
 	if err != nil {
-		// Anikos added by address still work.
-		log.Printf("sharing: can't listen for other Aniko apps on the network: %v", err)
+		// Nyakuros added by address still work.
+		log.Printf("sharing: can't listen for other Nyakuro apps on the network: %v", err)
 	} else {
 		r.disc = disc
 		go disc.read(s.heard)
@@ -533,7 +533,7 @@ func (s *Service) loop(ctx context.Context, r *run) {
 
 func (s *Service) beacon() beacon {
 	cfg := s.settings.Get()
-	return beacon{Aniko: protocol, ID: s.id.ID, Name: s.Name(), Port: cfg.Server.Port, Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS, Role: s.role()}
+	return beacon{Nyakuro: protocol, ID: s.id.ID, Name: s.Name(), Port: cfg.Server.Port, Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS, Role: s.role()}
 }
 
 func (s *Service) announce(r *run) {
@@ -554,7 +554,7 @@ func (s *Service) wake() {
 	}
 }
 
-// heard handles a beacon from another Aniko.
+// heard handles a beacon from another Nyakuro.
 func (s *Service) heard(b beacon, from net.IP) {
 	if b.ID == s.id.ID || !isLocalNetwork(from) || b.Port <= 0 || b.Port > 65535 {
 		return
@@ -615,17 +615,17 @@ func (s *Service) heard(b beacon, from net.IP) {
 // ---------------------------------------------------------------------------
 // The host's side: who asks
 
-// Caller is another Aniko that made a request, checked.
+// Caller is another Nyakuro that made a request, checked.
 type Caller struct {
 	ID, Name string
-	// Allowed: this Aniko shares its library with it.
+	// Allowed: this Nyakuro shares its library with it.
 	Allowed bool
 	// SameUser: it's logged into the same AniList account as this one.
 	SameUser bool
-	// Account: this Aniko shares its AniList login with it; Downloads: it
-	// may download onto this Aniko. Both only with Allowed.
+	// Account: this Nyakuro shares its AniList login with it; Downloads: it
+	// may download onto this Nyakuro. Both only with Allowed.
 	Account, Downloads bool
-	// Paired: Allowed, or it shares its library with this Aniko.
+	// Paired: Allowed, or it shares its library with this Nyakuro.
 	Paired bool
 	// User: the AniList account it says it's on (0: none).
 	User int
@@ -633,8 +633,8 @@ type Caller struct {
 	Rules *parental.Rules
 }
 
-// Verify checks a request from another Aniko, and notes it as seen. The
-// answer (w) gets what proves it comes from this Aniko.
+// Verify checks a request from another Nyakuro, and notes it as seen. The
+// answer (w) gets what proves it comes from this Nyakuro.
 func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error) {
 	if !s.settings.Get().Sharing.Enabled {
 		return Caller{}, errors.New("library sharing is off")
@@ -643,7 +643,7 @@ func (s *Service) Verify(w http.ResponseWriter, r *http.Request) (Caller, error)
 	if !isLocalNetwork(ip) {
 		return Caller{}, errors.New("not from the local network")
 	}
-	// A large body is read (to check it) only from an Aniko paired with this
+	// A large body is read (to check it) only from a Nyakuro paired with this
 	// one: anyone else could have it read megabytes for nothing.
 	if r.ContentLength > maxUnpairedBody || r.ContentLength < 0 && r.Body != nil && r.Body != http.NoBody {
 		s.mu.Lock()
@@ -722,7 +722,7 @@ func (s *Service) user() int {
 	return s.User()
 }
 
-// HistorySince is this Aniko's watch history after t, for another Aniko on
+// HistorySince is this Nyakuro's watch history after t, for another Nyakuro on
 // the same account (checked by the caller).
 func (s *Service) HistorySince(c Caller, t int64) []*history.Entry {
 	h := s.historyFor(c)
@@ -736,8 +736,8 @@ func (s *Service) HistorySince(c Caller, t int64) []*history.Entry {
 	return out
 }
 
-// HistoryAfter is this Aniko's watch history stored after seq (see
-// history.Store.After), for another Aniko on the same account.
+// HistoryAfter is this Nyakuro's watch history stored after seq (see
+// history.Store.After), for another Nyakuro on the same account.
 func (s *Service) HistoryAfter(c Caller, seq int64) []*history.Entry {
 	h := s.historyFor(c)
 	if h == nil {
@@ -750,7 +750,7 @@ func (s *Service) HistoryAfter(c Caller, seq int64) []*history.Entry {
 	return out
 }
 
-// HistoryLatest is the latest of this Aniko's watch history (Sync).
+// HistoryLatest is the latest of this Nyakuro's watch history (Sync).
 func (s *Service) HistoryLatest(c Caller) []*history.Entry {
 	h := s.historyFor(c)
 	if h == nil {
@@ -778,7 +778,7 @@ type Hello struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Key     string `json:"key"`
-	Version string `json:"version"` // Aniko's
+	Version string `json:"version"` // Nyakuro's
 	// Platform: what it runs on (runtime.GOOS: "android" on a TV).
 	Platform string `json:"platform,omitempty"`
 	Shares   bool   `json:"shares"`
@@ -796,7 +796,7 @@ type Hello struct {
 	AniCli bool `json:"aniCli,omitempty"`
 	// Wake: its network cards, to wake it when it's asleep (wake.go).
 	Wake []string `json:"wake,omitempty"`
-	// Role: RoleHub on an Aniko Hub (hub.go); PrefsAt: when the guest's
+	// Role: RoleHub on a Nyakuro Hub (hub.go); PrefsAt: when the guest's
 	// account's settings last changed on it (ms).
 	Role    string `json:"role,omitempty"`
 	PrefsAt int64  `json:"prefsAt,omitempty"`
@@ -836,13 +836,13 @@ func (s *Service) Hello(c Caller) Hello {
 	return h
 }
 
-// Whoami is what anyone on the network may ask: who this Aniko is (what its
+// Whoami is what anyone on the network may ask: who this Nyakuro is (what its
 // beacons say).
 func (s *Service) Whoami() Hello {
 	return Hello{ID: s.id.ID, Name: s.Name(), Key: s.id.PublicKey(), Version: config.AppVersion, Platform: runtime.GOOS, Role: s.role()}
 }
 
-// SharedFiles are the library's files this Aniko shares: those matched to an
+// SharedFiles are the library's files this Nyakuro shares: those matched to an
 // anime.
 func (s *Service) SharedFiles() ([]*library.LocalFile, error) {
 	all, err := s.library.All()
@@ -858,7 +858,7 @@ func (s *Service) SharedFiles() ([]*library.LocalFile, error) {
 	return out, nil
 }
 
-// sharedVersion is filesVersion of SharedFiles: each Aniko it shares with
+// sharedVersion is filesVersion of SharedFiles: each Nyakuro it shares with
 // asks for it. Read again when the library says it changed (libraryChanged),
 // or after versionFor; not on every hello, which costs a server with a
 // large library a read of all of it.
@@ -935,7 +935,7 @@ func (s *Service) cachedMACs() []string {
 	return s.macsCache
 }
 
-// Shares reports a file this Aniko shares (see SharedFiles).
+// Shares reports a file this Nyakuro shares (see SharedFiles).
 func (s *Service) Shares(path string) bool {
 	if path == "" || IsRemote(path) {
 		return false
@@ -985,11 +985,11 @@ func (s *Service) askHosts(ctx context.Context) {
 	}
 }
 
-// ask asks a host whether it shares its library with this Aniko, and for its
+// ask asks a host whether it shares its library with this Nyakuro, and for its
 // files when they changed.
 func (s *Service) ask(ctx context.Context, p *peer) {
 	h, err := s.hello(ctx, p)
-	// What it says it shares counts once this Aniko's owner accepted it as
+	// What it says it shares counts once this Nyakuro's owner accepted it as
 	// a host: till then it only offers (asked on Home), and nothing of its
 	// answer is followed (its files, rules, account, where downloads go).
 	offers := err == nil && h.Shares
@@ -1055,7 +1055,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	if p.answeredAt.IsZero() {
 		p.answeredAt = time.Now()
 	}
-	// Its cards, to wake it later (an older Aniko doesn't say).
+	// Its cards, to wake it later (an older Nyakuro doesn't say).
 	if cards := cleanMACs(h.Wake); h.Shares && len(cards) > 0 && strings.Join(cards, ",") != strings.Join(p.wakeMACs, ",") {
 		p.wakeMACs = cards
 		s.save()
@@ -1081,7 +1081,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 		p.files, p.filesVer, changed = remoteFiles(p, files), h.Files, true
 	case h.Shares && filesErr != nil:
 		// Its list didn't come (a server busy with a scan, a list too long
-		// for the time): what this Aniko has of it stays, and it's asked
+		// for the time): what this Nyakuro has of it stays, and it's asked
 		// again in a moment (askHosts).
 		p.filesStale = true
 		if !stale {
@@ -1103,7 +1103,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 		tag, takes = h.Account, h.Downloads
 	}
 	// Another account there now: its history is asked for from the start
-	// (where this Aniko was is the other account's).
+	// (where this Nyakuro was is the other account's).
 	if p.user != was && p.user > 0 && was > 0 {
 		p.historySeq, p.pushedSeq = 0, 0
 		s.save()
@@ -1140,7 +1140,7 @@ func (s *Service) ask(ctx context.Context, p *peer) {
 	}
 }
 
-// HistoryChanged sends a position this Aniko saved to the Anikos that share
+// HistoryChanged sends a position this Nyakuro saved to the Nyakuros that share
 // with it on the same AniList account (the one whose files are played,
 // most of all), as it happens: their Continue watching goes on from it.
 // Gathered for 2 seconds; at once when the episode is over.
@@ -1205,7 +1205,7 @@ func (s *Service) pushHistory() {
 	wg.Wait()
 }
 
-// flushPush sends the positions waiting to go (pushHistory) now: Aniko is
+// flushPush sends the positions waiting to go (pushHistory) now: Nyakuro is
 // closing, and the last one saved would be lost otherwise.
 func (s *Service) flushPush() {
 	s.pushMu.Lock()
@@ -1219,9 +1219,9 @@ func (s *Service) flushPush() {
 	}
 }
 
-// pushMissed sends a host on the same account what this Aniko stored since
+// pushMissed sends a host on the same account what this Nyakuro stored since
 // the last it sent it: what didn't reach it as it was saved (it was away),
-// or came from another Aniko.
+// or came from another Nyakuro.
 func (s *Service) pushMissed(ctx context.Context, p *peer) {
 	if s.History == nil {
 		return
@@ -1243,7 +1243,7 @@ func (s *Service) pushMissed(ctx context.Context, p *peer) {
 	s.mu.Unlock()
 }
 
-// sendHistory sends positions (JSON) to an Aniko on the same account.
+// sendHistory sends positions (JSON) to a Nyakuro on the same account.
 func (s *Service) sendHistory(ctx context.Context, p *peer, body []byte) error {
 	req, err := s.request(ctx, p, http.MethodPost, "/api/peer/history", bytes.NewReader(body))
 	if err != nil {
@@ -1258,7 +1258,7 @@ func (s *Service) sendHistory(ctx context.Context, p *peer, body []byte) error {
 	return answerError(resp)
 }
 
-// answerError is what an Aniko's answer (not OK) says went wrong, in words.
+// answerError is what a Nyakuro's answer (not OK) says went wrong, in words.
 func answerError(resp *http.Response) error {
 	if resp.StatusCode == http.StatusOK {
 		return nil
@@ -1273,7 +1273,7 @@ func answerError(resp *http.Response) error {
 	return errors.New(e.Error)
 }
 
-// Paired names the Anikos this one is paired with (it shares its library
+// Paired names the Nyakuros this one is paired with (it shares its library
 // with them, or they with it), with sharing on.
 func (s *Service) Paired() []string {
 	if !s.settings.Get().Sharing.Enabled {
@@ -1293,8 +1293,8 @@ func (s *Service) Paired() []string {
 
 // SyncResult is what SyncNow did.
 type SyncResult struct {
-	// Devices: the Anikos synced with. Unreachable: those that couldn't be
-	// (why, after the name). Skipped: paired Anikos not synced with (why).
+	// Devices: the Nyakuros synced with. Unreachable: those that couldn't be
+	// (why, after the name). Skipped: paired Nyakuros not synced with (why).
 	Devices     []string `json:"devices"`
 	Unreachable []string `json:"unreachable"`
 	Skipped     []string `json:"skipped"`
@@ -1302,7 +1302,7 @@ type SyncResult struct {
 	Updated int `json:"updated"`
 }
 
-// SyncNow brings this Aniko's watch history in step with the Anikos it's
+// SyncNow brings this Nyakuro's watch history in step with the Nyakuros it's
 // paired with on the same AniList account, both ways, now: each takes what
 // the other has newer (the latest stored on each), and Continue watching
 // goes on from where an episode was stopped on any of them. As it goes, a
@@ -1373,7 +1373,7 @@ func (s *Service) SyncNow(ctx context.Context) (SyncResult, error) {
 	return res, nil
 }
 
-// syncable: whether this Aniko's watch history can be synced with a paired
+// syncable: whether this Nyakuro's watch history can be synced with a paired
 // one (this one on AniList account me): why not (skip), or why it can't be
 // reached. Must be called with mu held.
 func syncable(p *peer, me int) (skip, away string) {
@@ -1383,7 +1383,7 @@ func syncable(p *peer, me int) (skip, away string) {
 	}
 	switch {
 	case user == 0:
-		return "it hasn't said its AniList account yet: open Aniko there", ""
+		return "it hasn't said its AniList account yet: open Nyakuro there", ""
 	case user != me:
 		return "another AniList account", ""
 	case p.addr == nil || p.port <= 0:
@@ -1392,7 +1392,7 @@ func syncable(p *peer, me int) (skip, away string) {
 	return "", ""
 }
 
-// syncWith takes a paired Aniko's latest positions and sends it this one's
+// syncWith takes a paired Nyakuro's latest positions and sends it this one's
 // (body), and returns how many changed here.
 func (s *Service) syncWith(ctx context.Context, p *peer, body []byte) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
@@ -1407,10 +1407,10 @@ func (s *Service) syncWith(ctx context.Context, p *peer, body []byte) (int, erro
 	return s.merge(theirs), nil
 }
 
-// How often at most a paired Aniko is synced with by itself (autoSync).
+// How often at most a paired Nyakuro is synced with by itself (autoSync).
 const autoSyncEvery = 2 * time.Minute
 
-// autoSync syncs the watch history with a paired Aniko that came back (it
+// autoSync syncs the watch history with a paired Nyakuro that came back (it
 // answered again, or asked), as Sync would, unless that's turned off or it
 // was done a moment ago: Continue watching goes on from where it was left on
 // it, without pressing Sync.
@@ -1450,7 +1450,7 @@ func (s *Service) autoSync(p *peer) {
 	}()
 }
 
-// Gone marks another Aniko as not heard from for a while (tests: as if it
+// Gone marks another Nyakuro as not heard from for a while (tests: as if it
 // had been away).
 func (s *Service) Gone(id string) {
 	s.mu.Lock()
@@ -1460,7 +1460,7 @@ func (s *Service) Gone(id string) {
 	}
 }
 
-// AutoSyncAll syncs with every paired Aniko by itself (autoSync), as when
+// AutoSyncAll syncs with every paired Nyakuro by itself (autoSync), as when
 // the app is opened again.
 func (s *Service) AutoSyncAll() {
 	s.mu.Lock()
@@ -1476,14 +1476,14 @@ func (s *Service) AutoSyncAll() {
 	}
 }
 
-// plainError says what went wrong talking to another Aniko, in a few words.
+// plainError says what went wrong talking to another Nyakuro, in a few words.
 func plainError(err error) string {
 	var ne net.Error
 	switch {
 	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &ne) && ne.Timeout()):
 		return "it didn't answer in time"
 	case errors.Is(err, syscall.ECONNREFUSED):
-		return "Aniko isn't running there"
+		return "Nyakuro isn't running there"
 	case errors.Is(err, syscall.EHOSTUNREACH) || errors.Is(err, syscall.ENETUNREACH):
 		return "it isn't on the network"
 	}
@@ -1502,7 +1502,7 @@ func plainError(err error) string {
 	return err.Error()
 }
 
-// TakeHistory merges positions another Aniko on the same account sent
+// TakeHistory merges positions another Nyakuro on the same account sent
 // (checked by the caller), the newer ones. A hub keeps them in the caller's
 // account's history, and sends them on to its other devices.
 func (s *Service) TakeHistory(c Caller, entries []history.Entry) {
@@ -1529,7 +1529,7 @@ func (s *Service) TakeHistory(c Caller, entries []history.Entry) {
 	}
 }
 
-// merge takes positions from another Aniko, and says how many changed here.
+// merge takes positions from another Nyakuro, and says how many changed here.
 func (s *Service) merge(entries []*history.Entry) int {
 	in := make([]history.Entry, 0, len(entries))
 	for _, e := range entries {
@@ -1549,7 +1549,7 @@ func (s *Service) merge(entries []*history.Entry) int {
 // and when it was watched. Continue watching then goes on from there,
 // to the second; the list itself (progress) is AniList's. It asks for what
 // the host stored after the last it took, whatever their times (one from
-// another Aniko comes late with an older time).
+// another Nyakuro comes late with an older time).
 func (s *Service) syncHistory(ctx context.Context, p *peer) {
 	if s.History == nil {
 		return
@@ -1610,7 +1610,7 @@ type signed struct {
 	offset time.Duration
 }
 
-// sign signs a request for a host, by its clock as far as this Aniko knows it.
+// sign signs a request for a host, by its clock as far as this Nyakuro knows it.
 func (s *Service) sign(req *http.Request, p *peer) (*http.Request, error) {
 	s.mu.Lock()
 	host, pub, off := p.id, p.pub, p.offset
@@ -1646,7 +1646,7 @@ func (s *Service) do(c *http.Client, req *http.Request) (*http.Response, error) 
 		want, err := sr.sig.reply(date)
 		if err != nil || resp.Header.Get(HeaderReply) == "" || !hmac.Equal([]byte(want), []byte(resp.Header.Get(HeaderReply))) {
 			resp.Body.Close()
-			return nil, fmt.Errorf("the answer can't be checked as %s's (is the latest Aniko running there, with library sharing on?)", s.nameOf(sr.p))
+			return nil, fmt.Errorf("the answer can't be checked as %s's (is the latest Nyakuro running there, with library sharing on?)", s.nameOf(sr.p))
 		}
 		// The host dates its answer as it gets the request (Verify), however
 		// long the answer then takes (a file read from a sleeping disk):
@@ -1677,7 +1677,7 @@ func (s *Service) do(c *http.Client, req *http.Request) (*http.Response, error) 
 	}
 }
 
-// Sign signs a request to the Aniko with that ID and public key (as its
+// Sign signs a request to the Nyakuro with that ID and public key (as its
 // whoami tells them).
 func (s *Service) Sign(req *http.Request, hostID, hostKey string) error {
 	pub, err := parsePublicKey(hostID, hostKey)
@@ -1714,9 +1714,9 @@ func (s *Service) hello(ctx context.Context, p *peer) (*Hello, error) {
 	if err := s.getJSON(ctx, p, "/api/peer/hello", &h); err != nil {
 		return nil, err
 	}
-	// Another Aniko at that address now (a new IP address from the router).
+	// Another Nyakuro at that address now (a new IP address from the router).
 	if h.ID != p.id {
-		return nil, fmt.Errorf("another Aniko (%s) answers there", h.Name)
+		return nil, fmt.Errorf("another Nyakuro (%s) answers there", h.Name)
 	}
 	return &h, nil
 }
@@ -1757,7 +1757,7 @@ const scheme = "kumo://"
 // RemotePath is the path of a host's file.
 func RemotePath(host, path string) string { return scheme + host + "/" + path }
 
-// IsRemote reports a path of another Aniko's file.
+// IsRemote reports a path of another Nyakuro's file.
 func IsRemote(path string) bool { return strings.HasPrefix(path, scheme) }
 
 // ParsePath splits a shared file's path into its host and its path there.
@@ -1776,7 +1776,7 @@ func ParsePath(path string) (host, onHost string, ok bool) {
 // ---------------------------------------------------------------------------
 // What the app shows
 
-// PeerView is another Aniko on the network, for Settings.
+// PeerView is another Nyakuro on the network, for Settings.
 type PeerView struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -1786,20 +1786,20 @@ type PeerView struct {
 	Version  string `json:"version"`
 	// Platform: what it runs on ("android": a TV; "" when it didn't say).
 	Platform string `json:"platform,omitempty"`
-	// Allowed: this Aniko shares its library with it.
+	// Allowed: this Nyakuro shares its library with it.
 	Allowed bool `json:"allowed"`
-	// Shares: it shares its library with this Aniko (Files of them).
+	// Shares: it shares its library with this Nyakuro (Files of them).
 	Shares bool `json:"shares"`
-	// Offers: it says it shares with this Aniko, which hasn't accepted it.
+	// Offers: it says it shares with this Nyakuro, which hasn't accepted it.
 	Offers bool   `json:"offers,omitempty"`
 	Files  int    `json:"files"`
 	Manual bool   `json:"manual"`
 	Error  string `json:"error,omitempty"`
-	// Granted to it (with Allowed): this Aniko's AniList login, downloading
-	// onto this Aniko.
+	// Granted to it (with Allowed): this Nyakuro's AniList login, downloading
+	// onto this Nyakuro.
 	Account   bool `json:"account"`
 	Downloads bool `json:"downloads"`
-	// Granted by it (it shares): its AniList login, and whether this Aniko
+	// Granted by it (it shares): its AniList login, and whether this Nyakuro
 	// is using it; downloading onto it.
 	SharesAccount  bool `json:"sharesAccount"`
 	UsingAccount   bool `json:"usingAccount"`
@@ -1809,7 +1809,7 @@ type PeerView struct {
 	Waking  bool `json:"waking"`
 	// Declined: asked whether to share with it, the answer was "not now".
 	Declined bool `json:"declined"`
-	// Role: "hub" for an Aniko Hub (aniko --hub), "" for an Aniko app.
+	// Role: "hub" for a Nyakuro Hub (nyakuro --hub), "" for a Nyakuro app.
 	Role string `json:"role,omitempty"`
 	// Parental: parental controls are set for it here (parental.go).
 	Parental bool `json:"parental,omitempty"`
@@ -1832,7 +1832,7 @@ func (s *Service) view(p *peer, now time.Time) PeerView {
 		v.Address = net.JoinHostPort(p.addr.String(), strconv.Itoa(p.port))
 	}
 	if v.Name == "" {
-		v.Name = "Aniko " + p.id[:6]
+		v.Name = "Nyakuro " + p.id[:6]
 	}
 	// Two named alike (two Fire TVs): told apart. Must be called with mu held.
 	for _, o := range s.peers {
@@ -1854,13 +1854,13 @@ type Status struct {
 	ID      string     `json:"id"`
 	Name    string     `json:"name"`
 	Peers   []PeerView `json:"peers"`
-	// Listening: other Anikos can find this one (the network port could be
+	// Listening: other Nyakuros can find this one (the network port could be
 	// opened).
 	Listening bool `json:"listening"`
-	// Addresses: where the others reach this Aniko (to add it by hand).
+	// Addresses: where the others reach this Nyakuro (to add it by hand).
 	Addresses []string `json:"addresses"`
 	// ListsSynced: when the list and watch-order edits were last in step
-	// with a hub, and which (hub.go); nil: not yet since Aniko started.
+	// with a hub, and which (hub.go); nil: not yet since Nyakuro started.
 	ListsSynced *ListsSynced `json:"listsSynced,omitempty"`
 }
 
@@ -1915,8 +1915,8 @@ func addresses(port int) []string {
 	return out
 }
 
-// Grants is what this Aniko shares with another one: its library, and with
-// it its AniList login and downloading onto this Aniko. Nil: unchanged.
+// Grants is what this Nyakuro shares with another one: its library, and with
+// it its AniList login and downloading onto this Nyakuro. Nil: unchanged.
 type Grants struct {
 	Allowed   *bool `json:"allowed"`
 	Account   *bool `json:"account"`
@@ -1927,12 +1927,12 @@ type Grants struct {
 	Accepted *bool `json:"accepted"`
 }
 
-// SetAllowed shares this Aniko's library with another one, or stops.
+// SetAllowed shares this Nyakuro's library with another one, or stops.
 func (s *Service) SetAllowed(id string, allowed bool) error {
 	return s.SetGrants(id, Grants{Allowed: &allowed})
 }
 
-// SetGrants changes what this Aniko shares with another one.
+// SetGrants changes what this Nyakuro shares with another one.
 func (s *Service) SetGrants(id string, g Grants) error {
 	s.mu.Lock()
 	p, ok := s.peers[id]
@@ -1966,7 +1966,7 @@ func (s *Service) SetGrants(id string, g Grants) error {
 	}
 	s.mu.Unlock()
 	if !ok {
-		return errors.New("no Aniko app with that ID")
+		return errors.New("no Nyakuro app with that ID")
 	}
 	s.hub.Publish("sharing-updated", nil)
 	if g.Accepted != nil && *g.Accepted {
@@ -2012,7 +2012,7 @@ func (s *Service) RefreshNow() {
 	s.wake()
 }
 
-// resolveManual finds an Aniko added by name (not an address) again.
+// resolveManual finds a Nyakuro added by name (not an address) again.
 func (s *Service) resolveManual(p *peer) {
 	s.mu.Lock()
 	manual := p.manual
@@ -2038,7 +2038,7 @@ func (s *Service) resolveManual(p *peer) {
 	s.wake()
 }
 
-// makeRoom keeps the Anikos this one only heard of to a few: anyone on the
+// makeRoom keeps the Nyakuros this one only heard of to a few: anyone on the
 // network can make up new ones. Must be called with mu held.
 func (s *Service) makeRoom() {
 	var strangers []*peer
@@ -2059,7 +2059,7 @@ func (s *Service) makeRoom() {
 	delete(s.peers, oldest.id)
 }
 
-// Forget removes an Aniko from the list (one added by hand, or gone).
+// Forget removes a Nyakuro from the list (one added by hand, or gone).
 func (s *Service) Forget(id string) {
 	s.mu.Lock()
 	p, ok := s.peers[id]
@@ -2091,7 +2091,7 @@ func (s *Service) Forget(id string) {
 	s.hub.Publish("sharing-updated", nil)
 }
 
-// Connect adds an Aniko by its address, for networks where they can't find
+// Connect adds a Nyakuro by its address, for networks where they can't find
 // each other by themselves (it needs sharing on too).
 func (s *Service) Connect(ctx context.Context, address string) (PeerView, error) {
 	address = strings.TrimSpace(address)
@@ -2120,15 +2120,15 @@ func (s *Service) Connect(ctx context.Context, address string) (PeerView, error)
 	}
 	resp, err := s.api.Do(req)
 	if err != nil {
-		return PeerView{}, fmt.Errorf("no answer from %s: is Aniko open there, with library sharing on?", address)
+		return PeerView{}, fmt.Errorf("no answer from %s: is Nyakuro open there, with library sharing on?", address)
 	}
 	defer resp.Body.Close()
 	var h Hello
 	if resp.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&h) != nil {
-		return PeerView{}, fmt.Errorf("%s isn't an Aniko app with library sharing on", address)
+		return PeerView{}, fmt.Errorf("%s isn't a Nyakuro app with library sharing on", address)
 	}
 	if h.ID == s.id.ID {
-		return PeerView{}, errors.New("that's this Aniko")
+		return PeerView{}, errors.New("that's this Nyakuro")
 	}
 	pub, err := parsePublicKey(h.ID, h.Key)
 	if err != nil {
@@ -2162,7 +2162,7 @@ type SharedLibrary struct {
 	Files []*library.LocalFile `json:"files"`
 }
 
-// Libraries are the libraries shared with this Aniko.
+// Libraries are the libraries shared with this Nyakuro.
 func (s *Service) Libraries() []SharedLibrary {
 	now := time.Now()
 	using := s.AccountHost()
@@ -2180,7 +2180,7 @@ func (s *Service) Libraries() []SharedLibrary {
 	return out
 }
 
-// RemoteFiles are all the files shared with this Aniko.
+// RemoteFiles are all the files shared with this Nyakuro.
 func (s *Service) RemoteFiles() []*library.LocalFile {
 	s.mu.Lock()
 	defer s.mu.Unlock()

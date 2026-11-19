@@ -7,9 +7,9 @@ var (
 	toolsDir string
 )
 
-// SetToolsDir sets the folder where Aniko puts programs itself (the macOS
+// SetToolsDir sets the folder where Nyakuro puts programs itself (the macOS
 // and Windows programs setups: ffmpeg, yt-dlp, ani-cli...). On macOS and
-// Windows it goes first on the PATH, for Aniko's lookups and the programs
+// Windows it goes first on the PATH, for Nyakuro's lookups and the programs
 // it starts; it needn't exist yet.
 func SetToolsDir(dir string) {
 	toolsMu.Lock()

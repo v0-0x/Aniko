@@ -13,10 +13,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/extensions"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/extensions"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 type Service struct {

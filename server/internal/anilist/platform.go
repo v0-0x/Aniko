@@ -13,8 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
 )
 
 // Platform is the list/metadata service the rest of the app talks to. When

@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
 )
 
-// Home asks about an Aniko new on the network (one sharing with this one
+// Home asks about a Nyakuro new on the network (one sharing with this one
 // isn't new) until it's shared with or the answer is "not now" (kept), and
 // about a paired one on another version.
 func TestPrompts(t *testing.T) {
@@ -84,7 +84,7 @@ func TestPrompts(t *testing.T) {
 	}
 	s.mu.Unlock()
 	if got := s.Prompts(); len(got) != 0 {
-		t.Errorf("prompts about Anikos not around: %+v", got)
+		t.Errorf("prompts about Nyakuros not around: %+v", got)
 	}
 
 	// Sharing off: nothing.

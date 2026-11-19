@@ -146,7 +146,7 @@ function EntryHero({ entry, onTab }: { entry: EntryView; onTab: (t: Tab) => void
         if (!next) return
         if (next.file) playLocal(next.file.path, media.id, next.number)
         else if (status?.settings.onlineStream.enabled !== false) {
-            const provider = readLocal(`aniko-provider-${media.id}`) || status?.settings.onlineStream.defaultProvider || "ani-cli"
+            const provider = readLocal(`nyakuro-provider-${media.id}`) || status?.settings.onlineStream.defaultProvider || "ani-cli"
             const dub = await fetchLanguageMode(media.id, status?.settings.aniCli.defaultMode === "dub")
             playStream(provider, media.id, next.number, dub)
         } else onTab("torrents")
@@ -311,7 +311,7 @@ function EpisodesTab({ entry, onStream, onTorrents }: { entry: EntryView; onStre
             .map(playlistItem)
             .filter((x): x is PlaylistItem => !!x)
 
-    // Files on this computer, or shared with it by another Aniko.
+    // Files on this computer, or shared with it by another Nyakuro.
     if (entry.localCount + (entry.sharedCount ?? 0) === 0) {
         return (
             <div className="flex flex-col gap-10">

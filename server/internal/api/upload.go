@@ -14,18 +14,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	fileup "github.com/v0-0x/Aniko/server/internal/upload"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	fileup "github.com/v0-0x/Nyakuro/server/internal/upload"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // Uploads (package upload): files and folders sent from a computer into a
 // library. The app (web/src/components/UploadDialog) sends them a piece at
-// a time to its own Aniko, which keeps them (mediaserver's anime side, for
-// the browser signed in to its dashboard) or passes them on to the Aniko they go to
+// a time to its own Nyakuro, which keeps them (mediaserver's anime side, for
+// the browser signed in to its dashboard) or passes them on to the Nyakuro they go to
 // (one that takes this one's downloads), whose /api/peer/upload takes them.
 
-// uploadTarget is where files can go: a Aniko this one may upload to, or
+// uploadTarget is where files can go: a Nyakuro this one may upload to, or
 // (ID "") this one.
 type uploadTarget struct {
 	ID     string `json:"id"`
@@ -35,7 +35,7 @@ type uploadTarget struct {
 	Here bool `json:"here,omitempty"`
 }
 
-// uploadFolders is a Aniko's library folders files can go to (their index
+// uploadFolders is a Nyakuro's library folders files can go to (their index
 // is ?folder=), and the most a piece may hold.
 type uploadFolders struct {
 	Folders []string `json:"folders"`
@@ -65,26 +65,26 @@ func (s *Server) uploadRoutes() {
 	m.HandleFunc("GET /api/upload", s.uploadAsk)
 	// ?target=&folder=&path=&offset=&total=, a piece in the body.
 	m.HandleFunc("POST /api/upload", s.uploadAsk)
-	// From another Aniko, the same (it may download onto this one).
+	// From another Nyakuro, the same (it may download onto this one).
 	m.HandleFunc("GET /api/peer/upload", shared(func(w http.ResponseWriter, r *http.Request) {
 		if !peerOf(r).Downloads {
-			writeJSON(w, http.StatusForbidden, map[string]any{"error": "this Aniko doesn't take files from yours"})
+			writeJSON(w, http.StatusForbidden, map[string]any{"error": "this Nyakuro doesn't take files from yours"})
 			return
 		}
 		s.uploadHere(w, r, peerOf(r).Name)
 	}))
 	m.HandleFunc("POST /api/peer/upload", shared(func(w http.ResponseWriter, r *http.Request) {
 		if !peerOf(r).Downloads {
-			writeJSON(w, http.StatusForbidden, map[string]any{"error": "this Aniko doesn't take files from yours"})
+			writeJSON(w, http.StatusForbidden, map[string]any{"error": "this Nyakuro doesn't take files from yours"})
 			return
 		}
 		s.uploadHere(w, r, peerOf(r).Name)
 	}))
 }
 
-// uploadsHere: this Aniko takes files from the browser itself (it's
+// uploadsHere: this Nyakuro takes files from the browser itself (it's
 // mediaserver's anime side: its dashboard); others take them from other
-// Aniko apps only.
+// Nyakuro apps only.
 func (s *Server) uploadsHere() bool { return s.app.HubStore != nil }
 
 // machineHost is this computer's name, for the list of targets.
@@ -137,8 +137,8 @@ func (s *Server) uploadAsk(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(raw)
 }
 
-// uploadHere takes a request about an upload into this Aniko's library:
-// its folders, where a file stands, or a piece. from is the Aniko it comes
+// uploadHere takes a request about an upload into this Nyakuro's library:
+// its folders, where a file stands, or a piece. from is the Nyakuro it comes
 // from ("": the browser).
 func (s *Server) uploadHere(w http.ResponseWriter, r *http.Request, from string) {
 	q := r.URL.Query()
@@ -147,7 +147,7 @@ func (s *Server) uploadHere(w http.ResponseWriter, r *http.Request, from string)
 		writeJSON(w, http.StatusOK, uploadFolders{Folders: append([]string{}, dirs...), Chunk: fileup.Chunk, Manga: true})
 		return
 	}
-	// Downloaded manga, from an Aniko: into the manga folder.
+	// Downloaded manga, from a Nyakuro: into the manga folder.
 	if q.Get("folder") == "manga" {
 		dir := s.app.MangaDir()
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -164,7 +164,7 @@ func (s *Server) uploadHere(w http.ResponseWriter, r *http.Request, from string)
 	if err != nil || i < 0 || i >= len(dirs) {
 		msg := "no such library folder"
 		if len(dirs) == 0 {
-			msg = "this Aniko has no library folder to put files in (Settings › Local library)"
+			msg = "this Nyakuro has no library folder to put files in (Settings › Local library)"
 		}
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": msg})
 		return
@@ -196,8 +196,8 @@ func (s *Server) uploadHere(w http.ResponseWriter, r *http.Request, from string)
 			log.Printf("upload: %s from %s", full, who)
 			// The hub's audit log: who sent what.
 			if s.app.HubStore != nil {
-				ev := anikohub.Event{Kind: "upload", Device: from, Text: "uploaded " + st.Path, Size: st.Have,
-					Files: []anikohub.AuditFile{{Name: filepath.Base(full), Path: full, Size: st.Have}}}
+				ev := nyakurohub.Event{Kind: "upload", Device: from, Text: "uploaded " + st.Path, Size: st.Have,
+					Files: []nyakurohub.AuditFile{{Name: filepath.Base(full), Path: full, Size: st.Have}}}
 				if from == "" {
 					ev.By, ev.IP = auditBy(r)
 				}

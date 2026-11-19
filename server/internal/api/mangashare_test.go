@@ -39,9 +39,9 @@ func writeSampleManga(t *testing.T, dir string) string {
 	return "Test Manga [anilist-42]/Test Manga - Ch. 001.cbz"
 }
 
-// The manga downloaded onto a host (a server) are read on the Aniko it
+// The manga downloaded onto a host (a server) are read on the Nyakuro it
 // shares with: in its Downloaded tab, on the manga's page, and in the
-// reader (chapters and pages through the guest); an Aniko it doesn't share
+// reader (chapters and pages through the guest); a Nyakuro it doesn't share
 // with can't read them.
 func TestMangaFromTheHost(t *testing.T) {
 	const local = "127.0.0.1:5000"
@@ -112,12 +112,12 @@ func TestMangaFromTheHost(t *testing.T) {
 	if w := do(guest, "GET", pages[1].URL, local, "", nil); w.Code != http.StatusOK || w.Body.String() != "\xff\xd8page two" {
 		t.Fatalf("page 2: %d %q", w.Code, w.Body)
 	}
-	// Not for an Aniko the host doesn't share with.
+	// Not for a Nyakuro the host doesn't share with.
 	req, _ := http.NewRequest("GET", hostSrv.URL+"/api/peer/manga-library", nil)
 	if err := other.app.Share.Sign(req, hid, host.app.Share.Whoami().Key); err != nil {
 		t.Fatal(err)
 	}
 	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("an Aniko it doesn't share with: %v %v", resp, err)
+		t.Fatalf("a Nyakuro it doesn't share with: %v %v", resp, err)
 	}
 }

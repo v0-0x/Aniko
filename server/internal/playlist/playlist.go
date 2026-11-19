@@ -1,8 +1,8 @@
 // Package playlist keeps your playlists: a name and episodes in the order
 // you put them, each with how the in-app player plays it (the web UI's
-// PlayerRequest, without where it starts). They're kept on this Aniko (the
+// PlayerRequest, without where it starts). They're kept on this Nyakuro (the
 // kv table, one key each) and kept in step with your other devices
-// through a hub as a blob (anikohub.Blob, kind "playlists"): a playlist is
+// through a hub as a blob (nyakurohub.Blob, kind "playlists"): a playlist is
 // an item, the newer wins, a removal is remembered for a while.
 package playlist
 
@@ -17,7 +17,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
 )
 
 // Kind is the blob kind playlists are kept in step as.
@@ -362,10 +362,10 @@ type item struct {
 }
 
 // Blob is the playlists as a blob: each with its time, and the removals.
-func (s *Store) Blob() anikohub.Blob {
+func (s *Store) Blob() nyakurohub.Blob {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	b := anikohub.Blob{Items: map[string]json.RawMessage{}}
+	b := nyakurohub.Blob{Items: map[string]json.RawMessage{}}
 	m, err := s.all()
 	if err != nil {
 		return b
@@ -378,13 +378,13 @@ func (s *Store) Blob() anikohub.Blob {
 			b.Items[id], _ = json.Marshal(item{At: at, Deleted: true})
 		}
 	}
-	b.Merge(anikohub.Blob{}) // sets UpdatedAt, drops old removals
+	b.Merge(nyakurohub.Blob{}) // sets UpdatedAt, drops old removals
 	return b
 }
 
 // Apply takes a hub's blob: the playlists newer than here (a removal at
 // the same time wins, as on the hub). It reports whether anything changed.
-func (s *Store) Apply(b anikohub.Blob) bool {
+func (s *Store) Apply(b nyakurohub.Blob) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	m, err := s.all()

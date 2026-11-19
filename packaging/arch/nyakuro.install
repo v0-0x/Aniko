@@ -1,0 +1,11 @@
+post_install() {
+    echo ">> Nyakuro installed. Start it from your app menu or run: nyakuro"
+    echo ">> For sub/dub streaming install ani-cli:   yay -S ani-cli"
+    echo ">> Optional:                                sudo pacman -S yt-dlp qbittorrent"
+    echo ">> Headless/LAN server (no window):         systemctl --user enable --now nyakuro-server"
+}
+
+post_upgrade() {
+    echo ">> Nyakuro updated. If it's open, open it again from the app menu: it restarts as the new version."
+    echo ">> Using the headless server?            systemctl --user restart nyakuro-server"
+}

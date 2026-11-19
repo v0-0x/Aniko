@@ -60,9 +60,9 @@ export const COLOR_THEMES: ColorTheme[] = [
 
 // The Classic look's (before 3.0.37), as they were.
 export const CLASSIC_THEMES: ColorTheme[] = [
-    // Aniko's own (3.0.32): plum, with the logo's pink, mint and butter.
-    { id: "aniko", name: "Aniko", accent: "#ff7eb6", glow: ["#7ce0d6", "#ffd86b"], palette: { frame: "#100b1a", bg: "#171024", s1: "#1e162e", s2: "#261c39", s3: "#2f2445", s4: "#392c52", muted: "#b5a8c6", subtle: "#80738f" } },
-    // Aniko's colors before that.
+    // Nyakuro's own (3.0.32): plum, with the logo's pink, mint and butter.
+    { id: "nyakuro", name: "Nyakuro", accent: "#ff7eb6", glow: ["#7ce0d6", "#ffd86b"], palette: { frame: "#100b1a", bg: "#171024", s1: "#1e162e", s2: "#261c39", s3: "#2f2445", s4: "#392c52", muted: "#b5a8c6", subtle: "#80738f" } },
+    // Nyakuro's colors before that.
     { id: "graphite", name: "Graphite", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#111113", s1: "#161618", s2: "#1c1c1f", s3: "#232326", s4: "#2b2b2f", muted: "#a1a1a8", subtle: "#707077" } },
     { id: "midnight", name: "Midnight", accent: "#5b8cff", palette: { frame: "#070a12", bg: "#0c111c", s1: "#111827", s2: "#172033", s3: "#1e2940", s4: "#26334d", muted: "#9aa4b8", subtle: "#6b7488" } },
     { id: "forest", name: "Forest", accent: "#34d399", palette: { frame: "#070b09", bg: "#0c120f", s1: "#111a15", s2: "#16211b", s3: "#1c2a22", s4: "#23342a", muted: "#9fb0a6", subtle: "#6d7f74" } },
@@ -74,10 +74,10 @@ export const CLASSIC_THEMES: ColorTheme[] = [
     { id: "black", name: "Black", accent: "#7c6cf2", palette: { frame: "#000000", bg: "#000000", s1: "#0b0b0c", s2: "#121214", s3: "#19191c", s4: "#212124", muted: "#a1a1a8", subtle: "#6e6e75" } },
 ]
 
-// The Cinema look's (experimental): near black with Aniko's violet, then
+// The Cinema look's (experimental): near black with Nyakuro's violet, then
 // the Classic look's others.
 export const CINEMA_THEMES: ColorTheme[] = [
-    { id: "aniko", name: "Aniko", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#0a0a0b", s1: "#131316", s2: "#19191d", s3: "#212126", s4: "#2a2a30", muted: "#a3a3ad", subtle: "#74747e" } },
+    { id: "nyakuro", name: "Nyakuro", accent: "#7c6cf2", palette: { frame: "#0a0a0b", bg: "#0a0a0b", s1: "#131316", s2: "#19191d", s3: "#212126", s4: "#2a2a30", muted: "#a3a3ad", subtle: "#74747e" } },
     ...CLASSIC_THEMES.slice(1),
     // Two light ones: this look's White and Paper, with a violet that reads on them.
     ...COLOR_THEMES.filter(t => t.light).map(t => ({ ...t, accent: "#5b4bd6" })),
@@ -85,8 +85,8 @@ export const CINEMA_THEMES: ColorTheme[] = [
 
 // A theme saved in one look, drawn in the other: its nearest there (the
 // saved name stays, so going back brings the same one).
-const IN_FRAME: Record<string, string> = { aniko: "black", midnight: "ice", ocean: "ice", forest: "phosphor", sakura: "rose", ember: "amber", dusk: "graphite" }
-const IN_CLASSIC: Record<string, string> = { white: "aniko", paper: "aniko", phosphor: "forest", amber: "ember", ice: "midnight", rose: "sakura" }
+const IN_FRAME: Record<string, string> = { nyakuro: "black", midnight: "ice", ocean: "ice", forest: "phosphor", sakura: "rose", ember: "amber", dusk: "graphite" }
+const IN_CLASSIC: Record<string, string> = { white: "nyakuro", paper: "nyakuro", phosphor: "forest", amber: "ember", ice: "midnight", rose: "sakura" }
 
 // The looks: this one (Frame), the Classic one (before 3.0.37), and Cinema
 // (experimental: a rail of icons, banners to the window's edge). The server
@@ -104,7 +104,7 @@ export const themesOf = (look: Look) => (look === "classic" ? CLASSIC_THEMES : l
 export function colorTheme(id: string | undefined, look: Look = "frame") {
     const list = themesOf(look)
     const alias = look === "frame" ? IN_FRAME : IN_CLASSIC
-    // Nothing saved: this look's Black; the other two's Aniko.
+    // Nothing saved: this look's Black; the other two's Nyakuro.
     return list.find(t => t.id === id) ?? list.find(t => t.id === alias[id ?? ""]) ?? list[0]
 }
 
@@ -194,13 +194,13 @@ export function resolveTheme(ui: ThemeChoice | undefined, now = new Date()) {
 // The accent as a choice of the user's ("" when it isn't one): not what
 // every install had saved as its default (before 3.0.32, and since). In the
 // Classic look, as it was there: the default before 3.0.32 isn't one on the
-// Aniko theme (theme: the id of the one drawn); nor is an ink of this look's
+// Nyakuro theme (theme: the id of the one drawn); nor is an ink of this look's
 // themes, which was never a choice there.
 const OLD_ACCENTS = ["#7c6cf2", "#ff7eb6"]
 export function ownAccent(accent: string | undefined, look: Look, theme?: string) {
     const a = (accent ?? "").toLowerCase()
     if (!a) return ""
-    if (look === "classic") return COLOR_THEMES.some(t => t.accent === a) || (theme === "aniko" && a === OLD_ACCENTS[0]) ? "" : a
+    if (look === "classic") return COLOR_THEMES.some(t => t.accent === a) || (theme === "nyakuro" && a === OLD_ACCENTS[0]) ? "" : a
     // Cinema: neither the old defaults nor this look's inks.
     if (look === "cinema") return COLOR_THEMES.some(t => t.accent === a) || OLD_ACCENTS.includes(a) ? "" : a
     return OLD_ACCENTS.includes(a) ? "" : a
@@ -217,7 +217,7 @@ function luminance(hex: string) {
 // pink, amber, cyan), white on the rest.
 const onAccent = (hex: string, classic: boolean) => (luminance(hex) > 0.36 ? (classic ? "#1b1426" : "#0a0a0a") : "#ffffff")
 
-const CACHE_KEY = "aniko-theme"
+const CACHE_KEY = "nyakuro-theme"
 
 // Sets the colors on the page, and remembers them for the next start (drawn
 // before the settings come from the server: no flash of the default ones).

@@ -11,7 +11,7 @@ import { cn, compareVersions, img } from "@/lib/utils"
 import { DeviceIcon } from "./Overview"
 import { ago, OnlineDot } from "./parts"
 
-// The Aniko apps around the server: which get its library, which AniList login
+// The Nyakuro apps around the server: which get its library, which AniList login
 // each is given, which may download onto it.
 
 type Change = { allowed?: boolean; account?: boolean; downloads?: boolean; accountUser?: number }
@@ -32,11 +32,11 @@ export default function Devices({ o }: { o: HubOverview }) {
     return (
         <div className="flex flex-col gap-6">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-                A device shows up here when Aniko is open on it with <span className="text-fg">Settings › Other devices</span> on.
+                A device shows up here when Nyakuro is open on it with <span className="text-fg">Settings › Other devices</span> on.
             </p>
             {o.devices.length === 0 && (
                 <EmptyState icon={<Wifi />} title="No devices yet">
-                    Open Aniko on a device on this network and turn on Settings › Other devices.
+                    Open Nyakuro on a device on this network and turn on Settings › Other devices.
                 </EmptyState>
             )}
             {waiting.length > 0 && (
@@ -78,10 +78,10 @@ function DeviceCard({ d, o, change }: { d: HubDevice; o: HubOverview; change: (d
                     <p className="truncate text-[12.5px] text-muted">
                         {d.online ? "Online" : `Last seen ${ago(d.lastSeen * 1000)}`}
                         {d.address && ` · ${d.address}`}
-                        {d.version && ` · Aniko ${d.version}`}
+                        {d.version && ` · Nyakuro ${d.version}`}
                     </p>
                 </div>
-                {older && <Badge tone="amber">Older Aniko</Badge>}
+                {older && <Badge tone="amber">Older Nyakuro</Badge>}
                 {d.error && d.allowed && (
                     <Badge tone="red" className="max-sm:hidden">
                         Not answering

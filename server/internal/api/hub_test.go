@@ -8,10 +8,10 @@ import (
 	"testing/fstest"
 
 	"fmt"
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/app"
-	"github.com/v0-0x/Aniko/server/internal/watchorder"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/app"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Nyakuro/server/internal/watchorder"
 	"net"
 	"net/http/httptest"
 	"time"
@@ -26,7 +26,7 @@ func newHubServer(t *testing.T) *Server {
 		t.Fatal(err)
 	}
 	t.Cleanup(a.Shutdown)
-	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>aniko</html>")}})
+	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>nyakuro</html>")}})
 }
 
 // A hub's dashboard is its owner's: before the password is set (with the
@@ -199,7 +199,7 @@ func TestListsFollowTheHub(t *testing.T) {
 func TestServerPage(t *testing.T) {
 	const local = "127.0.0.1:5000"
 	hub, hubSrv := hubSharingServer(t)
-	hub.app.Sampler = anikohub.NewSampler()
+	hub.app.Sampler = nyakurohub.NewSampler()
 	d, _ := sharingServer(t)
 	addr := strings.TrimPrefix(hubSrv.URL, "http://")
 	if w := do(d, "POST", "/api/sharing/connect", local, `{"address":"`+addr+`"}`, nil); w.Code != http.StatusOK {

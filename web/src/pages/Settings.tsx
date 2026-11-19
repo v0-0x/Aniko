@@ -130,7 +130,7 @@ const NAV: { title: string; items: NavItem[] }[] = [
         title: "Devices & network",
         items: [
             { id: "devices", label: "Other devices", icon: <MonitorSmartphone />, description: "Share, wake and sync with your other computers and TVs", keywords: "share sharing tv fire library wake sync" },
-            { id: "network", label: "Network & web UI", icon: <Wifi />, description: "Use Aniko from a browser or other devices at home", keywords: "lan port password browser web" },
+            { id: "network", label: "Network & web UI", icon: <Wifi />, description: "Use Nyakuro from a browser or other devices at home", keywords: "lan port password browser web" },
         ],
     },
     {
@@ -143,7 +143,7 @@ const NAV: { title: string; items: NavItem[] }[] = [
     },
 ]
 
-// Not in Aniko's Android app (a TV's): it has no mpv, Discord, ffmpeg or
+// Not in Nyakuro's Android app (a TV's): it has no mpv, Discord, ffmpeg or
 // desktop window.
 const NOT_ON_ANDROID: SectionId[] = ["mpv", "transcode", "discord", "desktop"]
 const SHOWN_NAV = androidApp ? NAV.map(g => ({ ...g, items: g.items.filter(i => !NOT_ON_ANDROID.includes(i.id)) })) : NAV
@@ -335,7 +335,7 @@ export default function SettingsPage() {
                     {PAGES.map(navButton)}
                 </nav>
                 <p className="mt-6 hidden px-2.5 text-xs text-subtle md:block">
-                    Aniko {status.version} · {platformName(status.platform)} · {status.client === "desktop" ? "Desktop" : status.client === "lan" ? "LAN" : "Web UI"}
+                    Nyakuro {status.version} · {platformName(status.platform)} · {status.client === "desktop" ? "Desktop" : status.client === "lan" ? "LAN" : "Web UI"}
                 </p>
                 <p className="mt-1 hidden px-2.5 text-xs text-subtle md:block">Made by simo :)</p>
             </aside>
@@ -343,7 +343,7 @@ export default function SettingsPage() {
             <section className="min-w-0 flex-1 lg:max-w-4xl">
                 {status.client === "lan" && (
                     <p className="mb-6 rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-muted lg:mt-[3.75rem]">
-                        Dimmed settings can only be changed on the computer Aniko runs on.
+                        Dimmed settings can only be changed on the computer Nyakuro runs on.
                     </p>
                 )}
                 {searching ? (
@@ -608,13 +608,13 @@ function Collapsible({ title, children }: { title: string; children: React.React
     return search ? <SearchContext.Provider value={{ ...search, all }}>{body}</SearchContext.Provider> : body
 }
 
-// Settings only the computer Aniko runs on may change (from a device on the
+// Settings only the computer Nyakuro runs on may change (from a device on the
 // network the server keeps them as they are): shown, not editable there.
 function Locked({ children }: { children: React.ReactNode }) {
     const { data: status } = useStatus()
     if (status?.client !== "lan") return <>{children}</>
     return (
-        <fieldset disabled title="Only the computer Aniko runs on can change this" className="m-0 min-w-0 border-0 p-0 opacity-55">
+        <fieldset disabled title="Only the computer Nyakuro runs on can change this" className="m-0 min-w-0 border-0 p-0 opacity-55">
             {children}
         </fieldset>
     )
@@ -665,7 +665,7 @@ function Detect({ ok, label }: { ok?: boolean; label: string }) {
     return ok ? <Badge tone="green">{label} found</Badge> : <Badge tone="red">{label} not found</Badge>
 }
 
-// Where other devices open Aniko, once LAN access is saved.
+// Where other devices open Nyakuro, once LAN access is saved.
 function LanAddresses({ status }: { status?: Status }) {
     const urls = status?.lanUrls ?? []
     if (!status?.settings.server.allowLan) return <p className="px-4 py-3.5 text-sm text-muted">Save to see the address for your other devices.</p>
@@ -727,7 +727,7 @@ function AccountSection({ draft, set }: SectionProps) {
                         </div>
                     )}
                     {status?.user && lan ? (
-                        <p className="max-w-56 text-right text-xs text-subtle">Log out on the computer Aniko runs on.</p>
+                        <p className="max-w-56 text-right text-xs text-subtle">Log out on the computer Nyakuro runs on.</p>
                     ) : status?.user ? (
                         <Button
                             variant="danger"
@@ -775,13 +775,13 @@ function NetworkSection({ draft, set }: SectionProps) {
                         help={
                             status?.webUiForced
                                 ? "Always on without the desktop app."
-                                : `Open Aniko in a browser at http://127.0.0.1:${draft.server.port}`
+                                : `Open Nyakuro in a browser at http://127.0.0.1:${draft.server.port}`
                         }
                     >
                         <Switch checked={draft.server.webUi || !!status?.webUiForced} disabled={!isDesktop || status?.webUiForced} onChange={v => set("server", { webUi: v })} />
                     </Row>
                 )}
-                <Row label="Allow devices on my network" help="Open Aniko in a browser on phones, TVs and other computers at home.">
+                <Row label="Allow devices on my network" help="Open Nyakuro in a browser on phones, TVs and other computers at home.">
                     <Switch checked={draft.server.allowLan} disabled={lan} onChange={v => set("server", { allowLan: v, webUi: v ? true : draft.server.webUi })} />
                 </Row>
                 {draft.server.allowLan && <LanAddresses status={status} />}
@@ -792,7 +792,7 @@ function NetworkSection({ draft, set }: SectionProps) {
                 )}
                 <Row
                     label="Offline mode"
-                    help="Nothing goes to the internet: Aniko uses what it has here (your list, downloads, covers seen) and list changes wait. Other devices at home still work."
+                    help="Nothing goes to the internet: Nyakuro uses what it has here (your list, downloads, covers seen) and list changes wait. Other devices at home still work."
                     keywords="internet no connection plane"
                 >
                     <Switch checked={!!draft.server.offline} disabled={lan} onChange={v => set("server", { offline: v })} />
@@ -889,7 +889,7 @@ function DesktopGroup() {
             </Row>
             {prefs.startAtLogin !== undefined && (
                 <Row
-                    label="Start Aniko when you log in"
+                    label="Start Nyakuro when you log in"
                     help={
                         prefs.keepRunning
                             ? "Starts in the background, without its window."
@@ -909,7 +909,7 @@ function DesktopGroup() {
                 </Row>
             )}
             {bridge.quit && (
-                <Row label="Quit Aniko" help="Also stops streaming to other devices, downloads and sharing.">
+                <Row label="Quit Nyakuro" help="Also stops streaming to other devices, downloads and sharing.">
                     <Button size="sm" variant="ghost" onClick={() => bridge.quit!()}>
                         Quit
                     </Button>
@@ -929,12 +929,12 @@ function InstallProgramsButton() {
     )
 }
 
-// What Aniko found of the programs it uses and, on Windows and macOS, the
+// What Nyakuro found of the programs it uses and, on Windows and macOS, the
 // setup that installs them.
 function ProgramsGroup() {
     const { data: status } = useStatus()
     useWatchSetup(status)
-    // Windows: Aniko downloads them itself, and says here how far it is.
+    // Windows: Nyakuro downloads them itself, and says here how far it is.
     const progress = useSetupProgress(status)
     const running = !!status?.setupRunning || !!progress?.running
     const f = status?.features
@@ -972,7 +972,7 @@ function ProgramsGroup() {
                             ? "Opens a Terminal window. No Homebrew or password needed. mpv needs Homebrew."
                             : running
                               ? setupStep(progress)
-                              : setupFailures(progress) || "Downloads them into Aniko's folder. No administrator rights needed."
+                              : setupFailures(progress) || "Downloads them into Nyakuro's folder. No administrator rights needed."
                     }
                 >
                     <InstallProgramsButton />
@@ -982,25 +982,25 @@ function ProgramsGroup() {
     )
 }
 
-// Backup: the data of this Aniko as one file (settings, watch history, list,
+// Backup: the data of this Nyakuro as one file (settings, watch history, list,
 // choices, matches made by hand, auto downloader rules, extensions), and
-// back. A restore merges, then Aniko starts again.
+// back. A restore merges, then Nyakuro starts again.
 function BackupGroup() {
     const classic = useClassic()
     const [logins, setLogins] = useState(false)
     const [restoring, setRestoring] = useState(false)
     const restore = async (file: File) => {
         let text: string
-        let info: { aniko?: number; version?: string; createdAt?: number; computer?: string; logins?: boolean; history?: unknown[] }
+        let info: { nyakuro?: number; version?: string; createdAt?: number; computer?: string; logins?: boolean; history?: unknown[] }
         try {
             text = await file.text()
             info = JSON.parse(text)
         } catch {
-            toast.error("That isn't an Aniko backup")
+            toast.error("That isn't a Nyakuro backup")
             return
         }
-        if (!info?.aniko) {
-            toast.error("That isn't an Aniko backup")
+        if (!info?.nyakuro) {
+            toast.error("That isn't a Nyakuro backup")
             return
         }
         const when = info.createdAt ? new Date(info.createdAt * 1000).toLocaleString() : "an unknown date"
@@ -1008,7 +1008,7 @@ function BackupGroup() {
             !confirm(
                 `Restore the backup of ${info.computer || "a computer"} from ${when}?\n\n` +
                     "It's merged with what's here. Newer positions and list entries stay, and so do this computer's network and sharing settings. " +
-                    "The current data is saved first in Aniko's data folder. Aniko restarts after.",
+                    "The current data is saved first in Nyakuro's data folder. Nyakuro restarts after.",
             )
         )
             return
@@ -1018,7 +1018,7 @@ function BackupGroup() {
             const sum = await res.json().catch(() => null)
             if (!res.ok) throw new Error(sum?.error || res.statusText)
             const parts = [sum.history && `${sum.history} positions`, sum.list && `${sum.list} list entries`, sum.extensions && `${sum.extensions} extensions`, sum.rules && `${sum.rules} auto downloader rules`].filter(Boolean)
-            toast.success(`Restored${parts.length ? `: ${parts.join(", ")}` : ""}. Aniko is restarting…`, { duration: 15_000 })
+            toast.success(`Restored${parts.length ? `: ${parts.join(", ")}` : ""}. Nyakuro is restarting…`, { duration: 15_000 })
             // Back once it answers again, with everything read afresh.
             await waitForRestart()
             location.reload()
@@ -1037,7 +1037,7 @@ function BackupGroup() {
                     <Button size="sm">Download backup</Button>
                 </a>
             </Row>
-            <Row label="Restore a backup" help="Merged with what's here. Aniko restarts after.">
+            <Row label="Restore a backup" help="Merged with what's here. Nyakuro restarts after.">
                 <label>
                     <input type="file" accept=".json,application/json" className="sr-only" disabled={restoring} onChange={e => e.target.files?.[0] && restore(e.target.files[0])} />
                     <span className={cn("inline-flex h-8 cursor-pointer items-center px-3", classic ? "rounded-lg bg-white/[0.07] text-[13px] font-medium hover:bg-white/[0.12]" : "word label text-[10.5px] text-fg/85 transition-colors hover:text-fg", restoring && "pointer-events-none opacity-60")}>
@@ -1049,7 +1049,7 @@ function BackupGroup() {
     )
 }
 
-// waitForRestart waits for Aniko to go and answer again (a minute at most).
+// waitForRestart waits for Nyakuro to go and answer again (a minute at most).
 async function waitForRestart() {
     const answers = () =>
         fetch("/api/status", { cache: "no-store", credentials: "same-origin" })
@@ -1066,7 +1066,7 @@ async function waitForRestart() {
 }
 
 // Alerts: an episode of what's being watched aired, one is ready in the
-// library. A toast, or a notification of the system when Aniko isn't in front
+// library. A toast, or a notification of the system when Nyakuro isn't in front
 // (the desktop app's, also with its window closed; a browser's once allowed).
 function AlertsGroup({ draft, set }: SectionProps) {
     const notify = draft.notify ?? { newEpisodes: true, downloads: true }
@@ -1081,7 +1081,7 @@ function AlertsGroup({ draft, set }: SectionProps) {
                 <Switch checked={notify.downloads} onChange={v => set("notify", { ...notify, downloads: v })} />
             </Row>
             {!desktopApp && !androidApp && permission === "default" && (
-                <Row label="Notifications of this browser" help="Show alerts when Aniko's tab is in the background.">
+                <Row label="Notifications of this browser" help="Show alerts when Nyakuro's tab is in the background.">
                     <Button size="sm" onClick={() => Notification.requestPermission().then(() => setPermission(systemNotifications()))}>
                         Allow
                     </Button>
@@ -1147,7 +1147,7 @@ function TvSizeRow() {
 // Not #7c6cf2 or #ff7eb6: saved by every install as its default (before
 // 3.0.32, and since), they stand for "the theme's own" (lib/themes.ts).
 const ACCENTS = ["#ff6fae", "#8b7cf6", "#5b8cff", "#22c3a6", "#f2557a", "#f59e0b", "#38bdf8", "#a3e635"]
-// The Classic look's, as they were: its pink is the Aniko theme's own.
+// The Classic look's, as they were: its pink is the Nyakuro theme's own.
 const CLASSIC_ACCENTS = ["#ff7eb6", ...ACCENTS.slice(1)]
 const ACCENT_NAMES: Record<string, string> = {
     "#ff6fae": "pink",
@@ -1338,7 +1338,7 @@ function HomeRowsGroup({ draft, set }: Pick<SectionProps, "draft" | "set">) {
     )
 }
 
-// Library sharing with the Aniko apps on the other computers at home. Turning
+// Library sharing with the Nyakuro apps on the other computers at home. Turning
 // it on or off and the name are saved with the rest; who gets this
 // computer's library changes at once.
 function SharingGroup({ draft, set }: SectionProps) {
@@ -1373,14 +1373,14 @@ function SharingGroup({ draft, set }: SectionProps) {
     return (
         <Group
             title="Library sharing"
-            description="Watch the libraries of Aniko on your other computers at home, and share yours. Watching updates the list of the computer you watch on."
+            description="Watch the libraries of Nyakuro on your other computers at home, and share yours. Watching updates the list of the computer you watch on."
         >
             <ParentalHere />
             <Row label="Library sharing" help="Turn it on on both computers.">
                 <Switch checked={draft.sharing.enabled} disabled={!trusted} onChange={v => set("sharing", { enabled: v })} />
             </Row>
             {draft.sharing.enabled && (
-                <Stack label="Name on the network" help="Shown to the other Aniko apps.">
+                <Stack label="Name on the network" help="Shown to the other Nyakuro apps.">
                     <Input value={draft.sharing.name} disabled={!trusted} placeholder={sharing?.name || "This computer's name"} onChange={e => set("sharing", { name: e.target.value })} />
                 </Stack>
             )}
@@ -1418,7 +1418,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                 <>
                     <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-1">
                         <div>
-                        <p className="text-sm font-medium">Aniko apps on this network</p>
+                        <p className="text-sm font-medium">Nyakuro apps on this network</p>
                         <p className="mt-0.5 text-xs text-subtle">
                             Turn on <b>Share my library</b> for those that may watch this computer's anime.
                             {sharing.addresses.length > 0 && <> This computer is at {sharing.addresses.join(", ")}.</>}
@@ -1430,7 +1430,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                     </div>
                     {peers.length === 0 && (
                         <p className="px-4 py-3 text-sm text-muted">
-                            {sharing.listening ? "Looking for Aniko apps… Turn on library sharing on the other computer too." : "Another program uses the network port. Add the others by address below."}
+                            {sharing.listening ? "Looking for Nyakuro apps… Turn on library sharing on the other computer too." : "Another program uses the network port. Add the others by address below."}
                         </p>
                     )}
                     {peers.map(p => (
@@ -1445,7 +1445,7 @@ function SharingGroup({ draft, set }: SectionProps) {
                                 <p className="mt-0.5 text-xs text-subtle">
                                     {[
                                         p.address,
-                                        p.version && p.role !== "hub" && `Aniko ${p.version}${p.platform === "android" ? " for Android" : ""}`,
+                                        p.version && p.role !== "hub" && `Nyakuro ${p.version}${p.platform === "android" ? " for Android" : ""}`,
                                         !p.online && p.lastSeen > 0 && `seen ${relativeTime(p.lastSeen)}`,
                                         p.shares && `shares its library with you${p.files ? ` (${p.files} ${p.files === 1 ? "file" : "files"})` : ""}`,
                                         p.offers && "offers its library",
@@ -1631,7 +1631,7 @@ function ParentalHere() {
     )
 }
 
-// An Aniko Hub around: its owner shares its library with this device (on its
+// An Nyakuro Hub around: its owner shares its library with this device (on its
 // dashboard), and this device can give it its AniList login, settings and
 // watch history, for the account's other devices.
 function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolean; loggedIn: boolean }) {
@@ -1696,7 +1696,7 @@ function HubPeer({ hub, trusted, loggedIn }: { hub: SharingPeer; trusted: boolea
     )
 }
 
-// The other Aniko runs another version than this one: some things (Sync,
+// The other Nyakuro runs another version than this one: some things (Sync,
 // waking it up) need both up to date.
 function VersionNote({ peer, mine }: { peer: SharingPeer; mine?: string }) {
     // A server (mediaserver) is updated from its dashboard, on its own.
@@ -1705,8 +1705,8 @@ function VersionNote({ peer, mine }: { peer: SharingPeer; mine?: string }) {
     return (
         <p className="mt-1 text-xs text-amber-200/80">
             {c < 0
-                ? `Older than this one (Aniko ${mine}). Update Aniko on ${peer.name} from its Home page.`
-                : `Newer than this one (Aniko ${mine}). Update here in Settings › Updates & about.`}
+                ? `Older than this one (Nyakuro ${mine}). Update Nyakuro on ${peer.name} from its Home page.`
+                : `Newer than this one (Nyakuro ${mine}). Update here in Settings › Updates & about.`}
         </p>
     )
 }
@@ -2051,7 +2051,7 @@ function ClientFields({ value, onChange, showTags }: { value: Settings["qbittorr
             <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium">Tags</span>
                 <Input value={value.tags} onChange={e => onChange({ tags: e.target.value })} />
-                <span className="text-xs text-subtle">Comma separated, like aniko,anime</span>
+                <span className="text-xs text-subtle">Comma separated, like nyakuro,anime</span>
             </label>
             {showTags && (
                 <label className="flex flex-col gap-1.5">
@@ -2082,7 +2082,7 @@ function TorrentClientSection({ draft, set }: SectionProps) {
     }
     return (
         <>
-            <Group title="Torrent client" description="Aniko connects to the client's web interface.">
+            <Group title="Torrent client" description="Nyakuro connects to the client's web interface.">
                 <Row label="Use" keywords="default client qbittorrent transmission">
                     <Select
                         className="w-44"
@@ -2183,8 +2183,8 @@ function StreamingSection({ draft, set }: SectionProps) {
                         label="Install ani-cli"
                         help={
                             status?.platform === "darwin"
-                                ? "Also installs the other programs Aniko uses."
-                                : "Also installs Git and the other programs Aniko uses."
+                                ? "Also installs the other programs Nyakuro uses."
+                                : "Also installs Git and the other programs Nyakuro uses."
                         }
                     >
                         <InstallProgramsButton />
@@ -2344,7 +2344,7 @@ function LogsSection() {
     )
 }
 
-// The version, and Aniko's own updates: the Home page offers and installs
+// The version, and Nyakuro's own updates: the Home page offers and installs
 // them, this says where things stand.
 function AboutSection() {
     const { data: status } = useStatus()
@@ -2363,11 +2363,11 @@ function AboutSection() {
     else if (u.available) state = { tone: "brand", label: `${latest} available`, help: lan || u.canApply ? undefined : u.applyNote }
     else if (u.latest) state = { tone: "green", label: "Up to date", help: u.note }
     else if (u.error) state = { tone: "amber", label: "Couldn't check" }
-    else state = { tone: "gray", label: "Not checked yet", help: "Checked after Aniko starts, then every 6 hours." }
+    else state = { tone: "gray", label: "Not checked yet", help: "Checked after Nyakuro starts, then every 6 hours." }
     if (u?.state === "failed" && !busy) state.help = [u.message, state.help].filter(Boolean).join(" ")
     return (
         <>
-            <Group title="Aniko">
+            <Group title="Nyakuro">
                 <Row label="Version" help={`${platformName(status?.platform)} · ${status?.client === "desktop" ? "Desktop" : status?.client === "lan" ? "LAN" : "Web UI"}`}>
                     <span className="flex items-center gap-2 text-sm">
                         {status?.version}

@@ -13,11 +13,11 @@ import (
 
 	"github.com/5rahim/habari"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/events"
-	"github.com/v0-0x/Aniko/server/internal/library"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // Rule tells the auto downloader which releases to grab for an anime.
@@ -73,7 +73,7 @@ type AutoDownloader struct {
 	// (for DelayMinutes), by infohash or name.
 	seenMu    sync.Mutex
 	firstSeen map[string]time.Time
-	// Send, when set, sends a release where this Aniko's downloads go (the
+	// Send, when set, sends a release where this Nyakuro's downloads go (the
 	// computer a TV's go to), and reports whether it did; else it goes to
 	// the torrent client here.
 	Send func(ctx context.Context, mediaID int, uris []string) (bool, error)
@@ -494,7 +494,7 @@ func (a *AutoDownloader) grab(ctx context.Context, r *Rule, media *anilist.Media
 			log.Printf("auto downloader rule %d: %s: %v", r.ID, res.Name, err)
 			continue
 		}
-		// Where this Aniko's downloads go, when it isn't here.
+		// Where this Nyakuro's downloads go, when it isn't here.
 		if a.Send != nil {
 			sent, err := a.Send(ctx, media.ID, []string{magnet})
 			if sent && err != nil {

@@ -1,4 +1,4 @@
-// Shapes returned by the Aniko API (mirrors the Go structs).
+// Shapes returned by the Nyakuro API (mirrors the Go structs).
 
 export type FuzzyDate = { year?: number | null; month?: number | null; day?: number | null }
 
@@ -92,7 +92,7 @@ export type LocalFile = {
     locked: boolean
     ignored: boolean
     matchScore: number
-    // Shared by another Aniko app on the network (path kumo://<host>/…).
+    // Shared by another Nyakuro app on the network (path kumo://<host>/…).
     host?: string
     hostName?: string
 }
@@ -130,7 +130,7 @@ export type EntryView = {
     others: EpisodeView[] | null
     nextEpisode: EpisodeView | null
     localCount: number
-    sharedCount: number // files other Aniko apps share
+    sharedCount: number // files other Nyakuro apps share
     images: { banner: string; poster: string; fanart: string; clearlogo: string }
     mappings: { malId: number; anidbId: number; tvdbId: number }
     metadataNote?: string
@@ -230,14 +230,14 @@ export type Settings = {
     manga: { enabled: boolean; defaultProvider: string; readingMode: "long-strip" | "paged" | "double"; direction: string; dir?: string }
     anilist: { clientId: string; hideAdult: boolean }
     server: { host: string; port: number; allowLan: boolean; password: string; webUi: boolean; offline?: boolean }
-    // downloadTo: the Aniko this one's downloads go to (its ID; "" here).
+    // downloadTo: the Nyakuro this one's downloads go to (its ID; "" here).
     // keepAwake: don't let this computer sleep while another device plays its
     // files. autoSync: sync watch history when a paired device comes back.
     // syncPrefs: the theme and player settings kept in step with the other
-    // devices on the same AniList account, through an Aniko Hub.
+    // devices on the same AniList account, through a Nyakuro Hub.
     sharing: { enabled: boolean; name: string; downloadTo?: string; keepAwake?: boolean; autoSync?: boolean; syncPrefs?: boolean; syncLists?: boolean }
     notify?: { newEpisodes: boolean; downloads: boolean }
-    // Which releases Aniko updates to: stable ones, or betas too.
+    // Which releases Nyakuro updates to: stable ones, or betas too.
     updates?: { channel: "stable" | "beta" }
     ui: {
         accentColor: string
@@ -255,7 +255,7 @@ export type Settings = {
         colorTheme?: string
         seasonal?: string
         seasonalEffects?: boolean
-        // Aniko's look from before 3.0.37 (plum and pink, rounded).
+        // Nyakuro's look from before 3.0.37 (plum and pink, rounded).
         classicLook?: boolean
         look?: string
     }
@@ -281,9 +281,9 @@ export type Status = {
     loggedIn: boolean
     anilistAuthUrl: string
     features: { mpv: boolean; ffmpeg: boolean; ffprobe: boolean; aniCli: boolean; aniCliHost?: string; ytDlp: boolean; xdgOpen: boolean }
-    // owner: a browser on the network signed in to an Aniko Hub's dashboard.
+    // owner: a browser on the network signed in to a Nyakuro Hub's dashboard.
     client: "desktop" | "local" | "lan" | "owner"
-    // An Aniko Hub (aniko --hub): it shows its dashboard, not the app. setup:
+    // An Nyakuro Hub (nyakuro --hub): it shows its dashboard, not the app. setup:
     // its password isn't set yet (set with its setup code).
     hub?: { setup: boolean }
     hostname: string
@@ -291,19 +291,19 @@ export type Status = {
     scanning: boolean
     dataDir: string
     listenAddr: string
-    lanUrls?: string[] | null // where devices on the home network open Aniko
-    paired?: string[] | null // the Anikos this one is paired with (library sharing): Home's Sync
+    lanUrls?: string[] | null // where devices on the home network open Nyakuro
+    paired?: string[] | null // the Nyakuros this one is paired with (library sharing): Home's Sync
     // The computers sharing their library with this one that don't answer
     // (asleep or off), and whether they can be woken up from here.
     asleep?: { id: string; name: string; canWake: boolean; waking: boolean }[] | null
-    // Home's questions about the other Aniko apps (only for this computer):
+    // Home's questions about the other Nyakuro apps (only for this computer):
     // share with a new one ("new"), or update one of the two ("older": its
-    // Aniko is older than this one, "newer": this one is).
+    // Nyakuro is older than this one, "newer": this one is).
     devicePrompts?: DevicePrompt[] | null
     keptAwake?: boolean // another device is playing this computer's files, so it stays awake
     anilistPending?: number // list changes waiting for AniList to answer (made offline)
     webUiForced: boolean
-    setupRunning?: boolean // Windows: the window installing Aniko's programs is open
+    setupRunning?: boolean // Windows: the window installing Nyakuro's programs is open
     settings: Settings
 }
 
@@ -525,7 +525,7 @@ export type MarketEntry = {
     installedVersion?: string
     hasUpdate: boolean
     supported: boolean
-    // A plugin's permission scopes Aniko doesn't have: what it does with them won't work here.
+    // A plugin's permission scopes Nyakuro doesn't have: what it does with them won't work here.
     unsupported?: string[]
 }
 
@@ -608,7 +608,7 @@ export type FolderInfo = {
     problem?: string // why it has nothing to match (still downloading, unreadable…)
 }
 
-// Aniko's own updates (GET /api/update, and the "update-status" event).
+// Nyakuro's own updates (GET /api/update, and the "update-status" event).
 // beta: a pre-release (or, on Linux, the default branch's head).
 export type UpdateVersion = { version: string; commit: string; date?: string; url?: string; beta?: boolean }
 
@@ -635,7 +635,7 @@ export type UpdateStatus = {
     installFile?: string // Android: the downloaded APK the app installs
 }
 
-// Library sharing with other Aniko apps on the network.
+// Library sharing with other Nyakuro apps on the network.
 export type SharingPeer = {
     id: string
     name: string
@@ -643,16 +643,16 @@ export type SharingPeer = {
     online: boolean
     lastSeen: number
     version: string
-    allowed: boolean // this Aniko shares its library with it
-    shares: boolean // it shares its library with this Aniko
-    offers?: boolean // it says it does, and this Aniko hasn't accepted it yet
+    allowed: boolean // this Nyakuro shares its library with it
+    shares: boolean // it shares its library with this Nyakuro
+    offers?: boolean // it says it does, and this Nyakuro hasn't accepted it yet
     files: number
     manual: boolean
     error?: string
-    // Granted to it (with allowed): this Aniko's AniList account, downloading here.
+    // Granted to it (with allowed): this Nyakuro's AniList account, downloading here.
     account: boolean
     downloads: boolean
-    // Granted by it (it shares): its AniList account (and whether this Aniko
+    // Granted by it (it shares): its AniList account (and whether this Nyakuro
     // uses it), downloading there.
     sharesAccount: boolean
     usingAccount: boolean
@@ -660,7 +660,7 @@ export type SharingPeer = {
     // It answers when asked, but none of its announcements got through in a
     // minute: found by its address alone (a firewall on it).
     noBeacons?: boolean
-    // It shares with this Aniko and has said how to wake it up (Wake-on-LAN);
+    // It shares with this Nyakuro and has said how to wake it up (Wake-on-LAN);
     // waking: a wake-up was just sent.
     canWake?: boolean
     waking?: boolean
@@ -729,18 +729,18 @@ export type Activity = {
 
 export type ActivityPage = { items: Activity[]; hasMore: boolean }
 
-// An Aniko Hub's dashboard (GET /api/hub/overview; server: api/hub.go).
+// An Nyakuro Hub's dashboard (GET /api/hub/overview; server: api/hub.go).
 export type HubSystem = {
     model: string // "Raspberry Pi 4 Model B Rev 1.4"
     hostname: string
     arch: string
     cores: number
     cpu: number // all cores, 0-100
-    anikoCpu: number // the hub's own share
+    nyakuroCpu: number // the hub's own share
     load: number
     memTotal: number
     memUsed: number
-    anikoMem: number
+    nyakuroMem: number
     temp: number // °C, 0 unknown
     throttled: boolean // the Pi slows itself down (heat, power)
     uptime: number // seconds
@@ -781,7 +781,7 @@ export type HubDevice = SharingPeer & {
 
 export type HubAccount = { user: number; name: string; avatar: string; givenBy: string; addedAt: number; devices: number; history: number }
 
-// The hub's audit log (server/internal/anikohub/audit.go). Who: a device by
+// The hub's audit log (server/internal/nyakurohub/audit.go). Who: a device by
 // name, or by "dashboard" (its owner, at ip) or "hub"; an ip alone is
 // someone not signed in.
 export type HubEvent = {

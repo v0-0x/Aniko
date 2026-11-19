@@ -20,15 +20,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/lifecycle"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/lifecycle"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 const (
 	buildTimeout = 30 * time.Minute
 	// stallTimeout ends a download that stops receiving data.
 	stallTimeout = time.Minute
-	// buildDeps is what building Aniko needs (the PKGBUILD's makedepends and
+	// buildDeps is what building Nyakuro needs (the PKGBUILD's makedepends and
 	// makepkg's own tools).
 	buildDeps = "sudo pacman -S --needed base-devel go nodejs npm"
 )
@@ -49,7 +49,7 @@ func (c *Checker) applyLinux(ctx context.Context, g *github, target Version) err
 	// to codeload.github.com, with a token of its own in the address.
 	archive := filepath.Join(dir, "source.tar.gz")
 	err := c.download(ctx, g, g.root()+"/tarball/"+escapeRef(target.Commit), "application/vnd.github+json", archive, 0, func(done, total int64) {
-		c.progress(StateDownloading, percent(done, total), fmt.Sprintf("Downloading Aniko %s… %s", display(target), megabytes(done)))
+		c.progress(StateDownloading, percent(done, total), fmt.Sprintf("Downloading Nyakuro %s… %s", display(target), megabytes(done)))
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't download the new version: %w", err)
@@ -81,16 +81,16 @@ func (c *Checker) build(ctx context.Context, top string, target Version) (string
 	if err := os.MkdirAll(pkgdest, 0o755); err != nil {
 		return "", err
 	}
-	c.step(StateBuilding, 2, "Building Aniko "+display(target)+"…")
+	c.step(StateBuilding, 2, "Building Nyakuro "+display(target)+"…")
 	runCtx, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(runCtx, "makepkg", "-f", "--noconfirm", "--nocheck")
 	cmd.Dir = pkgbuild
 	// The PKGBUILD stamps the version and commit into the server (the
 	// source has no .git to read them from). PKGDEST: the package lands in
-	// a folder of Aniko's, whatever makepkg.conf says. LC_ALL: makepkg's
+	// a folder of Nyakuro's, whatever makepkg.conf says. LC_ALL: makepkg's
 	// messages in English, which the stages below go by.
-	cmd.Env = append(os.Environ(), "ANIKO_COMMIT="+target.Commit, "ANIKO_VERSION="+target.Version, "PKGDEST="+pkgdest, "LC_ALL=C")
+	cmd.Env = append(os.Environ(), "NYAKURO_COMMIT="+target.Commit, "NYAKURO_VERSION="+target.Version, "PKGDEST="+pkgdest, "LC_ALL=C")
 	// go, npm & co. run below makepkg: a process group of its own lets a
 	// cancel or the timeout stop all of it.
 	util.OwnProcessGroup(cmd)
@@ -119,7 +119,7 @@ func (c *Checker) build(ctx context.Context, top string, target Version) (string
 	case runCtx.Err() != nil:
 		return "", fmt.Errorf("the build didn't finish in %v and was stopped", buildTimeout)
 	case missing:
-		return "", &manualError{msg: "Building Aniko needs programs that aren't installed: install them, then try again.", command: buildDeps}
+		return "", &manualError{msg: "Building Nyakuro needs programs that aren't installed: install them, then try again.", command: buildDeps}
 	case err != nil && lastError != "":
 		return "", errors.New("the build failed: " + lastError)
 	case err != nil:
@@ -150,9 +150,9 @@ func buildStage(line string) (string, int, bool) {
 	return "", 0, false
 }
 
-// findPackage returns the Aniko package makepkg left in dir.
+// findPackage returns the Nyakuro package makepkg left in dir.
 func findPackage(dir string) (string, error) {
-	matches, _ := filepath.Glob(filepath.Join(dir, "aniko-*.pkg.tar.*"))
+	matches, _ := filepath.Glob(filepath.Join(dir, "nyakuro-*.pkg.tar.*"))
 	var found string
 	var newest time.Time
 	for _, m := range matches {
@@ -173,22 +173,23 @@ func findPackage(dir string) (string, error) {
 // install installs the package with pacman, through pkexec (polkit's
 // password dialog). When that's not possible, the user gets the command.
 func (c *Checker) install(ctx context.Context, pkg string, target Version) error {
-	// --ask=4: yes to removing a conflicting package, the kumo one an
-	// update from Kumo (Aniko's old name) installed (see the PKGBUILD).
+	// --ask=4: yes to removing a conflicting package, the aniko or kumo one
+	// an update from Aniko or Kumo (Nyakuro's old names) installed (see the
+	// PKGBUILD).
 	manual := "sudo pacman -U --noconfirm --ask=4 " + shellQuote(pkg)
 	needsTerminal := func(why string) error {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.st.State, c.st.Progress, c.st.ManualCommand = StateReady, 100, manual
-		c.st.Message = why + " Run this command in a terminal to install Aniko " + display(target) + ", then restart Aniko."
+		c.st.Message = why + " Run this command in a terminal to install Nyakuro " + display(target) + ", then restart Nyakuro."
 		c.publishLocked()
 		return nil
 	}
 	pkexec, ok := util.LookPath("pkexec")
 	if !ok {
-		return needsTerminal("Aniko can't ask for your password (pkexec isn't installed).")
+		return needsTerminal("Nyakuro can't ask for your password (pkexec isn't installed).")
 	}
-	c.step(StateInstalling, -1, "Installing Aniko "+display(target)+": enter your password…")
+	c.step(StateInstalling, -1, "Installing Nyakuro "+display(target)+": enter your password…")
 	cmd := exec.CommandContext(ctx, pkexec, "pacman", "-U", "--noconfirm", "--ask=4", pkg)
 	err := c.run(cmd, func(string) {})
 	var exitErr *exec.ExitError
@@ -199,16 +200,16 @@ func (c *Checker) install(ctx context.Context, pkg string, target Version) error
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.st.State, c.st.Progress = StateReady, 100
-		c.st.Message = "Restart Aniko to use it."
+		c.st.Message = "Restart Nyakuro to use it."
 		c.publishLocked()
 		return nil
 	case errors.As(err, &exitErr) && exitErr.ExitCode() == 126:
 		// The password dialog was dismissed.
 		return context.Canceled
 	case errors.As(err, &exitErr) && exitErr.ExitCode() == 127:
-		// Not authorized, or no authentication agent to ask with (e.g. Aniko
+		// Not authorized, or no authentication agent to ask with (e.g. Nyakuro
 		// runs as a systemd service, outside the desktop session).
-		return needsTerminal("Aniko couldn't get permission to install it.")
+		return needsTerminal("Nyakuro couldn't get permission to install it.")
 	case errors.As(err, &exitErr):
 		return &manualError{msg: fmt.Sprintf("pacman couldn't install the update (exit code %d): see its output below.", exitErr.ExitCode()), command: manual}
 	}
@@ -265,7 +266,7 @@ func scanLines(data []byte, atEOF bool) (int, []byte, error) {
 }
 
 // ---------------------------------------------------------------------------
-// Windows: run the new release's installer once Aniko has quit
+// Windows: run the new release's installer once Nyakuro has quit
 
 func (c *Checker) applyWindows(ctx context.Context, g *github, target Version, inst *asset) error {
 	if inst == nil {
@@ -280,7 +281,7 @@ func (c *Checker) applyWindows(ctx context.Context, g *github, target Version, i
 	}
 	path := filepath.Join(dir, filepath.Base(inst.Name))
 	err := c.download(ctx, g, g.root()+"/releases/assets/"+strconv.FormatInt(inst.ID, 10), "application/octet-stream", path, inst.Size, func(done, total int64) {
-		c.progress(StateDownloading, percent(done, total), "Downloading Aniko "+display(target)+"…")
+		c.progress(StateDownloading, percent(done, total), "Downloading Nyakuro "+display(target)+"…")
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't download the installer: %w", err)
@@ -289,29 +290,29 @@ func (c *Checker) applyWindows(ctx context.Context, g *github, target Version, i
 		_ = os.Remove(path)
 		return err
 	}
-	c.step(StateInstalling, -1, "Installing Aniko "+display(target)+": Aniko closes now and opens again when it's done.")
-	// The installer starts once Aniko has shut down: it then finds nothing
-	// of Aniko's running (it would close it, or kill it after a few
-	// seconds). These electron-builder flags install silently where Aniko
+	c.step(StateInstalling, -1, "Installing Nyakuro "+display(target)+": Nyakuro closes now and opens again when it's done.")
+	// The installer starts once Nyakuro has shut down: it then finds nothing
+	// of Nyakuro's running (it would close it, or kill it after a few
+	// seconds). These electron-builder flags install silently where Nyakuro
 	// is installed and start the new version.
 	args := []string{"--updated", "/S", "--force-run"}
 	exit := lifecycle.Exit{Code: lifecycle.CodeInstalling, Before: func() error {
 		if err := c.StartInstaller(path, args...); err != nil {
-			c.saveFailure("Aniko couldn't start the installer (" + err.Error() + "). Run it yourself: " + path)
+			c.saveFailure("Nyakuro couldn't start the installer (" + err.Error() + "). Run it yourself: " + path)
 			return fmt.Errorf("starting the installer: %w", err)
 		}
 		return nil
 	}}
 	if c.Exits == nil || !c.Exits.Request(exit) {
-		return errors.New("Aniko is already shutting down")
+		return errors.New("Nyakuro is already shutting down")
 	}
 	return nil
 }
 
 // applyWindowsPortable updates the portable build (unzipped into root):
 // the new zip is downloaded and unpacked beside it, and a script started
-// once Aniko has shut down moves the new files over the old ones and
-// starts Aniko again. Nothing is installed; the data stays in %APPDATA%.
+// once Nyakuro has shut down moves the new files over the old ones and
+// starts Nyakuro again. Nothing is installed; the data stays in %APPDATA%.
 func (c *Checker) applyWindowsPortable(ctx context.Context, g *github, target Version, zipAsset *asset, root string) error {
 	if zipAsset == nil {
 		return errors.New("the newest release has no portable zip")
@@ -325,7 +326,7 @@ func (c *Checker) applyWindowsPortable(ctx context.Context, g *github, target Ve
 	}
 	path := filepath.Join(dir, filepath.Base(zipAsset.Name))
 	err := c.download(ctx, g, g.root()+"/releases/assets/"+strconv.FormatInt(zipAsset.ID, 10), "application/octet-stream", path, zipAsset.Size, func(done, total int64) {
-		c.progress(StateDownloading, percent(done, total), "Downloading Aniko "+display(target)+"…")
+		c.progress(StateDownloading, percent(done, total), "Downloading Nyakuro "+display(target)+"…")
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't download the portable zip: %w", err)
@@ -334,47 +335,50 @@ func (c *Checker) applyWindowsPortable(ctx context.Context, g *github, target Ve
 		_ = os.Remove(path)
 		return err
 	}
-	c.progress(StateDownloading, -1, "Unpacking Aniko "+display(target)+"…")
+	c.progress(StateDownloading, -1, "Unpacking Nyakuro "+display(target)+"…")
 	fresh := filepath.Join(dir, "new")
 	if err := unzipPortable(path, fresh); err != nil {
 		return fmt.Errorf("couldn't unpack the portable zip: %w", err)
 	}
-	if !isFile(filepath.Join(fresh, "Aniko.exe")) {
-		return errors.New("the portable zip doesn't hold Aniko.exe")
+	if !isFile(filepath.Join(fresh, "Nyakuro.exe")) {
+		return errors.New("the portable zip doesn't hold Nyakuro.exe")
 	}
 	_ = os.Remove(path)
 	script := filepath.Join(dir, "update.cmd")
 	if err := os.WriteFile(script, []byte(portableScript(fresh, root)), 0o700); err != nil {
 		return err
 	}
-	c.step(StateInstalling, -1, "Updating Aniko to "+display(target)+": Aniko closes now and opens again when it's done.")
-	// The script runs once Aniko has shut down (it waits for Aniko.exe to
-	// be gone anyway), outside Aniko's job object, so it outlives it.
+	c.step(StateInstalling, -1, "Updating Nyakuro to "+display(target)+": Nyakuro closes now and opens again when it's done.")
+	// The script runs once Nyakuro has shut down (it waits for Nyakuro.exe to
+	// be gone anyway), outside Nyakuro's job object, so it outlives it.
 	exit := lifecycle.Exit{Code: lifecycle.CodeInstalling, Before: func() error {
 		if err := c.StartInstaller("cmd.exe", "/c", script); err != nil {
-			c.saveFailure("Aniko couldn't start the update script (" + err.Error() + "). Run it yourself: " + script)
+			c.saveFailure("Nyakuro couldn't start the update script (" + err.Error() + "). Run it yourself: " + script)
 			return fmt.Errorf("starting the update script: %w", err)
 		}
 		return nil
 	}}
 	if c.Exits == nil || !c.Exits.Request(exit) {
-		return errors.New("Aniko is already shutting down")
+		return errors.New("Nyakuro is already shutting down")
 	}
 	return nil
 }
 
 // portableScript is the batch script that puts the new portable build
-// (fresh) in place of the old one (root) once Aniko.exe is gone, and
+// (fresh) in place of the old one (root) once Nyakuro.exe is gone, and
 // starts it. robocopy /MOVE leaves fresh empty; files the old build had
-// and the new one hasn't stay (nothing of the user's is in there).
+// and the new one hasn't stay (nothing of the user's is in there), but for
+// Aniko.exe: the copy of Nyakuro.exe the update from Aniko (Nyakuro's name
+// until 3.0.58) came with, for Aniko's updater to start. It's an Electron
+// that stops matching the files around it, so it goes.
 func portableScript(fresh, root string) string {
 	return "@echo off\r\n" +
-		"rem Aniko's portable update: waits for Aniko to close, puts the new files in place, starts it.\r\n" +
+		"rem Nyakuro's portable update: waits for Nyakuro to close, puts the new files in place, starts it.\r\n" +
 		"set \"NEW=" + fresh + "\"\r\n" +
 		"set \"APP=" + root + "\"\r\n" +
 		"set /a tries=0\r\n" +
 		":wait\r\n" +
-		"tasklist /FI \"IMAGENAME eq Aniko.exe\" 2>NUL | find /I \"Aniko.exe\" >NUL\r\n" +
+		"tasklist /FI \"IMAGENAME eq Nyakuro.exe\" 2>NUL | find /I \"Nyakuro.exe\" >NUL\r\n" +
 		"if not errorlevel 1 (\r\n" +
 		"  set /a tries+=1\r\n" +
 		"  if %tries% GEQ 60 goto start\r\n" +
@@ -382,11 +386,12 @@ func portableScript(fresh, root string) string {
 		"  goto wait\r\n" +
 		")\r\n" +
 		"robocopy \"%NEW%\" \"%APP%\" /E /MOVE /R:10 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n" +
+		"del /Q \"%APP%\\Aniko.exe\" >NUL 2>&1\r\n" +
 		":start\r\n" +
-		"start \"\" \"%APP%\\Aniko.exe\" --updated\r\n"
+		"start \"\" \"%APP%\\Nyakuro.exe\" --updated\r\n"
 }
 
-// unzipPortable unpacks the portable build's zip (Aniko.exe and its
+// unzipPortable unpacks the portable build's zip (Nyakuro.exe and its
 // folders at the top) into dir, which must not exist yet. No links; a
 // path that would land outside dir fails it.
 func unzipPortable(archive, dir string) error {
@@ -453,7 +458,7 @@ func (c *Checker) applyAndroid(ctx context.Context, g *github, target Version, a
 	}
 	path := filepath.Join(dir, filepath.Base(apk.Name))
 	err := c.download(ctx, g, g.root()+"/releases/assets/"+strconv.FormatInt(apk.ID, 10), "application/octet-stream", path, apk.Size, func(done, total int64) {
-		c.progress(StateDownloading, percent(done, total), "Downloading Aniko "+display(target)+"…")
+		c.progress(StateDownloading, percent(done, total), "Downloading Nyakuro "+display(target)+"…")
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't download the APK: %w", err)
@@ -464,7 +469,7 @@ func (c *Checker) applyAndroid(ctx context.Context, g *github, target Version, a
 	}
 	c.mu.Lock()
 	c.st.State, c.st.Progress, c.st.InstallFile = StateInstalling, -1, path
-	c.st.Message = "Installing Aniko " + display(target) + ": confirm on the screen Android shows."
+	c.st.Message = "Installing Nyakuro " + display(target) + ": confirm on the screen Android shows."
 	c.publishLocked()
 	c.mu.Unlock()
 	return nil

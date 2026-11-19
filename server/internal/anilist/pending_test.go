@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // fakeList is AniList for the pending tests: one user's list, and whether

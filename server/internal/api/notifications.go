@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/events"
-	"github.com/v0-0x/Aniko/server/internal/parental"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/parental"
 )
 
 // Notifications (the bell on Home): two lists.
@@ -24,7 +24,7 @@ import (
 // chapters of the manga being read, and AniList's own "a related anime was
 // added" notifications (for what was watched already).
 //
-// System is what Aniko did or needs: a download finished or failed, a scan
+// System is what Nyakuro did or needs: a download finished or failed, a scan
 // found files, the auto downloader took a release, an update is out, list
 // changes wait for AniList. They're noted here as the app's events go by
 // (the ones GET /api/events sends to the pages), the last maxSystem of them.
@@ -519,7 +519,7 @@ func (s *Server) systemEvent(raw []byte, now time.Time) {
 			return
 		}
 		l.Update = u.Latest.Version
-		it := notifItem{Kind: "update", Title: "Update available", Text: "Aniko " + u.Latest.Version, To: "/settings?tab=updates"}
+		it := notifItem{Kind: "update", Title: "Update available", Text: "Nyakuro " + u.Latest.Version, To: "/settings?tab=updates"}
 		if u.Latest.Beta {
 			it.Text += " (beta)"
 		}

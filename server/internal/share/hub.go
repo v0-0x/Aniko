@@ -13,13 +13,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	"github.com/v0-0x/Aniko/server/internal/events"
-	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
 )
 
-// An Aniko Hub (aniko --hub, package anikohub) is an Aniko that plays nothing: a
-// small always-on computer that shares its library with the Aniko apps on
+// A Nyakuro Hub (nyakuro --hub, package nyakurohub) is a Nyakuro that plays nothing: a
+// small always-on computer that shares its library with the Nyakuro apps on
 // the network and keeps them in step. To each device it says it's on the
 // device's own AniList account, so the device keeps its watch history in
 // step with it as with any host on its account (pushing what it saves,
@@ -32,7 +32,7 @@ import (
 // RoleHub is what a hub's beacons and hellos say it is.
 const RoleHub = "hub"
 
-// IsHub: this Aniko is a hub.
+// IsHub: this Nyakuro is a hub.
 func (s *Service) IsHub() bool { return s.Hub != nil }
 
 func (s *Service) role() string {
@@ -43,7 +43,7 @@ func (s *Service) role() string {
 }
 
 // historyFor is the watch history a caller on the same account syncs with:
-// this Aniko's, or on a hub the caller's account's.
+// this Nyakuro's, or on a hub the caller's account's.
 func (s *Service) historyFor(c Caller) History {
 	if s.Hub != nil {
 		if c.User <= 0 {
@@ -62,7 +62,7 @@ func (s *Service) hubLog(kind, device string, user int, format string, args ...a
 	if s.Hub == nil {
 		return
 	}
-	s.Hub.Log(anikohub.Event{Kind: kind, Device: device, User: user, Text: fmt.Sprintf(format, args...)})
+	s.Hub.Log(nyakurohub.Event{Kind: kind, Device: device, User: user, Text: fmt.Sprintf(format, args...)})
 	s.hub.Publish("hub-updated", nil)
 }
 
@@ -87,7 +87,7 @@ func (s *Service) hubTake(c Caller, entries []history.Entry) {
 
 // relay sends something (JSON) to the devices on an account that are around,
 // but the one it came from: signed as that account's (see sign), each takes
-// it as from an Aniko on its own.
+// it as from a Nyakuro on its own.
 func (s *Service) relay(user int, from, path string, v any) {
 	body, err := json.Marshal(v)
 	if err != nil {
@@ -169,7 +169,7 @@ func (s *Service) hubWatching(c Caller, merged []history.Entry) {
 }
 
 func (s *Service) hubEpisode(kind string, c Caller, e history.Entry, text string) {
-	s.Hub.Log(anikohub.Event{Kind: kind, Device: c.Name, User: c.User, Text: text, MediaID: e.MediaID, Episode: e.Episode})
+	s.Hub.Log(nyakurohub.Event{Kind: kind, Device: c.Name, User: c.User, Text: text, MediaID: e.MediaID, Episode: e.Episode})
 	s.hub.Publish("hub-updated", nil)
 }
 
@@ -206,12 +206,12 @@ type GivenAccount struct {
 type CheckAccount func(ctx context.Context, token string) (user int, name, avatar string, err error)
 
 // TakeAccount keeps an AniList login a device allowed by the hub gives it.
-func (s *Service) TakeAccount(ctx context.Context, c Caller, g GivenAccount) (anikohub.Account, error) {
+func (s *Service) TakeAccount(ctx context.Context, c Caller, g GivenAccount) (nyakurohub.Account, error) {
 	if s.Hub == nil || s.CheckAccount == nil {
-		return anikohub.Account{}, errors.New("not a hub")
+		return nyakurohub.Account{}, errors.New("not a hub")
 	}
 	if !c.Allowed {
-		return anikohub.Account{}, errors.New("the hub doesn't share its library with this device")
+		return nyakurohub.Account{}, errors.New("the hub doesn't share its library with this device")
 	}
 	s.mu.Lock()
 	p := s.peers[c.ID]
@@ -221,27 +221,27 @@ func (s *Service) TakeAccount(ctx context.Context, c Caller, g GivenAccount) (an
 	}
 	s.mu.Unlock()
 	if pub == nil {
-		return anikohub.Account{}, errors.New("unknown device")
+		return nyakurohub.Account{}, errors.New("unknown device")
 	}
 	// Sealed by the device for the hub: the hub is the one it's for.
 	plain, err := s.id.openFrom(pub, s.id.ID, c.ID, g.Token)
 	if err != nil {
-		return anikohub.Account{}, errors.New("the login couldn't be read")
+		return nyakurohub.Account{}, errors.New("the login couldn't be read")
 	}
 	token := strings.TrimSpace(string(plain))
 	user, name, avatar, err := s.CheckAccount(ctx, token)
 	if err != nil {
-		return anikohub.Account{}, fmt.Errorf("AniList didn't take that login: %w", err)
+		return nyakurohub.Account{}, fmt.Errorf("AniList didn't take that login: %w", err)
 	}
-	acc := anikohub.Account{User: user, Name: name, Avatar: avatar, GivenBy: c.Name}
+	acc := nyakurohub.Account{User: user, Name: name, Avatar: avatar, GivenBy: c.Name}
 	if err := s.Hub.SaveAccount(acc, token); err != nil {
-		return anikohub.Account{}, err
+		return nyakurohub.Account{}, err
 	}
 	s.hubLog("account", c.Name, user, "gave the hub the AniList login of %s", name)
 	return acc, nil
 }
 
-// GiveAccount gives a hub this Aniko's AniList login (sealed for it): the
+// GiveAccount gives a hub this Nyakuro's AniList login (sealed for it): the
 // hub can then hand it to the devices it lets use it.
 func (s *Service) GiveAccount(ctx context.Context, hubID string) error {
 	p, err := s.hubHost(hubID)
@@ -262,16 +262,16 @@ func (s *Service) GiveAccount(ctx context.Context, hubID string) error {
 	return s.postJSON(ctx, p, "/api/peer/hub/account", GivenAccount{Token: sealed}, nil)
 }
 
-// hubHost is a hub that shares its library with this Aniko.
+// hubHost is a hub that shares its library with this Nyakuro.
 func (s *Service) hubHost(id string) (*peer, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p := s.peers[id]
 	if p == nil || p.role != RoleHub {
-		return nil, errors.New("that isn't an Aniko Hub this Aniko knows")
+		return nil, errors.New("that isn't a Nyakuro Hub this Nyakuro knows")
 	}
 	if !p.shares || p.addr == nil {
-		return nil, errors.New("the hub doesn't share its library with this Aniko yet: allow it on the hub's dashboard")
+		return nil, errors.New("the hub doesn't share its library with this Nyakuro yet: allow it on the hub's dashboard")
 	}
 	return p, nil
 }
@@ -309,19 +309,19 @@ type PrefsSource func() (data json.RawMessage, at int64)
 type PrefsSink func(data json.RawMessage, at int64)
 
 // HubPrefs answers a device asking for its account's settings.
-func (s *Service) HubPrefs(c Caller) (*anikohub.Prefs, error) {
+func (s *Service) HubPrefs(c Caller) (*nyakurohub.Prefs, error) {
 	if s.Hub == nil || c.User <= 0 {
 		return nil, errors.New("not on an AniList account")
 	}
 	if p := s.Hub.Prefs(c.User); p != nil {
 		return p, nil
 	}
-	return &anikohub.Prefs{}, nil
+	return &nyakurohub.Prefs{}, nil
 }
 
 // TakeHubPrefs keeps the settings a device changed for its account, and
 // sends them on to the account's other devices.
-func (s *Service) TakeHubPrefs(c Caller, p anikohub.Prefs) error {
+func (s *Service) TakeHubPrefs(c Caller, p nyakurohub.Prefs) error {
 	if s.Hub == nil || c.User <= 0 {
 		return errors.New("not on an AniList account")
 	}
@@ -336,7 +336,7 @@ func (s *Service) TakeHubPrefs(c Caller, p anikohub.Prefs) error {
 
 // TakePrefs (a device) takes its account's settings a hub sent, when
 // they're newer than its own and it keeps them in step.
-func (s *Service) TakePrefs(from string, p anikohub.Prefs) {
+func (s *Service) TakePrefs(from string, p nyakurohub.Prefs) {
 	s.mu.Lock()
 	host := s.peers[from]
 	isHub := host != nil && host.role == RoleHub && host.shares
@@ -360,14 +360,14 @@ func (s *Service) syncPrefs(ctx context.Context, p *peer, hubAt int64) {
 	// Neither changed them yet: this device's are the account's to start
 	// with (the next devices take them).
 	case at == 0 && hubAt == 0 && len(data) > 0:
-		_ = s.postJSON(ctx, p, "/api/peer/hub/prefs", anikohub.Prefs{Data: data, UpdatedAt: time.Now().UnixMilli()}, nil)
+		_ = s.postJSON(ctx, p, "/api/peer/hub/prefs", nyakurohub.Prefs{Data: data, UpdatedAt: time.Now().UnixMilli()}, nil)
 	case hubAt > at:
-		var hp anikohub.Prefs
+		var hp nyakurohub.Prefs
 		if err := s.getJSON(ctx, p, "/api/peer/hub/prefs", &hp); err == nil && hp.UpdatedAt > at && len(hp.Data) > 0 {
 			s.ApplyPrefs(hp.Data, hp.UpdatedAt)
 		}
 	case at > hubAt && len(data) > 0:
-		_ = s.postJSON(ctx, p, "/api/peer/hub/prefs", anikohub.Prefs{Data: data, UpdatedAt: at}, nil)
+		_ = s.postJSON(ctx, p, "/api/peer/hub/prefs", nyakurohub.Prefs{Data: data, UpdatedAt: at}, nil)
 	}
 }
 
@@ -394,7 +394,7 @@ func (s *Service) PrefsChanged() {
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			if err := s.postJSON(ctx, p, "/api/peer/hub/prefs", anikohub.Prefs{Data: data, UpdatedAt: at}, nil); err != nil {
+			if err := s.postJSON(ctx, p, "/api/peer/hub/prefs", nyakurohub.Prefs{Data: data, UpdatedAt: at}, nil); err != nil {
 				log.Printf("sharing: settings to %s: %v", s.nameOf(p), plainError(err))
 			}
 		}()
@@ -403,7 +403,7 @@ func (s *Service) PrefsChanged() {
 
 // ----------------------------------------------------------------- import
 
-// SendToHub (a device) gives a hub everything it can take from this Aniko:
+// SendToHub (a device) gives a hub everything it can take from this Nyakuro:
 // its settings (as the account's), its AniList login, and its whole watch
 // history: the hub starts where this device is.
 func (s *Service) SendToHub(ctx context.Context, hubID string) (string, error) {
@@ -422,7 +422,7 @@ func (s *Service) SendToHub(ctx context.Context, hubID string) (string, error) {
 		data, _ := s.OwnPrefs()
 		if len(data) > 0 {
 			// Now: the hub takes them over the account's.
-			if err := s.postJSON(ctx, p, "/api/peer/hub/prefs", anikohub.Prefs{Data: data, UpdatedAt: time.Now().UnixMilli()}, nil); err != nil {
+			if err := s.postJSON(ctx, p, "/api/peer/hub/prefs", nyakurohub.Prefs{Data: data, UpdatedAt: time.Now().UnixMilli()}, nil); err != nil {
 				return "", fmt.Errorf("the settings: %w", err)
 			}
 			done = append(done, "the theme and settings")
@@ -502,7 +502,7 @@ func (s *Service) HubDevices() []HubDevice {
 	}
 	var all []one
 	for _, p := range s.peers {
-		// Other hubs, and Anikos only heard of long ago, aren't devices.
+		// Other hubs, and Nyakuros only heard of long ago, aren't devices.
 		if p.role == RoleHub || (!p.allowed && !p.online(now) && p.manual == "") {
 			continue
 		}
@@ -566,27 +566,27 @@ func (s *Service) SetDeviceAccount(device string, user int) error {
 
 // ------------------------------------------------------------------ blobs
 
-// BlobHooks are the device's side of one kind of blob (anikohub.Blob): its
+// BlobHooks are the device's side of one kind of blob (nyakurohub.Blob): its
 // own items, and taking a hub's merged ones (newer than its own); Apply
 // reports whether anything changed here.
 type BlobHooks struct {
-	Own   func() anikohub.Blob
-	Apply func(b anikohub.Blob) bool
+	Own   func() nyakurohub.Blob
+	Apply func(b nyakurohub.Blob) bool
 }
 
 // HubBlob answers a device asking for its account's blob of a kind.
-func (s *Service) HubBlob(c Caller, kind string) (anikohub.Blob, error) {
+func (s *Service) HubBlob(c Caller, kind string) (nyakurohub.Blob, error) {
 	if s.Hub == nil {
-		return anikohub.Blob{}, errors.New("not a hub")
+		return nyakurohub.Blob{}, errors.New("not a hub")
 	}
 	return s.Hub.Blob(max(c.User, 0), kind), nil
 }
 
 // TakeHubBlob merges a device's blob into its account's and sends the
 // result on to the account's other devices.
-func (s *Service) TakeHubBlob(c Caller, kind string, b anikohub.Blob) (anikohub.Blob, error) {
+func (s *Service) TakeHubBlob(c Caller, kind string, b nyakurohub.Blob) (nyakurohub.Blob, error) {
 	if s.Hub == nil {
-		return anikohub.Blob{}, errors.New("not a hub")
+		return nyakurohub.Blob{}, errors.New("not a hub")
 	}
 	user := max(c.User, 0)
 	merged, changed, err := s.Hub.MergeBlob(user, kind, b)
@@ -618,7 +618,7 @@ func (s *Service) blobHooks(kind string) (BlobHooks, bool) {
 
 // TakeBlob (a device) takes its account's blob of a kind a hub sent, when
 // it keeps them in step.
-func (s *Service) TakeBlob(from, kind string, b anikohub.Blob) {
+func (s *Service) TakeBlob(from, kind string, b nyakurohub.Blob) {
 	s.mu.Lock()
 	host := s.peers[from]
 	isHub := host != nil && host.role == RoleHub && host.shares
@@ -638,7 +638,7 @@ func (s *Service) TakeBlob(from, kind string, b anikohub.Blob) {
 // hub's come down when newer (both merge item by item).
 func (s *Service) syncBlobs(ctx context.Context, p *peer, hubAt map[string]int64) {
 	synced, failed := false, false
-	for _, kind := range anikohub.BlobKinds {
+	for _, kind := range nyakurohub.BlobKinds {
 		h, ok := s.blobHooks(kind)
 		if !ok {
 			continue
@@ -652,14 +652,14 @@ func (s *Service) syncBlobs(ctx context.Context, p *peer, hubAt map[string]int64
 		own := h.Own()
 		switch {
 		case own.UpdatedAt > at && len(own.Items) > 0:
-			var merged anikohub.Blob
+			var merged nyakurohub.Blob
 			err := s.postJSON(ctx, p, "/api/peer/hub/blobs/"+kind, own, &merged)
 			failed = failed || err != nil
 			if err == nil && len(merged.Items) > 0 && h.Apply(merged) {
 				s.hub.Publish(events.CollectionUpdate, nil)
 			}
 		case at > own.UpdatedAt:
-			var hb anikohub.Blob
+			var hb nyakurohub.Blob
 			err := s.getJSON(ctx, p, "/api/peer/hub/blobs/"+kind, &hb)
 			failed = failed || err != nil
 			if err == nil && len(hb.Items) > 0 && h.Apply(hb) {
@@ -723,7 +723,7 @@ func (s *Service) sendBlob(kind string) {
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 			defer cancel()
-			var merged anikohub.Blob
+			var merged nyakurohub.Blob
 			if err := s.postJSON(ctx, p, "/api/peer/hub/blobs/"+kind, own, &merged); err != nil {
 				log.Printf("sharing: %s to %s: %v", kindName(kind), s.nameOf(p), plainError(err))
 				return

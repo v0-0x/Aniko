@@ -11,8 +11,8 @@ import (
 )
 
 // The marketplace's plugins say which permission scopes they ask for that
-// Aniko doesn't have (from their manifests, kept a day); providers and
-// plugins with Aniko's scopes alone say nothing.
+// Nyakuro doesn't have (from their manifests, kept a day); providers and
+// plugins with Nyakuro's scopes alone say nothing.
 func TestMarketplaceMarksUnsupportedScopes(t *testing.T) {
 	asked := 0
 	mux := http.NewServeMux()
@@ -39,7 +39,7 @@ func TestMarketplaceMarksUnsupportedScopes(t *testing.T) {
 		})
 	})
 	m := newTestManager(t)
-	// The test server is local, which Aniko's fetches refuse: plain ones here.
+	// The test server is local, which Nyakuro's fetches refuse: plain ones here.
 	plain := func(ctx context.Context, url string, _ map[string]string) ([]byte, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// YearReview is a calendar year of what was watched in Aniko (the Year in
+// YearReview is a calendar year of what was watched in Nyakuro (the Year in
 // review page). It counts like Monthly: an episode is finished when watched
 // past finished of its length, the minutes are what was seen of each, and
 // an episode counts on the day it was last watched (the history keeps one

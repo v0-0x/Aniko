@@ -7,10 +7,10 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/backup"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/lifecycle"
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/backup"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/lifecycle"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 )
 
 // Settings › Backup & data: the user's data as one file, and back. Only this
@@ -19,7 +19,7 @@ func (s *Server) backupRoutes() {
 	m := s.mux
 	m.HandleFunc("GET /api/backup", func(w http.ResponseWriter, r *http.Request) {
 		if !isTrusted(r) {
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Aniko runs on can make a backup"})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Nyakuro runs on can make a backup"})
 			return
 		}
 		logins := r.URL.Query().Get("logins") == "1"
@@ -29,16 +29,16 @@ func (s *Server) backupRoutes() {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		name := fmt.Sprintf("aniko-backup-%s-%s.json", safeName.ReplaceAllString(computer, "-"), time.Now().Format("2006-01-02"))
+		name := fmt.Sprintf("nyakuro-backup-%s-%s.json", safeName.ReplaceAllString(computer, "-"), time.Now().Format("2006-01-02"))
 		w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
 		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, f)
 	})
-	// A backup put back: merged with what's here, then Aniko starts again
+	// A backup put back: merged with what's here, then Nyakuro starts again
 	// (everything reads its data afresh).
 	m.HandleFunc("POST /api/backup/restore", func(w http.ResponseWriter, r *http.Request) {
 		if !isTrusted(r) {
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Aniko runs on can restore a backup"})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "only the computer Nyakuro runs on can restore a backup"})
 			return
 		}
 		f, err := backup.Read(r.Body)

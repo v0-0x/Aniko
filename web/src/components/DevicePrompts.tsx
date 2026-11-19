@@ -9,7 +9,7 @@ import { toast } from "@/lib/toast"
 import type { DevicePrompt } from "@/lib/types"
 
 // The version notes put away ("id@version"): shown again for the next one.
-const HIDDEN_KEY = "aniko.devicePromptsHidden"
+const HIDDEN_KEY = "nyakuro.devicePromptsHidden"
 
 function readHidden(): string[] {
     try {
@@ -20,7 +20,7 @@ function readHidden(): string[] {
     }
 }
 
-// Home, on the computer: an Aniko new on the network (a TV, say), to share
+// Home, on the computer: a Nyakuro new on the network (a TV, say), to share
 // this computer's library with; one that offers its library, to use it (what
 // a host says is followed only once accepted here); and a paired one on another version than
 // this one, to update.
@@ -74,16 +74,16 @@ export function DevicePrompts() {
                         </span>
                         <div className="min-w-0 flex-1">
                             <p className="font-medium">
-                                {offer ? `Use ${p.name}'s library?` : isNew ? `Share this library with ${p.name}?` : p.kind === "older" ? `${p.name} runs an older Aniko` : `${p.name} runs a newer Aniko`}
+                                {offer ? `Use ${p.name}'s library?` : isNew ? `Share this library with ${p.name}?` : p.kind === "older" ? `${p.name} runs an older Nyakuro` : `${p.name} runs a newer Nyakuro`}
                             </p>
                             <p className="mt-0.5 text-sm text-muted">
                                 {offer
                                     ? `It offers its anime to this device. Say yes only if it's one of yours.`
                                     : isNew
-                                    ? `Aniko${tvApp ? "'s TV app" : ""} on ${p.name} can then play this computer's anime.`
+                                    ? `Nyakuro${tvApp ? "'s TV app" : ""} on ${p.name} can then play this computer's anime.`
                                     : p.kind === "older"
-                                      ? `Aniko ${p.version} there, ${status.version} here. Update it on ${p.name}, from its Home page.`
-                                      : `Aniko ${p.version} there, ${status.version} here. Update this one in Settings › Updates & about.`}
+                                      ? `Nyakuro ${p.version} there, ${status.version} here. Update it on ${p.name}, from its Home page.`
+                                      : `Nyakuro ${p.version} there, ${status.version} here. Update this one in Settings › Updates & about.`}
                             </p>
                         </div>
                         {isNew ? (

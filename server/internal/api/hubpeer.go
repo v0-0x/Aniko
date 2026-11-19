@@ -5,11 +5,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 )
 
-// hubPeerRoutes are what an Aniko Hub answers the devices it shares with
+// hubPeerRoutes are what a Nyakuro Hub answers the devices it shares with
 // (share/hub.go): their account's settings, and the logins they give it.
 // Elsewhere they say it isn't a hub.
 func (s *Server) hubPeerRoutes() {
@@ -17,7 +17,7 @@ func (s *Server) hubPeerRoutes() {
 	hub := func(fn http.HandlerFunc) http.HandlerFunc {
 		return shared(func(w http.ResponseWriter, r *http.Request) {
 			if !s.app.Share.IsHub() {
-				writeJSON(w, http.StatusNotFound, map[string]any{"error": "this Aniko isn't a hub"})
+				writeJSON(w, http.StatusNotFound, map[string]any{"error": "this Nyakuro isn't a hub"})
 				return
 			}
 			fn(w, r)
@@ -27,19 +27,19 @@ func (s *Server) hubPeerRoutes() {
 		return s.app.Share.HubPrefs(peerOf(r))
 	})))
 	m.HandleFunc("POST /api/peer/hub/prefs", hub(h(func(r *http.Request) (any, error) {
-		var p anikohub.Prefs
+		var p nyakurohub.Prefs
 		if err := json.NewDecoder(io.LimitReader(r.Body, 128<<10)).Decode(&p); err != nil {
 			return nil, badRequest(err.Error())
 		}
 		return nil, s.app.Share.TakeHubPrefs(peerOf(r), p)
 	})))
-	// An account's list and watch-order edits (anikohub.Blob), merged
+	// An account's list and watch-order edits (nyakurohub.Blob), merged
 	// item by item: asked for, or sent after a change on a device.
 	m.HandleFunc("GET /api/peer/hub/blobs/{kind}", hub(h(func(r *http.Request) (any, error) {
 		return s.app.Share.HubBlob(peerOf(r), r.PathValue("kind"))
 	})))
 	m.HandleFunc("POST /api/peer/hub/blobs/{kind}", hub(h(func(r *http.Request) (any, error) {
-		var b anikohub.Blob
+		var b nyakurohub.Blob
 		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&b); err != nil {
 			return nil, badRequest(err.Error())
 		}

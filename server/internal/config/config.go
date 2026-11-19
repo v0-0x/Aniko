@@ -1,4 +1,4 @@
-// Package config holds the user settings and resolves the XDG paths Aniko uses.
+// Package config holds the user settings and resolves the XDG paths Nyakuro uses.
 package config
 
 import (
@@ -10,21 +10,21 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
 )
 
 const (
-	AppName = "Aniko"
+	AppName = "Nyakuro"
 
 	DefaultPort           = 43211
 	DefaultAnilistClient  = "13985"
 	DefaultMarketplaceURL = "https://raw.githubusercontent.com/Bas1874/Seanime-Marketplace/refs/heads/main/Marketplace/Main.json"
 
-	// UpdateRepo is the GitHub repository Aniko looks for updates in
-	// ($ANIKO_UPDATE_REPO overrides it), asked for by its number
-	// (UpdateRepoID): it has been renamed (kumo-anime, now Aniko), and an
+	// UpdateRepo is the GitHub repository Nyakuro looks for updates in
+	// ($NYAKURO_UPDATE_REPO overrides it), asked for by its number
+	// (UpdateRepoID): it has been renamed (kumo-anime, Aniko, now Nyakuro), and an
 	// old name can be taken by anyone, who would then make the updates.
-	UpdateRepo   = "v0-0x/Aniko"
+	UpdateRepo   = "v0-0x/Nyakuro"
 	UpdateRepoID = "1406820679"
 
 	// HubUpdateRepo is where mediaserver (this server as its anime side)
@@ -40,11 +40,11 @@ var (
 	// AppVersion is 2.0.<commits since 2.0.0's> in those builds (1.0.<number
 	// of commits> before it; see update.VersionOf).
 	AppVersion = "1.0.0"
-	// Commit is the git commit Aniko was built from; see BuildCommit.
+	// Commit is the git commit Nyakuro was built from; see BuildCommit.
 	Commit = ""
 )
 
-// BuildCommit is the commit Aniko was built from: Commit, or else the one Go
+// BuildCommit is the commit Nyakuro was built from: Commit, or else the one Go
 // stamps into builds made inside a git checkout, or "" when unknown (e.g.
 // built from a source zip).
 func BuildCommit() string {
@@ -97,7 +97,7 @@ type UpdateSettings struct {
 // UpdateChannels are the values UpdateSettings.Channel takes.
 var UpdateChannels = []string{"stable", "beta"}
 
-// NotifySettings: what Aniko tells about as it happens (package notify).
+// NotifySettings: what Nyakuro tells about as it happens (package notify).
 type NotifySettings struct {
 	// NewEpisodes: an episode of an anime being watched aired.
 	NewEpisodes bool `json:"newEpisodes"`
@@ -107,7 +107,7 @@ type NotifySettings struct {
 
 type LibrarySettings struct {
 	// Off: this computer has no library of its own; it plays the ones a
-	// Aniko Hub or other computers share with it. The folders below are kept
+	// Nyakuro Hub or other computers share with it. The folders below are kept
 	// for when it's turned back on.
 	Off       bool     `json:"off"`
 	Dir       string   `json:"dir"`
@@ -217,27 +217,27 @@ type AnilistSettings struct {
 	HideAdult bool `json:"hideAdult"`
 }
 
-// SharingSettings: library sharing with other Aniko apps on the home network
+// SharingSettings: library sharing with other Nyakuro apps on the home network
 // (package share). Which ones this one shares its library with is kept
-// with the Anikos it knows, not here.
+// with the Nyakuros it knows, not here.
 type SharingSettings struct {
 	Enabled bool `json:"enabled"`
-	// Name: what the others call this Aniko (empty: the computer's name).
+	// Name: what the others call this Nyakuro (empty: the computer's name).
 	Name string `json:"name"`
-	// DownloadTo: the Aniko this one's downloads and torrents go to (its ID;
+	// DownloadTo: the Nyakuro this one's downloads and torrents go to (its ID;
 	// empty: saved here). Set when one allows it (package share).
 	DownloadTo string `json:"downloadTo,omitempty"`
 	// KeepAwake: this computer doesn't go to sleep while other devices play
 	// its files (package awake).
 	KeepAwake bool `json:"keepAwake"`
-	// AutoSync: Continue watching is synced with the paired Anikos when they
+	// AutoSync: Continue watching is synced with the paired Nyakuros when they
 	// come back, without pressing Sync.
 	AutoSync bool `json:"autoSync"`
-	// SyncPrefs: with an Aniko Hub, the theme and the like (SharedPrefs) are
+	// SyncPrefs: with a Nyakuro Hub, the theme and the like (SharedPrefs) are
 	// the same on every device on this AniList account: changed here, they
 	// change there.
 	SyncPrefs bool `json:"syncPrefs"`
-	// SyncLists: with an Aniko Hub, the local list (on no AniList account)
+	// SyncLists: with a Nyakuro Hub, the local list (on no AniList account)
 	// and the watch-order edits are kept in step between the devices
 	// (share/hub.go, Blobs). Experimental.
 	SyncLists bool `json:"syncLists"`
@@ -246,7 +246,7 @@ type SharingSettings struct {
 type ServerSettings struct {
 	Host string `json:"host"`
 	Port int    `json:"port"`
-	// When true Aniko listens on every interface so other devices on the home
+	// When true Nyakuro listens on every interface so other devices on the home
 	// network can use it. Requests from public (non-private) addresses are
 	// always refused.
 	AllowLAN bool `json:"allowLan"`
@@ -292,7 +292,7 @@ type UISettings struct {
 // ColorThemes and Holidays are the values UISettings takes (their colors are
 // in web/src/lib/themes.ts).
 var (
-	ColorThemes = []string{"aniko", "graphite", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black", "white", "paper", "phosphor", "amber", "ice", "rose"}
+	ColorThemes = []string{"nyakuro", "graphite", "midnight", "forest", "sakura", "ember", "ocean", "dusk", "black", "white", "paper", "phosphor", "amber", "ice", "rose"}
 	Holidays    = []string{"newyear", "valentine", "sakura", "summer", "halloween", "christmas"}
 )
 
@@ -368,7 +368,7 @@ func Defaults() Settings {
 			ShowEpisodeTitle: true,
 			HomeSections:     []string{"continue", "genres", "watching", "airing", "planning", "completed"},
 			TitleLanguage:    "english",
-			ColorTheme:       "aniko",
+			ColorTheme:       "nyakuro",
 			Seasonal:         "auto",
 			SeasonalEffects:  true,
 		},
@@ -645,19 +645,19 @@ func ExpandHome(p string) string { return expandHome(p) }
 
 // Paths -----------------------------------------------------------------
 
-// DataDir is ~/.local/share/aniko on Linux, ~/Library/Application
-// Support/Aniko on macOS and %APPDATA%\Aniko on Windows, or $ANIKO_DATA_DIR.
-// Kumo's folder (Aniko's old name) moves there the first time.
+// DataDir is ~/.local/share/nyakuro on Linux, ~/Library/Application
+// Support/Nyakuro on macOS and %APPDATA%\Nyakuro on Windows, or $NYAKURO_DATA_DIR.
+// Aniko's or Kumo's folder (Nyakuro's old names) moves there the first time.
 func DataDir() string {
 	if d := Getenv("DATA_DIR"); d != "" {
 		return d
 	}
-	return MoveOld(oldDataDir(), defaultDataDir())
+	return MoveOldData(defaultDataDir())
 }
 
 // RuntimeDir holds the server's address, the desktop window's token and
-// other temporary files: $XDG_RUNTIME_DIR/aniko on Linux, $TMPDIR/aniko on
-// macOS, %LOCALAPPDATA%\Aniko\run on Windows.
+// other temporary files: $XDG_RUNTIME_DIR/nyakuro on Linux, $TMPDIR/nyakuro on
+// macOS, %LOCALAPPDATA%\Nyakuro\run on Windows.
 func RuntimeDir() string {
 	dir := runtimeDir()
 	_ = os.MkdirAll(dir, 0o700)

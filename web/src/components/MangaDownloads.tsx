@@ -316,7 +316,7 @@ export function LocalChapters({ chapters, progress, read, onDelete }: { chapters
     )
 }
 
-// What the Anikos and servers this one uses have downloaded (GET
+// What the Nyakuros and servers this one uses have downloaded (GET
 // /api/manga-shared…): each with its series, or one's chapters.
 export type SharedManga = { host: { id: string; name: string; online: boolean }; series?: MangaSeries[]; chapters?: LocalMangaChapter[] }
 
@@ -351,7 +351,7 @@ function SeriesCard({ s, cover }: { s: MangaSeries; cover: string }) {
     )
 }
 
-// The downloaded manga, as covers: on this device, then on each Aniko or
+// The downloaded manga, as covers: on this device, then on each Nyakuro or
 // server this one uses (read from there).
 export function DownloadedGrid() {
     const { data, isLoading } = useQuery({

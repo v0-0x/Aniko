@@ -1,13 +1,13 @@
 [Desktop Entry]
 Type=Application
-Name=Aniko
+Name=Nyakuro
 GenericName=Anime Library
 Comment=Watch, stream and organise your anime
-Exec=aniko
-Icon=aniko
+Exec=nyakuro
+Icon=nyakuro
 Terminal=false
 Categories=AudioVideo;Video;Player;
 Keywords=anime;anilist;ani-cli;torrent;manga;
-StartupWMClass=Aniko
+StartupWMClass=Nyakuro
 StartupNotify=true
 SingleMainWindow=true

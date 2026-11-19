@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/extensions"
-	"github.com/v0-0x/Aniko/server/internal/manga"
+	"github.com/v0-0x/Nyakuro/server/internal/extensions"
+	"github.com/v0-0x/Nyakuro/server/internal/manga"
 )
 
 // LocalProvider reads a downloaded chapter (its file in the manga folder,
@@ -22,7 +22,7 @@ import (
 const LocalProvider = "local"
 
 // ServerProvider starts the provider of chapters downloaded onto another
-// Aniko or mediaserver this one uses: server:<its ID>. They're read from
+// Nyakuro or mediaserver this one uses: server:<its ID>. They're read from
 // there (its /api/peer/manga-library), as downloaded ones are from here.
 const ServerProvider = "server:"
 
@@ -88,7 +88,7 @@ func (s *Server) mangaDownloadRoutes() {
 		return nil, nil
 	}))
 
-	// The manga downloaded onto the Anikos and servers this one uses, by
+	// The manga downloaded onto the Nyakuros and servers this one uses, by
 	// each (those that answer; an older one doesn't know manga).
 	m.HandleFunc("GET /api/manga-shared", h(func(r *http.Request) (any, error) {
 		return s.sharedManga(r, 0), nil
@@ -182,7 +182,7 @@ func (s *Server) mangaDownloadRoutes() {
 	})
 }
 
-// mangaPeerRoutes: the manga downloaded here, for the Anikos this one
+// mangaPeerRoutes: the manga downloaded here, for the Nyakuros this one
 // shares its library with (a server's, read on the PC and the TV).
 func (s *Server) mangaPeerRoutes() {
 	m := s.mux
@@ -247,7 +247,7 @@ func (s *Server) mangaPeerRoutes() {
 	}))
 }
 
-// sharedSeries is what one Aniko or server this one uses has downloaded:
+// sharedSeries is what one Nyakuro or server this one uses has downloaded:
 // its series (id 0), or one series' chapters.
 type sharedSeries struct {
 	Host     share.PeerView       `json:"host"`
@@ -255,7 +255,7 @@ type sharedSeries struct {
 	Chapters []manga.LocalChapter `json:"chapters,omitempty"`
 }
 
-// sharedManga asks the Anikos and servers sharing with this one for their
+// sharedManga asks the Nyakuros and servers sharing with this one for their
 // manga (id 0: all; else that one's chapters), at once, for a few seconds.
 func (s *Server) sharedManga(r *http.Request, id int) []sharedSeries {
 	libs := s.app.Share.Libraries()
@@ -305,7 +305,7 @@ func (s *Server) sharedManga(r *http.Request, id int) []sharedSeries {
 	return kept
 }
 
-// serverPages lists a chapter's pages on another Aniko or server, for the
+// serverPages lists a chapter's pages on another Nyakuro or server, for the
 // reader: read through this one (shared/page).
 func (s *Server) serverPages(r *http.Request, host, file string) ([]extensions.MangaPage, error) {
 	raw, name, err := s.app.Share.AskHost(r.Context(), host, "/api/peer/manga-library/pages?"+url.Values{"file": {file}}.Encode(), nil)

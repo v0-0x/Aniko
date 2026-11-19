@@ -1,5 +1,5 @@
 // Package db wraps the SQLite database that holds every piece of persistent
-// state Aniko keeps on disk (settings, library files, watch history, caches,
+// state Nyakuro keeps on disk (settings, library files, watch history, caches,
 // installed extensions, downloads...).
 package db
 
@@ -153,9 +153,9 @@ func Open(path string) (*DB, error) {
 	return &DB{DB: conn}, nil
 }
 
-// columns are added to tables made by an older Aniko.
+// columns are added to tables made by an older Nyakuro.
 var columns = []struct{ table, name, def string }{
-	// The order this Aniko stored each position in (see history.Store): the
+	// The order this Nyakuro stored each position in (see history.Store): the
 	// others on the same account ask for what came after what they have.
 	{"watch_history", "seq", "INTEGER NOT NULL DEFAULT 0"},
 }

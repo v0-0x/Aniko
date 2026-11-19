@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/anicli"
+	"github.com/v0-0x/Nyakuro/server/internal/anicli"
 )
 
 // fakeAniCli installs the ani-cli stand-in of the anicli tests, listing
@@ -35,12 +35,12 @@ func fakeAniCli(t *testing.T, catalog ...string) string {
 	if err := os.WriteFile(cat, []byte(strings.Join(catalog, "\n")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("ANIKO_FAKE_CATALOG", cat)
-	t.Setenv("ANIKO_FAKE_LOG", filepath.Join(dir, "runs.log"))
+	t.Setenv("NYAKURO_FAKE_CATALOG", cat)
+	t.Setenv("NYAKURO_FAKE_LOG", filepath.Join(dir, "runs.log"))
 	return filepath.Join(dir, "ani-cli")
 }
 
-// An Aniko without ani-cli (a TV) streams through a computer that shares its
+// A Nyakuro without ani-cli (a TV) streams through a computer that shares its
 // library with it and has ani-cli.
 func TestAniCliThroughHost(t *testing.T) {
 	if runtime.GOOS == "windows" {
@@ -75,7 +75,7 @@ func TestAniCliThroughHost(t *testing.T) {
 
 	// Not shared with: the host doesn't run ani-cli for it.
 	if _, err := guest.app.AniCli.Search(ctx, "Frieren", "sub"); err == nil {
-		t.Fatal("ani-cli ran for an Aniko the host doesn't share with")
+		t.Fatal("ani-cli ran for a Nyakuro the host doesn't share with")
 	}
 
 	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {

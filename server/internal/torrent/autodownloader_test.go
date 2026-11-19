@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
 )
 
 // newTestAutoDownloader returns an auto downloader with its own database,
@@ -22,7 +22,7 @@ import (
 // configured, so nothing is ever launched.
 func newTestAutoDownloader(t *testing.T, srv *httptest.Server) *AutoDownloader {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,9 +210,9 @@ func TestAutoDownloaderNeedsProgress(t *testing.T) {
 	}
 }
 
-// Where this Aniko's downloads go elsewhere (a TV's computer), the releases
+// Where this Nyakuro's downloads go elsewhere (a TV's computer), the releases
 // go there, not to a torrent client here (there's none), and are recorded;
-// when that Aniko can't take them, the rule stops.
+// when that Nyakuro can't take them, the rule stops.
 func TestAutoDownloaderSendsElsewhere(t *testing.T) {
 	srv := httptest.NewServer(http.NotFoundHandler())
 	a := newTestAutoDownloader(t, srv)

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/library"
-	"github.com/v0-0x/Aniko/server/internal/player"
-	"github.com/v0-0x/Aniko/server/internal/share"
-	"github.com/v0-0x/Aniko/server/internal/stream"
-	"github.com/v0-0x/Aniko/server/internal/torrentstream"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/player"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/stream"
+	"github.com/v0-0x/Nyakuro/server/internal/torrentstream"
 )
 
 // Torrent streaming (package torrentstream): a torrent of the Torrents tab
@@ -25,7 +25,7 @@ func (s *Server) torrentStreamRoutes() {
 	m := s.mux
 	m.HandleFunc("POST /api/torrents/stream", h(s.streamTorrent))
 	// A torrent streamed on the computer the downloads go to (see
-	// streamTorrent): its ID is <that Aniko's ID>.<the session there>.
+	// streamTorrent): its ID is <that Nyakuro's ID>.<the session there>.
 	m.HandleFunc("GET /api/torrentstream/{id}", h(func(r *http.Request) (any, error) {
 		if host, sid, ok := strings.Cut(r.PathValue("id"), "."); ok {
 			raw, _, err := s.app.Share.AskHost(r.Context(), host, "/api/peer/torrentstream/"+sid, nil)
@@ -49,14 +49,14 @@ func (s *Server) torrentStreamRoutes() {
 		return nil, nil
 	}))
 
-	// For the Anikos allowed to download onto this one (a TV: no torrent
-	// client of its own): a torrent streamed here, read by that Aniko
+	// For the Nyakuros allowed to download onto this one (a TV: no torrent
+	// client of its own): a torrent streamed here, read by that Nyakuro
 	// alone (/api/peer/local/* with its torrent: path, see sharedFile).
 	viaHost := func(fn func(r *http.Request) (any, error)) http.HandlerFunc {
 		return shared(h(func(r *http.Request) (any, error) {
 			c := peerOf(r)
 			if !c.Downloads {
-				return nil, forbidden("this Aniko doesn't take downloads from yours")
+				return nil, forbidden("this Nyakuro doesn't take downloads from yours")
 			}
 			// Nothing of what a torrent holds is known: not with parental
 			// controls, here or there.
@@ -119,7 +119,7 @@ func (s *Server) torrentStreamRoutes() {
 	}))
 }
 
-// ownsTorrent reports a torrent: path streamed here for the Aniko with
+// ownsTorrent reports a torrent: path streamed here for the Nyakuro with
 // that ID (torrentStreamRoutes): the one that may read it.
 func (s *Server) ownsTorrent(peerID, path string) bool {
 	if peerID == "" || !stream.IsTorrent(path) {
@@ -194,7 +194,7 @@ func (s *Server) streamTorrent(r *http.Request) (any, error) {
 	return map[string]any{"player": "builtin", "path": path, "torrent": ts}, nil
 }
 
-// streamTorrentViaHost starts the torrent on the Aniko the downloads go to
+// streamTorrentViaHost starts the torrent on the Nyakuro the downloads go to
 // (POST /api/peer/torrents/stream there, behind its Downloads grant) and
 // gives the in-app player its path there (kumo://<host>/torrent:<id>),
 // played as a shared file is, and the torrent's ID here (<host>.<id>) for

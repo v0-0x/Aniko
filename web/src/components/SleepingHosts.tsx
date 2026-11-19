@@ -45,7 +45,7 @@ export function SleepingHosts() {
                                     ? "Its library shows up when it answers."
                                     : h.canWake
                                       ? "Wake it to see its library."
-                                      : `To wake it from here, update Aniko on ${h.name} and turn on Wake-on-LAN in its BIOS.`}
+                                      : `To wake it from here, update Nyakuro on ${h.name} and turn on Wake-on-LAN in its BIOS.`}
                             </span>
                         </p>
                         {h.canWake && (
@@ -71,7 +71,7 @@ export function SleepingHosts() {
                                 ? "Its library shows up when it answers."
                                 : h.canWake
                                   ? "Wake it to see its library."
-                                  : `To wake it from here, update Aniko on ${h.name} and turn on Wake-on-LAN in its BIOS.`}
+                                  : `To wake it from here, update Nyakuro on ${h.name} and turn on Wake-on-LAN in its BIOS.`}
                         </p>
                     </div>
                     {h.canWake && (

@@ -1,4 +1,4 @@
-package anikohub
+package nyakurohub
 
 import (
 	"encoding/json"
@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/history"
 )
 
 func newStore(t *testing.T) *Store {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

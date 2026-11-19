@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/watchorder"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Nyakuro/server/internal/watchorder"
 )
 
 // The device's side of lists and watch-order edits kept in step through a
@@ -52,7 +52,7 @@ func TestListsAndWatchOrderBlobs(t *testing.T) {
 	// never here (a removal of it changes nothing).
 	future := time.Now().Unix()*1000 + 2000
 	lite, _ := json.Marshal(media.Lite())
-	hub := anikohub.Blob{Items: map[string]json.RawMessage{
+	hub := nyakurohub.Blob{Items: map[string]json.RawMessage{
 		"21": json.RawMessage(`{"at":` + strconv.FormatInt(future, 10) + `,"type":"ANIME","status":"COMPLETED","progress":3,"media":` + string(lite) + `}`),
 		"22": json.RawMessage(`{"at":` + strconv.FormatInt(future, 10) + `,"type":"ANIME","status":"PLANNING","media":{"id":22,"type":"ANIME","title":{"romaji":"Bleach"}}}`),
 		"23": json.RawMessage(`{"at":` + strconv.FormatInt(future, 10) + `,"deleted":true}`),
@@ -93,7 +93,7 @@ func TestListsAndWatchOrderBlobs(t *testing.T) {
 	if raw, ok := wo.Items["100"]; !ok || json.Unmarshal(raw, &oi) != nil || len(oi.Order) != 2 || oi.Order[0] != 102 || oi.At <= 0 {
 		t.Fatalf("own watch-order blob: %s", wo.Items["100"])
 	}
-	hubOrder := anikohub.Blob{Items: map[string]json.RawMessage{
+	hubOrder := nyakurohub.Blob{Items: map[string]json.RawMessage{
 		"100": json.RawMessage(`{"at":` + strconv.FormatInt(future, 10) + `,"order":[101,102],"hidden":[102]}`),
 		"200": json.RawMessage(`{"at":` + strconv.FormatInt(future, 10) + `,"order":[201],"hidden":[]}`),
 	}}
@@ -114,7 +114,7 @@ func TestListsAndWatchOrderBlobs(t *testing.T) {
 	if raw := hooks["watch-order"].Own().Items["200"]; !json.Valid(raw) || !itemDeleted(raw) {
 		t.Fatalf("200 removed here: %s", raw)
 	}
-	older := anikohub.Blob{Items: map[string]json.RawMessage{
+	older := nyakurohub.Blob{Items: map[string]json.RawMessage{
 		"200": json.RawMessage(`{"at":` + strconv.FormatInt(future-10000, 10) + `,"order":[201],"hidden":[]}`),
 	}}
 	if hooks["watch-order"].Apply(older) {

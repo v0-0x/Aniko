@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/history"
-	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
 )
 
 // Clean up lists the episodes watched to the end and those there twice;

@@ -1,4 +1,4 @@
-package anikohub
+package nyakurohub
 
 import (
 	"encoding/json"

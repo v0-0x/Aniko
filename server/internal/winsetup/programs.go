@@ -14,22 +14,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // setup downloads the programs into dir. What it asks the computer and
 // where it downloads from are fields, for the tests.
 type setup struct {
-	// dir is Aniko's programs folder.
+	// dir is Nyakuro's programs folder.
 	dir    string
 	client *http.Client
 	// github and raw are where the releases and ani-cli's script are.
 	github, raw string
 	// have reports whether a program is there already: in dir, or
-	// anywhere on the PATH (as the rest of Aniko looks for it).
+	// anywhere on the PATH (as the rest of Nyakuro looks for it).
 	have func(name string) bool
 	// haveBash and haveAniCli report the same for Git's bash and the
-	// ani-cli script, which Aniko finds in their own places.
+	// ani-cli script, which Nyakuro finds in their own places.
 	haveBash, haveAniCli func() bool
 	// vcRuntime reports whether Microsoft's Visual C++ runtime is
 	// installed (mpv's build needs it).
@@ -72,7 +72,7 @@ type program struct {
 	get     func(ctx context.Context, t *task) error
 }
 
-// programs lists them in the order they're downloaded: what most of Aniko
+// programs lists them in the order they're downloaded: what most of Nyakuro
 // needs first.
 func (s *setup) programs() []program {
 	lacks := func(names ...string) func() bool {
@@ -181,7 +181,7 @@ func (s *setup) run(ctx context.Context, report func([]Item)) []Item {
 	return snapshot()
 }
 
-// sweep removes what a setup that was cut off (Aniko closed, the computer
+// sweep removes what a setup that was cut off (Nyakuro closed, the computer
 // turned off) left in the folder: downloads that weren't complete.
 func (s *setup) sweep() {
 	entries, _ := os.ReadDir(s.dir)
@@ -192,7 +192,7 @@ func (s *setup) sweep() {
 	}
 }
 
-// zip downloads a zip and puts the files called names from it in Aniko's
+// zip downloads a zip and puts the files called names from it in Nyakuro's
 // folder.
 func (s *setup) zip(ctx context.Context, t *task, url string, verify func(string) error, names ...string) error {
 	tmp, err := os.CreateTemp(s.dir, "setup-*.zip")
@@ -321,7 +321,7 @@ func portableGit(tag string) (string, error) {
 
 // git gets Git for Windows for its bash, which runs ani-cli with the curl,
 // sed and grep it uses: PortableGit, an archive that unpacks itself, into
-// the folder "git" of Aniko's. Git for Windows publishes no checksum file.
+// the folder "git" of Nyakuro's. Git for Windows publishes no checksum file.
 func (s *setup) git(ctx context.Context, t *task) error {
 	base, tag, err := s.latest(ctx, "git-for-windows/git")
 	if err != nil {
@@ -339,7 +339,7 @@ func (s *setup) git(ctx context.Context, t *task) error {
 	}
 	t.state(Unpacking)
 	// Into a folder of its own first: one cut off halfway would have a
-	// bash that Aniko finds and that doesn't work.
+	// bash that Nyakuro finds and that doesn't work.
 	tmp := filepath.Join(s.dir, "git.part")
 	_ = os.RemoveAll(tmp)
 	defer os.RemoveAll(tmp)

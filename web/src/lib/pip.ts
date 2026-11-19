@@ -1,12 +1,12 @@
 // Picture in picture, in the desktop app: the episode goes on in a small
-// window that stays on top of the others (desktop/main.js), with Aniko's
-// player in it (its controls, subtitles and Up next), while Aniko or anything
+// window that stays on top of the others (desktop/main.js), with Nyakuro's
+// player in it (its controls, subtitles and Up next), while Nyakuro or anything
 // else is used. Not in browsers (they have their own, and extensions), nor
 // on the TV.
 //
 // The small player is the /mini page, the episode in its address (with
 // where it's at, and the tracks). Its button to go back hands the same to
-// Aniko's window.
+// Nyakuro's window.
 
 import { desktop } from "./api"
 import { adoptPlaylist } from "./playlist"
@@ -18,7 +18,7 @@ export const canPip = () => !tv && !!desktop()?.openMiniPlayer
 
 export const miniPage = (req: PlayerRequest) => `/mini#${encodeURIComponent(JSON.stringify(req))}`
 
-// An episode handed over (the /mini page's address, Aniko's window): null if
+// An episode handed over (the /mini page's address, Nyakuro's window): null if
 // it isn't one.
 export function asRequest(x: unknown): PlayerRequest | null {
     const r = x as PlayerRequest | null
@@ -48,10 +48,10 @@ export function closeMini() {
     desktop()?.closeMiniPlayer?.()
 }
 
-// In the small window: back to Aniko's window with the episode, or closed.
+// In the small window: back to Nyakuro's window with the episode, or closed.
 export const expandMini = (req: PlayerRequest) => desktop()?.expandMiniPlayer?.(req)
 
-// Aniko's window: the episode its small window hands back, played here.
+// Nyakuro's window: the episode its small window hands back, played here.
 export function takeHandedPlay() {
     const d = desktop()
     const play = (x: unknown) => {

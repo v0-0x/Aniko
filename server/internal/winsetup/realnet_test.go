@@ -16,13 +16,13 @@ import (
 
 // TestRealDownloads runs the setup against the real hosts, into an empty
 // folder, as on a computer with none of the programs: only with
-// ANIKO_REALNET=1 (the Windows build sets it, windows.yml). It shows when a
+// NYAKURO_REALNET=1 (the Windows build sets it, windows.yml). It shows when a
 // project moved or renamed its downloads, or stopped publishing checksums.
 // On Windows it then starts every program, and ani-cli in the bash of the
 // Git it unpacked; elsewhere it checks that what came are Windows programs.
 func TestRealDownloads(t *testing.T) {
-	if os.Getenv("ANIKO_REALNET") != "1" {
-		t.Skip("ANIKO_REALNET=1 downloads Aniko's programs from their real hosts")
+	if os.Getenv("NYAKURO_REALNET") != "1" {
+		t.Skip("NYAKURO_REALNET=1 downloads Nyakuro's programs from their real hosts")
 	}
 	windows := runtime.GOOS == "windows"
 	dir := filepath.Join(t.TempDir(), "bin")
@@ -59,7 +59,7 @@ func TestRealDownloads(t *testing.T) {
 		t.Helper()
 		msg := fmt.Sprintf(format, args...)
 		if os.Getenv("GITHUB_ACTIONS") == "true" {
-			fmt.Println("::error title=Aniko's programs setup::" + msg)
+			fmt.Println("::error title=Nyakuro's programs setup::" + msg)
 		}
 		t.Error(msg)
 	}
@@ -96,7 +96,7 @@ func TestRealDownloads(t *testing.T) {
 		return
 	}
 
-	// Started as Aniko starts them: its folder and its Git's bash first on
+	// Started as Nyakuro starts them: its folder and its Git's bash first on
 	// the PATH (util.SetToolsDir).
 	bash := filepath.Join(dir, "git", "bin", "bash.exe")
 	env := append(os.Environ(), "PATH="+dir+string(os.PathListSeparator)+filepath.Dir(bash)+string(os.PathListSeparator)+os.Getenv("PATH"), "ANI_CLI_PLAYER=true")

@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 	"io/fs"
 	"log"
 	"net"
@@ -22,16 +22,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/app"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	fileup "github.com/v0-0x/Aniko/server/internal/upload"
+	"github.com/v0-0x/Nyakuro/server/internal/app"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	fileup "github.com/v0-0x/Nyakuro/server/internal/upload"
 )
 
 type Server struct {
 	app *app.App
 	ui  fs.FS
 	mux *http.ServeMux
-	// torrentOwners: the torrents streamed for other Anikos (session ID to
+	// torrentOwners: the torrents streamed for other Nyakuros (session ID to
 	// their ID): only that one reads its torrent (see torrentStreamRoutes).
 	torrentMu     sync.Mutex
 	torrentOwners map[string]string
@@ -133,7 +133,7 @@ func (s *Server) serve(ln net.Listener, addr string) {
 	s.mu.Lock()
 	s.srv, s.addr = srv, addr
 	s.mu.Unlock()
-	log.Printf("Aniko listening on http://%s", addr)
+	log.Printf("Nyakuro listening on http://%s", addr)
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("http: %v", err)
@@ -211,7 +211,7 @@ const (
 	clientShell clientKind = iota
 	clientLocal
 	clientLAN
-	// clientOwner: a browser on the network signed in to an Aniko Hub's
+	// clientOwner: a browser on the network signed in to a Nyakuro Hub's
 	// dashboard (its password): the hub's owner, as trusted as its own
 	// computer.
 	clientOwner
@@ -312,7 +312,7 @@ func forwarded(r *http.Request) bool {
 
 func (s *Server) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Other Aniko apps (library sharing) are checked apart from browsers.
+		// Other Nyakuro apps (library sharing) are checked apart from browsers.
 		if strings.HasPrefix(r.URL.Path, "/api/peer/") {
 			s.servePeer(w, r, next)
 			return
@@ -329,7 +329,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		case cfg.Server.AllowLAN && (isLANIP(ip) || ip != nil && ip.IsLoopback()):
 			kind = clientLAN
 		default:
-			http.Error(w, "Aniko only accepts connections from this computer and your local network.", http.StatusForbidden)
+			http.Error(w, "Nyakuro only accepts connections from this computer and your local network.", http.StatusForbidden)
 			return
 		}
 		if !hostAllowed(r.Host) {
@@ -346,7 +346,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			kind = clientShell
 		}
 		if kind == clientLocal && s.AppOnly {
-			http.Error(w, "Aniko only answers its own app on this device.", http.StatusForbidden)
+			http.Error(w, "Nyakuro only answers its own app on this device.", http.StatusForbidden)
 			return
 		}
 
@@ -444,12 +444,12 @@ func kindOf(r *http.Request) clientKind {
 // browser), which may do host-level things like opening folders.
 func isTrusted(r *http.Request) bool { return kindOf(r) != clientLAN }
 
-const webUIDisabledPage = `<!doctype html><html><head><meta charset="utf-8"><title>Aniko</title>
+const webUIDisabledPage = `<!doctype html><html><head><meta charset="utf-8"><title>Nyakuro</title>
 <style>body{margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0a;color:#ededed;font-family:system-ui,sans-serif}
 .c{max-width:440px;padding:32px;border:1px solid #333;border-radius:2px;text-align:center}
 h1{font-size:20px;margin:0 0 8px}p{color:#9a9a9a;line-height:1.5}</style></head>
-<body><div class="c"><h1>The Aniko Web UI is turned off</h1>
-<p>Open the Aniko desktop app and enable it in <b>Settings › Devices & network</b> to use Aniko from a browser.</p></div></body></html>`
+<body><div class="c"><h1>The Nyakuro Web UI is turned off</h1>
+<p>Open the Nyakuro desktop app and enable it in <b>Settings › Devices & network</b> to use Nyakuro from a browser.</p></div></body></html>`
 
 // ---------------------------------------------------------------------------
 // JSON helpers

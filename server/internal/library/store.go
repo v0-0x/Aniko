@@ -3,12 +3,12 @@ package library
 import (
 	"database/sql"
 	"encoding/json"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
 )
 
 // LocalFile is a video file found in one of the library directories.
@@ -26,7 +26,7 @@ type LocalFile struct {
 	Locked       bool    `json:"locked"`
 	Ignored      bool    `json:"ignored"`
 	MatchScore   float64 `json:"matchScore"`
-	// Host: another Aniko on the network shares this file (see package
+	// Host: another Nyakuro on the network shares this file (see package
 	// share); its path is kumo://<host>/<path there>. Never stored.
 	Host     string `json:"host,omitempty"`
 	HostName string `json:"hostName,omitempty"`

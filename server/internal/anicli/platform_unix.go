@@ -6,7 +6,7 @@ import (
 	"context"
 	"os/exec"
 
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 // findScript resolves the configured ani-cli.

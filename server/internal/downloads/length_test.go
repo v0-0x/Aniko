@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
 )
 
 func TestParsePlaylist(t *testing.T) {

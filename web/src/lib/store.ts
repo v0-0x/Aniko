@@ -54,14 +54,14 @@ export type PlayerRequest = (
 
 export const playerStore = createStore<PlayerRequest | null>(null)
 
-// The server asks for its password ("hub": an Aniko Hub's dashboard does).
+// The server asks for its password ("hub": a Nyakuro Hub's dashboard does).
 export const passwordStore = createStore<boolean | "hub">(false)
 
 export const searchOpenStore = createStore<boolean>(false)
 
 // Notifications muted with the bell in the sidebar (lib/toast.ts): only
 // errors show. Remembered by this browser.
-const MUTED_KEY = "aniko-notifications-muted"
+const MUTED_KEY = "nyakuro-notifications-muted"
 export const notificationsMutedStore = createStore<boolean>(
     (() => {
         try {
@@ -81,7 +81,7 @@ notificationsMutedStore.subscribe(() => {
 
 // The version whose update banner was put off ("Later") on Home; checking
 // for updates by hand shows it again.
-const LATER_KEY = "aniko-update-later"
+const LATER_KEY = "nyakuro-update-later"
 function readLater(): string {
     try {
         return JSON.parse(localStorage.getItem(LATER_KEY) ?? '""') || ""

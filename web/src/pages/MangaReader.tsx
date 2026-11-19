@@ -22,7 +22,7 @@ const MODES: [Mode, string][] = [
 ]
 
 function proxied(p: Page) {
-    // A downloaded chapter's pages are Aniko's own.
+    // A downloaded chapter's pages are Nyakuro's own.
     if (p.url.startsWith("/api/")) return p.url
     const u = btoa(unescape(encodeURIComponent(p.url))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
     const h = Object.keys(p.headers ?? {}).length ? btoa(unescape(encodeURIComponent(JSON.stringify(p.headers)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : ""
@@ -89,7 +89,7 @@ export default function MangaReaderPage() {
 // server (track off: the dashboard reading the server's own chapters).
 const localPosition = (id: number): MangaPosition | null => {
     try {
-        return JSON.parse(localStorage.getItem(`aniko-manga-position-${id}`) || "null")
+        return JSON.parse(localStorage.getItem(`nyakuro-manga-position-${id}`) || "null")
     } catch {
         return null
     }
@@ -139,7 +139,7 @@ export function MangaReader({
     const marked = useRef<string>("")
     // How big pages show: 1 fills the space below the buttons, less leaves
     // more room around them. Remembered by this browser.
-    const [zoom, setZoom] = usePersisted("aniko-manga-zoom", 1)
+    const [zoom, setZoom] = usePersisted("nyakuro-manga-zoom", 1)
     const zoomBy = (d: number) => setZoom(z => Math.round(Math.min(1, Math.max(0.5, z + d)) * 100) / 100)
 
     const { data: chapters } = useMangaChapters(id, provider)
@@ -303,7 +303,7 @@ export function MangaReader({
             if (!track) {
                 setLocal(at)
                 try {
-                    localStorage.setItem(`aniko-manga-position-${id}`, JSON.stringify(at))
+                    localStorage.setItem(`nyakuro-manga-position-${id}`, JSON.stringify(at))
                 } catch {
                     // Nothing kept: it starts at the first page next time.
                 }

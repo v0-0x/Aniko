@@ -15,7 +15,7 @@ type netInterface struct {
 }
 
 // lanURLs lists the addresses other devices on the home network can open
-// Aniko at: one per network interface with a private IPv4 address, wired and
+// Nyakuro at: one per network interface with a private IPv4 address, wired and
 // Wi-Fi first, then the computer's .local name when Avahi announces it.
 func lanURLs(port int) []string {
 	ifaces, err := net.Interfaces()

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/util"
 )
 
 type fakeResult struct {
@@ -41,7 +41,7 @@ func fakeAniSkip(t *testing.T, results ...fakeResult) (*db.DB, *[]string) {
 	oldAPI, oldHTTP := aniskipAPI, util.HTTP
 	aniskipAPI, util.HTTP = srv.URL, srv.Client() // util.HTTP refuses local addresses
 	t.Cleanup(func() { aniskipAPI, util.HTTP = oldAPI, oldHTTP })
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

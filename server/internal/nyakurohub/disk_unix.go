@@ -1,6 +1,6 @@
 //go:build !windows
 
-package anikohub
+package nyakurohub
 
 import "syscall"
 

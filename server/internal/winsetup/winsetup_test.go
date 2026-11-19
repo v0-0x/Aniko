@@ -143,7 +143,7 @@ func (h *host) releases(t *testing.T) {
 
 	h.release("git-for-windows/git", "v2.56.1.windows.1", map[string][]byte{"PortableGit-2.56.1-64-bit.7z.exe": []byte(portableGitExe)})
 
-	// Not 1.37.0, whose real checksum Aniko knows.
+	// Not 1.37.0, whose real checksum Nyakuro knows.
 	h.release("aria2/aria2", "release-1.38.0", map[string][]byte{
 		"aria2-1.38.0-win-64bit-build1.zip": zipOf(t, "aria2-1.38.0-win-64bit-build1/", "", "aria2-1.38.0-win-64bit-build1/aria2c.exe", "aria2c", "aria2-1.38.0-win-64bit-build1/COPYING", "GPL"),
 	})
@@ -228,7 +228,7 @@ func equal(a, b map[string]string) bool {
 	return true
 }
 
-// everything is Aniko's folder after a setup that had to download it all.
+// everything is Nyakuro's folder after a setup that had to download it all.
 var everything = map[string]string{
 	"ffmpeg.exe":       "ffmpeg 9.0",
 	"ffprobe.exe":      "ffprobe 9.0",
@@ -256,7 +256,7 @@ func TestDownloadsEverything(t *testing.T) {
 		}
 	}
 	if got := tree(t, dir); !equal(got, everything) {
-		t.Errorf("Aniko's folder has %q, want %q", got, everything)
+		t.Errorf("Nyakuro's folder has %q, want %q", got, everything)
 	}
 	// The projects that publish checksums had theirs checked.
 	for name, want := range map[string]bool{"ffmpeg": true, "yt-dlp": true, "fzf": true, "Git Bash": false, "ani-cli": false, "aria2": false, "mpv": false} {
@@ -295,11 +295,11 @@ func TestSkipsWhatIsThere(t *testing.T) {
 		t.Errorf("ffmpeg: %s %s", it.State, it.Error)
 	}
 	if got, want := tree(t, dir), map[string]string{"ffprobe.exe": "ffprobe 9.0"}; !equal(got, want) {
-		t.Errorf("Aniko's folder has %q, want %q", got, want)
+		t.Errorf("Nyakuro's folder has %q, want %q", got, want)
 	}
 }
 
-// A zip can't write outside Aniko's folder: entries whose path leaves the
+// A zip can't write outside Nyakuro's folder: entries whose path leaves the
 // zip aren't taken, and the others land under the program's own name.
 func TestUnzipStaysInTheFolder(t *testing.T) {
 	root := t.TempDir()
@@ -372,10 +372,10 @@ func TestChecksums(t *testing.T) {
 		delete(want, gone)
 	}
 	if got := tree(t, dir); !equal(got, want) {
-		t.Errorf("Aniko's folder has %q, want %q", got, want)
+		t.Errorf("Nyakuro's folder has %q, want %q", got, want)
 	}
 
-	// aria2 publishes none: the one of the release Aniko knows is checked.
+	// aria2 publishes none: the one of the release Nyakuro knows is checked.
 	h.release("aria2/aria2", "release-1.37.0", map[string][]byte{"aria2-1.37.0-win-64bit-build1.zip": zipOf(t, "aria2c.exe", "not the real 1.37.0")})
 	dir = t.TempDir()
 	items = newTestSetup(h, dir).run(context.Background(), nil)
@@ -472,7 +472,7 @@ func TestFailedDownloadLeavesNothing(t *testing.T) {
 		delete(want, gone)
 	}
 	if got := tree(t, dir); !equal(got, want) {
-		t.Errorf("Aniko's folder has %q, want %q", got, want)
+		t.Errorf("Nyakuro's folder has %q, want %q", got, want)
 	}
 
 	// No host at all.
@@ -484,7 +484,7 @@ func TestFailedDownloadLeavesNothing(t *testing.T) {
 		}
 	}
 	if got := tree(t, dir); len(got) != 0 {
-		t.Errorf("Aniko's folder has %q after a setup with no connection", got)
+		t.Errorf("Nyakuro's folder has %q after a setup with no connection", got)
 	}
 }
 
@@ -565,7 +565,7 @@ func TestDownloadStartsOver(t *testing.T) {
 		t.Fatalf("yt-dlp: %s %s", it.State, it.Error)
 	}
 	if got := tree(t, dir); !equal(got, map[string]string{"yt-dlp.exe": string(body)}) {
-		t.Errorf("Aniko's folder has %q", got)
+		t.Errorf("Nyakuro's folder has %q", got)
 	}
 }
 
@@ -598,7 +598,7 @@ func TestStalledDownload(t *testing.T) {
 		t.Errorf("yt-dlp: %s %q", it.State, it.Error)
 	}
 	if got := tree(t, dir); len(got) != 0 {
-		t.Errorf("Aniko's folder has %q", got)
+		t.Errorf("Nyakuro's folder has %q", got)
 	}
 }
 
@@ -680,13 +680,13 @@ func TestReportsProgress(t *testing.T) {
 	for i := range final {
 		final[i].State, final[i].Error = Done, ""
 	}
-	if ok, text := p.Outcome(); !ok || text != "Aniko's programs are installed" {
+	if ok, text := p.Outcome(); !ok || text != "Nyakuro's programs are installed" {
 		t.Errorf("outcome: %v %q", ok, text)
 	}
 	for i := range final {
 		final[i].State = Skipped
 	}
-	if ok, text := p.Outcome(); !ok || text != "Aniko's programs were there already" {
+	if ok, text := p.Outcome(); !ok || text != "Nyakuro's programs were there already" {
 		t.Errorf("outcome: %v %q", ok, text)
 	}
 }
@@ -749,7 +749,7 @@ func TestGitWithoutBash(t *testing.T) {
 	entries, _ := os.ReadDir(dir)
 	for _, e := range entries {
 		if strings.HasPrefix(e.Name(), "git") || strings.HasPrefix(e.Name(), "setup-") {
-			t.Errorf("%s left in Aniko's folder", e.Name())
+			t.Errorf("%s left in Nyakuro's folder", e.Name())
 		}
 	}
 }
@@ -775,7 +775,7 @@ func TestAniCliAndMpvChecks(t *testing.T) {
 	got := tree(t, dir)
 	for _, name := range []string{"ani-cli", "mpv.exe", "vulkan-1.dll"} {
 		if _, ok := got[name]; ok {
-			t.Errorf("%s is in Aniko's folder", name)
+			t.Errorf("%s is in Nyakuro's folder", name)
 		}
 	}
 	if n := h.hits["/mpv-player/mpv/releases/latest/download/x"]; n != 0 {

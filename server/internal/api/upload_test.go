@@ -12,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 )
 
-// A Aniko sends files to one that takes its downloads, a piece at a time,
+// A Nyakuro sends files to one that takes its downloads, a piece at a time,
 // into the folder picked; only when it's allowed, and only into it.
 func TestUploadToHost(t *testing.T) {
 	const local = "127.0.0.1:5000"

@@ -22,7 +22,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     const settings = status?.settings
     const { data: providers } = useOnlineProviders()
     const media = entry.media
-    const [provider, setProvider] = useState<string>(() => readLocal(`aniko-provider-${media.id}`) || settings?.onlineStream.defaultProvider || "ani-cli")
+    const [provider, setProvider] = useState<string>(() => readLocal(`nyakuro-provider-${media.id}`) || settings?.onlineStream.defaultProvider || "ani-cli")
     // Sub/dub is remembered per anime on the server (also used by "continue
     // watching", the next-episode button and local files).
     const language = useLanguageMode(media.id)
@@ -47,7 +47,7 @@ export function StreamPanel({ entry }: { entry: EntryView }) {
     const marker = useEpisodeMarker(media, entry.listEntry)
     const qc = useQueryClient()
 
-    useEffect(() => writeLocal(`aniko-provider-${media.id}`, provider), [provider, media.id])
+    useEffect(() => writeLocal(`nyakuro-provider-${media.id}`, provider), [provider, media.id])
 
     // Wait for the remembered choice, or the first request would list (and
     // remember) the default mode instead. The only version there is isn't a
@@ -449,7 +449,7 @@ function DownloadDialog({ open, onOpenChange, provider, mediaId, dub, episodes, 
     )
 }
 
-// Windows and macOS: Aniko's setup installs ani-cli (on Windows with Git,
+// Windows and macOS: Nyakuro's setup installs ani-cli (on Windows with Git,
 // whose bash runs it).
 function InstallAniCli({ running }: { running: boolean }) {
     const { data: status } = useStatus()

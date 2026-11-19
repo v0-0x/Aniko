@@ -15,9 +15,9 @@ import (
 
 	"github.com/dop251/goja"
 
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/events"
 )
 
 // ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ import (
 
 func newTestManager(t *testing.T) *Manager {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ function init() {
   $ui.register(function(ctx) {
     report.uiHost = typeof __host;
     report.leakedGlobals = Object.getOwnPropertyNames(globalThis).filter(function(k) {
-      return /host|aniko/i.test(k);
+      return /host|nyakuro/i.test(k);
     }).join(',');
     // ctx.manga needs no scope (as plugins expect).
     ctx.manga.getCollection().then(function(c) { $store.set('manga', c); },

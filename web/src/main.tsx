@@ -7,17 +7,24 @@ import { PageError } from "./components/PageError"
 import "./index.css"
 import { applyCachedTheme } from "./lib/themes"
 
-// Aniko was called Kumo before 2.0.37: what this browser kept under Kumo's
-// names (the theme, sorting, the player's volume…) takes Aniko's.
-try {
-    for (const key of Object.keys(localStorage)) {
-        if (!/^kumo[-.]/.test(key)) continue
-        const name = "aniko" + key.slice(4)
-        if (localStorage.getItem(name) === null) localStorage.setItem(name, localStorage.getItem(key) ?? "")
-        localStorage.removeItem(key)
+// Nyakuro was called Aniko until 3.0.58, and Kumo before 2.0.37: what this
+// browser kept under an old name (the theme, sorting, the player's volume…)
+// takes Nyakuro's, once.
+function renameStored(store: Storage) {
+    for (const key of Object.keys(store)) {
+        const old = /^(aniko|kumo)(?=[-:.])/.exec(key)
+        if (!old) continue
+        const name = "nyakuro" + key.slice(old[1].length)
+        if (store.getItem(name) === null) store.setItem(name, store.getItem(key) ?? "")
+        store.removeItem(key)
     }
-} catch {
-    // no storage (a private window): nothing kept either
+}
+for (const store of ["localStorage", "sessionStorage"] as const) {
+    try {
+        renameStored(window[store])
+    } catch {
+        // no storage (a private window): nothing kept either
+    }
 }
 
 // A picture that didn't load (offline, a cover that's gone): nothing in its

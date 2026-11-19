@@ -1,4 +1,4 @@
-package anikohub
+package nyakurohub
 
 import (
 	"bufio"
@@ -13,17 +13,17 @@ import (
 // System is how the computer the hub runs on is doing, for its dashboard.
 // Read from Linux's /proc and /sys (elsewhere what can't be read is 0).
 type System struct {
-	Model    string  `json:"model"`    // "Raspberry Pi 4 Model B Rev 1.4"
-	Hostname string  `json:"hostname"` // the computer's name
-	Arch     string  `json:"arch"`
-	Cores    int     `json:"cores"`
-	CPU      float64 `json:"cpu"`      // all cores, 0-100, since the last look
-	AnikoCPU float64 `json:"anikoCpu"` // the hub's own share, 0-100
-	Load     float64 `json:"load"`     // 1-minute load average
-	MemTotal int64   `json:"memTotal"`
-	MemUsed  int64   `json:"memUsed"`
-	AnikoMem int64   `json:"anikoMem"` // the hub's own (resident)
-	Temp     float64 `json:"temp"`     // °C (0: unknown)
+	Model      string  `json:"model"`    // "Raspberry Pi 4 Model B Rev 1.4"
+	Hostname   string  `json:"hostname"` // the computer's name
+	Arch       string  `json:"arch"`
+	Cores      int     `json:"cores"`
+	CPU        float64 `json:"cpu"`        // all cores, 0-100, since the last look
+	NyakuroCPU float64 `json:"nyakuroCpu"` // the hub's own share, 0-100
+	Load       float64 `json:"load"`       // 1-minute load average
+	MemTotal   int64   `json:"memTotal"`
+	MemUsed    int64   `json:"memUsed"`
+	NyakuroMem int64   `json:"nyakuroMem"` // the hub's own (resident)
+	Temp       float64 `json:"temp"`       // °C (0: unknown)
 	// Throttled: the Pi slows itself down (too hot, or too little power).
 	Throttled bool    `json:"throttled"`
 	Uptime    int64   `json:"uptime"`  // seconds the computer has been on
@@ -42,13 +42,13 @@ type Disk struct {
 
 // Sampler keeps the last look, to tell rates (CPU, network) since then.
 type Sampler struct {
-	mu       sync.Mutex
-	started  time.Time
-	at       time.Time
-	cpuIdle  uint64
-	cpuAll   uint64
-	anikoCPU uint64 // ticks
-	rx, tx   uint64
+	mu         sync.Mutex
+	started    time.Time
+	at         time.Time
+	cpuIdle    uint64
+	cpuAll     uint64
+	nyakuroCPU uint64 // ticks
+	rx, tx     uint64
 	// The drives, read in the background every half minute: asking a drive
 	// how full it is can wait on it (a USB drive asleep), and a dashboard
 	// asks every few seconds.
@@ -69,7 +69,7 @@ func (s *Sampler) Look(folders []string) System {
 		sys.Model = strings.TrimRight(string(b), "\x00\n ")
 	}
 	idle, all := cpuTicks()
-	aniko := selfTicks()
+	nyakuro := selfTicks()
 	rx, tx := netBytes()
 	now := time.Now()
 
@@ -78,18 +78,18 @@ func (s *Sampler) Look(folders []string) System {
 		if d := all - s.cpuAll; d > 0 && all >= s.cpuAll {
 			sys.CPU = round1(100 * float64(d-(idle-s.cpuIdle)) / float64(d))
 			// The hub's ticks against all of the cores' ticks.
-			sys.AnikoCPU = round1(100 * float64(aniko-s.anikoCPU) / float64(d))
+			sys.NyakuroCPU = round1(100 * float64(nyakuro-s.nyakuroCPU) / float64(d))
 		}
 		if secs := now.Sub(s.at).Seconds(); secs > 0 && rx >= s.rx && tx >= s.tx {
 			sys.NetRx = float64(rx-s.rx) / secs
 			sys.NetTx = float64(tx-s.tx) / secs
 		}
 	}
-	s.at, s.cpuIdle, s.cpuAll, s.anikoCPU, s.rx, s.tx = now, idle, all, aniko, rx, tx
+	s.at, s.cpuIdle, s.cpuAll, s.nyakuroCPU, s.rx, s.tx = now, idle, all, nyakuro, rx, tx
 	s.mu.Unlock()
 
 	sys.MemTotal, sys.MemUsed = memory()
-	sys.AnikoMem = selfMemory()
+	sys.NyakuroMem = selfMemory()
 	sys.Temp = temperature()
 	sys.Throttled = throttled()
 	sys.Load = loadAverage()

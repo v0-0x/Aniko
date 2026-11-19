@@ -19,7 +19,7 @@ export default function TorrentsPage() {
         queryFn: () => api.get<{ client: string; connected: boolean; version: string; error?: string; needsAuth?: boolean; host?: string }>("/api/torrent-client/status"),
         refetchInterval: 15000,
     })
-    // When downloads go to another Aniko (a TV's to its computer), these are
+    // When downloads go to another Nyakuro (a TV's to its computer), these are
     // its torrents, in its client.
     const host = clientStatus?.host
     const clientName = host ? clientStatus.client : status?.settings.torrent.defaultClient
@@ -102,7 +102,7 @@ export default function TorrentsPage() {
 
             {host && !hostDown && clientName === "none" && (
                 <EmptyState icon={<Magnet className="size-6" />} title={`Set up a torrent client on ${host}`}>
-                    Choose qBittorrent or Transmission in Aniko's settings on {host}.
+                    Choose qBittorrent or Transmission in Nyakuro's settings on {host}.
                 </EmptyState>
             )}
             {!host && (!clientName || clientName === "none") && (

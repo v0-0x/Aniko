@@ -211,11 +211,11 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     // Volume boost: the volume goes to 300% (Web Audio, see boostTo). Only
     // for a source from here (or a blob: hls.js's): another site's, without
     // CORS, would go silent through Web Audio (see onLoadStart).
-    const [boost, setBoost] = useState(() => readLocal("aniko-volume-boost") === "1")
+    const [boost, setBoost] = useState(() => readLocal("nyakuro-volume-boost") === "1")
     const [boostOk, setBoostOk] = useState(true)
     const maxVolume = boost && boostOk ? 3 : 1
-    const [volume, setVolume] = useState(() => Math.min(readLocal("aniko-volume-boost") === "1" ? 3 : 1, Number(readLocal("aniko-volume") ?? 1)))
-    const [stats, setStats] = useState(() => readLocal("aniko-player-stats") === "1")
+    const [volume, setVolume] = useState(() => Math.min(readLocal("nyakuro-volume-boost") === "1" ? 3 : 1, Number(readLocal("nyakuro-volume") ?? 1)))
+    const [stats, setStats] = useState(() => readLocal("nyakuro-player-stats") === "1")
     const [muted, setMuted] = useState(false)
     const [rate, setRate] = useState(1)
     const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement)
@@ -716,7 +716,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         canvas.height = 18
         let grey = false
         let from = -1
-        // Counted again from a seek; not while Aniko is in the background
+        // Counted again from a seek; not while Nyakuro is in the background
         // (nothing is drawn then).
         const onSeek = () => void (from = -1)
         v.addEventListener("seeking", onSeek)
@@ -817,7 +817,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         const v = videoRef.current
         if (!v) return
         if (!trackRef.current) {
-            trackRef.current = v.addTextTrack("subtitles", "Aniko", "und")
+            trackRef.current = v.addTextTrack("subtitles", "Nyakuro", "und")
         }
         const tr = trackRef.current
         // Hidden while they change: a cue removed while it shows can stay
@@ -1189,13 +1189,13 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
     const toggleBoost = () => {
         const on = !boost
         setBoost(on)
-        writeLocal("aniko-volume-boost", on ? "1" : "0")
+        writeLocal("nyakuro-volume-boost", on ? "1" : "0")
         if (!on) setVolume(x => Math.min(1, x))
     }
     const toggleStats = () => {
         const on = !stats
         setStats(on)
-        writeLocal("aniko-player-stats", on ? "1" : "0")
+        writeLocal("nyakuro-player-stats", on ? "1" : "0")
     }
     // The frame showing, as a PNG: "<title> - Ep N - mm-ss.png", downloaded.
     const screenshot = () => {
@@ -1207,7 +1207,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         try {
             c.getContext("2d")!.drawImage(v, 0, 0)
             const at = Math.max(0, Math.floor(where(v)))
-            const show = (title || "Aniko").replace(/\s+—\s+Episode\s+\d+.*$/, "")
+            const show = (title || "Nyakuro").replace(/\s+—\s+Episode\s+\d+.*$/, "")
             const name = `${show} - Ep ${episode} - ${String(Math.floor(at / 60)).padStart(2, "0")}-${String(at % 60).padStart(2, "0")}.png`.replace(/[\\/:*?"<>|]+/g, " ")
             c.toBlob(blob => {
                 if (!blob) return void toast.error("Couldn't capture this video")
@@ -1459,7 +1459,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
         v.muted = muted
         boostTo(v, volume)
         try {
-            localStorage.setItem("aniko-volume", String(volume))
+            localStorage.setItem("nyakuro-volume", String(volume))
         } catch {
             /* ignore */
         }
@@ -1581,7 +1581,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 onPlay={() => {
                     setPaused(false)
                     poke()
-                    // Volume boost made before Aniko could play sound.
+                    // Volume boost made before Nyakuro could play sound.
                     if (audioGraph.current?.ctx.state === "suspended") audioGraph.current.ctx.resume().catch(() => {})
                 }}
                 onPause={() => {
@@ -1756,7 +1756,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                 </div>
             )}
 
-            {/* top bar. The small window's: what plays, back to Aniko and close;
+            {/* top bar. The small window's: what plays, back to Nyakuro and close;
                 dragging it moves the window. */}
             {mini && (
                 <div
@@ -1766,7 +1766,7 @@ function Player({ req, onClose, mini, stage }: { req: PlayerRequest; onClose: ()
                     )}
                 >
                     <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-white">{title}</p>
-                    <button onClick={expand} title="Back to Aniko (p)" aria-label="Back to Aniko" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">
+                    <button onClick={expand} title="Back to Nyakuro (p)" aria-label="Back to Nyakuro" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">
                         <Maximize2 className="size-4" />
                     </button>
                     <button onClick={close} title="Close" aria-label="Close" className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 [-webkit-app-region:no-drag]">

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The logo's cat and spark (packaging/icons/aniko.svg, 64 units) in the
-     middle of the adaptive icon's 108, inside the 66 every shape shows. -->
+<!-- The logo's cat, moon and sparks (packaging/icons/nyakuro.svg, 64 units)
+     in the middle of the adaptive icon's 108, inside the 66 every shape
+     shows. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -13,47 +14,47 @@
         android:scaleY="0.9"
         android:translateX="22"
         android:translateY="22">
-      <group android:translateX="-1.6">
-        <path
-            android:strokeColor="#FFF1DC"
-            android:strokeWidth="4.4"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:pathData="M45 46.5C54.5 49.5 59.4 44.6 57.4 38.8 55.8 34.2 57.2 31 60.2 29.6" />
         <path
             android:fillColor="#FFF1DC"
+            android:pathData="M47 7a13 13 0 1 0 11 19A9.5 9.5 0 0 1 47 7Z" />
+        <path
+            android:fillColor="#17121F"
+            android:pathData="M15 43a18 13 0 1 0 36 0a18 13 0 1 0-36 0Z" />
+        <path
+            android:strokeColor="#17121F"
+            android:strokeWidth="5.5"
+            android:strokeLineCap="round"
+            android:pathData="M49 44c4 6-1 12-10 12H17c-5 0-7-3-6-6" />
+        <path
+            android:fillColor="#17121F"
+            android:strokeColor="#17121F"
+            android:strokeWidth="4"
+            android:strokeLineJoin="round"
+            android:pathData="M14 29l3-12 9 7h6l9-7 3 12c0 7-6 12-15 12S14 36 14 29Z" />
+        <path
+            android:fillColor="#FF8FB1"
+            android:pathData="M19 22 21.6 25.6l-3 .6ZM39 22 36.4 25.6l3 .6Z" />
+        <path
             android:strokeColor="#FFF1DC"
-            android:strokeWidth="5"
-            android:strokeLineJoin="round"
-            android:pathData="M23.5 10.5 29.6 18.4H34.4L40.5 10.5 50.5 49H41L32 39.5 23 49H13.5Z" />
-        <path
-            android:fillColor="#FF8FB1"
-            android:pathData="M24.2 14.6 27.2 18.6 23.2 19.4ZM39.8 14.6 36.8 18.6 40.8 19.4ZM19.9 35.4a2.5 1.4 0 1 0 5 0 2.5 1.4 0 1 0-5 0ZM39.1 35.4a2.5 1.4 0 1 0 5 0 2.5 1.4 0 1 0-5 0Z" />
-        <path
-            android:fillColor="#FF8FB1"
-            android:strokeColor="#FF8FB1"
-            android:strokeWidth="0.9"
-            android:strokeLineJoin="round"
-            android:pathData="M30.9 33.9h2.2l-1.1 1.3Z" />
-        <path
-            android:strokeColor="#2A1D45"
             android:strokeWidth="1.7"
             android:strokeLineCap="round"
-            android:pathData="M24.4 31.4q2.4-3 4.8 0M34.8 31.4q2.4-3 4.8 0" />
+            android:pathData="M21 32q2.5 2.6 5 0M32 32q2.5 2.6 5 0" />
         <path
-            android:strokeColor="#2A1D45"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:pathData="M29.2 36.3q1.4 1.9 2.8 0 1.4 1.9 2.8 0" />
+            android:fillColor="#FF8FB1"
+            android:pathData="M27.8 35.4h2.4l-1.2 1.3Z" />
         <path
-            android:strokeColor="#FFF1DC"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:pathData="M15.6 32.6 11.4 31.5M15.2 36 11 36.7M48.4 32.6 51.6 31.5M48.8 36 52 36.7" />
-      </group>
-        <path
-            android:fillColor="#7CE0D6"
-            android:pathData="M54 5.82Q54.7 9.8 58.68 10.5 54.7 11.2 54 15.18 53.3 11.2 49.32 10.5 53.3 9.8 54 5.82Z" />
+            android:fillColor="#FF8FB1"
+            android:fillAlpha="0.7"
+            android:pathData="M21.4 36.5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0ZM33.4 36.5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0Z" />
+        <group android:translateX="11" android:translateY="14" android:scaleX="0.9" android:scaleY="0.9">
+            <path
+                android:fillColor="#7CE0D6"
+                android:pathData="M0 -5Q.7 -.7 5 0 .7 .7 0 5 -.7 .7 -5 0 -.7 -.7 0 -5Z" />
+        </group>
+        <group android:translateX="56" android:translateY="40" android:scaleX="0.6" android:scaleY="0.6">
+            <path
+                android:fillColor="#7CE0D6"
+                android:pathData="M0 -5Q.7 -.7 5 0 .7 .7 0 5 -.7 .7 -5 0 -.7 -.7 0 -5Z" />
+        </group>
     </group>
 </vector>

@@ -39,7 +39,7 @@ export function PluginTree({ pluginId, node }: { pluginId: string; node: UINode 
         <PluginCtx.Provider value={pluginId}>
             {/* A plugin draws in its own box: its styles and classes (fixed,
                 z-index…) can't put anything over the rest of the app. */}
-            <div className="aniko-plugin text-sm" style={{ position: "relative", isolation: "isolate", contain: "paint" }}>
+            <div className="nyakuro-plugin text-sm" style={{ position: "relative", isolation: "isolate", contain: "paint" }}>
                 <Node node={node} />
             </div>
         </PluginCtx.Provider>
@@ -177,7 +177,7 @@ function Node({ node }: { node: UINode }) {
             )
         }
         case "css":
-            // Not shown: a plugin's CSS would apply to all of Aniko's pages,
+            // Not shown: a plugin's CSS would apply to all of Nyakuro's pages,
             // where it could read what's typed in them (passwords) through
             // the images its rules load.
             return null

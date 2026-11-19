@@ -21,7 +21,7 @@ export default function MangaEntryPage() {
     const classic = useClassic()
     const { data: media, isLoading, error: mediaError, refetch: refetchMedia, isFetching: mediaFetching } = useQuery({ queryKey: ["manga", "media", id], queryFn: () => api.get<Media>(`/api/manga/${id}`), enabled: id > 0 })
     const { data: providers } = useQuery({ queryKey: ["manga-providers"], queryFn: () => api.get<{ id: string; name: string }[]>("/api/manga/providers") })
-    const [provider, setProvider] = useState<string>(() => readStored(`aniko-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
+    const [provider, setProvider] = useState<string>(() => readStored(`nyakuro-manga-provider-${id}`) || status?.settings.manga.defaultProvider || "")
     const effective = provider || providers?.[0]?.id || ""
     const { data: ch, isLoading: chLoading, error, refetch, isFetching } = useMangaChapters(id, effective)
     const { data: position, isLoading: positionLoading } = useQuery({
@@ -35,7 +35,7 @@ export default function MangaEntryPage() {
     // Downloaded chapters (read from here, also offline), and those on
     // their way.
     const { data: local, isLoading: localLoading } = useMangaLocal(id)
-    // And on the Anikos and servers this one uses.
+    // And on the Nyakuros and servers this one uses.
     const { data: onServers } = useSharedManga(id)
     const { data: downloads } = useMangaDownloads()
     const download = useChapterDownload(id, effective)
@@ -208,7 +208,7 @@ export default function MangaEntryPage() {
                             value={effective}
                             onChange={v => {
                                 setProvider(v)
-                                writeLocal(`aniko-manga-provider-${id}`, v)
+                                writeLocal(`nyakuro-manga-provider-${id}`, v)
                             }}
                             options={(providers ?? []).map(p => ({ value: p.id, label: p.name }))}
                         />

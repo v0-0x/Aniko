@@ -1,7 +1,7 @@
 package manga
 
 // Downloaded manga, kept the way comic readers (Komga, Kavita, Mihon…)
-// expect, so the folder is useful outside Aniko too:
+// expect, so the folder is useful outside Nyakuro too:
 //
 //	<dir>/<Title> [anilist-<id>]/
 //	    series.json             AniList's facts about the manga

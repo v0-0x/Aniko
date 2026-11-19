@@ -2,7 +2,7 @@
 // movies, OVAs, specials and recaps, as AniList links them. Two orders: the
 // story's (by AniList's prequel and sequel links, release dates where they
 // say nothing) and the release order (by dates). You can change the story
-// order; your changes are kept on this Aniko (Edit).
+// order; your changes are kept on this Nyakuro (Edit).
 package watchorder
 
 import (
@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
 )
 
 // Kinds of entry.
@@ -55,7 +55,7 @@ type Order struct {
 	Edited bool `json:"edited,omitempty"`
 }
 
-// Edit is your own story order and what you hid, kept on this Aniko.
+// Edit is your own story order and what you hid, kept on this Nyakuro.
 type Edit struct {
 	Order  []int `json:"order"`
 	Hidden []int `json:"hidden"`
@@ -335,7 +335,7 @@ func Compute(nodes map[int]*anilist.Linked) *Order {
 }
 
 // Apply puts your Edit on an Order: the story in your order (anime added
-// since go where Aniko would put them, after the one before them), and
+// since go where Nyakuro would put them, after the one before them), and
 // what you hid marked hidden in both orders.
 func Apply(o *Order, e Edit) {
 	if len(e.Order) == 0 && len(e.Hidden) == 0 {

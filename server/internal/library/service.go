@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/history"
-	"github.com/v0-0x/Aniko/server/internal/metadata"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Nyakuro/server/internal/metadata"
 )
 
 // Service builds the views the UI needs by combining the AniList list,
@@ -22,7 +22,7 @@ type Service struct {
 	Meta     *metadata.Service
 	History  *history.Store
 	DB       *db.DB // items removed from "Continue watching"
-	// Remote: the files other Aniko apps on the network share with this one
+	// Remote: the files other Nyakuro apps on the network share with this one
 	// (package share), shown with the local ones; nil without sharing.
 	Remote func() []*LocalFile
 
@@ -92,7 +92,7 @@ type EntryView struct {
 	Others      []*EpisodeView     `json:"others"`
 	NextEpisode *EpisodeView       `json:"nextEpisode"`
 	LocalCount  int                `json:"localCount"`
-	// SharedCount: files of it other Aniko apps share with this one.
+	// SharedCount: files of it other Nyakuro apps share with this one.
 	SharedCount  int               `json:"sharedCount"`
 	Images       metadata.Images   `json:"images"`
 	Mappings     metadata.Mappings `json:"mappings"`
@@ -125,7 +125,7 @@ func (s *Service) Entry(ctx context.Context, mediaID int, refresh bool) (*EntryV
 	if metaErr != nil {
 		// Said plainly on the page; what went wrong goes to the log.
 		log.Printf("episode metadata for %d: %v", mediaID, metaErr)
-		v.MetadataNote = "Episode titles and pictures couldn't be loaded from ani.zip just now. The episodes still play; Aniko tries again next time."
+		v.MetadataNote = "Episode titles and pictures couldn't be loaded from ani.zip just now. The episodes still play; Nyakuro tries again next time."
 	}
 	progress := 0
 	if entry != nil {
@@ -219,7 +219,7 @@ func (s *Service) Entry(ctx context.Context, mediaID int, refresh bool) (*EntryV
 	return v, nil
 }
 
-// shared are the files other Aniko apps share with this one.
+// shared are the files other Nyakuro apps share with this one.
 func (s *Service) shared() []*LocalFile {
 	if s.Remote == nil {
 		return nil
@@ -479,7 +479,7 @@ func (s *Service) continueWatching(ctx context.Context, coll *anilist.Collection
 	}
 
 	// 1) Shows being watched, ordered by most recent activity: on this
-	// computer (or another Aniko on the same account, whose history comes
+	// computer (or another Nyakuro on the same account, whose history comes
 	// over), or anywhere else on the AniList account (its list entry was
 	// updated: an episode watched on another device).
 	var watching []*anilist.ListEntry
@@ -598,7 +598,7 @@ func EpisodeFile(files []*LocalFile, episode int) *LocalFile {
 // its first season: a match made by hand wins, then the surer match, then
 // the bigger file. A file on this computer always wins.
 func betterFile(f, old *LocalFile) bool {
-	// This computer's file, not one another Aniko shares.
+	// This computer's file, not one another Nyakuro shares.
 	if (f.Host == "") != (old.Host == "") {
 		return f.Host == ""
 	}

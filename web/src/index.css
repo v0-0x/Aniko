@@ -324,27 +324,27 @@ html.reduce-motion .animate-spin {
 }
 
 /* Christmas lights twinkling, summer lanterns swaying (HolidayDecor). */
-.aniko-twinkle {
-    animation: aniko-twinkle 2.4s ease-in-out infinite;
+.nyakuro-twinkle {
+    animation: nyakuro-twinkle 2.4s ease-in-out infinite;
 }
-.aniko-twinkle-bulb {
-    animation: aniko-twinkle-bulb 2.4s ease-in-out infinite;
+.nyakuro-twinkle-bulb {
+    animation: nyakuro-twinkle-bulb 2.4s ease-in-out infinite;
 }
-@keyframes aniko-twinkle {
+@keyframes nyakuro-twinkle {
     50% {
         opacity: 0.25;
     }
 }
-@keyframes aniko-twinkle-bulb {
+@keyframes nyakuro-twinkle-bulb {
     50% {
         filter: brightness(0.65);
     }
 }
-.aniko-sway {
-    animation: aniko-sway 3.6s ease-in-out infinite alternate;
+.nyakuro-sway {
+    animation: nyakuro-sway 3.6s ease-in-out infinite alternate;
     transform-origin: 0 0;
 }
-@keyframes aniko-sway {
+@keyframes nyakuro-sway {
     from {
         transform: rotate(-4deg);
     }

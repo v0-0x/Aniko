@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/db"
-	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Nyakuro/server/internal/library"
 )
 
 // newTestLocal returns a Local whose ffmpeg is the given script and a library
@@ -22,7 +22,7 @@ import (
 func newTestLocal(t *testing.T, ffmpeg string) (*Local, string) {
 	t.Helper()
 	dir := t.TempDir()
-	d, err := db.Open(filepath.Join(dir, "aniko.db"))
+	d, err := db.Open(filepath.Join(dir, "nyakuro.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

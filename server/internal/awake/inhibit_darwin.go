@@ -8,7 +8,7 @@ import (
 )
 
 // caffeinate -i: no idle sleep while it runs (the screen may still turn
-// off); -w: only while Aniko runs (it ends with Aniko, also when Aniko crashes).
+// off); -w: only while Nyakuro runs (it ends with Nyakuro, also when Nyakuro crashes).
 func newInhibitor() inhibitor {
 	return &cmdInhibitor{args: []string{"caffeinate", "-i", "-w", strconv.Itoa(os.Getpid())}}
 }

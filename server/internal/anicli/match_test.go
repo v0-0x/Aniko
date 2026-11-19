@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
 )
 
 func testMedia(id int, english, romaji string, episodes int) *anilist.Media {
@@ -25,7 +25,7 @@ const (
 
 var codeGeassMedia = testMedia(1575, cgTitle, "Code Geass: Hangyaku no Lelouch", 25)
 
-// hianime lists a new entry (a compilation movie) before the one Aniko
+// hianime lists a new entry (a compilation movie) before the one Nyakuro
 // remembered: the remembered position now holds another anime.
 var codeGeassReordered = []string{
 	entry("cg-initiation", "Code Geass: Lelouch of the Rebellion I - Initiation", 1),

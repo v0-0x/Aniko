@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anikohub"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Nyakuro/server/internal/share"
 )
 
-// The app's Server page: how the server this Aniko uses (mediaserver's
+// The app's Server page: how the server this Nyakuro uses (mediaserver's
 // anime side, a hub) is doing. The hub answers a device it shares with how
 // the computer is and how much it's doing, not who is on it or what they
 // watch (that's its dashboard, behind its password).
@@ -21,9 +21,9 @@ import (
 type serverState struct {
 	Name string `json:"name"`
 	// Version: mediaserver's.
-	Version string          `json:"version"`
-	System  anikohub.System `json:"system"`
-	Encoder string          `json:"encoder"`
+	Version string            `json:"version"`
+	System  nyakurohub.System `json:"system"`
+	Encoder string            `json:"encoder"`
 	// Streams it's sending now, Converting of them (video converted as
 	// it's sent), and episodes being downloaded onto it.
 	Streams    int `json:"streams"`
@@ -49,7 +49,7 @@ func (s *Server) serverPageRoutes() {
 	// On a hub, for the devices it shares with.
 	m.HandleFunc("GET /api/peer/hub/status", shared(h(func(r *http.Request) (any, error) {
 		if !s.app.Share.IsHub() || s.app.Sampler == nil || s.app.Streams == nil {
-			return nil, notFound("this Aniko isn't a server")
+			return nil, notFound("this Nyakuro isn't a server")
 		}
 		lib := s.hubLibrary()
 		st := serverState{

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/v0-0x/Aniko/server/internal/playlist"
+	"github.com/v0-0x/Nyakuro/server/internal/playlist"
 )
 
 // Playlists through the API: made, added to, an item moved and removed,

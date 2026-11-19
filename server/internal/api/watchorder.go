@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Aniko/server/internal/anilist"
-	"github.com/v0-0x/Aniko/server/internal/config"
-	"github.com/v0-0x/Aniko/server/internal/watchorder"
+	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Nyakuro/server/internal/watchorder"
 )
 
 // The watch order of an anime's franchise (internal/watchorder), with your
@@ -44,7 +44,7 @@ func (s *Server) watchOrder(r *http.Request) (any, error) {
 // maxEdit caps what an edit may list.
 const maxEdit = 1000
 
-// Your story order for a franchise (its key), kept on this Aniko.
+// Your story order for a franchise (its key), kept on this Nyakuro.
 func (s *Server) putWatchOrder(r *http.Request) (any, error) {
 	key, err := strconv.Atoi(r.PathValue("key"))
 	if err != nil || key <= 0 {
@@ -70,7 +70,7 @@ func (s *Server) putWatchOrder(r *http.Request) (any, error) {
 	return nil, nil
 }
 
-// reportWatchOrder keeps a note of a wrong order: Aniko's story order for
+// reportWatchOrder keeps a note of a wrong order: Nyakuro's story order for
 // the franchise and your edit of it, as a file in the data folder
 // (watch-order-reports/<key>-<time>.json) to send along with a bug
 // report, so the order can be put right for everyone.
@@ -93,7 +93,7 @@ func (s *Server) reportWatchOrder(r *http.Request) (any, error) {
 	if body.AnimeID <= 0 {
 		body.AnimeID = key
 	}
-	// Aniko's own order, from what it knows (no refresh), without the edit.
+	// Nyakuro's own order, from what it knows (no refresh), without the edit.
 	o, err := watchorder.Build(r.Context(), body.AnimeID, func(ctx context.Context, ids []int) (map[int]*anilist.Linked, error) {
 		return s.app.Platform.Links(ctx, ids, false)
 	})
@@ -119,7 +119,7 @@ func (s *Server) reportWatchOrder(r *http.Request) (any, error) {
 		return out
 	}
 	report := map[string]any{
-		"aniko":   config.AppVersion,
+		"nyakuro": config.AppVersion,
 		"at":      time.Now().UTC().Format(time.RFC3339),
 		"key":     key,
 		"animeId": body.AnimeID,
@@ -143,7 +143,7 @@ func (s *Server) reportWatchOrder(r *http.Request) (any, error) {
 	return map[string]any{"path": path}, nil
 }
 
-// Back to Aniko's order.
+// Back to Nyakuro's order.
 func (s *Server) deleteWatchOrder(r *http.Request) (any, error) {
 	key, err := strconv.Atoi(r.PathValue("key"))
 	if err != nil || key <= 0 {
