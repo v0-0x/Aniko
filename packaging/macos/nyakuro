@@ -1,0 +1,5 @@
+#!/bin/sh
+# Aniko was called Nyakuro for one beta (3.0.59). Nyakuro's updater (the 3.0.59 beta)
+# checks that a new version's app has its server here, under the old name:
+# this stands in for it, and starts Aniko's.
+exec "$(dirname "$0")/aniko" "$@"

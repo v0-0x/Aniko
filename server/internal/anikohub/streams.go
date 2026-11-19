@@ -1,4 +1,4 @@
-package nyakurohub
+package anikohub
 
 import (
 	"io"

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// addToolsDir puts Nyakuro's own programs folder first on the PATH, and with
+// addToolsDir puts Aniko's own programs folder first on the PATH, and with
 // it the bash of the Git that the programs setup unpacks there (winsetup):
 // ahead of System32, whose bash is WSL's, which can't run ani-cli.
 func addToolsDir(dir string) {

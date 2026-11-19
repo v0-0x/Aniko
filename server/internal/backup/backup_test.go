@@ -9,22 +9,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/history"
 )
 
-type nyakuro struct {
+type aniko struct {
 	d     *db.DB
 	hist  *history.Store
 	store *config.Store
 	dir   string
 }
 
-func newNyakuro(t *testing.T) *nyakuro {
+func newAniko(t *testing.T) *aniko {
 	t.Helper()
 	dir := t.TempDir()
-	d, err := db.Open(filepath.Join(dir, "nyakuro.db"))
+	d, err := db.Open(filepath.Join(dir, "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,17 +33,17 @@ func newNyakuro(t *testing.T) *nyakuro {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &nyakuro{d: d, hist: history.NewStore(d), store: store, dir: dir}
+	return &aniko{d: d, hist: history.NewStore(d), store: store, dir: dir}
 }
 
-func (k *nyakuro) exec(t *testing.T, q string, args ...any) {
+func (k *aniko) exec(t *testing.T, q string, args ...any) {
 	t.Helper()
 	if _, err := k.d.Write(q, args...); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func (k *nyakuro) count(t *testing.T, q string, args ...any) int {
+func (k *aniko) count(t *testing.T, q string, args ...any) int {
 	t.Helper()
 	var n int
 	if err := k.d.QueryRow(q, args...).Scan(&n); err != nil {
@@ -52,11 +52,11 @@ func (k *nyakuro) count(t *testing.T, q string, args ...any) int {
 	return n
 }
 
-// A backup goes into another Nyakuro: what's newer there stays, its network
+// A backup goes into another Aniko: what's newer there stays, its network
 // and sharing settings too; logins only when asked; the data from before
 // is saved.
 func TestBackupRoundTrip(t *testing.T) {
-	a := newNyakuro(t)
+	a := newAniko(t)
 	now := time.Now().Unix()
 	cfg := a.store.Get()
 	cfg.Playback.AutoPlayNext = true
@@ -94,7 +94,7 @@ func TestBackupRoundTrip(t *testing.T) {
 		t.Errorf("files kept: %d, want only the one matched by hand", got)
 	}
 
-	b := newNyakuro(t)
+	b := newAniko(t)
 	bcfg := b.store.Get()
 	bcfg.Server.Port = 42000
 	if _, err := b.store.Save(bcfg); err != nil {
@@ -168,7 +168,7 @@ func TestBackupRoundTrip(t *testing.T) {
 // With logins: the AniList login and the passwords come along (the login
 // only where there's none).
 func TestBackupWithLogins(t *testing.T) {
-	a := newNyakuro(t)
+	a := newAniko(t)
 	cfg := a.store.Get()
 	cfg.Qbittorrent.Password = "secret"
 	_, _ = a.store.Save(cfg)
@@ -182,7 +182,7 @@ func TestBackupWithLogins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b := newNyakuro(t)
+	b := newAniko(t)
 	sum, err := Restore(b.d, b.hist, b.store, read, filepath.Join(b.dir, "backups"), "1.0.140", "Laptop")
 	if err != nil {
 		t.Fatal(err)
@@ -197,7 +197,7 @@ func TestBackupWithLogins(t *testing.T) {
 }
 
 func TestReadRejects(t *testing.T) {
-	for _, in := range []string{"", "{}", "not json", `{"nyakuro": 99, "version": "9.9.9"}`} {
+	for _, in := range []string{"", "{}", "not json", `{"aniko": 99, "version": "9.9.9"}`} {
 		if _, err := Read(strings.NewReader(in)); err == nil {
 			t.Errorf("read %q", in)
 		}

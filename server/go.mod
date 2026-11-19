@@ -1,4 +1,4 @@
-module github.com/v0-0x/Nyakuro/server
+module github.com/v0-0x/Aniko/server
 
 go 1.26.0
 

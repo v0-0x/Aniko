@@ -1,12 +1,12 @@
-// Package nyakurohub is Nyakuro running as a hub (nyakuro --hub): a small always-on
-// computer (a Raspberry Pi) that shares its library with the Nyakuro apps on
+// Package anikohub is Aniko running as a hub (aniko --hub): a small always-on
+// computer (a Raspberry Pi) that shares its library with the Aniko apps on
 // the network and keeps them in step. It plays nothing itself: it keeps the
 // watch history of every AniList account its devices use (each device's
 // positions reach the others on the same account as they're saved), the
 // AniList logins it's given (handed to the devices allowed them), each
 // account's settings (theme and the like), and everything that happened,
 // for its dashboard's audit log.
-package nyakurohub
+package anikohub
 
 import (
 	"crypto/rand"
@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/history"
 )
 
 var schema = []string{
@@ -100,7 +100,7 @@ const entryCols = `media_id, episode, position, duration, source, updated_at, se
 const maxAhead = 5 * time.Minute
 
 // History is one account's watch history, as the sharing service asks a
-// Nyakuro's (share.History).
+// Aniko's (share.History).
 func (s *Store) History(user int) *UserHistory { return &UserHistory{s: s, user: user} }
 
 // UserHistory is one account's watch history.

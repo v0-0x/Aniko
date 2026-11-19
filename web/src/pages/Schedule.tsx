@@ -12,7 +12,7 @@ import { cn, cover, formatLabel, LIST_STATUS, readLocal, timeUntil, title, write
 export default function SchedulePage() {
     const classic = useClassic()
     const { data, isLoading, error, refetch, isFetching } = useSchedule(8)
-    const [filter, setFilter] = useState<"mine" | "all">(() => (readLocal("nyakuro-schedule-filter") as "mine" | "all") || "mine")
+    const [filter, setFilter] = useState<"mine" | "all">(() => (readLocal("aniko-schedule-filter") as "mine" | "all") || "mine")
     const navigate = useNavigate()
     // Your list's entries, for a row's menu (and so a change made from it
     // shows at once; the schedule's own listStatus is as old as the schedule).
@@ -49,7 +49,7 @@ export default function SchedulePage() {
                     value={filter}
                     onChange={v => {
                         setFilter(v)
-                        writeLocal("nyakuro-schedule-filter", v)
+                        writeLocal("aniko-schedule-filter", v)
                     }}
                     tabs={[
                         { value: "mine", label: "My list" },
@@ -74,7 +74,7 @@ export default function SchedulePage() {
                             <Button
                                 onClick={() => {
                                     setFilter("all")
-                                    writeLocal("nyakuro-schedule-filter", "all")
+                                    writeLocal("aniko-schedule-filter", "all")
                                 }}
                             >
                                 Show all

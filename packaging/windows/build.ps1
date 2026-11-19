@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Builds the Nyakuro installer and portable zip for Windows.
+    Builds the Aniko installer and portable zip for Windows.
 
 .DESCRIPTION
     Does on your own PC what the "Windows release" GitHub workflow does:
     builds the web UI, embeds it into the server, runs go vet and go test,
-    builds nyakuro.exe, then packages the desktop app with electron-builder.
+    builds aniko.exe, then packages the desktop app with electron-builder.
 
     Needs Go 1.21 or newer (it fetches the version server\go.mod asks for)
     and Node.js LTS with npm, both on the PATH:
@@ -13,8 +13,8 @@
         winget install OpenJS.NodeJS.LTS
 
     The results land in dist\windows\release:
-        Nyakuro-Setup-<version>-windows-x64.exe      the installer
-        Nyakuro-<version>-windows-x64-portable.zip   the portable build
+        Aniko-Setup-<version>-windows-x64.exe      the installer
+        Aniko-<version>-windows-x64-portable.zip   the portable build
 
 .PARAMETER SkipTests
     Don't run go vet and go test.
@@ -58,7 +58,7 @@ foreach ($tool in $tools) {
 }
 
 $version = (Get-Content (Join-Path $Root "desktop\package.json") -Raw | ConvertFrom-Json).version
-Write-Host "Building Nyakuro $version for Windows (x64) in $Root"
+Write-Host "Building Aniko $version for Windows (x64) in $Root"
 
 Write-Step "Web UI"
 Push-Location (Join-Path $Root "web")
@@ -100,11 +100,11 @@ try {
         Assert-Success "go test" " Add -SkipTests to build without running the tests."
     }
 
-    Write-Step "Server: dist\windows\nyakuro.exe"
+    Write-Step "Server: dist\windows\aniko.exe"
     $env:GOOS = "windows"
     $env:GOARCH = "amd64"
     New-Item -ItemType Directory -Path (Join-Path $Root "dist\windows") -Force | Out-Null
-    go build -trimpath -ldflags "-s -w" -o ..\dist\windows\nyakuro.exe ./cmd/nyakuro
+    go build -trimpath -ldflags "-s -w" -o ..\dist\windows\aniko.exe ./cmd/aniko
     Assert-Success "go build"
 } finally {
     Pop-Location
@@ -130,7 +130,7 @@ try {
 
 Write-Host ""
 Write-Host "Done:" -ForegroundColor Green
-foreach ($name in @("Nyakuro-Setup-$version-windows-x64.exe", "Nyakuro-$version-windows-x64-portable.zip")) {
+foreach ($name in @("Aniko-Setup-$version-windows-x64.exe", "Aniko-$version-windows-x64-portable.zip")) {
     $file = Join-Path $release $name
     if (-not (Test-Path $file)) {
         throw "$file is missing: check electron-builder's output above."

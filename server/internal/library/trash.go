@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 // Trash holds the library files put away from Library tools › Clean up: in
-// a hidden .nyakuro-trash folder on their own drive (at the top of the library
+// a hidden .aniko-trash folder on their own drive (at the top of the library
 // folder they're in), so putting them there is instant and the scanner
 // skips them. They can be put back until the trash is emptied, which frees
 // the space, or TrashKeep after.
@@ -29,7 +29,7 @@ type Trash struct {
 }
 
 const (
-	trashDir  = ".nyakuro-trash"
+	trashDir  = ".aniko-trash"
 	trashKey  = "library:trash"
 	TrashKeep = 30 * 24 * time.Hour
 )
@@ -430,7 +430,7 @@ func writeTrashNote(dir string) {
 	if _, err := os.Stat(p); err == nil {
 		return
 	}
-	_ = os.WriteFile(p, []byte("Nyakuro's trash: episodes removed in Nyakuro's Library tools › Clean up.\n"+
+	_ = os.WriteFile(p, []byte("Aniko's trash: episodes removed in Aniko's Library tools › Clean up.\n"+
 		"Put them back or delete them for good there. They're deleted by themselves 30 days after.\n"), 0o644)
 }
 

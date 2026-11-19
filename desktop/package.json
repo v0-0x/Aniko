@@ -1,11 +1,11 @@
 {
-  "name": "nyakuro",
-  "productName": "Nyakuro",
+  "name": "aniko",
+  "productName": "Aniko",
   "version": "3.0.0",
-  "nyakuroVersionBase": 222,
-  "description": "Nyakuro desktop window (starts the local Nyakuro server)",
+  "anikoVersionBase": 222,
+  "description": "Aniko desktop window (starts the local Aniko server)",
   "main": "main.js",
-  "desktopName": "nyakuro.desktop",
+  "desktopName": "aniko.desktop",
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/v0-0x/Nyakuro/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
 )
 
 // HubArchive names a mediaserver release's archive for a processor (Go's
@@ -71,8 +71,8 @@ func (c *Checker) applyHub(ctx context.Context, g *github, target Version, archi
 	c.publishLocked()
 	c.mu.Unlock()
 	if c.Exits == nil || !c.Exits.Request(lifecycle.Exit{Restart: true}) {
-		// The service is named after the program (nyakuro-hub on a Pi that
-		// came from Nyakuro Hub, until it's installed again).
+		// The service is named after the program (aniko-hub on a Pi that
+		// came from Aniko Hub, until it's installed again).
 		return errors.New("installed: restart mediaserver to use it (sudo systemctl restart " + filepath.Base(exe) + ")")
 	}
 	return nil

@@ -12,7 +12,7 @@ import { cn, cover, formatLabel, title } from "@/lib/utils"
 
 // A franchise's watch order (experimental): the story's, from AniList's
 // prequel and sequel links, and the release order, and its movies apart.
-// The story order can be changed; the change is kept on this Nyakuro
+// The story order can be changed; the change is kept on this Aniko
 // (server/internal/watchorder).
 
 type View = "story" | "release" | "movies"
@@ -256,7 +256,7 @@ function Editor({ order, current, status, onDone }: { order: Order; current: num
             if (!next.delete(id)) next.add(id)
             return next
         })
-    // Nyakuro's order and this edit, as a file to send with a bug report.
+    // Aniko's order and this edit, as a file to send with a bug report.
     const report = async () => {
         setSaving(true)
         try {
@@ -326,7 +326,7 @@ function Editor({ order, current, status, onDone }: { order: Order; current: num
                 </Button>
                 {order.edited && (
                     <Button size="sm" variant="ghost" icon={<Undo2 className="size-4" />} disabled={saving} onClick={() => done(api.del(`/api/watch-order/${order.key}`))}>
-                        Back to Nyakuro's order
+                        Back to Aniko's order
                     </Button>
                 )}
                 <Button size="sm" variant="ghost" icon={<Flag className="size-4" />} disabled={saving} onClick={report}>

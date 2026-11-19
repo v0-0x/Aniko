@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
 )
 
 // "Because you watched X" on Discover: AniList's recommendations for an

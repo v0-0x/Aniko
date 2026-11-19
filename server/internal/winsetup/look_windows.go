@@ -15,7 +15,7 @@ import (
 )
 
 // gitBash reports whether Git for Windows' bash is on this computer, in the
-// places Nyakuro looks for it to run ani-cli (anicli's gitBash): where Git's
+// places Aniko looks for it to run ani-cli (anicli's gitBash): where Git's
 // installers and Scoop put it, then the PATH, which has the folder this
 // setup unpacks Git into (util.SetToolsDir).
 func gitBash() bool {
@@ -41,7 +41,7 @@ func gitBash() bool {
 	return err == nil && !strings.Contains(strings.ToLower(p), `\windows\system32\`)
 }
 
-// aniCliScript reports whether the ani-cli script is where Nyakuro looks for
+// aniCliScript reports whether the ani-cli script is where Aniko looks for
 // it (anicli's findScript): a file without an extension, in a folder of
 // the PATH or where Scoop puts it.
 func aniCliScript() bool {
@@ -75,7 +75,7 @@ func vcRuntime() bool {
 // unpackGit runs PortableGit's download, an archive that unpacks itself
 // (7-Zip's), so that it unpacks into dir without asking or showing
 // anything: -y answers its questions, -gm2 hides its window, -nr leaves out
-// Git's own setup script at the end (for its login shells; Nyakuro runs bash
+// Git's own setup script at the end (for its login shells; Aniko runs bash
 // without one, as it did with the Git that 7-Zip unpacked for Scoop). An
 // archive that doesn't take the last two gets -y alone, with more time: it
 // may have been waiting with a message.

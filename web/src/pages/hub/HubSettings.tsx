@@ -34,7 +34,7 @@ export default function HubSettings({ o, status }: { o: HubOverview; status: Sta
                     <Row label="Colors" help="For this dashboard only.">
                         <Select
                             className="w-40"
-                            value={settings.ui.colorTheme || "nyakuro"}
+                            value={settings.ui.colorTheme || "aniko"}
                             onChange={v => set("ui", { colorTheme: v })}
                             options={COLOR_THEMES.map(t => ({ value: t.id, label: t.name }))}
                         />

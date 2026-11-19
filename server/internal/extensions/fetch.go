@@ -17,13 +17,13 @@ import (
 	"github.com/dop251/goja"
 	"github.com/imroc/req/v3"
 
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Fetcher performs HTTP requests for extensions. It impersonates Chrome's
 // TLS fingerprint (as extensions expect) and refuses to connect to loopback or
 // private addresses, so an extension can never reach the user's LAN
-// (router, torrent client, Nyakuro itself...).
+// (router, torrent client, Aniko itself...).
 type Fetcher struct {
 	follow   *req.Client
 	noFollow *req.Client

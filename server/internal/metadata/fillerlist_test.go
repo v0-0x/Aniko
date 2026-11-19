@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 func TestFillerList(t *testing.T) {

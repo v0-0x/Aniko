@@ -1,22 +1,22 @@
-# Builds, tests and packages Nyakuro for Windows on a real Windows machine, then
+# Builds, tests and packages Aniko for Windows on a real Windows machine, then
 # publishes the installer and the portable zip as the GitHub Release
-# "Nyakuro <version> for Windows", tagged windows-v<version> on the commit it
+# "Aniko <version> for Windows", tagged windows-v<version> on the commit it
 # built.
 #
 # The version is 2.0.<commits since 2.0.0's> (the first two numbers come
-# from desktop/package.json, where nyakuroVersionBase is 2.0.0's number of
+# from desktop/package.json, where anikoVersionBase is 2.0.0's number of
 # commits; 1.0.<number of commits> before it): each commit has its own,
 # later commits higher ones.
-# Installed copies of Nyakuro look for the release with the highest version and
+# Installed copies of Aniko look for the release with the highest version and
 # offer it on the Home page (server/internal/update), so the version is also
-# built into nyakuro.exe, with the commit.
+# built into aniko.exe, with the commit.
 #
 # Runs on every push to the repository's default branch (except pushes that
 # only change docs or the Arch packaging), so Windows copies get every
 # change, and by hand from the Actions tab. Running it again on the same
 # commit updates that commit's release.
 #
-# Channels: each build is a beta, the pre-release "Nyakuro <version> beta for
+# Channels: each build is a beta, the pre-release "Aniko <version> beta for
 # Windows", which only copies with Settings › Updates & about › Beta updates
 # on are offered, unless the pushed commit's message has [stable] in it or
 # the workflow is run by hand with channel "stable": then it's a release for
@@ -87,8 +87,8 @@ jobs:
       # Each push is a beta (a GitHub pre-release, which only copies with
       # Beta updates on are offered) unless its newest commit's message has
       # [stable] in it, or the workflow is run by hand as stable.
-      # On the 3.0 branch, a build is a preview of Nyakuro 3.0: always a beta,
-      # tagged <system>-next-v<version>, which copies of Nyakuro 2 don't look
+      # On the 3.0 branch, a build is a preview of Aniko 3.0: always a beta,
+      # tagged <system>-next-v<version>, which copies of Aniko 2 don't look
       # at (theirs are <system>-v…), so none is offered it; a copy of 3.0
       # with Beta updates on is.
       - name: Pick the channel
@@ -117,17 +117,17 @@ jobs:
           if (-not ($base -match '^(\d+)\.(\d+)\.')) { throw "desktop/package.json has no version like 1.0.0 (it says '$base')" }
           $count = git rev-list --count HEAD
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          # The commits since the one nyakuroVersionBase counts (2.0.0's).
-          $from = if ($pkg.nyakuroVersionBase) { [int]$pkg.nyakuroVersionBase } else { 0 }
+          # The commits since the one anikoVersionBase counts (2.0.0's).
+          $from = if ($pkg.anikoVersionBase) { [int]$pkg.anikoVersionBase } else { 0 }
           $patch = [int]"$count".Trim() - $from
-          if ($patch -lt 0) { throw "This commit is before nyakuroVersionBase ($from) in desktop/package.json" }
+          if ($patch -lt 0) { throw "This commit is before anikoVersionBase ($from) in desktop/package.json" }
           $version = "$($Matches[1]).$($Matches[2]).$patch"
           "version=$version" >> $env:GITHUB_OUTPUT
           $next = if ($env:GITHUB_REF_NAME -eq "3.0") { "next-" } else { "" }
           "tag=windows-${next}v$version" >> $env:GITHUB_OUTPUT
-          "installer=Nyakuro-Setup-$version-windows-x64.exe" >> $env:GITHUB_OUTPUT
-          "portable=Nyakuro-$version-windows-x64-portable.zip" >> $env:GITHUB_OUTPUT
-          "Building Nyakuro $version for Windows"
+          "installer=Aniko-Setup-$version-windows-x64.exe" >> $env:GITHUB_OUTPUT
+          "portable=Aniko-$version-windows-x64-portable.zip" >> $env:GITHUB_OUTPUT
+          "Building Aniko $version for Windows"
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -170,7 +170,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ffmpeg -hide_banner -version
 
-      # The programs Nyakuro downloads for its users (ffmpeg, yt-dlp, Git's
+      # The programs Aniko downloads for its users (ffmpeg, yt-dlp, Git's
       # bash, ani-cli, aria2, fzf, mpv: server/internal/winsetup) come from
       # their projects' release pages, which only a real run shows to still
       # work: download them all here into an empty folder, as on a computer
@@ -181,11 +181,11 @@ jobs:
         working-directory: server
         timeout-minutes: 20
         env:
-          NYAKURO_REALNET: "1"
+          ANIKO_REALNET: "1"
         run: |
           go test -count 1 -timeout 15m -v -run '^TestRealDownloads$' ./internal/winsetup/
           if ($LASTEXITCODE -ne 0) {
-            "::error title=Nyakuro's programs setup::The setup couldn't download or start a program Nyakuro installs for its users: see TestRealDownloads in this step's log."
+            "::error title=Aniko's programs setup::The setup couldn't download or start a program Aniko installs for its users: see TestRealDownloads in this step's log."
             exit $LASTEXITCODE
           }
 
@@ -199,9 +199,9 @@ jobs:
         working-directory: server
         run: go test -count 1 -timeout 8m ./...
 
-      # The version and the commit go into nyakuro.exe (config.AppVersion and
+      # The version and the commit go into aniko.exe (config.AppVersion and
       # config.Commit): the updater compares them with the newest release's.
-      - name: Build nyakuro.exe
+      - name: Build aniko.exe
         working-directory: server
         env:
           GOOS: windows
@@ -209,14 +209,14 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           New-Item -ItemType Directory -Force ../dist/windows | Out-Null
-          $config = "github.com/v0-0x/Nyakuro/server/internal/config"
-          go build -trimpath -ldflags "-s -w -X $config.AppVersion=$env:VERSION -X $config.Commit=$env:GITHUB_SHA" -o ../dist/windows/nyakuro.exe ./cmd/nyakuro
+          $config = "github.com/v0-0x/Aniko/server/internal/config"
+          go build -trimpath -ldflags "-s -w -X $config.AppVersion=$env:VERSION -X $config.Commit=$env:GITHUB_SHA" -o ../dist/windows/aniko.exe ./cmd/aniko
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $reported = & ../dist/windows/nyakuro.exe --version
+          $reported = & ../dist/windows/aniko.exe --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          "nyakuro.exe --version: $reported"
-          if ($reported -ne "Nyakuro $env:VERSION") {
-            throw "nyakuro.exe says '$reported' instead of 'Nyakuro $env:VERSION': the version didn't make it into the build."
+          "aniko.exe --version: $reported"
+          if ($reported -ne "Aniko $env:VERSION") {
+            throw "aniko.exe says '$reported' instead of 'Aniko $env:VERSION': the version didn't make it into the build."
           }
 
       # electron-builder names the files and versions the app after
@@ -268,21 +268,21 @@ jobs:
           $repo = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY"
           # A beta is a pre-release, and never the repository's latest.
           $beta = $env:CHANNEL -eq "beta"
-          $title = if ($beta) { "Nyakuro $env:VERSION beta for Windows" } else { "Nyakuro $env:VERSION for Windows" }
+          $title = if ($beta) { "Aniko $env:VERSION beta for Windows" } else { "Aniko $env:VERSION for Windows" }
           $flags = @("--prerelease=$($beta.ToString().ToLower())", "--latest=$((-not $beta).ToString().ToLower())")
           $notes = @'
-          **Nyakuro {version} for Windows 10 and 11 (64-bit).** These files are for Windows only: on Arch Linux, build and install Nyakuro from source with `packaging/arch`, as [the README]({readme}) explains.
+          **Aniko {version} for Windows 10 and 11 (64-bit).** These files are for Windows only: on Arch Linux, build and install Aniko from source with `packaging/arch`, as [the README]({readme}) explains.
 
           | File | What it is |
           |---|---|
-          | `{installer}` | **Installer** (recommended). Installs Nyakuro for your Windows user, without admin rights, in a folder you can change. Adds Start menu and desktop shortcuts; uninstall it from Settings > Apps. |
-          | `{portable}` | **Portable** build. Unzip it anywhere and run `Nyakuro.exe`; nothing gets installed. Your data is still kept in `%APPDATA%\Nyakuro`. |
+          | `{installer}` | **Installer** (recommended). Installs Aniko for your Windows user, without admin rights, in a folder you can change. Adds Start menu and desktop shortcuts; uninstall it from Settings > Apps. |
+          | `{portable}` | **Portable** build. Unzip it anywhere and run `Aniko.exe`; nothing gets installed. Your data is still kept in `%APPDATA%\Aniko`. |
 
           The files aren't code-signed, so Windows SmartScreen may warn "Windows protected your PC" the first time: click **More info**, then **Run anyway**.
 
-          Nyakuro finds newer releases by itself and updates from its Home page (**Update**): the installed app runs the new installer, the portable build puts the new zip in place once it has closed.
+          Aniko finds newer releases by itself and updates from its Home page (**Update**): the installed app runs the new installer, the portable build puts the new zip in place once it has closed.
 
-          Some features use other programs: ffmpeg (needed by the in-app player for most files), mpv, yt-dlp, ani-cli and qBittorrent. Nyakuro downloads them itself, all but qBittorrent, from **Install** on its Home page or **Settings › Desktop app & programs**, with no administrator rights needed. What each is for, and where Nyakuro keeps its data: [packaging/windows/README.md]({guide}).
+          Some features use other programs: ffmpeg (needed by the in-app player for most files), mpv, yt-dlp, ani-cli and qBittorrent. Aniko downloads them itself, all but qBittorrent, from **Install** on its Home page or **Settings › Desktop app & programs**, with no administrator rights needed. What each is for, and where Aniko keeps its data: [packaging/windows/README.md]({guide}).
 
           Built from {sha} by [workflow run {run}]({runurl}).
           '@
@@ -290,23 +290,23 @@ jobs:
           $notes = $notes.Replace("{guide}", "$repo/blob/$env:GITHUB_SHA/packaging/windows/README.md")
           $notes = $notes.Replace("{readme}", "$repo/blob/$env:GITHUB_SHA/README.md#install-arch-linux")
           $notes = $notes.Replace("{sha}", $env:GITHUB_SHA).Replace("{run}", $env:GITHUB_RUN_NUMBER).Replace("{runurl}", "$repo/actions/runs/$env:GITHUB_RUN_ID")
-          if ($beta) { $notes = "> **Beta.** This version is a pre-release: Nyakuro offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note.`n`n" + $notes }
+          if ($beta) { $notes = "> **Beta.** This version is a pre-release: Aniko offers it only to copies with **Settings › Updates & about › Beta updates** on. It may have rough edges; the stable releases are the ones without this note.`n`n" + $notes }
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
           Set-Content -Path $notesFile -Value $notes -Encoding utf8
-          # Nyakuro was called Aniko until 3.0.58: Aniko's updater (3.0.58 and
-          # older) looks for the installer and the portable zip by their old
+          # Aniko was called Nyakuro for one beta (3.0.59): Nyakuro's updater (the 3.0.59 beta)
+          # looks for the installer and the portable zip by their old
           # names, so copies have them, until a few stable releases after the
-          # rename. The portable copy also holds Nyakuro.exe as Aniko.exe:
-          # Aniko's updater takes a zip only with that in it, and starts it
-          # (Nyakuro's next portable update removes it). (Until 2.0.53 a
+          # rename. The portable copy also holds Aniko.exe as Nyakuro.exe:
+          # Nyakuro's updater takes a zip only with that in it, and starts it
+          # (Aniko's next portable update removes it). (Until 2.0.53 a
           # Kumo-named copy of the installer went with them the same way, for
-          # Kumo 2.0.36 and older; a Kumo copy now installs Nyakuro by hand.)
-          $oldInstaller = "dist/windows/release/Aniko-Setup-$env:VERSION-windows-x64.exe"
-          $oldPortable = "dist/windows/release/Aniko-$env:VERSION-windows-x64-portable.zip"
+          # Kumo 2.0.36 and older; a Kumo copy now installs Aniko by hand.)
+          $oldInstaller = "dist/windows/release/Nyakuro-Setup-$env:VERSION-windows-x64.exe"
+          $oldPortable = "dist/windows/release/Nyakuro-$env:VERSION-windows-x64-portable.zip"
           Copy-Item "dist/windows/release/$env:INSTALLER" $oldInstaller
-          $unpacked = Join-Path $env:RUNNER_TEMP "aniko-portable"
+          $unpacked = Join-Path $env:RUNNER_TEMP "nyakuro-portable"
           Expand-Archive "dist/windows/release/$env:PORTABLE" $unpacked
-          Copy-Item "$unpacked/Nyakuro.exe" "$unpacked/Aniko.exe"
+          Copy-Item "$unpacked/Aniko.exe" "$unpacked/Nyakuro.exe"
           7z a -tzip -bso0 -bsp0 $oldPortable "$unpacked/*"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $files = @("dist/windows/release/$env:INSTALLER", "dist/windows/release/$env:PORTABLE", $oldInstaller, $oldPortable)

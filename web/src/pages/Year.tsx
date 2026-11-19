@@ -8,7 +8,7 @@ import { useCollection } from "@/lib/queries"
 import type { CollectionItem, EntryView, Media } from "@/lib/types"
 import { cn, cover, entryUrl, plural, title } from "@/lib/utils"
 
-// A year of your anime: what was watched in Nyakuro that year (the server's
+// A year of your anime: what was watched in Aniko that year (the server's
 // watch history: hours, episodes, the busiest day, the first and the last
 // episode, the shows watched most), and from your list what was completed
 // that year, its genres and your scores.
@@ -77,7 +77,7 @@ export default function YearPage() {
     const media = (id: number): Media | undefined => list.byId.get(id)?.media ?? looked[missing.indexOf(id)]?.data?.media
 
     const facts = useMemo(() => {
-        // The year's anime: watched in Nyakuro, or completed on the list.
+        // The year's anime: watched in Aniko, or completed on the list.
         const ids = new Set<number>([...(yr?.shows ?? []).map(s => s.mediaId), ...list.completed.map(it => it.media.id)])
         const genres = new Map<string, number>()
         const scored: CollectionItem[] = []
@@ -144,7 +144,7 @@ export default function YearPage() {
                         )
                     }
                 >
-                    {!other && "What you watch in Nyakuro and complete on your list shows here."}
+                    {!other && "What you watch in Aniko and complete on your list shows here."}
                 </EmptyState>
             </div>
         )
@@ -157,14 +157,14 @@ export default function YearPage() {
             <div className="flex flex-col gap-12">
                 <div>
                     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                        {watched && <Tile label="Hours watched" value={hours(yr.minutes)} sub="In Nyakuro" />}
-                        {watched && <Tile label="Episodes" value={yr.episodes.toLocaleString()} sub="Finished in Nyakuro" />}
+                        {watched && <Tile label="Hours watched" value={hours(yr.minutes)} sub="In Aniko" />}
+                        {watched && <Tile label="Episodes" value={yr.episodes.toLocaleString()} sub="Finished in Aniko" />}
                         {/* Only a list that keeps the dates can say (0 would be a guess). */}
                         {list.years.size > 0 && <Tile label="Anime completed" value={list.completed.length.toLocaleString()} sub="On your list" />}
-                        {watched && <Tile label="Days watched" value={yr.days.toLocaleString()} sub="In Nyakuro" />}
+                        {watched && <Tile label="Days watched" value={yr.days.toLocaleString()} sub="In Aniko" />}
                     </div>
                     {/* Why the hours aren't there: the year is the list's alone. */}
-                    {!watched && <p className="mt-4 text-sm text-muted">Nothing watched in Nyakuro in {shown}.</p>}
+                    {!watched && <p className="mt-4 text-sm text-muted">Nothing watched in Aniko in {shown}.</p>}
                 </div>
 
                 {yr.minutes > 0 && <Months months={yr.months} />}
@@ -187,7 +187,7 @@ export default function YearPage() {
 
                 {yr.first && yr.last && (
                     <section>
-                        <SectionHeader title={same ? "First and last" : "First and last show"} action={<Note>In Nyakuro</Note>} />
+                        <SectionHeader title={same ? "First and last" : "First and last show"} action={<Note>In Aniko</Note>} />
                         <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
                             <Bookend label={same ? "First and last" : "First"} w={yr.first} media={media(yr.first.mediaId)} />
                             {!same && <Bookend label="Last" w={yr.last} media={media(yr.last.mediaId)} />}
@@ -199,7 +199,7 @@ export default function YearPage() {
                     <div className="grid gap-12 lg:grid-cols-2 lg:gap-10">
                         {watched && (
                             <section className="min-w-0">
-                                <SectionHeader title="Most watched" action={<Note>In Nyakuro</Note>} className="mb-2" />
+                                <SectionHeader title="Most watched" action={<Note>In Aniko</Note>} className="mb-2" />
                                 <ol className="divide-y divide-line">
                                     {yr.shows.slice(0, 10).map((s, i) => (
                                         <li key={s.mediaId}>
@@ -257,7 +257,7 @@ function Months({ months }: { months: Month[] }) {
     const peak = months.findIndex(m => m.minutes === max)
     return (
         <section>
-            <SectionHeader title="Months" action={<Note>Hours in Nyakuro</Note>} />
+            <SectionHeader title="Months" action={<Note>Hours in Aniko</Note>} />
             {peak >= 0 && (
                 <p className="sr-only">
                     Most in {monthName(months[peak].month)}: {duration(months[peak].minutes)}.
@@ -314,7 +314,7 @@ function Months({ months }: { months: Month[] }) {
     )
 }
 
-// The genres of the year's anime (watched in Nyakuro, or completed on the
+// The genres of the year's anime (watched in Aniko, or completed on the
 // list): each anime once.
 function Genres({ genres }: { genres: [string, number][] }) {
     const max = Math.max(1, ...genres.map(g => g[1]))

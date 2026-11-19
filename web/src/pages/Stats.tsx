@@ -9,8 +9,8 @@ import { useClassic } from "@/lib/themes"
 import type { CollectionItem } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-// Your anime in numbers: from your list (AniList's, or Nyakuro's own), and
-// what you watched in Nyakuro month by month.
+// Your anime in numbers: from your list (AniList's, or Aniko's own), and
+// what you watched in Aniko month by month.
 
 type Month = { month: string; episodes: number; minutes: number }
 
@@ -117,7 +117,7 @@ function ChartSection({ title, note, asTable, table, children }: { title: string
     )
 }
 
-// Episodes finished in Nyakuro, month by month: one series, in the accent.
+// Episodes finished in Aniko, month by month: one series, in the accent.
 function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }) {
     const classic = useClassic()
     const [hover, setHover] = useState<number | null>(null)
@@ -147,7 +147,7 @@ function MonthlyChart({ months, asTable }: { months: Month[]; asTable: boolean }
         </table>
     )
     return (
-        <ChartSection title="Watched in Nyakuro" note="Episodes, last 12 months" asTable={asTable} table={table}>
+        <ChartSection title="Watched in Aniko" note="Episodes, last 12 months" asTable={asTable} table={table}>
             {empty ? (
                 <p className="py-10 text-sm text-muted">Nothing watched yet.</p>
             ) : (

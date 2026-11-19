@@ -17,7 +17,7 @@ const list = (names: string[]) => (names.length < 2 ? names.join("") : `${names.
 export type SetupItem = { name: string; state: "waiting" | "downloading" | "unpacking" | "done" | "skipped" | "failed"; done?: number; total?: number; error?: string }
 export type SetupProgress = { running: boolean; items: SetupItem[] }
 
-// How far the Windows setup is, asked every second while it runs: Nyakuro
+// How far the Windows setup is, asked every second while it runs: Aniko
 // downloads the programs itself there, with no window to follow.
 export function useSetupProgress(status?: Status) {
     const qc = useQueryClient()
@@ -50,12 +50,12 @@ export function setupFailures(progress?: SetupProgress) {
 }
 
 // On Windows and macOS, when the in-app player's ffmpeg or ani-cli is
-// missing: a button that installs what Nyakuro uses. Hidden for good per set of
+// missing: a button that installs what Aniko uses. Hidden for good per set of
 // missing programs.
 export function ProgramsNotice() {
     const classic = useClassic()
     const { data: status } = useStatus()
-    const [hidden, setHidden] = usePersisted("nyakuro-programs-notice-hidden", "")
+    const [hidden, setHidden] = usePersisted("aniko-programs-notice-hidden", "")
     const install = useInstallPrograms(status)
     useWatchSetup(status)
     const progress = useSetupProgress(status)
@@ -64,16 +64,16 @@ export function ProgramsNotice() {
     const running = !!status?.setupRunning || !!progress?.running
     const failures = setupFailures(progress)
     const note = () => {
-        if (status?.platform === "darwin") return running ? `Follow the ${setupWindow(status)} window.` : "Nyakuro can download them. No Homebrew or password needed."
+        if (status?.platform === "darwin") return running ? `Follow the ${setupWindow(status)} window.` : "Aniko can download them. No Homebrew or password needed."
         if (running) return setupStep(progress)
-        return failures || "Nyakuro can download them. No administrator rights needed."
+        return failures || "Aniko can download them. No administrator rights needed."
     }
     if (!canInstallPrograms(status) || !(missing.includes("ffmpeg") || missing.includes("ani-cli")) || hidden === key) return null
     return (
         <div className={cn("flex flex-wrap items-center gap-4 border px-5 py-4", classic ? "rounded-xl border-amber-500/25 bg-amber-500/10" : "rounded-sm border-amber-400/45")}>
             <Wrench className="size-5 shrink-0 text-amber-300" />
             <div className="min-w-0 flex-1 text-sm">
-                <p className="font-semibold text-amber-200">{running ? "Installing the programs Nyakuro uses…" : `Nyakuro needs ${list(missing)}`}</p>
+                <p className="font-semibold text-amber-200">{running ? "Installing the programs Aniko uses…" : `Aniko needs ${list(missing)}`}</p>
                 <p className="mt-0.5 text-muted">{note()}</p>
             </div>
             {!running && (

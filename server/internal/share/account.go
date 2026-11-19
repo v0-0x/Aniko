@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// A host can share its AniList login with a Nyakuro it shares its library with
-// (a TV with no keyboard to log in with, say): that Nyakuro then uses the same
+// A host can share its AniList login with an Aniko it shares its library with
+// (a TV with no keyboard to log in with, say): that Aniko then uses the same
 // AniList account, its list and its progress.
 //
 // The host's hello tells a tag of its login (changing with it); the login
@@ -27,7 +27,7 @@ type SealedAccount struct {
 	Token string `json:"token"`
 }
 
-var errNoAccount = errors.New("this Nyakuro isn't logged into AniList")
+var errNoAccount = errors.New("this Aniko isn't logged into AniList")
 
 func (s *Service) accountToken() string {
 	if s.AccountToken == nil {
@@ -46,11 +46,11 @@ func accountTag(token string) string {
 	return hex.EncodeToString(sum[:8])
 }
 
-// SealAccount is this Nyakuro's AniList login for a guest it shares it with
+// SealAccount is this Aniko's AniList login for a guest it shares it with
 // (checked by the caller, see Caller.Account).
 func (s *Service) SealAccount(c Caller) (SealedAccount, error) {
 	if !c.Allowed || !c.Account {
-		return SealedAccount{}, errors.New("this Nyakuro doesn't share its AniList account with you")
+		return SealedAccount{}, errors.New("this Aniko doesn't share its AniList account with you")
 	}
 	token := s.accountToken()
 	// A hub gives each device the login chosen for it.
@@ -68,7 +68,7 @@ func (s *Service) SealAccount(c Caller) (SealedAccount, error) {
 	}
 	s.mu.Unlock()
 	if pub == nil {
-		return SealedAccount{}, errors.New("unknown Nyakuro")
+		return SealedAccount{}, errors.New("unknown Aniko")
 	}
 	sealed, err := s.id.sealFor(pub, c.ID, s.id.ID, []byte(token))
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Service) SealAccount(c Caller) (SealedAccount, error) {
 
 const accountKey = "share:account"
 
-// accountState is which host's AniList login this Nyakuro uses ("" its own, or
+// accountState is which host's AniList login this Aniko uses ("" its own, or
 // none), and the hosts whose it doesn't want (logged out of by hand).
 type accountState struct {
 	Host     string   `json:"host,omitempty"`
@@ -101,7 +101,7 @@ func (s *Service) saveAccount(st accountState) {
 	}
 }
 
-// AccountHost is the host whose AniList login this Nyakuro uses ("": none).
+// AccountHost is the host whose AniList login this Aniko uses ("": none).
 func (s *Service) AccountHost() string {
 	// Not under accountMu: taking an account holds it over the network,
 	// and Settings asks this every few seconds.
@@ -173,7 +173,7 @@ func (s *Service) takeAccount(ctx context.Context, p *peer, tag string, st *acco
 }
 
 // UseHostAccount logs into the AniList account a host shares, instead of
-// this Nyakuro's own (Settings).
+// this Aniko's own (Settings).
 func (s *Service) UseHostAccount(ctx context.Context, id string) error {
 	if s.UseAccount == nil {
 		return errors.New("not available")
@@ -186,7 +186,7 @@ func (s *Service) UseHostAccount(ctx context.Context, id string) error {
 	}
 	s.mu.Unlock()
 	if tag == "" {
-		return errors.New("that Nyakuro doesn't share its AniList account with this one")
+		return errors.New("that Aniko doesn't share its AniList account with this one")
 	}
 	s.accountMu.Lock()
 	defer s.accountMu.Unlock()
@@ -194,7 +194,7 @@ func (s *Service) UseHostAccount(ctx context.Context, id string) error {
 	return s.takeAccount(ctx, p, tag, &st)
 }
 
-// LoggedOut notes a logout by hand: a host's account this Nyakuro was using
+// LoggedOut notes a logout by hand: a host's account this Aniko was using
 // isn't used again by itself.
 func (s *Service) LoggedOut() {
 	s.accountMu.Lock()
@@ -211,7 +211,7 @@ func (s *Service) LoggedOut() {
 	s.hub.Publish("sharing-updated", nil)
 }
 
-// LoggedIn notes a login by hand: this Nyakuro's own account from now on.
+// LoggedIn notes a login by hand: this Aniko's own account from now on.
 func (s *Service) LoggedIn() {
 	s.accountMu.Lock()
 	defer s.accountMu.Unlock()

@@ -64,7 +64,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 {/* A TV has no easy way to copy a token: the computer can share its login. */}
                 {androidApp && (
                     <p className={classic ? "rounded-lg border border-brand/30 bg-brand-soft p-4 text-sm text-fg/90" : "border-l border-line-strong pl-4 text-sm text-fg/90"}>
-                        Easiest on a TV: on your computer's Nyakuro, open Settings › Other devices and turn on “Share my AniList account” next to this device.
+                        Easiest on a TV: on your computer's Aniko, open Settings › Other devices and turn on “Share my AniList account” next to this device.
                     </p>
                 )}
                 {!manual && (
@@ -77,8 +77,8 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                         <div className={classic ? "rounded-lg bg-white/[0.03] p-5" : undefined}>
                             <p className="text-sm text-muted">
                                 {desktop()
-                                    ? "Authorize Nyakuro in the login window that opens."
-                                    : "Authorize Nyakuro on AniList, then paste the token below."}
+                                    ? "Authorize Aniko in the login window that opens."
+                                    : "Authorize Aniko on AniList, then paste the token below."}
                             </p>
                             <Button variant="primary" className="mt-4 w-full" icon={<ExternalLink className="size-4" />} onClick={openAnilist}>
                                 Open AniList

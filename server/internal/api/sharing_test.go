@@ -20,15 +20,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/history"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
-// sharingServer is a Nyakuro with library sharing on, serving as a real one
+// sharingServer is an Aniko with library sharing on, serving as a real one
 // does with devices on the network: on every address, at the port its
 // settings say, which it tells the others (its beacons, its requests).
-// Where multicast works (Linux), the test Nyakuros hear each other's beacons
+// Where multicast works (Linux), the test Anikos hear each other's beacons
 // and may go to the address one says; it must answer there. Its URL is on
 // 127.0.0.1.
 func sharingServer(t *testing.T) (*Server, *httptest.Server) {
@@ -54,8 +54,8 @@ func sharingServer(t *testing.T) (*Server, *httptest.Server) {
 	return s, srv
 }
 
-// peerIn finds the other test Nyakuro in what s lists. On a network with
-// multicast (GitHub's Linux and macOS machines), other test Nyakuros can be
+// peerIn finds the other test Aniko in what s lists. On a network with
+// multicast (GitHub's Linux and macOS machines), other test Anikos can be
 // listed too.
 func peerIn(s, other *Server) (share.PeerView, bool) {
 	id := other.app.Share.ID()
@@ -83,7 +83,7 @@ func addEpisode(t *testing.T, s *Server, mediaID, episode int) (string, []byte) 
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "Show - 01.mkv")
-	data := bytes.Repeat([]byte("nyakuro-video-"), 2000)
+	data := bytes.Repeat([]byte("aniko-video-"), 2000)
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestLibrarySharing(t *testing.T) {
 			t.Error("the host's answer doesn't prove it's the host")
 		}
 	}
-	// Another Nyakuro is never this computer, whatever it may do.
+	// Another Aniko is never this computer, whatever it may do.
 	trusted := false
 	host.mux.HandleFunc("GET /api/peer/zz-trusted", shared(func(w http.ResponseWriter, r *http.Request) { trusted = isTrusted(r) }))
 	req, _ = http.NewRequest("GET", hostSrv.URL+"/api/peer/zz-trusted", nil)
@@ -249,7 +249,7 @@ func TestPeerRequestsChecked(t *testing.T) {
 		t.Errorf("from a website: %d", w.Code)
 	}
 
-	// Another Nyakuro, which the host doesn't share with: it may ask, not take.
+	// Another Aniko, which the host doesn't share with: it may ask, not take.
 	other, _ := sharingServer(t)
 	signed := func(target string) *http.Response {
 		t.Helper()
@@ -268,13 +268,13 @@ func TestPeerRequestsChecked(t *testing.T) {
 	_ = json.NewDecoder(resp.Body).Decode(&hello)
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || hello.Shares || hello.Files != "" {
-		t.Errorf("hello from a Nyakuro not allowed: %d %+v", resp.StatusCode, hello)
+		t.Errorf("hello from an Aniko not allowed: %d %+v", resp.StatusCode, hello)
 	}
 	for _, target := range []string{"/api/peer/files", "/api/peer/local/file?" + url.Values{"path": {path}}.Encode()} {
 		resp := signed(target)
 		resp.Body.Close()
 		if resp.StatusCode != http.StatusForbidden {
-			t.Errorf("%s from a Nyakuro not allowed: %d", target, resp.StatusCode)
+			t.Errorf("%s from an Aniko not allowed: %d", target, resp.StatusCode)
 		}
 	}
 	// A token for another host is refused.
@@ -283,7 +283,7 @@ func TestPeerRequestsChecked(t *testing.T) {
 	if resp, err := http.DefaultClient.Do(req); err == nil {
 		resp.Body.Close()
 		if resp.StatusCode != http.StatusUnauthorized {
-			t.Errorf("a token made for another Nyakuro: %d", resp.StatusCode)
+			t.Errorf("a token made for another Aniko: %d", resp.StatusCode)
 		}
 	}
 
@@ -362,9 +362,9 @@ func TestSharingSettingsOnlyFromThisComputer(t *testing.T) {
 	}
 }
 
-// Two Nyakuros on the same AniList account keep their watch history in step:
+// Two Anikos on the same AniList account keep their watch history in step:
 // where an episode was stopped on one, it goes on on the other. Not with
-// another account, nor with a Nyakuro that doesn't share with this one.
+// another account, nor with an Aniko that doesn't share with this one.
 func TestHistoryFollowsTheAccount(t *testing.T) {
 	const local = "127.0.0.1:5000"
 	host, hostSrv := sharingServer(t)
@@ -389,7 +389,7 @@ func TestHistoryFollowsTheAccount(t *testing.T) {
 	// Not shared with: nothing comes over.
 	time.Sleep(500 * time.Millisecond)
 	if synced() {
-		t.Fatal("history came from a Nyakuro that doesn't share with this one")
+		t.Fatal("history came from an Aniko that doesn't share with this one")
 	}
 	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
 		t.Fatal(err)
@@ -430,7 +430,7 @@ func TestHistoryFollowsTheAccount(t *testing.T) {
 	}
 }
 
-// A host shares its AniList login with a Nyakuro (a TV, say): sealed on the
+// A host shares its AniList login with an Aniko (a TV, say): sealed on the
 // way, followed when it changes, dropped when the host stops. Logged out by
 // hand, the guest doesn't take it again by itself.
 func TestAccountShared(t *testing.T) {
@@ -469,7 +469,7 @@ func TestAccountShared(t *testing.T) {
 	if guestLogin() != "" {
 		t.Fatal("logged in with an account that isn't shared")
 	}
-	// Nor for a Nyakuro that isn't allowed: the endpoint checks.
+	// Nor for an Aniko that isn't allowed: the endpoint checks.
 	if w := do(host, "GET", "/api/peer/anilist", "192.168.1.30:5000", "", nil); w.Code == http.StatusOK {
 		t.Fatalf("anyone got the account: %s", w.Body)
 	}
@@ -526,7 +526,7 @@ func TestAccountShared(t *testing.T) {
 	}
 }
 
-// A host lets a Nyakuro download onto it: it becomes where that Nyakuro's
+// A host lets an Aniko download onto it: it becomes where that Aniko's
 // downloads go, and they're sent there.
 func TestDownloadsToHost(t *testing.T) {
 	const local = "127.0.0.1:5000"
@@ -548,7 +548,7 @@ func TestDownloadsToHost(t *testing.T) {
 	if to := guest.app.Settings.Get().Sharing.DownloadTo; to != "" {
 		t.Fatalf("downloads go to %q before the host allowed it", to)
 	}
-	// Not allowed: a Nyakuro can't download onto the host by itself.
+	// Not allowed: an Aniko can't download onto the host by itself.
 	body := `{"mediaId":21,"uris":["magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567"]}`
 	req, _ := http.NewRequest("POST", hostSrv.URL+"/api/peer/downloads/torrent", strings.NewReader(body))
 	if err := guest.app.Share.Sign(req, hid, host.app.Share.Whoami().Key); err != nil {
@@ -582,7 +582,7 @@ func TestDownloadsToHost(t *testing.T) {
 	// A torrent added on the guest goes to the host's torrent client (none
 	// here: its answer says so, from the host).
 	w := do(guest, "POST", "/api/torrent-client/add", local, `{"magnet":"magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567","mediaId":0}`, nil)
-	// As the host calls itself (another test Nyakuro on the network can make
+	// As the host calls itself (another test Aniko on the network can make
 	// the name shown here differ: "vm (2)").
 	hostName := guest.app.Share.HostName(hid)
 	if w.Code == http.StatusOK || !strings.HasPrefix(errorOf(w), hostName+": ") {
@@ -599,17 +599,17 @@ func TestDownloadsToHost(t *testing.T) {
 	if w := do(guest, "POST", "/api/torrent-client/action", local, `{"hashes":["ab"],"action":"pause"}`, nil); !strings.HasPrefix(errorOf(w), hostName+": ") {
 		t.Fatalf("action not sent to the host: %d %s", w.Code, w.Body)
 	}
-	// Only for a Nyakuro allowed to download there.
+	// Only for an Aniko allowed to download there.
 	other, _ := sharingServer(t)
 	req, _ = http.NewRequest("GET", hostSrv.URL+"/api/peer/torrents/list", nil)
 	if err := other.app.Share.Sign(req, hid, host.app.Share.Whoami().Key); err != nil {
 		t.Fatal(err)
 	}
 	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode == http.StatusOK {
-		t.Fatalf("another Nyakuro listed the host's torrents: %v %v", resp, err)
+		t.Fatalf("another Aniko listed the host's torrents: %v %v", resp, err)
 	}
 
-	// Its Downloads page shows the host's downloads; another Nyakuro can't
+	// Its Downloads page shows the host's downloads; another Aniko can't
 	// read them.
 	var dl struct {
 		Host  string            `json:"host"`
@@ -627,7 +627,7 @@ func TestDownloadsToHost(t *testing.T) {
 		t.Fatal(err)
 	}
 	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode == http.StatusOK {
-		t.Fatalf("another Nyakuro listed the host's downloads: %v %v", resp, err)
+		t.Fatalf("another Aniko listed the host's downloads: %v %v", resp, err)
 	}
 
 	// Not allowed any more: saved here again.
@@ -657,7 +657,7 @@ func errorOf(w *httptest.ResponseRecorder) string {
 	return e.Error
 }
 
-// Home's Sync: two paired Nyakuros on the same AniList account take each
+// Home's Sync: two paired Anikos on the same AniList account take each
 // other's newer positions now, both ways, also ones the usual exchange
 // missed (saved while the other was away).
 func TestSyncNow(t *testing.T) {
@@ -698,7 +698,7 @@ func TestSyncNow(t *testing.T) {
 		Paired []string `json:"paired"`
 	}
 	if w := do(host, "GET", "/api/status", local, "", nil); json.Unmarshal(w.Body.Bytes(), &st) != nil || len(st.Paired) != 1 {
-		t.Fatalf("the host's paired Nyakuros: %s", w.Body)
+		t.Fatalf("the host's paired Anikos: %s", w.Body)
 	}
 
 	var res struct {
@@ -730,7 +730,7 @@ func TestSyncNow(t *testing.T) {
 		t.Errorf("the guest's sync didn't take the host's position: %+v", e)
 	}
 
-	// A Nyakuro that isn't paired gets no history.
+	// An Aniko that isn't paired gets no history.
 	other, _ := sharingServer(t)
 	other.app.Share.User = func() int { return 42 }
 	req, _ := http.NewRequest("GET", hostSrv.URL+"/api/peer/history?since=0", nil)
@@ -738,13 +738,13 @@ func TestSyncNow(t *testing.T) {
 		t.Fatal(err)
 	}
 	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != http.StatusForbidden {
-		t.Errorf("an unpaired Nyakuro read the history: %v %v", resp, err)
+		t.Errorf("an unpaired Aniko read the history: %v %v", resp, err)
 	}
 }
 
 // What the usual exchange missed comes over later by itself: a position
 // saved on the guest before the host shared with it, one the host took
-// late from a third Nyakuro (with an older time), and the last one saved as
+// late from a third Aniko (with an older time), and the last one saved as
 // the guest quits.
 func TestHistoryCatchesUp(t *testing.T) {
 	const local = "127.0.0.1:5000"
@@ -771,14 +771,14 @@ func TestHistoryCatchesUp(t *testing.T) {
 	}
 	time.Sleep(2500 * time.Millisecond)
 	if has(host, 8, 500)() {
-		t.Fatal("sent to a Nyakuro that doesn't share with this one")
+		t.Fatal("sent to an Aniko that doesn't share with this one")
 	}
 	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
 		t.Fatal(err)
 	}
 	eventually(t, "the missed position to reach the host", asked(has(host, 8, 500)))
 
-	// Taken by the host from another Nyakuro after the guest had asked, with
+	// Taken by the host from another Aniko after the guest had asked, with
 	// an hour-old time: the guest still gets it.
 	if _, err := host.app.History.Merge(history.Entry{MediaID: 21, Episode: 9, Position: 250, Duration: 1420, Source: "local", UpdatedAt: time.Now().Add(-time.Hour).Unix()}); err != nil {
 		t.Fatal(err)
@@ -796,7 +796,7 @@ func TestHistoryCatchesUp(t *testing.T) {
 }
 
 // Forgetting a host leaves nothing of it: downloads don't go there any
-// more. Not sharing with a Nyakuro any more drops what came with it, which
+// more. Not sharing with an Aniko any more drops what came with it, which
 // sharing again doesn't give back.
 func TestForgetAndUnshareDropGrants(t *testing.T) {
 	const local = "127.0.0.1:5000"
@@ -818,7 +818,7 @@ func TestForgetAndUnshareDropGrants(t *testing.T) {
 	})
 	guest.app.Share.Forget(hid)
 	if to := guest.app.Settings.Get().Sharing.DownloadTo; to != "" {
-		t.Errorf("downloads still go to a forgotten Nyakuro: %q", to)
+		t.Errorf("downloads still go to a forgotten Aniko: %q", to)
 	}
 
 	if err := host.app.Share.SetAllowed(gid, false); err != nil {
@@ -835,7 +835,7 @@ func TestForgetAndUnshareDropGrants(t *testing.T) {
 }
 
 // The player's notes (what went wrong) go to the log here, and for a
-// shared file to its host's too, where it can be looked into; from a Nyakuro
+// shared file to its host's too, where it can be looked into; from an Aniko
 // the host doesn't share with, nothing.
 func TestPlayerNoteReachesTheHost(t *testing.T) {
 	const local = "127.0.0.1:5000"
@@ -866,7 +866,7 @@ func TestPlayerNoteReachesTheHost(t *testing.T) {
 	eventually(t, "the note in the guest's log", func() bool { return seen("player: first note") })
 	time.Sleep(time.Second)
 	if seen("sharing: the player on") {
-		t.Fatal("a Nyakuro the host doesn't share with wrote to its log")
+		t.Fatal("an Aniko the host doesn't share with wrote to its log")
 	}
 
 	if err := host.app.Share.SetAllowed(guest.app.Share.ID(), true); err != nil {
@@ -979,9 +979,9 @@ func TestAutoSyncWhenBack(t *testing.T) {
 // the position kept here, with the host's probe (its length), and the
 // stream asked to start there.
 func TestSharedFileResumes(t *testing.T) {
-	video := os.Getenv("NYAKURO_TEST_VIDEO")
+	video := os.Getenv("ANIKO_TEST_VIDEO")
 	if video == "" {
-		t.Skip("NYAKURO_TEST_VIDEO (a real video over 2 minutes) not set")
+		t.Skip("ANIKO_TEST_VIDEO (a real video over 2 minutes) not set")
 	}
 	const local = "127.0.0.1:5000"
 	host, hostSrv := sharingServer(t)

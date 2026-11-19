@@ -10,8 +10,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Single episodes, many of them of titles ending in a number, which the old

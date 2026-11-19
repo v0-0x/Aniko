@@ -1,4 +1,4 @@
-package nyakurohub
+package anikohub
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 func item(at int64, deleted bool, extra string) json.RawMessage {

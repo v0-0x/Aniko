@@ -1,12 +1,12 @@
-<p align="center"><img src="packaging/icons/nyakuro-128.png" width="96" alt="Nyakuro"></p>
+<p align="center"><img src="packaging/icons/aniko-128.png" width="96" alt="Aniko"></p>
 
-<h1 align="center">Nyakuro</h1>
+<h1 align="center">Aniko</h1>
 
 <p align="center">An anime app for Arch Linux, Windows, macOS and Android TV (Fire TV): your AniList, your local library, ani-cli streaming, torrents and an extension marketplace — in one app that only ever talks to your own computer and home network.</p>
 
-<p align="center"><img src="docs/screenshots/home.jpg" width="49%" alt="Nyakuro's Home page"> <img src="docs/screenshots/anime.jpg" width="49%" alt="An anime's page"></p>
+<p align="center"><img src="docs/screenshots/home.jpg" width="49%" alt="Aniko's Home page"> <img src="docs/screenshots/anime.jpg" width="49%" alt="An anime's page"></p>
 
-<p align="center">Nyakuro was called <b>Aniko</b> until 3.0.58, and <b>Kumo</b> before 2.0.37: see <a href="#from-aniko-or-kumo">From Aniko or Kumo</a>.</p>
+<p align="center">Aniko was called <b>Kumo</b> before 2.0.37: see <a href="#from-kumo">From Kumo</a>.</p>
 
 ---
 
@@ -17,7 +17,7 @@
 - Works with **every video format**: mkv, mp4, avi, webm, mov, wmv, flv, ts/m2ts, ogm, rmvb, vob, 3gp, divx and more.
 - **Auto refresh**: watches the folders and rescans when files appear, and refreshes on startup.
 - **Local library** page with only the anime you have on disk: recently added, filters by list status and by type (TV series, movies, or OVAs, ONAs and specials), sort by added/unwatched/size, grid or list view with downloaded episode ranges, size, resolution and release group, and one-click "play next".
-- **Library sharing** between the Nyakuro apps on your computers at home: they find each other by themselves (or by address). On the computer with the anime, turn on **Share my library** for the others in **Settings › Devices & network**: its anime show up on theirs (a tab on the Local library page, and on each anime's page) and play like local files, converted by the computer that has them when needed. Watching updates the list (AniList or local) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second (live to the computer whose files you watch), and episodes watched on any device come first; positions saved while the other was off are sent when it's back, it syncs by itself when a device comes back on the network or the TV app is opened again, and **Sync** on Home brings both up to date at once. A computer that's asleep can be **woken from the TV** (Home or Settings › Devices & network; Wake-on-LAN on in its settings), and it **stays awake while another device plays its anime**. Settings › Devices & network lists every Nyakuro with its version, and Home asks whether to share with a new one (a TV) when it shows up.
+- **Library sharing** between the Aniko apps on your computers at home: they find each other by themselves (or by address). On the computer with the anime, turn on **Share my library** for the others in **Settings › Devices & network**: its anime show up on theirs (a tab on the Local library page, and on each anime's page) and play like local files, converted by the computer that has them when needed. Watching updates the list (AniList or local) of the computer you watch on, never the other's. On the same AniList account, Continue watching carries over to the second (live to the computer whose files you watch), and episodes watched on any device come first; positions saved while the other was off are sent when it's back, it syncs by itself when a device comes back on the network or the TV app is opened again, and **Sync** on Home brings both up to date at once. A computer that's asleep can be **woken from the TV** (Home or Settings › Devices & network; Wake-on-LAN on in its settings), and it **stays awake while another device plays its anime**. Settings › Devices & network lists every Aniko with its version, and Home asks whether to share with a new one (a TV) when it shows up.
 - Library tools to fix matches by hand, change episode numbers, lock files and ignore junk; **Missing episodes** (the gaps in the library and the episodes aired since, with torrents a click away); **Clean up** (how full the drive is, episodes watched a while ago, episodes there twice, put away into a trash that can be undone for 30 days).
 - Safe with removable drives: an unplugged or unmounted library folder keeps its matches; symlinked folders are followed.
 - **Artwork & metadata**: covers, banners, fanart, descriptions, genres, studios, characters, relations, recommendations, **episode titles, summaries and thumbnails** (AniList + ani.zip). All artwork is **downloaded to a local cache**, so it loads instantly and still shows offline.
@@ -29,7 +29,7 @@
 - **Remembers your audio and subtitle track per anime.** Pick "Japanese + English Full Subs" once and every next episode opens with the same tracks, matched by language and title, so it works even when the track order changes.
 - Auto skip openings, endings, recaps and the next episode's preview (AniSkip), an **Up next** card in the ending, auto play next, Start over, "Continue watching" row, now-playing bar for mpv.
 - **Previews on the seek bar** (also where Left/Right go on a TV), and **subtitles your way**: size, background and position for each device, timing moved with z / x (kept per anime).
-- **Picture in picture** in the desktop app (p): the episode goes on in a small window on top of the others, with Nyakuro's controls, subtitles and Up next, while you use Nyakuro or anything else; its button brings it back to the big player where it's at.
+- **Picture in picture** in the desktop app (p): the episode goes on in a small window on top of the others, with Aniko's controls, subtitles and Up next, while you use Aniko or anything else; its button brings it back to the big player where it's at.
 - Progress syncs to AniList automatically after an episode passes the completion threshold you set.
 - **Playlists**: queue episodes from any anime (one, or the rest of a season; files and online episodes) and play them in a row, from an episode's menu and the **Playlists** page. Kept in step between your devices through mediaserver.
 - **Filler and recap episodes are tagged** on the episode pictures (from Anime Filler List and MyAnimeList), and **Skip filler** (Settings › Playback) makes Up next pass them.
@@ -38,13 +38,13 @@
 - In the player's menu: **volume boost** up to 300%, **stats** (i), a **screenshot** of the frame (Shift+S) and a subtitle file of your own.
 
 **Streaming & downloads (ani-cli)**
-- Sub **and** dub streaming through your installed **ani-cli**. Nyakuro drives ani-cli non-interactively (no fzf pop-ups), so updating ani-cli (`ani-cli -U` / AUR) keeps it working when sites change.
+- Sub **and** dub streaming through your installed **ani-cli**. Aniko drives ani-cli non-interactively (no fzf pop-ups), so updating ani-cli (`ani-cli -U` / AUR) keeps it working when sites change.
 - Per-anime sub/dub choice, quality, manual "wrong match?" fixing.
 - **Download episodes** (single or ranges) with yt-dlp or ffmpeg straight into your library; they're matched instantly.
 - Plus any **online-streaming extension** from the marketplace (HiAnime, AnimeAV1, …).
 
 **Torrents**
-- **qBittorrent** (Web UI API, v4 and v5) and **Transmission** sync: list, pause/resume, remove (with data), open folder, active count in the sidebar. Nyakuro can launch the client for you.
+- **qBittorrent** (Web UI API, v4 and v5) and **Transmission** sync: list, pause/resume, remove (with data), open folder, active count in the sidebar. Aniko can launch the client for you.
 - Smart search on **Nyaa** and **AnimeTosho** (or extension providers): episode, batch, resolution, release group, seeders, dual-audio badges.
 - **Stream a torrent**: it plays within seconds while it downloads, and nothing is kept; on a TV it streams through the computer or server at home.
 - **Auto downloader**: RSS rules per anime (release groups and resolutions in your order of preference, keywords, words to leave out, a size range, min seeders, a wait for a better release), and **Test** shows what a rule would grab and why it skips the rest.
@@ -59,11 +59,11 @@
 **Extensions & plugins**
 - Built-in browser for the **[extension marketplace](https://raw.githubusercontent.com/Bas1874/Seanime-Marketplace/refs/heads/main/Marketplace/Main.json)** (any compatible index URL works): install, update, configure and uninstall.
 - Runs **online-streaming, torrent and manga providers** in a sandboxed JavaScript runtime with the APIs marketplace extensions use (`fetch`, `LoadDoc`, `CryptoJS`, `$store`, `$storage`, `$habari`, user config…).
-- **UI plugins**: trays, anime-page buttons, webviews, toasts, storage, AniList access, `$ui.register`, `ctx.state/effect/fieldRef`, … All 15 most-starred marketplace plugins load. Plugins that rewrite the app's own pages (`ctx.dom`) or need file/command access only partly work, because Nyakuro deliberately doesn't allow either.
+- **UI plugins**: trays, anime-page buttons, webviews, toasts, storage, AniList access, `$ui.register`, `ctx.state/effect/fieldRef`, … All 15 most-starred marketplace plugins load. Plugins that rewrite the app's own pages (`ctx.dom`) or need file/command access only partly work, because Aniko deliberately doesn't allow either.
 - **Manga** reader (long strip, single pages or two-page spreads, LTR / RTL) using manga provider extensions, and **manga downloads**: chapters as `.cbz` files on this device or your mediaserver, read offline.
 
 **Your anime**
-- **Alerts** when a new episode of what you're watching airs, or episodes are ready to watch (a download or a torrent finished): in Nyakuro, or as the system's notifications.
+- **Alerts** when a new episode of what you're watching airs, or episodes are ready to watch (a download or a torrent finished): in Aniko, or as the system's notifications.
 - **Right-click menus** on anime, episodes and list rows (downloads, torrents, playlists, the schedule, library tools…); on a TV the remote's Menu key opens them.
 - **What should I watch?** (the dice on Home) picks an anime from your list. **Stats**: your anime in numbers, and what you watched month by month.
 - **Parental controls** per device, set from your computer or the server: 18+, genres, single titles or only chosen anime, behind a PIN, with what the device watched.
@@ -78,8 +78,8 @@
 | The desktop window | Always (authenticated with a per-run token) |
 | A browser on this PC | Only when **Settings › Devices & network** is on (`http://127.0.0.1:43211`) |
 | Devices on your home network | Only when **Allow devices on my network** is on. They can be password protected, and can't change paths/programs or browse folders. |
-| Nyakuro on your other computers and TVs | With **Library sharing** on: they see it, and only those you turn on get the library, and nothing else unless you also share your AniList account or let them download there (each Nyakuro has its own key pair; requests are signed, and play only files of the library). |
-| Other apps on an Android TV or phone | **Never**: the Nyakuro app's own window proves itself with a per-install token. |
+| Aniko on your other computers and TVs | With **Library sharing** on: they see it, and only those you turn on get the library, and nothing else unless you also share your AniList account or let them download there (each Aniko has its own key pair; requests are signed, and play only files of the library). |
+| Other apps on an Android TV or phone | **Never**: the Aniko app's own window proves itself with a per-install token. |
 | Anything on the internet | **Never** (connections from public IP addresses are refused) |
 
 The server also rejects other websites' requests (Origin check) and DNS rebinding tricks (Host check). Extensions and the stream/image proxies can't connect to localhost or your LAN. Plugins get no file or command access. Nothing is sent anywhere except the services you use (AniList, ani.zip, AniSkip, the torrent and stream sites you search).
@@ -90,44 +90,44 @@ The server also rejects other websites' requests (Origin check) and DNS rebindin
 sudo pacman -S --needed base-devel go nodejs npm electron mpv ffmpeg
 yay -S ani-cli            # sub/dub streaming & downloads (recommended)
 sudo pacman -S yt-dlp     # optional, better downloads
-git clone https://github.com/v0-0x/Nyakuro nyakuro && cd nyakuro
+git clone https://github.com/v0-0x/Aniko aniko && cd aniko
 cd packaging/arch && makepkg -si
 ```
 
-No git? Download the source from GitHub (**Code › Download ZIP**), unpack it (`bsdtar -xf Nyakuro-*.zip`) and run `makepkg -si` in its `packaging/arch` folder.
+No git? Download the source from GitHub (**Code › Download ZIP**), unpack it (`bsdtar -xf Aniko-*.zip`) and run `makepkg -si` in its `packaging/arch` folder.
 
-Start **Nyakuro** from your app menu (or run `nyakuro`).
+Start **Aniko** from your app menu (or run `aniko`).
 
-### From Aniko or Kumo
+### From Kumo
 
-Nyakuro was called Aniko until 3.0.58, and Kumo before 2.0.37. Every copy updates to Nyakuro by itself, with its library, history, settings and logins (its data folder moves to Nyakuro's the first time it starts, and `ANIKO_`/`KUMO_` variables still count):
+Aniko was called Kumo before 2.0.37, and every copy updates to Aniko by itself, with its library, history, settings and logins (its data folder moves to Aniko's the first time it starts):
 
-- **Arch Linux**: Aniko's (or Kumo's) **Update** button installs Nyakuro as before. With `git pull && cd packaging/arch && makepkg -sif`, pacman asks once whether to remove `aniko` (or `kumo`, the old package): answer `y`. `aniko`, `aniko-server` and the `aniko-server` service stay as other names for Nyakuro's.
-- **Windows**: the update moves the app to a Nyakuro folder, with new shortcuts. A taskbar pin of Aniko's may need pinning again; the portable build keeps an `Aniko.exe` until its next update.
-- **macOS**: the update arrives in the app still named Aniko.app (or Kumo.app), which renames itself Nyakuro.app when it opens (and opens again from there).
-- **Android TV**: the update installs over Aniko in place.
-- **Aniko Hub**, **Kumo Hub** and **Nyakuro Hub** update themselves to [mediaserver](#a-home-server-mediaserver), which takes their place with their data.
+One beta, 3.0.59, was called Nyakuro: a copy of it updates back to Aniko the same way, with its data.
 
-The releases carry each file under its Aniko name too for a few stable releases after the rename, so Aniko's updater finds them; a copy still on Aniko after that installs Nyakuro by hand, once.
+- **Arch Linux**: Kumo's **Update** button installs Aniko as before. With `git pull && cd packaging/arch && makepkg -sif`, pacman asks once whether to remove `kumo` (the old package): answer `y`.
+- **Windows**: the update moves the app to an Aniko folder, with new shortcuts. A taskbar pin of Kumo's may need pinning again.
+- **macOS**: the update arrives in the app still named Kumo.app, which renames itself Aniko.app when it opens (and opens again from there).
+- **Android TV**: the update installs over Kumo in place.
+- **Kumo Hub** and **Aniko Hub** update themselves to [mediaserver](#a-home-server-mediaserver), which takes their place with their data.
 
 ### Updates
-When GitHub has a newer Nyakuro, the **Home** page shows it with an **Update** button: Nyakuro downloads the new source, builds it with makepkg and installs the package with pacman (a password dialog asks for your password); **Restart Nyakuro** then starts the new version. **Settings › Updates & about** shows the version and the last check, and checks again right away.
+When GitHub has a newer Aniko, the **Home** page shows it with an **Update** button: Aniko downloads the new source, builds it with makepkg and installs the package with pacman (a password dialog asks for your password); **Restart Aniko** then starts the new version. **Settings › Updates & about** shows the version and the last check, and checks again right away.
 
-**Stable or beta.** Each new version comes out as a **beta** first (a pre-release on GitHub), and the ones ready for everyone as a stable release. Nyakuro offers only stable releases, unless **Settings › Updates & about › Beta updates** is on: then betas too, as soon as they're out. Turning it off waits for the next stable release (a beta you have stays until one passes it). On Arch, a stable update builds the newest stable release's commit and a beta update the branch's newest commit.
+**Stable or beta.** Each new version comes out as a **beta** first (a pre-release on GitHub), and the ones ready for everyone as a stable release. Aniko offers only stable releases, unless **Settings › Updates & about › Beta updates** is on: then betas too, as soon as they're out. Turning it off waits for the next stable release (a beta you have stays until one passes it). On Arch, a stable update builds the newest stable release's commit and a beta update the branch's newest commit.
 
-Update checks need no GitHub account. Without a password dialog (e.g. when Nyakuro runs as the `nyakuro-server` service), Nyakuro builds the update and shows the `sudo pacman -U …` command to run.
+Update checks need no GitHub account. Without a password dialog (e.g. when Aniko runs as the `aniko-server` service), Aniko builds the update and shows the `sudo pacman -U …` command to run.
 
-You can still update by hand, in the folder you cloned Nyakuro into:
+You can still update by hand, in the folder you cloned Aniko into:
 
 ```bash
-pkill -f /usr/lib/nyakuro          # Nyakuro can't be replaced while it runs
-git remote set-url origin https://github.com/v0-0x/Nyakuro.git   # once, for a clone of an old address
+pkill -f /usr/lib/aniko          # Aniko can't be replaced while it runs
+git remote set-url origin https://github.com/v0-0x/Aniko.git   # once, for a clone of an old address
 git pull && cd packaging/arch && makepkg -sif
 ```
 
-`git pull` gets the newest commit, which is the newest beta. `-f` rebuilds (without it makepkg reinstalls the package it built last time). Build from a `git clone` when you can: without git the version comes from a `VERSION` file at the root, the folder's name (a release's source zip unpacks to `Nyakuro-windows-v2.0.59`) or, failing those, the newest release on GitHub; a branch zip built offline stays 1.0.0, which pacman then calls a downgrade and the updater an old version.
+`git pull` gets the newest commit, which is the newest beta. `-f` rebuilds (without it makepkg reinstalls the package it built last time). Build from a `git clone` when you can: without git the version comes from a `VERSION` file at the root, the folder's name (a release's source zip unpacks to `Aniko-windows-v2.0.59`) or, failing those, the newest release on GitHub; a branch zip built offline stays 1.0.0, which pacman then calls a downgrade and the updater an old version.
 
-The **Update** button asks for your password with your desktop's polkit agent. Desktops like GNOME and KDE have one; on a bare window manager (Hyprland, Sway, i3…) start one (e.g. `polkit-gnome`'s `/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1`), or Nyakuro shows the `sudo pacman -U …` command to run instead.
+The **Update** button asks for your password with your desktop's polkit agent. Desktops like GNOME and KDE have one; on a bare window manager (Hyprland, Sway, i3…) start one (e.g. `polkit-gnome`'s `/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1`), or Aniko shows the `sudo pacman -U …` command to run instead.
 
 ### First run
 1. **Settings › Library**: pick your folder (e.g. `/mnt/big/Media/Anime`) and save. The first scan starts on its own.
@@ -137,43 +137,43 @@ The **Update** button asks for your password with your desktop's polkit agent. D
 
 ### Headless / other devices
 ```bash
-systemctl --user enable --now nyakuro-server   # server only, web UI on 127.0.0.1:43211
+systemctl --user enable --now aniko-server   # server only, web UI on 127.0.0.1:43211
 loginctl enable-linger "$USER"              # and started at boot, before you log in
 ```
-With linger on, the PC's library is there for the TV as soon as the PC is on, not only once you've logged in. Turn on **Allow devices on my network** (with a password) to use Nyakuro from your phone or a browser at `http://<pc-name>.local:43211`. The desktop app attaches to the running server.
+With linger on, the PC's library is there for the TV as soon as the PC is on, not only once you've logged in. Turn on **Allow devices on my network** (with a password) to use Aniko from your phone or a browser at `http://<pc-name>.local:43211`. The desktop app attaches to the running server.
 
 ## Windows
 
-Nyakuro also runs on Windows 10/11 (64-bit), released separately from the Arch package: get the installer (`Nyakuro-Setup-X.Y.Z-windows-x64.exe`) or the portable zip from the newest **Nyakuro X.Y.Z for Windows** [release](https://github.com/v0-0x/Nyakuro/releases) (tag `windows-vX.Y.Z`). Those files are Windows-only; on Arch, use the PKGBUILD above. Nyakuro downloads the programs it uses (ffmpeg, yt-dlp, Git's bash, ani-cli, mpv…) itself, from **Install** on its Home page, and the installed app updates itself from its Home page too.
+Aniko also runs on Windows 10/11 (64-bit), released separately from the Arch package: get the installer (`Aniko-Setup-X.Y.Z-windows-x64.exe`) or the portable zip from the newest **Aniko X.Y.Z for Windows** [release](https://github.com/v0-0x/Aniko/releases) (tag `windows-vX.Y.Z`). Those files are Windows-only; on Arch, use the PKGBUILD above. Aniko downloads the programs it uses (ffmpeg, yt-dlp, Git's bash, ani-cli, mpv…) itself, from **Install** on its Home page, and the installed app updates itself from its Home page too.
 
 What it uses (ffmpeg, mpv, yt-dlp, ani-cli, qBittorrent), where it keeps its data, how to build it and how releases are made: [packaging/windows/README.md](packaging/windows/README.md).
 
 ## macOS
 
-Nyakuro runs on macOS 13 Ventura or newer, on Apple silicon and Intel Macs (one universal app): get the disk image (`Nyakuro-X.Y.Z-macos-universal.dmg`) from the newest **Nyakuro X.Y.Z for macOS** [release](https://github.com/v0-0x/Nyakuro/releases) (tag `macos-vX.Y.Z`) and drag Nyakuro to Applications. It isn't notarized by Apple: the first time, allow it in System Settings › Privacy & Security (**Open Anyway**). Nyakuro downloads the programs it uses (ffmpeg, yt-dlp, ani-cli) from its Settings, with no Homebrew needed, and updates itself from its Home page.
+Aniko runs on macOS 13 Ventura or newer, on Apple silicon and Intel Macs (one universal app): get the disk image (`Aniko-X.Y.Z-macos-universal.dmg`) from the newest **Aniko X.Y.Z for macOS** [release](https://github.com/v0-0x/Aniko/releases) (tag `macos-vX.Y.Z`) and drag Aniko to Applications. It isn't notarized by Apple: the first time, allow it in System Settings › Privacy & Security (**Open Anyway**). Aniko downloads the programs it uses (ffmpeg, yt-dlp, ani-cli) from its Settings, with no Homebrew needed, and updates itself from its Home page.
 
 How to open it the first time, where it keeps its data, how to build it: [packaging/macos/README.md](packaging/macos/README.md).
 
 ## Android / Fire TV
 
-Nyakuro for Android is made for TVs (a Fire TV Stick, Android TV) and plays the libraries the computers at home share, with the remote: get `Nyakuro-X.Y.Z-android.apk` from the newest **Nyakuro X.Y.Z for Android** [release](https://github.com/v0-0x/Nyakuro/releases) (tag `android-vX.Y.Z`). On a Fire TV, install the **Downloader** app, allow it in Settings › My Fire TV › Developer options › Install unknown apps, and open the APK's address in it. Then, on a computer with Nyakuro, turn on **Library sharing** (Settings › Devices & network): the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses your account, with no login on the TV) and **Let it download here** (the TV's downloads and torrents go to that computer, and it becomes where the TV downloads by default). Its downloads page and auto downloader then work on that computer. The app updates itself from its Home page (if Android's install question was cancelled, **Install** asks again); see [android/README.md](android/README.md).
+Aniko for Android is made for TVs (a Fire TV Stick, Android TV) and plays the libraries the computers at home share, with the remote: get `Aniko-X.Y.Z-android.apk` from the newest **Aniko X.Y.Z for Android** [release](https://github.com/v0-0x/Aniko/releases) (tag `android-vX.Y.Z`). On a Fire TV, install the **Downloader** app, allow it in Settings › My Fire TV › Developer options › Install unknown apps, and open the APK's address in it. Then, on a computer with Aniko, turn on **Library sharing** (Settings › Devices & network): the TV shows up there. Turn on **Share my library** for it, and if you like **Share my AniList account** (the TV uses your account, with no login on the TV) and **Let it download here** (the TV's downloads and torrents go to that computer, and it becomes where the TV downloads by default). Its downloads page and auto downloader then work on that computer. The app updates itself from its Home page (if Android's install question was cancelled, **Install** asks again); see [android/README.md](android/README.md).
 
 When something doesn't play right on the TV (no picture, it stops), the TV writes what it saw to its log and to the computer's (Settings › App & data), which helps find out why.
 
 ## A home server: mediaserver
 
-For a computer that stays on, like a Raspberry Pi 4, [mediaserver](https://github.com/v0-0x/mediaserver) is the home server for Nyakuro (and for Moviko and Utako): it shares its library with the Nyakuro apps at home, streams to them (converting with the Pi's video chip what a device can't play), keeps the devices on the same AniList account in step as they watch (progress, list, theme), takes their downloads and uploads if you let it, and has a dashboard in the browser showing what it streams to whom and how the Pi is doing. It was Nyakuro Hub, which updates itself to mediaserver, keeping its library, logins, devices and password. Its install and setup: [mediaserver's README](https://github.com/v0-0x/mediaserver/blob/main/packaging/README.md).
+For a computer that stays on, like a Raspberry Pi 4, [mediaserver](https://github.com/v0-0x/mediaserver) is the home server for Aniko (and for Moviko and Utako): it shares its library with the Aniko apps at home, streams to them (converting with the Pi's video chip what a device can't play), keeps the devices on the same AniList account in step as they watch (progress, list, theme), takes their downloads and uploads if you let it, and has a dashboard in the browser showing what it streams to whom and how the Pi is doing. It was Aniko Hub, which updates itself to mediaserver, keeping its library, logins, devices and password. Its install and setup: [mediaserver's README](https://github.com/v0-0x/mediaserver/blob/main/packaging/README.md).
 
 To send it episodes (whole folders too) from a computer: **Local library › Upload**. While one is connected, a **Server** page in the app shows its status, load and drive space.
 
 ## Development
 
 ```bash
-make            # builds web/ and embeds it into dist/nyakuro
+make            # builds web/ and embeds it into dist/aniko
 make test       # Go tests (library parser, ani-cli driver, extensions, security)
-./dist/nyakuro --web-ui              # server + web UI at http://127.0.0.1:43211
+./dist/aniko --web-ui              # server + web UI at http://127.0.0.1:43211
 cd web && npm run dev             # UI dev server on :43000 (proxies /api)
-cd desktop && npm i && npx electron .   # desktop window (uses ../dist/nyakuro)
+cd desktop && npm i && npx electron .   # desktop window (uses ../dist/aniko)
 ```
 
 | Path | What |
@@ -183,9 +183,9 @@ cd desktop && npm i && npx electron .   # desktop window (uses ../dist/nyakuro)
 | `desktop/` | Electron shell (system `electron` on Arch; bundled by electron-builder for Windows and macOS) |
 | `packaging/` | PKGBUILD, launcher, `.desktop`, icons, systemd user unit; `windows/`: Windows build script and notes; `macos/`: the app icon and notes |
 
-Data lives in `~/.local/share/nyakuro` (SQLite database, artwork cache, extension storage; `%APPDATA%\Nyakuro` on Windows, `~/Library/Application Support/Nyakuro` on macOS).
+Data lives in `~/.local/share/aniko` (SQLite database, artwork cache, extension storage; `%APPDATA%\Aniko` on Windows, `~/Library/Application Support/Aniko` on macOS).
 
 ## Notes
-- AniList's API may rate-limit large first scans; Nyakuro waits and retries automatically.
+- AniList's API may rate-limit large first scans; Aniko waits and retries automatically.
 - Image-based subtitles (PGS/VobSub) show in mpv as they are; the in-app player has them drawn into the picture by the computer that has the file.
-- Nyakuro is a personal project, unaffiliated with AniList or ani-cli. Licensed GPL-3.0.
+- Aniko is a personal project, unaffiliated with AniList or ani-cli. Licensed GPL-3.0.

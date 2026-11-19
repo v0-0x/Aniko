@@ -17,8 +17,8 @@ import (
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
-	"github.com/v0-0x/Nyakuro/server/internal/share"
-	"github.com/v0-0x/Nyakuro/server/internal/torrentstream"
+	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/torrentstream"
 )
 
 // seedTorrent seeds the files of dir (a batch) from another client, and
@@ -143,7 +143,7 @@ func useTorrentCache(t *testing.T, s *Server) {
 
 // A TV (no torrent client) plays a torrent through the computer its
 // downloads go to: that one streams it, and the TV reads it from there as a
-// shared file, alone (another Nyakuro can't), with its status; stopping it
+// shared file, alone (another Aniko can't), with its status; stopping it
 // stops it there.
 func TestTorrentStreamThroughHost(t *testing.T) {
 	ffmpeg, err := exec.LookPath("ffmpeg")
@@ -229,13 +229,13 @@ func TestTorrentStreamThroughHost(t *testing.T) {
 	if w.Code != http.StatusPartialContent || !bytes.Equal(w.Body.Bytes(), want[1000:2000]) {
 		t.Fatalf("file through the host: %d, %d bytes", w.Code, w.Body.Len())
 	}
-	// Another Nyakuro the host shares with can't read it: it isn't its.
+	// Another Aniko the host shares with can't read it: it isn't its.
 	req, _ := http.NewRequest("GET", hostSrv.URL+"/api/peer/local/probe?path=torrent:"+sid, nil)
 	if err := other.app.Share.Sign(req, hid, host.app.Share.Whoami().Key); err != nil {
 		t.Fatal(err)
 	}
 	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("another Nyakuro read the torrent: %v %v", resp, err)
+		t.Fatalf("another Aniko read the torrent: %v %v", resp, err)
 	}
 	// Stopped from the TV: gone on the host.
 	if w := do(guest, "DELETE", "/api/torrentstream/"+started.Torrent.ID, local, "", nil); w.Code != http.StatusOK {

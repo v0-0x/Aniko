@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/v0-0x/Nyakuro/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/torrent"
 )
 
 type fakeProvider struct {

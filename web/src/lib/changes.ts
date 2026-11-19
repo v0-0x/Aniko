@@ -1,28 +1,18 @@
-// What's new in Nyakuro, newest first: shown once on each device after an
+// What's new in Aniko, newest first: shown once on each device after an
 // update (components/WhatsNew). A new entry gets the next id.
 
 export type Change = { title: string; text: string; to?: string }
-// hub: about Nyakuro Hub; shown only on a device that knows a hub.
+// hub: about Aniko Hub; shown only on a device that knows a hub.
 export type Release = { id: number; title: string; changes: Change[]; hub?: boolean }
 
 export const RELEASES: Release[] = [
-    {
-        id: 59,
-        title: "Aniko is now Nyakuro",
-        changes: [
-            {
-                title: "A new name and a new cat",
-                text: "Nyakuro: nya for the meow, kuro for black. Everything of yours moved over by itself: your library, history, settings and devices. The other Nyakuros on your network keep talking to this one as before.",
-            },
-        ],
-    },
     {
         id: 58,
         title: "Offline mode",
         changes: [
             {
                 title: "Offline mode",
-                text: "In the menu under your name, or Settings › Web UI & network: Nyakuro stops using the internet and works from what it has here. List changes wait and go to AniList once you're back online.",
+                text: "In the menu under your name, or Settings › Web UI & network: Aniko stops using the internet and works from what it has here. List changes wait and go to AniList once you're back online.",
             },
         ],
     },
@@ -32,7 +22,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "A new device asks first",
-                text: "When another Nyakuro offers its library, Home asks before this one uses it. The ones you already use stay as they are.",
+                text: "When another Aniko offers its library, Home asks before this one uses it. The ones you already use stay as they are.",
                 to: "/",
             },
             {
@@ -47,7 +37,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Notifications",
-                text: "The bell at the top of Home: episodes that aired and new chapters for what's on your lists, and what Nyakuro did (downloads, scans, updates).",
+                text: "The bell at the top of Home: episodes that aired and new chapters for what's on your lists, and what Aniko did (downloads, scans, updates).",
                 to: "/",
             },
             {
@@ -57,12 +47,12 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Year in review",
-                text: "Your year in Nyakuro: hours, top genres, your longest binge, the first and last show. From Stats.",
+                text: "Your year in Aniko: hours, top genres, your longest binge, the first and last show. From Stats.",
                 to: "/year",
             },
             {
                 title: "Windows: no setup window",
-                text: "Nyakuro downloads ffmpeg, yt-dlp, ani-cli and mpv itself, from Home or Settings › Desktop app & programs. No PowerShell, no Scoop.",
+                text: "Aniko downloads ffmpeg, yt-dlp, ani-cli and mpv itself, from Home or Settings › Desktop app & programs. No PowerShell, no Scoop.",
                 to: "/settings?tab=desktop",
             },
             {
@@ -78,7 +68,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Classic and Cinema are gone",
-                text: "Nyakuro has the one look now. If you used either, you're on it, with its nearest theme.",
+                text: "Aniko has the one look now. If you used either, you're on it, with its nearest theme.",
                 to: "/settings?tab=appearance",
             },
         ],
@@ -188,7 +178,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Meet the cat",
-                text: "Nyakuro's logo is a cat now: the A with ears, whiskers and a tail.",
+                text: "Aniko's logo is a cat now: the A with ears, whiskers and a tail.",
             },
             {
                 title: "New colors and rounder shapes",
@@ -199,7 +189,7 @@ export const RELEASES: Release[] = [
     },
     {
         id: 46,
-        title: "Nyakuro 3.0",
+        title: "Aniko 3.0",
         changes: [
             {
                 title: "Home starts with your next episode",
@@ -222,7 +212,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Faster to open",
-                text: "Nyakuro loads less than half as much at startup.",
+                text: "Aniko loads less than half as much at startup.",
             },
         ],
     },
@@ -325,15 +315,15 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "The portable Windows build updates itself",
-                text: "Update on the Home page downloads the new portable zip, puts it in place once Nyakuro has closed, and opens Nyakuro again. Nothing is installed.",
+                text: "Update on the Home page downloads the new portable zip, puts it in place once Aniko has closed, and opens Aniko again. Nothing is installed.",
             },
             {
                 title: "Report wrong order",
-                text: "Editing a watch order has a Report wrong order button: it keeps Nyakuro's order and your edit as a file, to send along with a bug report so the order can be put right for everyone.",
+                text: "Editing a watch order has a Report wrong order button: it keeps Aniko's order and your edit as a file, to send along with a bug report so the order can be put right for everyone.",
             },
             {
                 title: "Marketplace: what a plugin needs",
-                text: "A plugin that asks for permissions Nyakuro doesn't have (Seanime's playback, system…) is marked in the Marketplace: what it does with them won't work here.",
+                text: "A plugin that asks for permissions Aniko doesn't have (Seanime's playback, system…) is marked in the Marketplace: what it does with them won't work here.",
                 to: "/extensions",
             },
             {
@@ -369,7 +359,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Not offline on one slow answer",
-                text: "A media server or another Nyakuro busy for a moment (a scan, a disk waking up) no longer shows as offline, nor loses its library here: it has to miss twice. Playing from it or syncing with it also counts as hearing from it.",
+                text: "A media server or another Aniko busy for a moment (a scan, a disk waking up) no longer shows as offline, nor loses its library here: it has to miss twice. Playing from it or syncing with it also counts as hearing from it.",
             },
             {
                 title: "Your list comes at once",
@@ -377,7 +367,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Windows: a firewall rule",
-                text: "The installer offers to add a Windows Firewall rule for Nyakuro's server, so the other devices' announcements get through. Settings › Devices says when a device is found by its address only, and has a Refresh button.",
+                text: "The installer offers to add a Windows Firewall rule for Aniko's server, so the other devices' announcements get through. Settings › Devices says when a device is found by its address only, and has a Refresh button.",
             },
         ],
     },
@@ -450,11 +440,11 @@ export const RELEASES: Release[] = [
     },
     {
         id: 29,
-        title: "Nyakuro Hub is now mediaserver",
+        title: "Aniko Hub is now mediaserver",
         changes: [
             {
                 title: "mediaserver",
-                text: "Nyakuro Hub became mediaserver, one home server for Nyakuro and KumoBox: the same library, devices and AniList logins, on the same address. Its dashboard installs it in the hub's place (Settings › Updates there).",
+                text: "Aniko Hub became mediaserver, one home server for Aniko and KumoBox: the same library, devices and AniList logins, on the same address. Its dashboard installs it in the hub's place (Settings › Updates there).",
                 to: "/settings?tab=devices",
             },
             {
@@ -470,7 +460,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "The TV plays videos in Android's own player",
-                text: "The Fire TV's built-in web view has been showing videos as a grey picture under their sound, in other apps too. On the TV, Nyakuro now plays every video, from the hub, a computer or online, in Android's own video player, with Nyakuro's controls and subtitles over it as before.",
+                text: "The Fire TV's built-in web view has been showing videos as a grey picture under their sound, in other apps too. On the TV, Aniko now plays every video, from the hub, a computer or online, in Android's own video player, with Aniko's controls and subtitles over it as before.",
             },
             {
                 title: "Less converting on the hub",
@@ -488,7 +478,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "No more missing anime when the app opens",
-                text: "Sometimes the library showed only part of the hub's anime until the app was opened again: those not on your AniList list were left out when AniList didn't answer at once. Nyakuro now uses what it knew of them before, asks again until every one is in, and gets the hub's library again when it reconnects.",
+                text: "Sometimes the library showed only part of the hub's anime until the app was opened again: those not on your AniList list were left out when AniList didn't answer at once. Aniko now uses what it knew of them before, asks again until every one is in, and gets the hub's library again when it reconnects.",
             },
         ],
     },
@@ -498,7 +488,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "A grey picture is caught too",
-                text: "When the TV shows only a flat grey picture under the sound, Nyakuro now notices, the same as when it shows none: it opens the video again, then converts it, and last converts it in software, which this TV then keeps doing.",
+                text: "When the TV shows only a flat grey picture under the sound, Aniko now notices, the same as when it shows none: it opens the video again, then converts it, and last converts it in software, which this TV then keeps doing.",
             },
             {
                 title: "Grey picture? Convert in software",
@@ -508,15 +498,15 @@ export const RELEASES: Release[] = [
     },
     {
         id: 25,
-        title: "Kumo is now Nyakuro",
+        title: "Kumo is now Aniko",
         changes: [
             {
                 title: "A new name and logo",
-                text: "Same app, new name: Nyakuro, with a new logo, an A and a spark. Your library, history, settings and logins came along; nothing to set up again.",
+                text: "Same app, new name: Aniko, with a new logo, an A and a spark. Your library, history, settings and logins came along; nothing to set up again.",
             },
             {
                 title: "On every device",
-                text: "The computers, the TV app and the hub all update to Nyakuro by themselves and keep finding each other. On a Mac, the app still called Kumo renames itself Nyakuro when it opens.",
+                text: "The computers, the TV app and the hub all update to Aniko by themselves and keep finding each other. On a Mac, the app still called Kumo renames itself Aniko when it opens.",
             },
         ],
     },
@@ -526,7 +516,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "No more grey picture",
-                text: "When the TV plays an episode's sound under a grey picture, Nyakuro now converts the video for it (and keeps converting that format for this TV), and as a last resort converts it another way. Each try is written in the log of the computer or hub the episode is on.",
+                text: "When the TV plays an episode's sound under a grey picture, Aniko now converts the video for it (and keeps converting that format for this TV), and as a last resort converts it another way. Each try is written in the log of the computer or hub the episode is on.",
             },
             {
                 title: "Dubs without subtitles",
@@ -537,7 +527,7 @@ export const RELEASES: Release[] = [
     {
         id: 23,
         hub: true,
-        title: "Nyakuro Hub: the TV's picture",
+        title: "Aniko Hub: the TV's picture",
         changes: [
             {
                 title: "A picture from the Raspberry Pi",
@@ -548,7 +538,7 @@ export const RELEASES: Release[] = [
     {
         id: 22,
         hub: true,
-        title: "Nyakuro Hub: an audit log",
+        title: "Aniko Hub: an audit log",
         changes: [
             {
                 title: "Everything that happens on the hub",
@@ -567,7 +557,7 @@ export const RELEASES: Release[] = [
     {
         id: 21,
         hub: true,
-        title: "Nyakuro Hub: delete from its library",
+        title: "Aniko Hub: delete from its library",
         changes: [
             {
                 title: "Delete anime and episodes on the hub",
@@ -581,7 +571,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Back, at the top left",
-                text: "Once you've opened a page (an anime, a setting, a list), an arrow next to the Nyakuro logo takes you back to the one before. In the desktop app, Alt+Left (⌘[ on a Mac) and a mouse's back button do too.",
+                text: "Once you've opened a page (an anime, a setting, a list), an arrow next to the Aniko logo takes you back to the one before. In the desktop app, Alt+Left (⌘[ on a Mac) and a mouse's back button do too.",
             },
         ],
     },
@@ -630,7 +620,7 @@ export const RELEASES: Release[] = [
     {
         id: 15,
         hub: true,
-        title: "Nyakuro Hub: its library, with artwork",
+        title: "Aniko Hub: its library, with artwork",
         changes: [
             {
                 title: "Browse the hub's library",
@@ -641,7 +631,7 @@ export const RELEASES: Release[] = [
     {
         id: 14,
         hub: true,
-        title: "Nyakuro Hub: put its library right",
+        title: "Aniko Hub: put its library right",
         changes: [
             {
                 title: "Library tools on the hub",
@@ -666,7 +656,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Turn off this computer's library",
-                text: "Moved your anime to a Nyakuro Hub? Settings › Local library › A library on this computer: off. Nyakuro forgets this computer's files (nothing is deleted) and plays your hub's library instead. A folder taken out of the library goes too, also when its drive is gone.",
+                text: "Moved your anime to an Aniko Hub? Settings › Local library › A library on this computer: off. Aniko forgets this computer's files (nothing is deleted) and plays your hub's library instead. A folder taken out of the library goes too, also when its drive is gone.",
                 to: "/settings?tab=library",
             },
         ],
@@ -677,7 +667,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Parental controls",
-                text: "On the computer or Nyakuro Hub that shares with a device (a kid's tablet or TV), Settings › Other devices (or the hub's Devices) › Parental controls: block 18+ anime, chosen genres or titles, or allow only the anime you pick, and see everything it watched. Its Nyakuro hides the rest and won't open or play it, also away from home; only the computer that set them, or a PIN on the device, lifts them.",
+                text: "On the computer or Aniko Hub that shares with a device (a kid's tablet or TV), Settings › Other devices (or the hub's Devices) › Parental controls: block 18+ anime, chosen genres or titles, or allow only the anime you pick, and see everything it watched. Its Aniko hides the rest and won't open or play it, also away from home; only the computer that set them, or a PIN on the device, lifts them.",
                 to: "/settings?tab=devices",
             },
         ],
@@ -685,11 +675,11 @@ export const RELEASES: Release[] = [
     {
         id: 10,
         hub: true,
-        title: "Nyakuro Hub",
+        title: "Aniko Hub",
         changes: [
             {
                 title: "A hub for your home",
-                text: "Nyakuro Hub is Nyakuro for a Raspberry Pi (or any Linux computer that stays on): it shares its library with your computers, TVs and phones, and keeps the devices on the same AniList account in step as you watch: stop on the TV, carry on from the same second on the computer. Its dashboard, in a browser, shows what it's streaming to whom and how the Pi is doing. To set one up, see packaging/hub/README.md on GitHub.",
+                text: "Aniko Hub is Aniko for a Raspberry Pi (or any Linux computer that stays on): it shares its library with your computers, TVs and phones, and keeps the devices on the same AniList account in step as you watch: stop on the TV, carry on from the same second on the computer. Its dashboard, in a browser, shows what it's streaming to whom and how the Pi is doing. To set one up, see packaging/hub/README.md on GitHub.",
             },
             {
                 title: "With a hub",
@@ -718,7 +708,7 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Profile",
-                text: "Your AniList profile in Nyakuro: your numbers, favourites, what you're watching and what you've finished, who you follow and who follows you, and what the people you follow have been watching. Like their updates, open theirs, and follow people from their profiles. It's in the menu under your name in the sidebar.",
+                text: "Your AniList profile in Aniko: your numbers, favourites, what you're watching and what you've finished, who you follow and who follows you, and what the people you follow have been watching. Like their updates, open theirs, and follow people from their profiles. It's in the menu under your name in the sidebar.",
                 to: "/profile",
             },
         ],
@@ -729,15 +719,15 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "On your TV",
-                text: "Opening an anime starts on its Play button, and Home on your first Continue watching card. The manga reader turns pages with the remote, Back takes you up Home before it leaves Nyakuro, and holding OK no longer pauses and plays over and over. A remote's Stop, Previous and Captions keys work too.",
+                text: "Opening an anime starts on its Play button, and Home on your first Continue watching card. The manga reader turns pages with the remote, Back takes you up Home before it leaves Aniko, and holding OK no longer pauses and plays over and over. A remote's Stop, Previous and Captions keys work too.",
             },
             {
                 title: "On a phone",
-                text: "Tabs along the bottom instead of the sidebar, and pages that use the whole screen: Settings, buttons and menus fit. In the Android app, Back goes back a page instead of closing Nyakuro.",
+                text: "Tabs along the bottom instead of the sidebar, and pages that use the whole screen: Settings, buttons and menus fit. In the Android app, Back goes back a page instead of closing Aniko.",
             },
             {
                 title: "On your computer",
-                text: "Nyakuro's window opens where you left it, at its size, and shows that it's starting. Right-click copies and pastes, Ctrl + and − zoom (and stay that way), and the mouse's back button goes back. If Nyakuro can't start, it says why and offers to try again.",
+                text: "Aniko's window opens where you left it, at its size, and shows that it's starting. Right-click copies and pastes, Ctrl + and − zoom (and stay that way), and the mouse's back button goes back. If Aniko can't start, it says why and offers to try again.",
             },
             {
                 title: "Everywhere",
@@ -764,7 +754,7 @@ export const RELEASES: Release[] = [
                 text: "Settings are now in short pages under General, Watching, Finding anime, Devices & network and This computer, and there's a search box: type what you're looking for and change it right there.",
                 to: "/settings",
             },
-            { title: "A smoother look", text: "Nyakuro 2.0, calmer: flatter buttons and panels, softer shadows and corners, closer to how the classic look felt." },
+            { title: "A smoother look", text: "Aniko 2.0, calmer: flatter buttons and panels, softer shadows and corners, closer to how the classic look felt." },
         ],
     },
     {
@@ -773,12 +763,12 @@ export const RELEASES: Release[] = [
         changes: [
             {
                 title: "Classic look",
-                text: "Liked Nyakuro better as it was before 2.0? Turn on Classic look in Themes in the sidebar, or in Settings › Appearance. The color and holiday themes work in both.",
+                text: "Liked Aniko better as it was before 2.0? Turn on Classic look in Themes in the sidebar, or in Settings › Appearance. The color and holiday themes work in both.",
                 to: "/settings?tab=appearance",
             },
             {
                 title: "Beta updates",
-                text: "New versions now come out as betas first. Want them early? Turn on Beta updates in Settings › Updates & about; otherwise Nyakuro stays on the stable releases.",
+                text: "New versions now come out as betas first. Want them early? Turn on Beta updates in Settings › Updates & about; otherwise Aniko stays on the stable releases.",
                 to: "/settings?tab=updates",
             },
             { title: "Smoother sidebar", text: "A cleaner Themes button, and on smaller laptop screens every link fits again." },
@@ -786,9 +776,9 @@ export const RELEASES: Release[] = [
     },
     {
         id: 3,
-        title: "Nyakuro 2.0",
+        title: "Aniko 2.0",
         changes: [
-            { title: "A cleaner look", text: "The same Nyakuro, tidied up: the sidebar in sections, softer panels and cards, nicer dialogs, menus and buttons." },
+            { title: "A cleaner look", text: "The same Aniko, tidied up: the sidebar in sections, softer panels and cards, nicer dialogs, menus and buttons." },
             { title: "Themes in the sidebar", text: "Every color theme and holiday theme a click away: try one after another, the menu stays open." },
             {
                 title: "Holiday themes, redone",
@@ -796,7 +786,7 @@ export const RELEASES: Release[] = [
             },
             {
                 title: "Fixes",
-                text: "Alerts for a season's last episode, and for torrents once they're done downloading; Clean up never takes the only copy of an episode; the desktop app follows Nyakuro to a new port; and more.",
+                text: "Alerts for a season's last episode, and for torrents once they're done downloading; Clean up never takes the only copy of an episode; the desktop app follows Aniko to a new port; and more.",
             },
         ],
     },
@@ -804,10 +794,10 @@ export const RELEASES: Release[] = [
         id: 2,
         title: "Themes, picture in picture and more",
         changes: [
-            { title: "Color themes", text: "Eight looks for Nyakuro, from Midnight blue to true Black for OLED screens.", to: "/settings?tab=appearance" },
+            { title: "Color themes", text: "Eight looks for Aniko, from Midnight blue to true Black for OLED screens.", to: "/settings?tab=appearance" },
             {
                 title: "Holiday themes",
-                text: "Nyakuro dresses up by itself: bats in October, snow in December, hearts in February and more. Turn them off, or keep one all year, in Settings.",
+                text: "Aniko dresses up by itself: bats in October, snow in December, hearts in February and more. Turn them off, or keep one all year, in Settings.",
                 to: "/settings?tab=appearance",
             },
             { title: "Picture in picture", text: "In the desktop app, an episode goes on in a small window on top of the others: p, or the button next to Fullscreen." },
@@ -821,7 +811,7 @@ export const RELEASES: Release[] = [
             { title: "Wake your computer from the TV", text: "When the computer with your anime is asleep, Home on the TV has a button to wake it (with Wake-on-LAN on in its settings).", to: "/settings?tab=devices" },
             { title: "Stays awake while the TV plays", text: "The computer doesn't go to sleep while another device plays its anime." },
             { title: "Syncs by itself", text: "Continue watching catches up when the TV app opens or a device comes back on the network.", to: "/settings?tab=devices" },
-            { title: "Settings › Other devices", text: "All your Nyakuro devices with their versions, Wake buttons, and a question when a new TV shows up.", to: "/settings?tab=devices" },
+            { title: "Settings › Other devices", text: "All your Aniko devices with their versions, Wake buttons, and a question when a new TV shows up.", to: "/settings?tab=devices" },
             { title: "Up next and Start over", text: "A card in the ending plays the next episode; Start over (or 0) goes back to the beginning." },
             { title: "Subtitles your way", text: "Size, background and position for each device, and their timing with z and x.", to: "/settings?tab=playback" },
             { title: "Previews on the seek bar", text: "A picture of the episode where you point, or where Left and Right go on the TV." },

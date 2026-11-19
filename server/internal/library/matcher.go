@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Matcher links parsed files to AniList entries.

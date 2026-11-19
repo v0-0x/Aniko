@@ -1,6 +1,6 @@
 package config
 
-// Nyakuro was called Aniko until 3.0.58, and Kumo before 2.0.37. What it
+// Aniko was called Nyakuro for one beta (3.0.59), and Kumo before 2.0.37. What it
 // kept under those names moves to the new one the first time the new
 // version starts, and what was set up with an old name (a service's
 // environment, a script) still counts.
@@ -15,14 +15,14 @@ import (
 	"strings"
 )
 
-// oldNames are Nyakuro's names before this one, the latest first, as the
+// oldNames are Aniko's names before this one, the latest first, as the
 // data folder spells them on macOS and Windows (lower case on Linux).
-var oldNames = []string{"Aniko", "Kumo"}
+var oldNames = []string{"Nyakuro", "Kumo"}
 
-// Getenv reads NYAKURO_<name>, or ANIKO_<name> or KUMO_<name> as it was set
+// Getenv reads ANIKO_<name>, or NYAKURO_<name> or KUMO_<name> as it was set
 // before the renames.
 func Getenv(name string) string {
-	for _, prefix := range []string{"NYAKURO_", "ANIKO_", "KUMO_"} {
+	for _, prefix := range []string{"ANIKO_", "NYAKURO_", "KUMO_"} {
 		if v := os.Getenv(prefix + name); v != "" {
 			return v
 		}
@@ -30,12 +30,12 @@ func Getenv(name string) string {
 	return ""
 }
 
-// oldDataDirs are the data folders Nyakuro had under its old names, the
-// latest first: ~/.local/share/aniko and kumo, or the Aniko and Kumo
-// folders next to Nyakuro's.
+// oldDataDirs are the data folders Aniko had under its old names, the
+// latest first: ~/.local/share/nyakuro and kumo, or the Nyakuro and Kumo
+// folders next to Aniko's.
 func oldDataDirs() []string {
 	dir := defaultDataDir()
-	lower := filepath.Base(dir) == "nyakuro"
+	lower := filepath.Base(dir) == "aniko"
 	dirs := make([]string, 0, len(oldNames))
 	for _, name := range oldNames {
 		if lower {
@@ -46,7 +46,7 @@ func oldDataDirs() []string {
 	return dirs
 }
 
-// MoveOldData moves the data folder Nyakuro had under an old name (Aniko's,
+// MoveOldData moves the data folder Aniko had under an old name (Nyakuro's,
 // or else Kumo's) to dir, when dir doesn't exist yet (see MoveOld). It
 // returns where the data is now.
 func MoveOldData(dir string) string {
@@ -72,20 +72,20 @@ func MoveOld(old, dir string) string {
 		return dir
 	}
 	if err := os.Rename(old, dir); err != nil {
-		log.Printf("couldn't move %s to %s (Nyakuro's old name to its new one): %v", old, dir, err)
+		log.Printf("couldn't move %s to %s (Aniko's old name to its new one): %v", old, dir, err)
 		return old
 	}
-	log.Printf("moved %s to %s (Nyakuro's old name to its new one)", old, dir)
+	log.Printf("moved %s to %s (Aniko's old name to its new one)", old, dir)
 	return dir
 }
 
-// MoveOldFiles renames the files Nyakuro kept in its data folder under its
-// old names: the database (aniko.db, or else kumo.db; with its journal,
+// MoveOldFiles renames the files Aniko kept in its data folder under its
+// old names: the database (nyakuro.db, or else kumo.db; with its journal,
 // which goes first: a database without it would lose the last changes) and
 // the server's logs (just removed).
 func MoveOldFiles(dataDir string) {
-	db := filepath.Join(dataDir, "nyakuro.db")
-	for _, name := range []string{"aniko.db", "kumo.db"} {
+	db := filepath.Join(dataDir, "aniko.db")
+	for _, name := range []string{"nyakuro.db", "kumo.db"} {
 		old := filepath.Join(dataDir, name)
 		if _, err := os.Stat(old); err != nil {
 			continue
@@ -97,9 +97,9 @@ func MoveOldFiles(dataDir string) {
 		}
 		break
 	}
-	// Aniko's logs were in logs/ (aniko.log, aniko.log.1, …), Kumo's in the
+	// Nyakuro's logs were in logs/ (nyakuro.log, nyakuro.log.1, …), Kumo's in the
 	// folder itself.
-	logs, _ := filepath.Glob(filepath.Join(dataDir, "logs", "aniko.log*"))
+	logs, _ := filepath.Glob(filepath.Join(dataDir, "logs", "nyakuro.log*"))
 	for _, name := range []string{"kumo.log", "kumo.log.1", "kumo.log.2", "kumo.log.3"} {
 		logs = append(logs, filepath.Join(dataDir, name))
 	}
@@ -108,14 +108,14 @@ func MoveOldFiles(dataDir string) {
 	}
 }
 
-// HubDataDir is a hub's data folder when none is given: nyakuro-hub next to
-// Nyakuro's, or the aniko-hub or kumo-hub one a hub installed as Aniko Hub
+// HubDataDir is a hub's data folder when none is given: aniko-hub next to
+// Aniko's, or the nyakuro-hub or kumo-hub one a hub installed as Nyakuro Hub
 // or Kumo Hub has (its service names that one, so it stays where it is).
 func HubDataDir() string {
 	base := filepath.Dir(defaultDataDir())
-	dir := filepath.Join(base, "nyakuro-hub")
+	dir := filepath.Join(base, "aniko-hub")
 	if _, err := os.Lstat(dir); errors.Is(err, fs.ErrNotExist) {
-		for _, name := range []string{"aniko-hub", "kumo-hub"} {
+		for _, name := range []string{"nyakuro-hub", "kumo-hub"} {
 			if old := filepath.Join(base, name); isDir(old) {
 				return old
 			}
@@ -130,7 +130,7 @@ func isDir(p string) bool {
 }
 
 // movedPaths points settings that named a file in an old data folder (a
-// program the macOS setup put there, say) at the same file in Nyakuro's,
+// program the macOS setup put there, say) at the same file in Aniko's,
 // once the folder has moved. It says whether anything changed.
 func movedPaths(s *Settings) bool {
 	dir := defaultDataDir()

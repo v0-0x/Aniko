@@ -130,9 +130,9 @@ export default function LocalLibraryPage() {
     const { data: status } = useStatus()
     const { data: coll, isLoading: collLoading, error } = useCollection()
     const { data: localFiles, isLoading: filesLoading } = useLibraryFiles()
-    // The libraries other Nyakuro apps on the network share with this one.
+    // The libraries other Aniko apps on the network share with this one.
     const { data: shared } = useSharedLibraries()
-    const [source, setSource] = usePersisted<string>("nyakuro-local-source", "local")
+    const [source, setSource] = usePersisted<string>("aniko-local-source", "local")
     // This computer's library off (Settings › Local library): only the
     // shared ones, the first one to begin with.
     const off = !!status?.settings.library.off
@@ -145,9 +145,9 @@ export default function LocalLibraryPage() {
     const navigate = useNavigate()
     const libraryMenu = useLibraryCardMenu()
 
-    const [filter, setFilter] = usePersisted<StatusFilter>("nyakuro-local-filter", "ALL")
-    const [sort, setSort] = usePersisted<SortKey>("nyakuro-local-sort", "added")
-    const [view, setView] = usePersisted<View>("nyakuro-local-view", "grid")
+    const [filter, setFilter] = usePersisted<StatusFilter>("aniko-local-filter", "ALL")
+    const [sort, setSort] = usePersisted<SortKey>("aniko-local-sort", "added")
+    const [view, setView] = usePersisted<View>("aniko-local-view", "grid")
     const [q, setQ] = useState("")
 
     const groups = useMemo(() => {
@@ -159,7 +159,7 @@ export default function LocalLibraryPage() {
 
     // Each filter's counts are of what the other one shows (Paused under
     // Movies: the paused movies).
-    const [type, setType] = usePersisted<TypeFilter>("nyakuro-local-type", "ALL")
+    const [type, setType] = usePersisted<TypeFilter>("aniko-local-type", "ALL")
     const counts = useMemo(() => {
         const of = type !== "ALL" && TYPES.some(t => t.value === type) && groups.some(g => typeOf(g) === type) ? groups.filter(g => typeOf(g) === type) : groups
         const c: Record<string, number> = { ALL: of.length }

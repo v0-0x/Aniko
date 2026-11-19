@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/library"
 )
 
 // newFfmpegLocal returns a Local using the real ffmpeg and a 30 second
@@ -41,7 +41,7 @@ func newFfmpegLocal(t *testing.T, vcodec string, extra ...string) (*Local, strin
 	if err != nil {
 		t.Skipf("can't encode a test video with %s: %v %s", vcodec, err, out)
 	}
-	d, err := db.Open(filepath.Join(dir, "nyakuro.db"))
+	d, err := db.Open(filepath.Join(dir, "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +386,7 @@ func TestCaps(t *testing.T) {
 
 func testSettings(t *testing.T) *config.Store {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

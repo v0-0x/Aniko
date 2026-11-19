@@ -17,7 +17,7 @@ export function versionName(v?: UpdateVersion | null) {
     return name && v?.beta ? `${name} (beta)` : name
 }
 
-// Waiting for Nyakuro to come back after it restarted into a new version. It
+// Waiting for Aniko to come back after it restarted into a new version. It
 // outlives the banner, so leaving the Home page doesn't stop it.
 const restartStore = createStore<"" | "waiting" | "timeout">("")
 
@@ -49,7 +49,7 @@ function waitForRestart(version: string) {
 }
 
 // Home page (and Settings › Updates & about, inSettings: never put off): a
-// newer Nyakuro is available, and installing it. Only this computer installs
+// newer Aniko is available, and installing it. Only this computer installs
 // updates, so devices on the network don't see it.
 export function UpdateBanner({ inSettings }: { inSettings?: boolean }) {
     return (
@@ -74,7 +74,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
     const windows = status?.platform === "windows"
     const mac = status?.platform === "darwin"
 
-    // On Windows Nyakuro quits for the installer, which starts the new version;
+    // On Windows Aniko quits for the installer, which starts the new version;
     // on macOS to put the new app in place, which then opens.
     const toInstaller = (windows || mac) && u?.state === "installing"
     const version = status?.version
@@ -104,20 +104,20 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
         return restart === "waiting" ? (
             <Panel
                 icon={<Spin />}
-                title="Restarting Nyakuro…"
+                title="Restarting Aniko…"
                 text={
                     windows
-                        ? "Installing. This page reloads when Nyakuro is back."
+                        ? "Installing. This page reloads when Aniko is back."
                         : mac
-                          ? "Installing. This page reloads when Nyakuro is back."
-                          : "This page reloads when Nyakuro is back."
+                          ? "Installing. This page reloads when Aniko is back."
+                          : "This page reloads when Aniko is back."
                 }
             />
         ) : (
             <Panel
                 icon={<Icon tone="amber"><AlertTriangle /></Icon>}
-                title="Nyakuro hasn't come back yet"
-                text={`Start Nyakuro again (${windows ? "from the Start menu" : mac ? "from Applications" : "from your app menu"}), then reload this page.`}
+                title="Aniko hasn't come back yet"
+                text={`Start Aniko again (${windows ? "from the Start menu" : mac ? "from Applications" : "from your app menu"}), then reload this page.`}
                 actions={
                     <Button size="sm" icon={<RotateCcw className="size-4" />} onClick={() => location.reload()}>
                         Reload
@@ -132,8 +132,8 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
         return (
             <Panel
                 icon={<Icon><Download /></Icon>}
-                title={`Nyakuro ${latest} is ready to install`}
-                text="Android asks first. Open Nyakuro again once it's installed."
+                title={`Aniko ${latest} is ready to install`}
+                text="Android asks first. Open Aniko again once it's installed."
                 actions={
                     <Button size="sm" variant="primary" icon={<Download className="size-4" />} loading={apply.isPending} onClick={() => apply.mutate()}>
                         Install
@@ -145,7 +145,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
     if (busy) {
         const last = u.log?.at(-1)
         return (
-            <Panel icon={<Spin />} title={`Updating to Nyakuro ${latest}`} text={u.message}>
+            <Panel icon={<Spin />} title={`Updating to Aniko ${latest}`} text={u.message}>
                 <div className="border-t border-line px-5 py-4">
                     <Progress value={u.progress >= 0 ? u.progress / 100 : 1} barClassName={cn(u.progress < 0 && "animate-pulse opacity-50")} />
                     {last && <p className="mt-2 truncate font-mono text-xs text-subtle">{last}</p>}
@@ -157,13 +157,13 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
     if (u.state === "ready") {
         const restartButton = (
             <Button size="sm" variant="primary" icon={<RefreshCw className="size-4" />} onClick={restartNow}>
-                Restart Nyakuro
+                Restart Aniko
             </Button>
         )
         // pkexec couldn't ask for the password: the user installs it.
         if (u.manualCommand)
             return (
-                <Panel icon={<Icon><Download /></Icon>} title={`Nyakuro ${latest} is ready to install`} text={u.message} actions={laterButton}>
+                <Panel icon={<Icon><Download /></Icon>} title={`Aniko ${latest} is ready to install`} text={u.message} actions={laterButton}>
                     <div className="flex flex-col items-start gap-3 border-t border-line px-5 py-4">
                         <Command command={u.manualCommand} />
                         {restartButton}
@@ -173,7 +173,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
         return (
             <Panel
                 icon={<Icon tone="green"><Check /></Icon>}
-                title={`Nyakuro ${latest} is installed`}
+                title={`Aniko ${latest} is installed`}
                 text={u.message}
                 actions={
                     <>
@@ -190,7 +190,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
         return (
             <Panel
                 icon={<Icon tone="red"><AlertTriangle /></Icon>}
-                title="Nyakuro couldn't be updated"
+                title="Aniko couldn't be updated"
                 text={u.message}
                 actions={
                     <>
@@ -223,7 +223,7 @@ function Banner({ inSettings }: { inSettings?: boolean }) {
     return (
         <Panel
             icon={<Icon><ArrowUpCircle /></Icon>}
-            title={`Nyakuro ${latest} is available`}
+            title={`Aniko ${latest} is available`}
             text={
                 <>
                     {u.changesTotal > 0 && <span className="block">{plural(u.changesTotal, "change")} since your version</span>}

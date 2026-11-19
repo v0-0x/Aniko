@@ -1,4 +1,4 @@
-# Nyakuro — anime app for Arch Linux.
+# Aniko — anime app for Arch Linux.
 #
 # Build & install from a checkout of this repository:
 #     cd packaging/arch && makepkg -si      (after a git pull: makepkg -sif)
@@ -6,28 +6,28 @@
 # The package is built straight from the checkout two levels up, so local
 # changes are picked up without committing them.
 
-# Nyakuro was called Aniko until 3.0.58, and Kumo before 2.0.37. An older
-# version's own updater builds this with its own variable set (ANIKO_COMMIT
-# for Aniko's, 3.0.58 and older; KUMO_COMMIT for Kumo's, 2.0.36 and older)
-# and installs the package named after it (aniko-*, kumo-*): built that
-# way, the package keeps that name (with Nyakuro in it), and Nyakuro's
-# updater swaps it for the nyakuro package later. Otherwise the nyakuro
-# package takes the old one's place (pacman asks to remove aniko or kumo).
-pkgname=nyakuro
-if [[ -z ${NYAKURO_COMMIT:-} ]]; then
-    if [[ -n ${ANIKO_COMMIT:-} ]]; then
-        pkgname=aniko
+# Aniko was called Nyakuro for one beta (3.0.59), and Kumo before 2.0.37. An older
+# version's own updater builds this with its own variable set (NYAKURO_COMMIT
+# for Nyakuro's, the 3.0.59 beta; KUMO_COMMIT for Kumo's, 2.0.36 and older)
+# and installs the package named after it (nyakuro-*, kumo-*): built that
+# way, the package keeps that name (with Aniko in it), and Aniko's
+# updater swaps it for the aniko package later. Otherwise the aniko
+# package takes the old one's place (pacman asks to remove nyakuro or kumo).
+pkgname=aniko
+if [[ -z ${ANIKO_COMMIT:-} ]]; then
+    if [[ -n ${NYAKURO_COMMIT:-} ]]; then
+        pkgname=nyakuro
     elif [[ -n ${KUMO_COMMIT:-} ]]; then
         pkgname=kumo
     fi
 fi
 case ${pkgname} in
-    nyakuro)
-        provides=('aniko' 'kumo')
-        conflicts=('aniko' 'kumo')
-        replaces=('aniko' 'kumo')
-        ;;
     aniko)
+        provides=('nyakuro' 'kumo')
+        conflicts=('nyakuro' 'kumo')
+        replaces=('nyakuro' 'kumo')
+        ;;
+    nyakuro)
         provides=('kumo')
         conflicts=('kumo')
         replaces=('kumo')
@@ -37,7 +37,7 @@ pkgver=2.0.0
 pkgrel=1
 pkgdesc="Anime library: AniList sync, auto matching, mpv & in-app player, ani-cli sub/dub streaming, torrents, extensions"
 arch=('x86_64' 'aarch64')
-url="https://github.com/v0-0x/Nyakuro"
+url="https://github.com/v0-0x/Aniko"
 license=('GPL-3.0-or-later')
 depends=('electron' 'mpv' 'ffmpeg' 'hicolor-icon-theme' 'xdg-utils')
 makedepends=('go' 'nodejs' 'npm')
@@ -49,14 +49,14 @@ optdepends=(
     'discord: rich presence'
 )
 options=('!lto' '!debug' '!strip' '!buildflags') # pure Go (CGO off): makepkg's C/LD flags don't apply
-install=nyakuro.install
+install=aniko.install
 
 _root="$(realpath "${startdir}/../..")"
 
 # The version and commit go into the server, which compares them with
-# GitHub's to offer updates (Home page). Nyakuro's updater builds a downloaded
-# source, which has no .git: it passes them in NYAKURO_COMMIT and NYAKURO_VERSION
-# (Aniko's and Kumo's updaters in ANIKO_* and KUMO_*).
+# GitHub's to offer updates (Home page). Aniko's updater builds a downloaded
+# source, which has no .git: it passes them in ANIKO_COMMIT and ANIKO_VERSION
+# (Nyakuro's and Kumo's updaters in NYAKURO_* and KUMO_*).
 # In a git checkout they come from git (version 2.0.<commits since 2.0.0's>,
 # see desktop/package.json); otherwise, e.g. in an extracted source zip, the
 # defaults stay. pkgver stays as it is on purpose: a pkgver() function would
@@ -66,7 +66,7 @@ build() {
     cd "${_root}"
     export GOFLAGS="-trimpath -mod=readonly -modcacherw"
     export CGO_ENABLED=0
-    local commit="${NYAKURO_COMMIT:-${ANIKO_COMMIT:-${KUMO_COMMIT:-}}}" version="${NYAKURO_VERSION:-${ANIKO_VERSION:-${KUMO_VERSION:-}}}" count
+    local commit="${ANIKO_COMMIT:-${NYAKURO_COMMIT:-${KUMO_COMMIT:-}}}" version="${ANIKO_VERSION:-${NYAKURO_VERSION:-${KUMO_VERSION:-}}}" count
     if [[ ! -e "${_root}/.git" ]]; then
         # Not a checkout: Go mustn't stamp a git repository it's inside of
         # (e.g. a home folder kept in git).
@@ -75,16 +75,16 @@ build() {
         [[ -n ${commit} ]] || commit="$(git -C "${_root}" rev-parse HEAD 2>/dev/null)" || commit=""
         if [[ -z ${version} ]] && count="$(git -C "${_root}" rev-list --count HEAD 2>/dev/null)"; then
             # Major.minor from desktop/package.json, and the commits since
-            # the one its nyakuroVersionBase counts (2.0.0's).
+            # the one its anikoVersionBase counts (2.0.0's).
             local pkg="${_root}/desktop/package.json" mm from
             mm="$(sed -n 's/^ *"version": *"\([0-9]*\.[0-9]*\)\..*/\1/p' "${pkg}")"
-            from="$(sed -n 's/^ *"nyakuroVersionBase": *\([0-9]*\).*/\1/p' "${pkg}")"
+            from="$(sed -n 's/^ *"anikoVersionBase": *\([0-9]*\).*/\1/p' "${pkg}")"
             version="${mm:-1.0}.$((count - ${from:-0}))"
         fi
     fi
     # Not a checkout (a source zip from GitHub): the version from a VERSION
     # file at the root, else from the folder's name (a release's source zip
-    # unpacks to Nyakuro-windows-v2.0.59), else the newest release's.
+    # unpacks to Aniko-windows-v2.0.59), else the newest release's.
     if [[ -z ${version} && -r "${_root}/VERSION" ]]; then
         version="$(tr -d '[:space:]' < "${_root}/VERSION")"
     fi
@@ -92,17 +92,17 @@ build() {
         version="${BASH_REMATCH[1]}"
     fi
     if [[ -z ${version} && ! -e "${_root}/.git" ]] && command -v curl >/dev/null; then
-        version="$(curl -fsSL --max-time 10 https://api.github.com/repos/v0-0x/Nyakuro/releases/latest 2>/dev/null | sed -n 's/.*"tag_name": *"[a-z]*-v\([0-9.]*\)".*/\1/p' | head -n1)"
+        version="$(curl -fsSL --max-time 10 https://api.github.com/repos/v0-0x/Aniko/releases/latest 2>/dev/null | sed -n 's/.*"tag_name": *"[a-z]*-v\([0-9.]*\)".*/\1/p' | head -n1)"
     fi
-    local config=github.com/v0-0x/Nyakuro/server/internal/config
+    local config=github.com/v0-0x/Aniko/server/internal/config
     local ldflags="-s -w"
     [[ -z ${commit} ]] || ldflags+=" -X ${config}.Commit=${commit}"
     [[ -z ${version} ]] || ldflags+=" -X ${config}.AppVersion=${version}"
     make server GO_LDFLAGS="${ldflags}"
 }
 
-# The quick tests (Nyakuro's own updater skips them: --nocheck): the file name
-# parser, ani-cli's driver, extensions, sharing between Nyakuros, the watch
+# The quick tests (Aniko's own updater skips them: --nocheck): the file name
+# parser, ani-cli's driver, extensions, sharing between Anikos, the watch
 # history they exchange, and the updater.
 check() {
     cd "${_root}/server"
@@ -111,34 +111,34 @@ check() {
 
 package() {
     cd "${_root}"
-    install -Dm755 dist/nyakuro "${pkgdir}/usr/lib/nyakuro/nyakuro"
-    install -Dm644 desktop/main.js "${pkgdir}/usr/lib/nyakuro/app/main.js"
-    install -Dm644 desktop/preload.js "${pkgdir}/usr/lib/nyakuro/app/preload.js"
-    install -Dm644 desktop/package.json "${pkgdir}/usr/lib/nyakuro/app/package.json"
-    install -Dm644 packaging/icons/nyakuro-512.png "${pkgdir}/usr/lib/nyakuro/app/icon.png"
+    install -Dm755 dist/aniko "${pkgdir}/usr/lib/aniko/aniko"
+    install -Dm644 desktop/main.js "${pkgdir}/usr/lib/aniko/app/main.js"
+    install -Dm644 desktop/preload.js "${pkgdir}/usr/lib/aniko/app/preload.js"
+    install -Dm644 desktop/package.json "${pkgdir}/usr/lib/aniko/app/package.json"
+    install -Dm644 packaging/icons/aniko-512.png "${pkgdir}/usr/lib/aniko/app/icon.png"
 
-    install -Dm755 packaging/nyakuro.sh "${pkgdir}/usr/bin/nyakuro"
+    install -Dm755 packaging/aniko.sh "${pkgdir}/usr/bin/aniko"
     install -d "${pkgdir}/usr/bin"
-    ln -s /usr/lib/nyakuro/nyakuro "${pkgdir}/usr/bin/nyakuro-server"
+    ln -s /usr/lib/aniko/aniko "${pkgdir}/usr/bin/aniko-server"
     # The old names, for what was set up before the renames: the menu entry
-    # and autostart a desktop made (the app moves them to nyakuro when it
-    # opens) and a running Aniko or Kumo restarting into the update.
-    ln -s nyakuro "${pkgdir}/usr/bin/aniko"
-    ln -s nyakuro "${pkgdir}/usr/lib/aniko"
-    ln -s nyakuro "${pkgdir}/usr/bin/kumo"
-    ln -s nyakuro "${pkgdir}/usr/lib/kumo"
+    # and autostart a desktop made (the app moves them to aniko when it
+    # opens) and a running Nyakuro or Kumo restarting into the update.
+    ln -s aniko "${pkgdir}/usr/bin/nyakuro"
+    ln -s aniko "${pkgdir}/usr/lib/nyakuro"
+    ln -s aniko "${pkgdir}/usr/bin/kumo"
+    ln -s aniko "${pkgdir}/usr/lib/kumo"
 
-    install -Dm644 packaging/nyakuro.desktop "${pkgdir}/usr/share/applications/nyakuro.desktop"
+    install -Dm644 packaging/aniko.desktop "${pkgdir}/usr/share/applications/aniko.desktop"
     local s
     for s in 16 32 48 64 128 256 512; do
-        install -Dm644 "packaging/icons/nyakuro-${s}.png" "${pkgdir}/usr/share/icons/hicolor/${s}x${s}/apps/nyakuro.png"
+        install -Dm644 "packaging/icons/aniko-${s}.png" "${pkgdir}/usr/share/icons/hicolor/${s}x${s}/apps/aniko.png"
     done
-    install -Dm644 packaging/icons/nyakuro.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/nyakuro.svg"
-    install -Dm644 packaging/nyakuro-server.service "${pkgdir}/usr/lib/systemd/user/nyakuro-server.service"
-    # Its names before the renames, for an aniko-server or kumo-server turned
+    install -Dm644 packaging/icons/aniko.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/aniko.svg"
+    install -Dm644 packaging/aniko-server.service "${pkgdir}/usr/lib/systemd/user/aniko-server.service"
+    # Its names before the renames, for an nyakuro-server or kumo-server turned
     # on back then (links: systemd takes them as other names for
-    # nyakuro-server).
-    ln -s nyakuro-server.service "${pkgdir}/usr/lib/systemd/user/aniko-server.service"
-    ln -s nyakuro-server.service "${pkgdir}/usr/lib/systemd/user/kumo-server.service"
+    # aniko-server).
+    ln -s aniko-server.service "${pkgdir}/usr/lib/systemd/user/nyakuro-server.service"
+    ln -s aniko-server.service "${pkgdir}/usr/lib/systemd/user/kumo-server.service"
     install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }

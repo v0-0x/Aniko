@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
 )
 
 // Saved and recent searches are kept on the server, cleaned as they come:

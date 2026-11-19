@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 func newStore(t *testing.T) (*Store, *time.Time) {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestBlob(t *testing.T) {
 	// never here, and junk.
 	later := p.At + 5000
 	at := func(n int64) string { return strconv.FormatInt(n, 10) }
-	hub := nyakurohub.Blob{Items: map[string]json.RawMessage{
+	hub := anikohub.Blob{Items: map[string]json.RawMessage{
 		p.ID:      json.RawMessage(`{"at":` + at(later) + `,"name":"Here (TV)","items":[{"mediaId":21,"episode":2,"title":"One Piece","play":{"kind":"local","path":"/b.mkv"}}]}`),
 		"0a1b":    json.RawMessage(`{"at":` + at(later) + `,"name":"New","items":[]}`),
 		gone.ID:   json.RawMessage(`{"at":` + at(gone.At-1000) + `,"name":"Gone","items":[]}`),
@@ -205,7 +205,7 @@ func TestBlob(t *testing.T) {
 	}
 	// Removed on another device, later: removed here.
 	*now = now.Add(time.Minute)
-	if !s.Apply(nyakurohub.Blob{Items: map[string]json.RawMessage{p.ID: json.RawMessage(`{"at":` + at(now.Unix()*1000) + `,"deleted":true}`)}}) {
+	if !s.Apply(anikohub.Blob{Items: map[string]json.RawMessage{p.ID: json.RawMessage(`{"at":` + at(now.Unix()*1000) + `,"deleted":true}`)}}) {
 		t.Fatal("removal changed nothing")
 	}
 	if _, err := s.Get(p.ID); !errors.Is(err, ErrNotFound) {

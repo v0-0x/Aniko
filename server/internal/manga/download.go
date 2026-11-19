@@ -4,7 +4,7 @@ package manga
 // in a .cbz with their metadata (ComicInfo.xml), in this device's manga
 // folder, or sent on to a media server's (Send) and then deleted here.
 // One chapter at a time, in the order asked, so a provider isn't hammered.
-// The queue lives in memory: a Nyakuro that stops forgets what was still
+// The queue lives in memory: an Aniko that stops forgets what was still
 // waiting (what's done is in the folder).
 
 import (
@@ -28,9 +28,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/extensions"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/extensions"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Job states.
@@ -51,7 +51,7 @@ type Job struct {
 	ChapterID string `json:"chapterId"`
 	Chapter   string `json:"chapter"` // its number
 	Name      string `json:"name,omitempty"`
-	// Target: "" this device, else the media server (a Nyakuro's id) it
+	// Target: "" this device, else the media server (an Aniko's id) it
 	// goes to, named TargetName.
 	Target     string `json:"target,omitempty"`
 	TargetName string `json:"targetName,omitempty"`
@@ -354,7 +354,7 @@ func (d *Downloader) do(ctx context.Context, j *Job) error {
 		files = append(files, cover)
 	}
 	if d.send == nil {
-		return errors.New("this Nyakuro can't send files to a media server")
+		return errors.New("this Aniko can't send files to a media server")
 	}
 	err = d.send(ctx, j.Target, folder, files, func(p int) { d.set(j, func(j *Job) { j.Got = p }) })
 	if err != nil {
@@ -530,7 +530,7 @@ func comicInfo(info SeriesInfo, j *Job, pages int) ComicInfo {
 		Title: j.Name, Series: info.Title, Number: j.Chapter, Count: info.Chapters, Summary: info.Description,
 		Year: info.Year, Genre: strings.Join(info.Genres, ", "), Web: info.SiteURL, PageCount: pages,
 		LanguageISO: "en", Manga: "YesAndRightToLeft",
-		Notes: fmt.Sprintf("AniList %d; downloaded by Nyakuro from %s", info.AniListID, j.Provider),
+		Notes: fmt.Sprintf("AniList %d; downloaded by Aniko from %s", info.AniListID, j.Provider),
 	}
 	if info.Country == "KR" || info.Country == "CN" {
 		ci.Manga = "Yes" // manhwa and manhua read left to right

@@ -4,7 +4,7 @@ package update
 
 import "errors"
 
-// startInstaller is for Windows: elsewhere Nyakuro updates without an
+// startInstaller is for Windows: elsewhere Aniko updates without an
 // installer.
 func startInstaller(string, ...string) error {
 	return errors.New("installers only run on Windows")

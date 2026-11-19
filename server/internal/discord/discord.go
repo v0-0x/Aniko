@@ -16,7 +16,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 const (
@@ -26,7 +26,7 @@ const (
 	typeWatching = 3
 	// status_display_type: the status under your name (member list, DMs)
 	// shows the activity's details, the anime ("Watching Frieren"), rather
-	// than the Discord application's name ("Watching Nyakuro").
+	// than the Discord application's name ("Watching Aniko").
 	statusShowsDetails = 2
 )
 

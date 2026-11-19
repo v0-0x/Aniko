@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/extensions"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/extensions"
 )
 
 // The last chapter known of a manga: the highest of its kept chapter lists,

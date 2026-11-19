@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/history"
-	"github.com/v0-0x/Nyakuro/server/internal/metadata"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/metadata"
 )
 
 func newTestService(t *testing.T) *Service {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestHideContinueConcurrent(t *testing.T) {
 	}
 }
 
-// Files other Nyakuro apps share fill in the episodes this computer doesn't
+// Files other Aniko apps share fill in the episodes this computer doesn't
 // have; its own always win.
 func TestSharedFilesFillIn(t *testing.T) {
 	s := newTestService(t)

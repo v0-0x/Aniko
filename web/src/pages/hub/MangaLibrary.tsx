@@ -107,7 +107,7 @@ export default function MangaLibrary({ status }: { status: Status }) {
                         <BookOpen className="size-8 text-muted" />
                         <p className="font-medium">No manga on the server yet</p>
                         <p className="text-sm text-muted">
-                            In Nyakuro on a device, open a manga, press Download and set <b>Save on</b> to this server.
+                            In Aniko on a device, open a manga, press Download and set <b>Save on</b> to this server.
                         </p>
                     </div>
                 ) : (

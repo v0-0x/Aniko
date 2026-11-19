@@ -10,19 +10,19 @@ import (
 	"time"
 )
 
-// Uploads: a Nyakuro that takes this one's downloads (it shares its library
+// Uploads: an Aniko that takes this one's downloads (it shares its library
 // with it and lets it download there: a server, say) takes the files and
 // folders sent from it too, into its library (package upload). This one
 // only passes them on, a piece at a time, signed like any request to it.
 
-// UploadHost is a Nyakuro this one may upload to.
+// UploadHost is an Aniko this one may upload to.
 type UploadHost struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Online bool   `json:"online"`
 }
 
-// UploadHosts are the Nyakuroes this one may upload to, by name.
+// UploadHosts are the Anikoes this one may upload to, by name.
 func (s *Service) UploadHosts() []UploadHost {
 	now := time.Now()
 	s.mu.Lock()
@@ -37,7 +37,7 @@ func (s *Service) UploadHosts() []UploadHost {
 	return out
 }
 
-// AskUpload passes a request about an upload on to the Nyakuro id (GET: its
+// AskUpload passes a request about an upload on to the Aniko id (GET: its
 // folders, or where a file stands; POST: a piece of a file), and returns
 // its answer as it is: the status and the body.
 func (s *Service) AskUpload(ctx context.Context, id, method, query string, piece []byte) (int, []byte, error) {

@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/v0-0x/Nyakuro/server/internal/player"
+	"github.com/v0-0x/Aniko/server/internal/player"
 )
 
 // The sub/dub choice is remembered per anime (the streamMode of its track

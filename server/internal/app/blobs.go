@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
-	"github.com/v0-0x/Nyakuro/server/internal/playlist"
-	"github.com/v0-0x/Nyakuro/server/internal/share"
-	"github.com/v0-0x/Nyakuro/server/internal/watchorder"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/playlist"
+	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/watchorder"
 )
 
 // The device's side of what a hub keeps in step besides the settings
-// (share.BlobHooks, nyakurohub.Blob): the local list (a device on no AniList
+// (share.BlobHooks, anikohub.Blob): the local list (a device on no AniList
 // account) and the watch-order edits. Each item carries when it changed
 // here (whole seconds, as ms); what was removed is remembered for a while
 // (a tombstone), so the other devices remove it too.
@@ -67,8 +67,8 @@ type listItem struct {
 	Media    json.RawMessage `json:"media,omitempty"`
 }
 
-func (a *App) listsBlob() nyakurohub.Blob {
-	b := nyakurohub.Blob{Items: map[string]json.RawMessage{}}
+func (a *App) listsBlob() anikohub.Blob {
+	b := anikohub.Blob{Items: map[string]json.RawMessage{}}
 	rows, err := a.Platform.LocalRows()
 	if err != nil {
 		log.Printf("sharing: the local list: %v", err)
@@ -82,11 +82,11 @@ func (a *App) listsBlob() nyakurohub.Blob {
 			b.Items[key], _ = json.Marshal(listItem{At: at, Deleted: true})
 		}
 	}
-	b.Merge(nyakurohub.Blob{}) // sets UpdatedAt, drops old tombstones
+	b.Merge(anikohub.Blob{}) // sets UpdatedAt, drops old tombstones
 	return b
 }
 
-func (a *App) applyListsBlob(b nyakurohub.Blob) bool {
+func (a *App) applyListsBlob(b anikohub.Blob) bool {
 	rows, err := a.Platform.LocalRows()
 	if err != nil {
 		return false
@@ -107,7 +107,7 @@ func (a *App) applyListsBlob(b nyakurohub.Blob) bool {
 			continue
 		}
 		// What's here, and when: a removal at the same time wins (as on
-		// the hub, nyakurohub.Blob).
+		// the hub, anikohub.Blob).
 		localAt, localGone := gone[key], true
 		if r, ok := have[key]; ok {
 			localAt, localGone = r.UpdatedAt*1000, false
@@ -171,8 +171,8 @@ func (a *App) WatchOrderEdited(key int, deleted bool) {
 	a.Share.BlobChanged("watch-order")
 }
 
-func (a *App) watchOrderBlob() nyakurohub.Blob {
-	b := nyakurohub.Blob{Items: map[string]json.RawMessage{}}
+func (a *App) watchOrderBlob() anikohub.Blob {
+	b := anikohub.Blob{Items: map[string]json.RawMessage{}}
 	edits, err := a.DB.KVPrefix(watchorder.EditKey(0)[:len(watchorder.EditKey(0))-1])
 	if err != nil {
 		return b
@@ -200,11 +200,11 @@ func (a *App) watchOrderBlob() nyakurohub.Blob {
 			b.Items[key], _ = json.Marshal(orderItem{At: when, Deleted: true})
 		}
 	}
-	b.Merge(nyakurohub.Blob{})
+	b.Merge(anikohub.Blob{})
 	return b
 }
 
-func (a *App) applyWatchOrderBlob(b nyakurohub.Blob) bool {
+func (a *App) applyWatchOrderBlob(b anikohub.Blob) bool {
 	at, gone := a.kvMap(watchOrderAtKey), a.kvMap(watchOrderGoneKey)
 	changed := false
 	for key, raw := range b.Items {

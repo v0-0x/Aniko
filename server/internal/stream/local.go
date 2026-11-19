@@ -20,10 +20,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Local serves library files to the in-app player: direct play when the
@@ -36,7 +36,7 @@ type Local struct {
 	// Torrents are the torrents being played (TorrentPrefix paths).
 	Torrents Torrents
 	// MaxTranscodes: how many videos may be converted at once (0: any). A
-	// Nyakuro Hub's small computer converts one or two at most.
+	// Aniko Hub's small computer converts one or two at most.
 	MaxTranscodes int
 	transcoding   atomic.Int32
 }
@@ -81,7 +81,7 @@ type Probe struct {
 	Method string `json:"method"`
 	Reason string `json:"reason"`
 	// NoBurn: the computer the file is on can't draw its image subtitles
-	// onto the video (an older Nyakuro or mediaserver): what to say why.
+	// onto the video (an older Aniko or mediaserver): what to say why.
 	NoBurn string `json:"noBurn,omitempty"`
 }
 
@@ -92,7 +92,7 @@ var ErrNotInLibrary = errors.New("file is not part of the library")
 // library file, it's read from where the torrent serves it.
 const TorrentPrefix = "torrent:"
 
-// ErrTorrentGone: a torrent no longer being played (dropped, Nyakuro
+// ErrTorrentGone: a torrent no longer being played (dropped, Aniko
 // restarted).
 var ErrTorrentGone = errors.New("this torrent isn't being played any more: play it again")
 

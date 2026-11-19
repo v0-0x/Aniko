@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/v0-0x/Nyakuro/server/internal/awake"
+	"github.com/v0-0x/Aniko/server/internal/awake"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,7 +13,7 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/app"
+	"github.com/v0-0x/Aniko/server/internal/app"
 )
 
 func newTestServer(t *testing.T) *Server {
@@ -23,7 +23,7 @@ func newTestServer(t *testing.T) *Server {
 	// Not t.TempDir: a database write still finishing as the app shuts down
 	// can add a file (SQLite's -wal) while the folder is removed, so its
 	// removal is tried again (after Shutdown, registered below).
-	dir, err := os.MkdirTemp("", "nyakuro-test-")
+	dir, err := os.MkdirTemp("", "aniko-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func newTestServer(t *testing.T) *Server {
 		t.Fatal(err)
 	}
 	t.Cleanup(a.Shutdown)
-	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>nyakuro</html>")}})
+	return New(a, fstest.MapFS{"index.html": {Data: []byte("<html>aniko</html>")}})
 }
 
 func do(s *Server, method, path, remote string, body string, mod func(r *http.Request)) *httptest.ResponseRecorder {

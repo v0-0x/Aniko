@@ -21,9 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/events"
-	"github.com/v0-0x/Nyakuro/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
 )
 
 const (
@@ -124,7 +124,7 @@ func newTestChecker(t *testing.T, gh *fakeGitHub) *Checker {
 	c.Client = gh.Client()
 	c.CacheDir = filepath.Join(t.TempDir(), "update")
 	c.Token = func(context.Context) string { return "secret-token" }
-	c.Executable = func() (string, error) { return "/home/me/nyakuro/dist/nyakuro", nil }
+	c.Executable = func() (string, error) { return "/home/me/aniko/dist/aniko", nil }
 	c.StartInstaller = func(string, ...string) error { return fmt.Errorf("no installer in tests") }
 	c.Version, c.Commit, c.GOOS = "1.0.50", oldSHA, "linux"
 	c.Channel = func() string { return gh.channel }
@@ -239,8 +239,8 @@ func windowsReleases(installer []byte) []map[string]any {
 			"html_url":         "https://github.com/o/r/releases/tag/" + tag,
 			"target_commitish": headSHA, "published_at": "2026-10-02T08:00:00Z",
 			"assets": []map[string]any{
-				{"id": 41, "name": "Nyakuro-" + v + "-windows-x64-portable.zip", "size": 10, "digest": "sha256:00"},
-				{"id": 42, "name": "Nyakuro-Setup-" + v + "-windows-x64.exe", "size": len(installer), "digest": "sha256:" + hex.EncodeToString(sum[:])},
+				{"id": 41, "name": "Aniko-" + v + "-windows-x64-portable.zip", "size": 10, "digest": "sha256:00"},
+				{"id": 42, "name": "Aniko-Setup-" + v + "-windows-x64.exe", "size": len(installer), "digest": "sha256:" + hex.EncodeToString(sum[:])},
 			},
 		}
 	}
@@ -272,13 +272,13 @@ func TestCheckWindowsPicksNewestRelease(t *testing.T) {
 	if !slices.Equal(st.Changes, []string{"Newer", "Older"}) || st.ChangesTotal != 2 {
 		t.Fatalf("changes %q (%d)", st.Changes, st.ChangesTotal)
 	}
-	if c.asset == nil || c.asset.ID != 42 || c.asset.Name != "Nyakuro-Setup-1.0.10-windows-x64.exe" || !strings.HasPrefix(c.asset.Digest, "sha256:") {
+	if c.asset == nil || c.asset.ID != 42 || c.asset.Name != "Aniko-Setup-1.0.10-windows-x64.exe" || !strings.HasPrefix(c.asset.Digest, "sha256:") {
 		t.Fatalf("installer %+v", c.asset)
 	}
 	if !slices.Contains(gh.paths(), "/repos/o/r/releases?per_page=100") {
 		t.Fatalf("requests: %q", gh.paths())
 	}
-	// Not Nyakuro's layout (<root>\resources\nyakuro.exe): it can't tell whether
+	// Not Aniko's layout (<root>\resources\aniko.exe): it can't tell whether
 	// it's installed or portable, so it doesn't update itself.
 	if st.CanApply || !strings.Contains(st.ApplyNote, "can't tell") {
 		t.Fatalf("canApply %v: %q", st.CanApply, st.ApplyNote)
@@ -323,14 +323,14 @@ func TestLastPage(t *testing.T) {
 
 // The environment's tokens come first, in this order.
 func TestTokenFromEnvironment(t *testing.T) {
-	t.Setenv("NYAKURO_GITHUB_TOKEN", "nyakuro")
+	t.Setenv("ANIKO_GITHUB_TOKEN", "aniko")
 	t.Setenv("GH_TOKEN", "gh")
 	t.Setenv("GITHUB_TOKEN", "github")
 	ctx := context.Background()
-	if tok := githubToken(ctx); tok != "nyakuro" {
-		t.Fatalf("token %q, want NYAKURO_GITHUB_TOKEN's", tok)
+	if tok := githubToken(ctx); tok != "aniko" {
+		t.Fatalf("token %q, want ANIKO_GITHUB_TOKEN's", tok)
 	}
-	t.Setenv("NYAKURO_GITHUB_TOKEN", "")
+	t.Setenv("ANIKO_GITHUB_TOKEN", "")
 	if tok := githubToken(ctx); tok != "gh" {
 		t.Fatalf("token %q, want GH_TOKEN's", tok)
 	}
@@ -346,7 +346,7 @@ func TestTokenFromPrograms(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the stand-in programs are shell scripts")
 	}
-	for _, k := range []string{"NYAKURO_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"} {
+	for _, k := range []string{"ANIKO_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"} {
 		t.Setenv(k, "")
 	}
 	bin := t.TempDir()
@@ -438,10 +438,10 @@ func TestExtract(t *testing.T) {
 		entry{hdr: tar.Header{Typeflag: tar.TypeXGlobalHeader, PAXRecords: map[string]string{"comment": headSHA}}},
 		dirEntry("o-r-2222222/"),
 		dirEntry("o-r-2222222/packaging/arch/"),
-		fileEntry("o-r-2222222/packaging/arch/PKGBUILD", "pkgname=nyakuro\n", 0o644),
-		fileEntry("o-r-2222222/packaging/nyakuro.sh", "#!/bin/sh\n", 0o755),
+		fileEntry("o-r-2222222/packaging/arch/PKGBUILD", "pkgname=aniko\n", 0o644),
+		fileEntry("o-r-2222222/packaging/aniko.sh", "#!/bin/sh\n", 0o755),
 		entry{hdr: tar.Header{Typeflag: tar.TypeSymlink, Name: "o-r-2222222/passwd", Linkname: "/etc/passwd"}},
-		entry{hdr: tar.Header{Typeflag: tar.TypeLink, Name: "o-r-2222222/hard", Linkname: "o-r-2222222/packaging/nyakuro.sh"}},
+		entry{hdr: tar.Header{Typeflag: tar.TypeLink, Name: "o-r-2222222/hard", Linkname: "o-r-2222222/packaging/aniko.sh"}},
 		entry{hdr: tar.Header{Typeflag: tar.TypeChar, Name: "o-r-2222222/tty", Devmajor: 5}},
 		entry{hdr: tar.Header{Typeflag: tar.TypeFifo, Name: "o-r-2222222/fifo"}},
 	))
@@ -453,13 +453,13 @@ func TestExtract(t *testing.T) {
 	if top != filepath.Join(dest, "o-r-2222222") {
 		t.Fatalf("top %q", top)
 	}
-	if b, err := os.ReadFile(filepath.Join(top, "packaging", "arch", "PKGBUILD")); err != nil || string(b) != "pkgname=nyakuro\n" {
+	if b, err := os.ReadFile(filepath.Join(top, "packaging", "arch", "PKGBUILD")); err != nil || string(b) != "pkgname=aniko\n" {
 		t.Fatalf("PKGBUILD: %q %v", b, err)
 	}
 	if runtime.GOOS != "windows" {
-		st, err := os.Stat(filepath.Join(top, "packaging", "nyakuro.sh"))
+		st, err := os.Stat(filepath.Join(top, "packaging", "aniko.sh"))
 		if err != nil || st.Mode().Perm()&0o111 == 0 {
-			t.Fatalf("nyakuro.sh lost its exec bit: %v %v", st, err)
+			t.Fatalf("aniko.sh lost its exec bit: %v %v", st, err)
 		}
 		st, err = os.Stat(filepath.Join(top, "packaging", "arch", "PKGBUILD"))
 		if err != nil || st.Mode().Perm()&0o111 != 0 {
@@ -501,7 +501,7 @@ func TestExtractRefusesPathsOutside(t *testing.T) {
 // Windows
 
 func TestDownloadChecksDigest(t *testing.T) {
-	installer := []byte("MZ the new Nyakuro installer")
+	installer := []byte("MZ the new Aniko installer")
 	gh := newFakeGitHub(t)
 	gh.mux.HandleFunc("GET /repos/o/r/releases/assets/42", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Accept") != "application/octet-stream" {
@@ -513,9 +513,9 @@ func TestDownloadChecksDigest(t *testing.T) {
 	})
 	gh.mux.HandleFunc("GET /files/installer.exe", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(installer) })
 	c := newTestChecker(t, gh)
-	g := &github{api: gh.URL, repo: "o/r", client: gh.Client(), token: "secret-token", userAgent: "Nyakuro/test"}
+	g := &github{api: gh.URL, repo: "o/r", client: gh.Client(), token: "secret-token", userAgent: "Aniko/test"}
 	dir := t.TempDir()
-	file := filepath.Join(dir, "Nyakuro-Setup-1.0.10-windows-x64.exe")
+	file := filepath.Join(dir, "Aniko-Setup-1.0.10-windows-x64.exe")
 	var last int64
 	if err := c.download(context.Background(), g, "/repos/o/r/releases/assets/42", "application/octet-stream", file, int64(len(installer)), func(done, total int64) {
 		if total != int64(len(installer)) {
@@ -547,19 +547,19 @@ func TestDownloadChecksDigest(t *testing.T) {
 // installedWindows makes c look like an installed Windows copy.
 func installedWindows(t *testing.T, c *Checker) {
 	t.Helper()
-	dir := filepath.Join(t.TempDir(), "Nyakuro")
+	dir := filepath.Join(t.TempDir(), "Aniko")
 	if err := os.MkdirAll(filepath.Join(dir, "resources"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "Uninstall Nyakuro.exe"), nil, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "Uninstall Aniko.exe"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	c.GOOS, c.Version = "windows", "1.0.9"
-	c.Executable = func() (string, error) { return filepath.Join(dir, "resources", "nyakuro.exe"), nil }
+	c.Executable = func() (string, error) { return filepath.Join(dir, "resources", "aniko.exe"), nil }
 }
 
-// An install that was Aniko's (Nyakuro's name until 3.0.58) still has its
-// uninstaller, Uninstall Aniko.exe: it isn't the portable build.
+// An install that was Nyakuro's (Aniko's name in the 3.0.59 beta) still has its
+// uninstaller, Uninstall Nyakuro.exe: it isn't the portable build.
 func TestPortableOldUninstaller(t *testing.T) {
 	c := newTestChecker(t, newFakeGitHub(t))
 	installedWindows(t, c)
@@ -568,13 +568,13 @@ func TestPortableOldUninstaller(t *testing.T) {
 		t.Fatal("installed, but taken for portable")
 	}
 	root := portableRoot(exe)
-	if err := os.Rename(filepath.Join(root, "Uninstall Nyakuro.exe"), filepath.Join(root, "Uninstall Aniko.exe")); err != nil {
+	if err := os.Rename(filepath.Join(root, "Uninstall Aniko.exe"), filepath.Join(root, "Uninstall Nyakuro.exe")); err != nil {
 		t.Fatal(err)
 	}
 	if c.portable(exe) {
-		t.Fatal("Aniko's uninstaller next to it, but taken for portable")
+		t.Fatal("Nyakuro's uninstaller next to it, but taken for portable")
 	}
-	if err := os.Remove(filepath.Join(root, "Uninstall Aniko.exe")); err != nil {
+	if err := os.Remove(filepath.Join(root, "Uninstall Nyakuro.exe")); err != nil {
 		t.Fatal(err)
 	}
 	if !c.portable(exe) {
@@ -600,7 +600,7 @@ func waitState(t *testing.T, c *Checker) Status {
 }
 
 func TestApplyWindows(t *testing.T) {
-	installer := []byte("MZ the new Nyakuro installer")
+	installer := []byte("MZ the new Aniko installer")
 	gh := newFakeGitHub(t)
 	gh.json("GET /repos/o/r/releases", windowsReleases(installer))
 	gh.mux.HandleFunc("GET /repos/o/r/releases/assets/42", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(installer) })
@@ -621,7 +621,7 @@ func TestApplyWindows(t *testing.T) {
 	select {
 	case exit = <-c.Exits.C():
 	case <-time.After(10 * time.Second):
-		t.Fatalf("Nyakuro wasn't asked to quit: %+v", c.Status())
+		t.Fatalf("Aniko wasn't asked to quit: %+v", c.Status())
 	}
 	if exit.Code != lifecycle.CodeInstalling || exit.Restart || exit.Before == nil {
 		t.Fatalf("exit %+v", exit)
@@ -629,14 +629,14 @@ func TestApplyWindows(t *testing.T) {
 	if st := waitState(t, c); st.State != StateInstalling {
 		t.Fatalf("state %q: %s", st.State, st.Message)
 	}
-	// The installer starts once Nyakuro has shut down.
+	// The installer starts once Aniko has shut down.
 	if started != nil {
-		t.Fatal("the installer started before Nyakuro quit")
+		t.Fatal("the installer started before Aniko quit")
 	}
 	if err := exit.Before(); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(c.CacheDir, "Nyakuro-Setup-1.0.10-windows-x64.exe")
+	path := filepath.Join(c.CacheDir, "Aniko-Setup-1.0.10-windows-x64.exe")
 	if want := []string{path, "--updated", "/S", "--force-run"}; !slices.Equal(started, want) {
 		t.Fatalf("started %q, want %q", started, want)
 	}
@@ -664,12 +664,12 @@ func TestApplyWindowsDamagedDownload(t *testing.T) {
 	}
 	select {
 	case e := <-c.Exits.C():
-		t.Fatalf("Nyakuro was asked to quit: %+v", e)
+		t.Fatalf("Aniko was asked to quit: %+v", e)
 	default:
 	}
 }
 
-// When the installer can't start, Nyakuro has already shut down: it restarts
+// When the installer can't start, Aniko has already shut down: it restarts
 // and the next run says what happened.
 func TestApplyWindowsInstallerDidntStart(t *testing.T) {
 	installer := []byte("MZ installer")
@@ -690,7 +690,7 @@ func TestApplyWindowsInstallerDidntStart(t *testing.T) {
 	next := newTestChecker(t, gh)
 	next.CacheDir = c.CacheDir
 	next.Start()
-	if st := next.Status(); st.State != StateFailed || !strings.Contains(st.Message, "access denied") || !strings.Contains(st.Message, "Nyakuro-Setup-1.0.10-windows-x64.exe") {
+	if st := next.Status(); st.State != StateFailed || !strings.Contains(st.Message, "access denied") || !strings.Contains(st.Message, "Aniko-Setup-1.0.10-windows-x64.exe") {
 		t.Fatalf("next run: state %q: %s", st.State, st.Message)
 	}
 	if _, err := os.Stat(filepath.Join(c.CacheDir, failureFile)); !os.IsNotExist(err) {
@@ -710,7 +710,7 @@ func TestApplyNeedsAnUpdate(t *testing.T) {
 	}
 }
 
-// Nyakuro asks GitHub for its repository by number: its old name, after a
+// Aniko asks GitHub for its repository by number: its old name, after a
 // rename, could be taken by anyone, who'd then make the updates.
 func TestRepositoryByNumber(t *testing.T) {
 	c := New(events.NewHub(), lifecycle.NewExits())
@@ -722,7 +722,7 @@ func TestRepositoryByNumber(t *testing.T) {
 	if g.root() != "/repositories/"+config.UpdateRepoID {
 		t.Errorf("root %q", g.root())
 	}
-	t.Setenv("NYAKURO_UPDATE_REPO", "me/fork")
+	t.Setenv("ANIKO_UPDATE_REPO", "me/fork")
 	c2 := New(events.NewHub(), lifecycle.NewExits())
 	t.Cleanup(c2.Stop)
 	if g := (&github{repo: c2.Repo, repoID: c2.RepoID}); g.root() != "/repos/me/fork" {
@@ -740,7 +740,7 @@ func TestVersionOf(t *testing.T) {
 	}
 	var pkg struct {
 		Version string `json:"version"`
-		Base    int    `json:"nyakuroVersionBase"`
+		Base    int    `json:"anikoVersionBase"`
 	}
 	if err := json.Unmarshal(raw, &pkg); err != nil {
 		t.Fatal(err)
@@ -842,12 +842,12 @@ func TestCheckLinuxStableRelease(t *testing.T) {
 	}
 }
 
-// portableZip is a portable build's zip: Nyakuro.exe and resources\nyakuro.exe.
+// portableZip is a portable build's zip: Aniko.exe and resources\aniko.exe.
 func portableZip(t *testing.T) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	for name, body := range map[string]string{"Nyakuro.exe": "MZ the new Nyakuro", "resources/nyakuro.exe": "MZ the new server", "LICENSE.txt": "MIT"} {
+	for name, body := range map[string]string{"Aniko.exe": "MZ the new Aniko", "resources/aniko.exe": "MZ the new server", "LICENSE.txt": "MIT"} {
 		w, err := zw.Create(name)
 		if err != nil {
 			t.Fatal(err)
@@ -863,18 +863,18 @@ func portableZip(t *testing.T) []byte {
 // portableWindows: the portable build, unzipped anywhere (no uninstaller).
 func portableWindows(t *testing.T, c *Checker) string {
 	t.Helper()
-	dir := filepath.Join(t.TempDir(), "Nyakuro portable")
+	dir := filepath.Join(t.TempDir(), "Aniko portable")
 	if err := os.MkdirAll(filepath.Join(dir, "resources"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	c.GOOS, c.Version = "windows", "1.0.9"
-	c.Executable = func() (string, error) { return filepath.Join(dir, "resources", "nyakuro.exe"), nil }
+	c.Executable = func() (string, error) { return filepath.Join(dir, "resources", "aniko.exe"), nil }
 	return dir
 }
 
 // The portable build updates itself: the portable zip (not the installer)
 // is downloaded and unpacked, and a script that puts it in place and
-// starts Nyakuro runs once Nyakuro has shut down.
+// starts Aniko runs once Aniko has shut down.
 func TestApplyWindowsPortable(t *testing.T) {
 	archive := portableZip(t)
 	sum := sha256.Sum256(archive)
@@ -910,7 +910,7 @@ func TestApplyWindowsPortable(t *testing.T) {
 	select {
 	case exit = <-c.Exits.C():
 	case <-time.After(10 * time.Second):
-		t.Fatalf("Nyakuro wasn't asked to quit: %+v", c.Status())
+		t.Fatalf("Aniko wasn't asked to quit: %+v", c.Status())
 	}
 	if exit.Code != lifecycle.CodeInstalling || exit.Restart || exit.Before == nil {
 		t.Fatalf("exit %+v", exit)
@@ -919,7 +919,7 @@ func TestApplyWindowsPortable(t *testing.T) {
 		t.Fatalf("state %q: %s", st.State, st.Message)
 	}
 	if started != nil {
-		t.Fatal("the script started before Nyakuro quit")
+		t.Fatal("the script started before Aniko quit")
 	}
 	if err := exit.Before(); err != nil {
 		t.Fatal(err)
@@ -929,19 +929,19 @@ func TestApplyWindowsPortable(t *testing.T) {
 		t.Fatalf("started %q, want %q", started, want)
 	}
 	// Unpacked beside it, and the script moves it over the old build.
-	if b, _ := os.ReadFile(filepath.Join(c.CacheDir, "new", "resources", "nyakuro.exe")); string(b) != "MZ the new server" {
+	if b, _ := os.ReadFile(filepath.Join(c.CacheDir, "new", "resources", "aniko.exe")); string(b) != "MZ the new server" {
 		t.Fatalf("unpacked server %q", b)
 	}
 	b, err := os.ReadFile(script)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`set "NEW=` + filepath.Join(c.CacheDir, "new") + `"`, `set "APP=` + root + `"`, "robocopy", `\Nyakuro.exe" --updated`} {
+	for _, want := range []string{`set "NEW=` + filepath.Join(c.CacheDir, "new") + `"`, `set "APP=` + root + `"`, "robocopy", `\Aniko.exe" --updated`} {
 		if !strings.Contains(string(b), want) {
 			t.Fatalf("the script lacks %q:\n%s", want, b)
 		}
 	}
-	if _, err := os.Stat(filepath.Join(c.CacheDir, "Nyakuro-1.0.10-windows-x64-portable.zip")); err == nil {
+	if _, err := os.Stat(filepath.Join(c.CacheDir, "Aniko-1.0.10-windows-x64-portable.zip")); err == nil {
 		t.Fatal("the zip wasn't removed once unpacked")
 	}
 }

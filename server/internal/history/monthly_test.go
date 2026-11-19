@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 func TestMonthly(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

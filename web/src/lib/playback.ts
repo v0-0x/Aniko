@@ -12,11 +12,11 @@ const appleMobile = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && type
 const chromium = /Chrome\/|Chromium\/|Edg\/|OPR\/|Electron\//.test(ua) && !appleMobile
 const safari = appleMobile || (/AppleWebKit\//.test(ua) && /Safari\//.test(ua) && !chromium)
 
-// localStorage["nyakuro-local-stream"] = "hls" or "progressive" forces one way,
+// localStorage["aniko-local-stream"] = "hls" or "progressive" forces one way,
 // for trying the other one out.
 function override(): string {
     try {
-        return localStorage.getItem("nyakuro-local-stream") ?? ""
+        return localStorage.getItem("aniko-local-stream") ?? ""
     } catch {
         return ""
     }
@@ -76,7 +76,7 @@ export function videoFormat(v: { codec: string; profile?: string; pixFmt?: strin
 // The formats this device said it plays and then showed no picture of (the
 // player's picture watchdog): converted for it from then on. Plain H.264
 // isn't put here, as everything is converted to it.
-const NO_PICTURE = "nyakuro-no-picture"
+const NO_PICTURE = "aniko-no-picture"
 
 export function noPicture(): string[] {
     try {
@@ -101,7 +101,7 @@ export function markNoPicture(format: string) {
 // computer's or the hub's encoder, whatever it could play as is: chosen in
 // the player (Grey picture?), or by the picture watchdog when the encoder's
 // video showed only a flat grey here.
-const SOFTWARE_VIDEO = "nyakuro-software-video"
+const SOFTWARE_VIDEO = "aniko-software-video"
 
 export function softwareVideo(): boolean {
     try {

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/config"
 )
 
-const fakeMpvEnv = "NYAKURO_PLAYER_TEST_FAKE_MPV"
+const fakeMpvEnv = "ANIKO_PLAYER_TEST_FAKE_MPV"
 
 func TestMain(m *testing.M) {
 	if mode := os.Getenv(fakeMpvEnv); mode != "" {

@@ -53,7 +53,7 @@ export default function ExtensionsPage() {
     const [checking, setChecking] = useState(false)
     const [updates, setUpdates] = useState<Record<string, string>>({})
     // From another device on the network: what's installed is shown, but only
-    // the computer Nyakuro runs on installs and sets up extensions (the server
+    // the computer Aniko runs on installs and sets up extensions (the server
     // refuses the rest).
     const { data: status } = useStatus()
     const lan = status?.client === "lan"
@@ -93,7 +93,7 @@ export default function ExtensionsPage() {
                     )}
                 </div>
             </div>
-            {lan && <p className={cn("mb-6 text-sm text-muted", classic ? "rounded-xl bg-white/[0.04] px-3 py-2" : "border-l border-line-strong pl-3")}>View only. Set up extensions on the computer Nyakuro runs on.</p>}
+            {lan && <p className={cn("mb-6 text-sm text-muted", classic ? "rounded-xl bg-white/[0.04] px-3 py-2" : "border-l border-line-strong pl-3")}>View only. Set up extensions on the computer Aniko runs on.</p>}
             <fieldset disabled={lan} className="m-0 min-w-0 border-0 p-0">
                 {tab === "installed" ? <Installed updates={updates} /> : <Marketplace />}
             </fieldset>
@@ -132,7 +132,7 @@ function Installed({ updates }: { updates: Record<string, string> }) {
                 }
             />
         )
-    // A type Nyakuro doesn't know still gets its rows.
+    // A type Aniko doesn't know still gets its rows.
     const groups = [...Object.keys(TYPES), ...new Set(data.map(e => e.manifest.type).filter(t => !TYPES[t]))]
         .map(t => ({ type: t, items: data.filter(e => e.manifest.type === t) }))
         .filter(g => g.items.length)
@@ -228,7 +228,7 @@ function InstalledRow({ ext, update, onChange }: { ext: ExtensionInfo; update?: 
                 )}
                 {notes && (
                     <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
-                        {!ext.supported && <Badge tone="amber">Not supported by Nyakuro yet</Badge>}
+                        {!ext.supported && <Badge tone="amber">Not supported by Aniko yet</Badge>}
                         {needsGrant && <span className="text-amber-300">Permissions needed</span>}
                         {ext.configError && <span className="text-amber-300">Needs configuration</span>}
                         {ext.error && <span className="line-clamp-3 min-w-0 break-words text-rose-300">{ext.error}</span>}
@@ -371,7 +371,7 @@ function GrantDialog({ open, onOpenChange, ext, onDone }: { open: boolean; onOpe
                         <p className="flex items-center gap-2 font-semibold">
                             <ShieldAlert className="size-4" /> Page modification
                         </p>
-                        <p className="mt-1 text-xs">Nyakuro doesn’t let plugins modify its pages. Those features won’t work.</p>
+                        <p className="mt-1 text-xs">Aniko doesn’t let plugins modify its pages. Those features won’t work.</p>
                     </div>
                 )}
                 <p className="text-xs text-subtle">
@@ -564,7 +564,7 @@ function MarketRow({ e }: { e: MarketEntry }) {
                     <div className={cn("mt-1 flex flex-wrap", classic ? "gap-1.5" : "gap-x-3 gap-y-1")}>
                         {!e.supported && <Badge tone="amber">Not supported</Badge>}
                         {needs && (
-                            <span className="min-w-0" title={`Nyakuro doesn't support ${e.unsupported!.join(", ")}. Parts of this plugin won't work.`}>
+                            <span className="min-w-0" title={`Aniko doesn't support ${e.unsupported!.join(", ")}. Parts of this plugin won't work.`}>
                                 <Badge tone="amber" className="max-w-full">
                                     <TriangleAlert className="size-3 shrink-0" /> <span className="truncate">Needs {e.unsupported!.join(", ")}</span>
                                 </Badge>

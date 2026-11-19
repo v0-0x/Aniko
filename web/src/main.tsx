@@ -7,14 +7,14 @@ import { PageError } from "./components/PageError"
 import "./index.css"
 import { applyCachedTheme } from "./lib/themes"
 
-// Nyakuro was called Aniko until 3.0.58, and Kumo before 2.0.37: what this
+// Aniko was called Nyakuro for one beta (3.0.59), and Kumo before 2.0.37: what this
 // browser kept under an old name (the theme, sorting, the player's volume…)
-// takes Nyakuro's, once.
+// takes Aniko's, once.
 function renameStored(store: Storage) {
     for (const key of Object.keys(store)) {
-        const old = /^(aniko|kumo)(?=[-:.])/.exec(key)
+        const old = /^(nyakuro|kumo)(?=[-:.])/.exec(key)
         if (!old) continue
-        const name = "nyakuro" + key.slice(old[1].length)
+        const name = "aniko" + key.slice(old[1].length)
         if (store.getItem(name) === null) store.setItem(name, store.getItem(key) ?? "")
         store.removeItem(key)
     }

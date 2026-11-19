@@ -15,16 +15,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/downloads"
-	"github.com/v0-0x/Nyakuro/server/internal/extensions"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/manga"
-	"github.com/v0-0x/Nyakuro/server/internal/player"
-	"github.com/v0-0x/Nyakuro/server/internal/share"
-	"github.com/v0-0x/Nyakuro/server/internal/stream"
-	"github.com/v0-0x/Nyakuro/server/internal/torrent"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/downloads"
+	"github.com/v0-0x/Aniko/server/internal/extensions"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/manga"
+	"github.com/v0-0x/Aniko/server/internal/player"
+	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 func constEq(a, b string) bool { return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1 }
@@ -717,7 +717,7 @@ func (s *Server) osDownload(r *http.Request) (any, error) {
 	if err := decode(r, &body); err != nil {
 		return nil, err
 	}
-	// Downloads go to another Nyakuro (a TV's, say: to the computer's).
+	// Downloads go to another Aniko (a TV's, say: to the computer's).
 	if host, err := s.app.Share.SendDownload(r.Context(), share.DownloadStream, body); err != nil || host != "" {
 		if err != nil {
 			return nil, badRequest(err.Error())
@@ -876,7 +876,7 @@ func (s *Server) addTorrents(ctx context.Context, mediaID int, uris []string) (s
 	return save, s.app.Torrents.Add(ctx, uris, save)
 }
 
-// hostTorrents forwards a torrent client request (op) to the Nyakuro this
+// hostTorrents forwards a torrent client request (op) to the Aniko this
 // one's downloads go to; ok is false when they're this one's. A POST's body
 // goes along.
 func (s *Server) hostTorrents(r *http.Request, op string) (json.RawMessage, bool, error) {
@@ -901,7 +901,7 @@ func (s *Server) hostTorrents(r *http.Request, op string) (json.RawMessage, bool
 	return raw, ok, nil
 }
 
-// hostTorrentStatus is the status of the torrent client of the Nyakuro this
+// hostTorrentStatus is the status of the torrent client of the Aniko this
 // one's downloads go to, with its name (host).
 func (s *Server) hostTorrentStatus(r *http.Request) (map[string]any, bool) {
 	raw, host, ok, err := s.app.Share.TorrentsHost(r.Context(), "status", nil)
@@ -968,7 +968,7 @@ func (s *Server) torrentAction(r *http.Request) (any, error) {
 	case "remove":
 		return nil, c.Remove(r.Context(), body.Hashes, false)
 	case "removeData":
-		// Deleting files is for this computer, and the Nyakuros it lets
+		// Deleting files is for this computer, and the Anikos it lets
 		// download onto it: not any device on the network.
 		if !isTrusted(r) && !peerOf(r).Downloads {
 			return nil, forbidden("deleting a torrent's files is only available on this computer")
@@ -1116,7 +1116,7 @@ func (s *Server) mangaChapters(r *http.Request) (any, error) {
 	}
 	provider := r.URL.Query().Get("provider")
 	if host := serverOf(provider); host != "" {
-		// Downloaded onto another Nyakuro or server: its chapters there.
+		// Downloaded onto another Aniko or server: its chapters there.
 		raw, _, err := s.app.Share.AskHost(r.Context(), host, "/api/peer/manga-library/"+strconv.Itoa(id), nil)
 		if err != nil {
 			return nil, notFound(err.Error())

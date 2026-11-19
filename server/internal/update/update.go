@@ -1,17 +1,17 @@
-// Package update finds newer versions of Nyakuro on GitHub and installs them.
+// Package update finds newer versions of Aniko on GitHub and installs them.
 //
-// Nyakuro ships three ways, and updates each its own way:
+// Aniko ships three ways, and updates each its own way:
 //   - Arch Linux builds it from source with packaging/arch/PKGBUILD, so the
 //     newest version is a commit: the newest stable release's, or on the
 //     beta channel the head of the repository's default branch. The update
 //     downloads that source, builds it with makepkg and installs the
 //     package with pacman (through pkexec, which asks for the password).
-//   - Windows installs the GitHub Release "Nyakuro <v> for Windows" (tag
+//   - Windows installs the GitHub Release "Aniko <v> for Windows" (tag
 //     windows-v<v>). The update downloads the newest one's installer and
-//     runs it once Nyakuro has quit; the installer starts the new version.
-//   - macOS has the app from the GitHub Release "Nyakuro <v> for macOS" (tag
+//     runs it once Aniko has quit; the installer starts the new version.
+//   - macOS has the app from the GitHub Release "Aniko <v> for macOS" (tag
 //     macos-v<v>). The update downloads the newest one's zip of the app,
-//     unpacks it next to the app and, once Nyakuro has quit, puts it in the
+//     unpacks it next to the app and, once Aniko has quit, puts it in the
 //     app's place and opens it (apply_mac.go).
 //
 // Each change is published as a beta first (a GitHub pre-release), and the
@@ -37,13 +37,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/events"
-	"github.com/v0-0x/Nyakuro/server/internal/lifecycle"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
-// Version is a build of Nyakuro.
+// Version is a build of Aniko.
 type Version struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
@@ -59,7 +59,7 @@ const (
 	StateDownloading = "downloading"
 	StateBuilding    = "building"
 	StateInstalling  = "installing"
-	StateReady       = "ready" // installed: Nyakuro restarts into it
+	StateReady       = "ready" // installed: Aniko restarts into it
 	StateFailed      = "failed"
 )
 
@@ -88,7 +88,7 @@ type Status struct {
 	Message  string   `json:"message,omitempty"`
 	Log      []string `json:"log"` // the last output lines
 	// ManualCommand is a command to run in a terminal: to install the
-	// update when Nyakuro can't ask for the password, or what the build needs.
+	// update when Aniko can't ask for the password, or what the build needs.
 	ManualCommand string `json:"manualCommand,omitempty"`
 	// InstallFile: on Android, the downloaded APK the app asks Android to
 	// install (it's the app that can).
@@ -98,18 +98,18 @@ type Status struct {
 const (
 	defaultAPI = "https://api.github.com"
 	// packagedExe is where packaging/arch/PKGBUILD installs the server.
-	packagedExe = "/usr/lib/nyakuro/nyakuro"
+	packagedExe = "/usr/lib/aniko/aniko"
 	// VersionBase is the number of commits of the commit that's 2.0.0
-	// (desktop/package.json's nyakuroVersionBase): a build's version is
+	// (desktop/package.json's anikoVersionBase): a build's version is
 	// 2.0.<commits since then>, as the PKGBUILD and the release workflows
 	// make it, and was 1.0.<commits> before.
 	VersionBase = 147
 	// Version3Base: the same for 3.0.0 (desktop/package.json's
-	// nyakuroVersionBase since 3.0).
+	// anikoVersionBase since 3.0).
 	Version3Base = 222
 	maxChanges   = 30
 	maxLogLines  = 20
-	// failureFile keeps why an update failed after Nyakuro had quit for it
+	// failureFile keeps why an update failed after Aniko had quit for it
 	// (in CacheDir), for the next run to show.
 	failureFile = "last-failure.txt"
 )
@@ -125,33 +125,33 @@ type Checker struct {
 	RepoID string
 	Client *http.Client
 	Hub    *events.Hub
-	// Exits ends Nyakuro when an update needs it to restart or to quit.
+	// Exits ends Aniko when an update needs it to restart or to quit.
 	Exits *lifecycle.Exits
 	// The running build.
 	Version string
 	Commit  string
-	// GOOS decides how Nyakuro updates: "windows" and "darwin" from
+	// GOOS decides how Aniko updates: "windows" and "darwin" from
 	// releases, otherwise from source (a stable release's, or the default
 	// branch's head).
 	GOOS string
 	// Channel returns "beta" for betas too, anything else (or nil) for
 	// stable releases only.
 	Channel func() string
-	// Executable is Nyakuro's server program, symlinks resolved.
+	// Executable is Aniko's server program, symlinks resolved.
 	Executable func() (string, error)
 	// PackagedExe is where the Arch package installs the server: only that
 	// copy updates itself on Linux.
 	PackagedExe string
-	// CacheDir holds the downloads and the build (<user cache>/nyakuro/update).
+	// CacheDir holds the downloads and the build (<user cache>/aniko/update).
 	CacheDir string
 	// Token returns a GitHub token, or "" (see githubToken).
 	Token func(ctx context.Context) string
 	// StartInstaller starts the Windows installer, on its own, outside
-	// Nyakuro's job object (see startInstaller).
+	// Aniko's job object (see startInstaller).
 	StartInstaller func(path string, args ...string) error
 	// macOS: StartHelper starts the program that opens the new app once
 	// the desktop app (the process ParentPID) has quit, and Writable says
-	// whether Nyakuro may put files in a folder.
+	// whether Aniko may put files in a folder.
 	StartHelper func(name string, args ...string) error
 	ParentPID   func() int
 	Writable    func(dir string) bool
@@ -172,7 +172,7 @@ type Checker struct {
 	wg     sync.WaitGroup
 }
 
-// New makes the checker for this copy of Nyakuro. It does nothing until Start
+// New makes the checker for this copy of Aniko. It does nothing until Start
 // or a call.
 func New(hub *events.Hub, exits *lifecycle.Exits) *Checker {
 	repo, id := config.UpdateRepo, config.UpdateRepoID
@@ -195,7 +195,7 @@ func New(hub *events.Hub, exits *lifecycle.Exits) *Checker {
 		GOOS:           runtime.GOOS,
 		Executable:     executable,
 		PackagedExe:    packagedExe,
-		CacheDir:       filepath.Join(cache, "nyakuro", "update"),
+		CacheDir:       filepath.Join(cache, "aniko", "update"),
 		Token:          githubToken,
 		StartInstaller: startInstaller,
 		StartHelper:    util.Detach,
@@ -225,8 +225,8 @@ var defaultClient = &http.Client{
 	},
 }
 
-// executable is the server's program, symlinks resolved (/usr/bin/nyakuro-server
-// is a link to /usr/lib/nyakuro/nyakuro).
+// executable is the server's program, symlinks resolved (/usr/bin/aniko-server
+// is a link to /usr/lib/aniko/aniko).
 func executable() (string, error) {
 	exe, err := os.Executable()
 	if err != nil {
@@ -241,7 +241,7 @@ func executable() (string, error) {
 }
 
 // Start runs the checks in the background until Stop. It also shows why an
-// update failed after Nyakuro had quit for it.
+// update failed after Aniko had quit for it.
 func (c *Checker) Start() {
 	if b, err := os.ReadFile(filepath.Join(c.CacheDir, failureFile)); err == nil {
 		c.mu.Lock()
@@ -277,7 +277,7 @@ func (c *Checker) loop() {
 
 // cleanup removes what the last update left (the source, the build, the
 // installer, the new app), unless an update is using it: being installed,
-// Nyakuro quitting for it, or its package waiting to be installed by hand.
+// Aniko quitting for it, or its package waiting to be installed by hand.
 func (c *Checker) cleanup() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -330,59 +330,59 @@ func (c *Checker) statusLocked() Status {
 	s.Log = append([]string{}, s.Log...)
 	s.CanApply, s.ApplyNote = c.applyable()
 	if s.CanApply && fromReleases(c.GOOS) && s.Available && c.asset == nil {
-		s.CanApply, s.ApplyNote = false, "The newest release has no "+releaseFile(c.GOOS)+": download Nyakuro from its page."
+		s.CanApply, s.ApplyNote = false, "The newest release has no "+releaseFile(c.GOOS)+": download Aniko from its page."
 	}
 	return s
 }
 
-// applyable says whether this copy of Nyakuro can install updates itself, and
+// applyable says whether this copy of Aniko can install updates itself, and
 // how it does, or why it can't.
 func (c *Checker) applyable() (bool, string) {
 	exe, err := c.Executable()
 	switch c.GOOS {
 	case "linux":
 		if err != nil || exe != c.PackagedExe {
-			return false, "This copy of Nyakuro isn't the Arch package: update it with git pull and make (or build the PKGBUILD again)."
+			return false, "This copy of Aniko isn't the Arch package: update it with git pull and make (or build the PKGBUILD again)."
 		}
 		for _, tool := range []string{"makepkg", "pacman"} {
 			if _, ok := util.LookPath(tool); !ok {
 				return false, "Updating needs " + tool + ", which isn't installed: sudo pacman -S --needed base-devel go nodejs npm"
 			}
 		}
-		return true, "Nyakuro downloads the new version, builds it with makepkg and installs it with pacman, which asks for your password."
+		return true, "Aniko downloads the new version, builds it with makepkg and installs it with pacman, which asks for your password."
 	case "windows":
-		// <install dir>\resources\nyakuro.exe, next to <install dir>\Uninstall Nyakuro.exe
+		// <install dir>\resources\aniko.exe, next to <install dir>\Uninstall Aniko.exe
 		// when installed (see portable); unzipped anywhere, without it, when
 		// portable.
 		if err != nil || filepath.Base(filepath.Dir(exe)) != "resources" {
-			return false, "Nyakuro can't tell where it runs from: download the new version from its page."
+			return false, "Aniko can't tell where it runs from: download the new version from its page."
 		}
 		if c.portable(exe) {
-			return true, "Nyakuro downloads the new portable zip, puts it in place once Nyakuro has closed, and opens Nyakuro again. Nothing is installed."
+			return true, "Aniko downloads the new portable zip, puts it in place once Aniko has closed, and opens Aniko again. Nothing is installed."
 		}
-		return true, "Nyakuro downloads the installer and runs it: Nyakuro closes, the new version installs and Nyakuro opens again."
+		return true, "Aniko downloads the installer and runs it: Aniko closes, the new version installs and Aniko opens again."
 	case "darwin":
 		return c.macApplyable(exe, err)
 	case "android":
-		return true, "Nyakuro downloads the new version and Android asks you to install it."
+		return true, "Aniko downloads the new version and Android asks you to install it."
 	case HubSystem:
 		if err != nil || !c.Writable(filepath.Dir(exe)) {
 			return false, "mediaserver's program can't be replaced where it is: install it again with its install script."
 		}
 		return true, "mediaserver downloads the new version, swaps it in and starts again (a few seconds)."
 	}
-	return false, "Nyakuro can't update itself on this system."
+	return false, "Aniko can't update itself on this system."
 }
 
 // portable says whether this Windows copy is the portable build (unzipped
 // anywhere, no uninstaller next to it) rather than the installed one. The
-// installer writes Uninstall Nyakuro.exe; an install Aniko's (Nyakuro's
-// name until 3.0.58) still has its uninstaller until the new one is in.
+// installer writes Uninstall Aniko.exe; an install Nyakuro's (Aniko's
+// name in the 3.0.59 beta) still has its uninstaller until the new one is in.
 func (c *Checker) portable(exe string) bool {
 	if c.GOOS != "windows" || exe == "" || filepath.Base(filepath.Dir(exe)) != "resources" {
 		return false
 	}
-	for _, name := range []string{"Uninstall Nyakuro.exe", "Uninstall Aniko.exe"} {
+	for _, name := range []string{"Uninstall Aniko.exe", "Uninstall Nyakuro.exe"} {
 		if isFile(filepath.Join(portableRoot(exe), name)) {
 			return false
 		}
@@ -391,7 +391,7 @@ func (c *Checker) portable(exe string) bool {
 }
 
 // portableRoot is the folder the portable build was unzipped into, from
-// its server: <root>\resources\nyakuro.exe.
+// its server: <root>\resources\aniko.exe.
 func portableRoot(exe string) string {
 	return filepath.Dir(filepath.Dir(exe))
 }
@@ -471,7 +471,7 @@ func (c *Checker) Check(ctx context.Context) Status {
 	close(done)
 	c.st.Checking = false
 	if errors.Is(err, context.Canceled) {
-		// Nyakuro is shutting down: that says nothing about updates.
+		// Aniko is shutting down: that says nothing about updates.
 		c.publishLocked()
 		return c.statusLocked()
 	}
@@ -636,7 +636,7 @@ func fromReleases(goos string) bool {
 }
 
 // AsHub makes the checker mediaserver's: its own repository's releases
-// (unless $NYAKURO_UPDATE_REPO names another), installed as applyHub does.
+// (unless $ANIKO_UPDATE_REPO names another), installed as applyHub does.
 func (c *Checker) AsHub() {
 	c.GOOS = HubSystem
 	if strings.TrimSpace(config.Getenv("UPDATE_REPO")) == "" {
@@ -649,7 +649,7 @@ func (c *Checker) name() string {
 	if c.GOOS == HubSystem {
 		return "mediaserver"
 	}
-	return "Nyakuro"
+	return "Aniko"
 }
 
 // HubSystem is what mediaserver updates as (Checker.GOOS): its own releases,
@@ -673,18 +673,18 @@ func releasePrefix(goos string) string {
 func releaseAsset(goos, version string) string {
 	switch goos {
 	case "darwin":
-		return "Nyakuro-" + version + "-macos-universal.zip"
+		return "Aniko-" + version + "-macos-universal.zip"
 	case "android":
-		return "Nyakuro-" + version + "-android.apk"
+		return "Aniko-" + version + "-android.apk"
 	case HubSystem:
 		return HubArchive(version, runtime.GOARCH)
 	}
-	return "Nyakuro-Setup-" + version + "-windows-x64.exe"
+	return "Aniko-Setup-" + version + "-windows-x64.exe"
 }
 
 // portableAsset names the portable Windows build's zip.
 func portableAsset(version string) string {
-	return "Nyakuro-" + version + "-windows-x64-portable.zip"
+	return "Aniko-" + version + "-windows-x64-portable.zip"
 }
 
 // releaseFile says what that file is, for messages.
@@ -727,7 +727,7 @@ func (c *Checker) checkReleases(ctx context.Context, g *github) (result, error) 
 		if system == "" {
 			system = "Windows"
 		}
-		return result{note: "There's no Nyakuro release for " + system + " yet."}, nil
+		return result{note: "There's no Aniko release for " + system + " yet."}, nil
 	}
 	version := strings.TrimPrefix(best.TagName, prefix)
 	latest := &Version{Version: version, Date: best.PublishedAt, URL: best.HTMLURL, Beta: best.Prerelease}
@@ -843,13 +843,13 @@ var (
 )
 
 // Apply starts installing the newest version, in the background: the
-// status follows it. On Linux it ends "ready" (restart Nyakuro to use it); on
-// Windows Nyakuro quits for the installer, which starts the new version, and on
+// status follows it. On Linux it ends "ready" (restart Aniko to use it); on
+// Windows Aniko quits for the installer, which starts the new version, and on
 // macOS to swap in the new app, which then opens.
 func (c *Checker) Apply() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	// Installing: on Windows and macOS, Nyakuro is quitting for the new
+	// Installing: on Windows and macOS, Aniko is quitting for the new
 	// version.
 	// Android: the APK is there, Android asks again (the last time was
 	// cancelled).
@@ -967,7 +967,7 @@ func (c *Checker) output(line string) {
 	c.publishSoonLocked()
 }
 
-// saveFailure keeps why an update failed after Nyakuro had shut down for it,
+// saveFailure keeps why an update failed after Aniko had shut down for it,
 // for the next run to show (see Start).
 func (c *Checker) saveFailure(msg string) {
 	if err := os.MkdirAll(c.CacheDir, 0o700); err == nil {

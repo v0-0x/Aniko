@@ -32,7 +32,7 @@ type NativeEvent = {
 
 declare global {
     interface Window {
-        __nyakuroVideo?: (e: NativeEvent) => void
+        __anikoVideo?: (e: NativeEvent) => void
     }
 }
 
@@ -43,7 +43,7 @@ const ENDED = 4
 // The app has it (one from before 2.0.42 doesn't).
 export const nativeVideoAvailable = androidApp && typeof android?.video === "function"
 
-const KEY = "nyakuro-native-video"
+const KEY = "aniko-native-video"
 
 // Used on this device: on a TV by default (turned off in the player's menu).
 export function nativeVideoOn(): boolean {
@@ -66,7 +66,7 @@ export function setNativeVideo(on: boolean) {
 }
 
 export type NativeVideo = {
-    // Plays url (Nyakuro's own address) from start, paused until play().
+    // Plays url (Aniko's own address) from start, paused until play().
     open(url: string, o: { start: number; hls: boolean }): void
     close(): void
 }
@@ -74,7 +74,7 @@ export type NativeVideo = {
 // The video the app plays (one at a time): its events go to it.
 let current: { id: string; on: (e: NativeEvent) => void } | null = null
 if (nativeVideoAvailable) {
-    window.__nyakuroVideo = e => {
+    window.__anikoVideo = e => {
         if (current && e.id === current.id) current.on(e)
     }
 }

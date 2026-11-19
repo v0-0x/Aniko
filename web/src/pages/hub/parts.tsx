@@ -20,7 +20,7 @@ export function useHubOverview() {
 
 // The last few minutes of the server's numbers, for the sparklines: kept
 // while the dashboard is open (another tab and back keeps them).
-export type Sample = { at: number; cpu: number; nyakuroCpu: number; temp: number; rx: number; tx: number; mem: number }
+export type Sample = { at: number; cpu: number; anikoCpu: number; temp: number; rx: number; tx: number; mem: number }
 const KEEP = 36 // 3 minutes, every 5 seconds
 const samples: Sample[] = []
 let lastAt = 0
@@ -31,7 +31,7 @@ export function useSamples(o: HubOverview | undefined, updatedAt: number): Sampl
         if (!o || updatedAt === lastAt) return
         lastAt = updatedAt
         const s = o.system
-        samples.push({ at: updatedAt, cpu: s.cpu, nyakuroCpu: s.nyakuroCpu, temp: s.temp, rx: s.netRx, tx: s.netTx, mem: s.memUsed })
+        samples.push({ at: updatedAt, cpu: s.cpu, anikoCpu: s.anikoCpu, temp: s.temp, rx: s.netRx, tx: s.netTx, mem: s.memUsed })
         if (samples.length > KEEP) samples.splice(0, samples.length - KEEP)
         redraw(n => n + 1)
     }, [o, updatedAt])

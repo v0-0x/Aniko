@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
-	"github.com/v0-0x/Nyakuro/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/share"
 )
 
-// An Nyakuro Hub's audit log (nyakurohub): the dashboard's API for it and for the
+// An Aniko Hub's audit log (anikohub): the dashboard's API for it and for the
 // server's log, and what the API puts in it itself: every change made from
 // the dashboard (or on the hub itself) and who made it, sign-ins and wrong
 // passwords.
@@ -134,7 +134,7 @@ func (s *Server) audited(w http.ResponseWriter, r *http.Request, next http.Handl
 	next.ServeHTTP(aw, r)
 
 	by, ip := auditBy(r)
-	e := nyakurohub.Event{Kind: route.kind, By: by, IP: ip, Text: route.text}
+	e := anikohub.Event{Kind: route.kind, By: by, IP: ip, Text: route.text}
 	switch pattern {
 	case "PUT /api/settings":
 		e.Text = settingsChanged(before, s.app.Settings.Get())
@@ -168,7 +168,7 @@ func (s *Server) audited(w http.ResponseWriter, r *http.Request, next http.Handl
 			}
 		}
 		for _, p := range b.Paths {
-			e.Files = append(e.Files, nyakurohub.AuditFile{Name: baseOf(p), Path: p})
+			e.Files = append(e.Files, anikohub.AuditFile{Name: baseOf(p), Path: p})
 		}
 	case "POST /api/hub/devices/{id}", "POST /api/sharing/peers/{id}", "DELETE /api/sharing/peers/{id}", "POST /api/sharing/peers/{id}/parental":
 		if device != nil {
@@ -322,7 +322,7 @@ func (s *Server) signedIn(r *http.Request, ok bool, text string) {
 	if s.app.HubStore == nil {
 		return
 	}
-	e := nyakurohub.Event{Kind: "signin", By: "dashboard", IP: clientIP(r).String(), Text: text}
+	e := anikohub.Event{Kind: "signin", By: "dashboard", IP: clientIP(r).String(), Text: text}
 	if !ok {
 		e.Kind, e.By, e.Failed = "signin-failed", "", true
 	}
@@ -335,13 +335,13 @@ func (s *Server) signedIn(r *http.Request, ok bool, text string) {
 func (s *Server) auditAPI(owner func(func(*http.Request) (any, error)) http.HandlerFunc) {
 	m := s.mux
 	// The audit log, the newest first: ?before= the oldest ID shown (the
-	// page before), ?group= a filter (nyakurohub.AuditGroups), ?q= a search.
+	// page before), ?group= a filter (anikohub.AuditGroups), ?q= a search.
 	m.HandleFunc("GET /api/hub/audit", owner(func(r *http.Request) (any, error) {
 		q := r.URL.Query()
-		aq := nyakurohub.AuditQuery{Search: q.Get("q"), Limit: 100}
+		aq := anikohub.AuditQuery{Search: q.Get("q"), Limit: 100}
 		aq.Before, _ = strconv.ParseInt(q.Get("before"), 10, 64)
 		if g := q.Get("group"); g != "" {
-			kinds, ok := nyakurohub.AuditGroups[g]
+			kinds, ok := anikohub.AuditGroups[g]
 			if !ok {
 				return nil, badRequest("no such filter: " + g)
 			}
@@ -392,7 +392,7 @@ func (s *Server) auditAPI(owner func(func(*http.Request) (any, error)) http.Hand
 		if len(items) == 1 {
 			noun = "episode"
 		}
-		s.app.HubStore.Log(nyakurohub.Event{Kind: "again", By: by, IP: ip, MediaID: e.Again.MediaID, Title: e.Title,
+		s.app.HubStore.Log(anikohub.Event{Kind: "again", By: by, IP: ip, MediaID: e.Again.MediaID, Title: e.Title,
 			Text:   fmt.Sprintf("started downloading again (%s): %d %s of", mode, len(items), noun),
 			Detail: "deleted " + time.UnixMilli(e.At).Format("2 Jan 15:04")})
 		s.app.Hub.Publish("hub-updated", nil)
@@ -420,7 +420,7 @@ func (s *Server) auditAPI(owner func(func(*http.Request) (any, error)) http.Hand
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Content-Disposition", `attachment; filename="nyakuro-hub-`+time.Now().Format("2006-01-02")+`.log"`)
+		w.Header().Set("Content-Disposition", `attachment; filename="aniko-hub-`+time.Now().Format("2006-01-02")+`.log"`)
 		if f := s.app.Logs.File; f != nil {
 			_, _ = f.WriteTo(w)
 			return
@@ -440,7 +440,7 @@ func (s *Server) reversedLines() []string {
 
 // titles fills in the anime events are about, by name (AniList's, kept;
 // asked a moment at most).
-func (s *Server) titles(r *http.Request, events []nyakurohub.Event) {
+func (s *Server) titles(r *http.Request, events []anikohub.Event) {
 	var ids []int
 	for _, e := range events {
 		if e.MediaID > 0 && e.Title == "" {
@@ -462,8 +462,8 @@ func (s *Server) LogUpload(r *http.Request, side, device, rel, full string, size
 	if s.app.HubStore == nil {
 		return
 	}
-	ev := nyakurohub.Event{Kind: "upload", Device: device, Text: "uploaded " + rel + " to " + side, Size: size,
-		Files: []nyakurohub.AuditFile{{Name: filepath.Base(full), Path: full, Size: size}}}
+	ev := anikohub.Event{Kind: "upload", Device: device, Text: "uploaded " + rel + " to " + side, Size: size,
+		Files: []anikohub.AuditFile{{Name: filepath.Base(full), Path: full, Size: size}}}
 	if device == "" {
 		ev.By, ev.IP = auditBy(r)
 	}

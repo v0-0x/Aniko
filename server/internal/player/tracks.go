@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 // TrackPrefs remembers which audio and subtitle track the user picked for an
@@ -34,7 +34,7 @@ func NewTrackStore(d *db.DB) *TrackStore {
 	return s
 }
 
-// forgetUnchosenModes forgets, once, the sub/dub of every anime: Nyakuro used
+// forgetUnchosenModes forgets, once, the sub/dub of every anime: Aniko used
 // to save it whenever an episode played, also when it wasn't chosen (the
 // only version there was, the default of the time), and those kept anime
 // from following the default. It's saved when it's picked now.

@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/config"
 )
 
-// Prompt is what Home asks about another Nyakuro on the network: whether to
-// share this Nyakuro's library with one that's new ("new"), to use the library
+// Prompt is what Home asks about another Aniko on the network: whether to
+// share this Aniko's library with one that's new ("new"), to use the library
 // one offers ("offer"), or to update one
-// of the two, their versions differing ("older": its Nyakuro is older than
+// of the two, their versions differing ("older": its Aniko is older than
 // this one, "newer": this one is).
 type Prompt struct {
 	Kind     string `json:"kind"`
@@ -22,7 +22,7 @@ type Prompt struct {
 	Version  string `json:"version"`
 }
 
-// Prompts are Home's questions about the other Nyakuros, for the app on this
+// Prompts are Home's questions about the other Anikos, for the app on this
 // computer (not a device on the network: it can't change sharing).
 func (s *Service) Prompts() []Prompt {
 	now := time.Now()
@@ -37,7 +37,7 @@ func (s *Service) Prompts() []Prompt {
 			continue
 		}
 		pr := Prompt{ID: p.id, Name: s.view(p, now).Name, Platform: p.platform, Version: p.version}
-		// It says it shares its library with this Nyakuro: used once the
+		// It says it shares its library with this Aniko: used once the
 		// owner says so here.
 		if p.offers && !p.accepted {
 			if !p.declined {
@@ -51,7 +51,7 @@ func (s *Service) Prompts() []Prompt {
 		if p.role == RoleHub {
 			continue
 		}
-		// One that shares its library with this Nyakuro isn't new here.
+		// One that shares its library with this Aniko isn't new here.
 		if !p.allowed && !p.shares && !p.declined {
 			pr.Kind = "new"
 			out = append(out, pr)
@@ -74,7 +74,7 @@ func (s *Service) Prompts() []Prompt {
 	return out
 }
 
-// compareVersions compares two Nyakuro versions (2.0.<commits since 2.0.0's>,
+// compareVersions compares two Aniko versions (2.0.<commits since 2.0.0's>,
 // 1.0.<number of commits> before):
 // ok is false when either isn't one, or is a build's default (1.0.0: built
 // by hand, its version unknown).

@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
 )
 
 // markEpisode marks one episode watched or unwatched. AniList only stores

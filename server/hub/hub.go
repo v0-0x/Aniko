@@ -1,6 +1,6 @@
-// Package hub runs Nyakuro's server as mediaserver's anime side (a hub): the
+// Package hub runs Aniko's server as mediaserver's anime side (a hub): the
 // one package of this module mediaserver imports. It
-// plays nothing; it shares its library with the Nyakuro apps at home, streams
+// plays nothing; it shares its library with the Aniko apps at home, streams
 // to them, keeps the devices on each AniList account in step, takes their
 // downloads when allowed, and has the anime dashboard. Its data, library and
 // devices are its own, apart from the movies side's.
@@ -15,22 +15,22 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/v0-0x/Nyakuro/server/internal/api"
-	"github.com/v0-0x/Nyakuro/server/internal/app"
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
-	"github.com/v0-0x/Nyakuro/server/internal/webui"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/api"
+	"github.com/v0-0x/Aniko/server/internal/app"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/webui"
 )
 
-// ProtocolVersion is the Nyakuro version this side's code comes from: what it
-// tells the Nyakuro apps it is (they compare it with their own), not
+// ProtocolVersion is the Aniko version this side's code comes from: what it
+// tells the Aniko apps it is (they compare it with their own), not
 // mediaserver's version.
 const ProtocolVersion = "2.0.42"
 
-// DefaultPort is where the Nyakuro apps and the dashboard reach this side
-// (Nyakuro Hub's port: a Pi that came from it keeps its address).
+// DefaultPort is where the Aniko apps and the dashboard reach this side
+// (Aniko Hub's port: a Pi that came from it keeps its address).
 const DefaultPort = 43211
 
 // Options say how the anime side runs.
@@ -77,7 +77,7 @@ func Start(o Options) (*Engine, error) {
 	srv.MoviesPort, srv.MusicPort = o.MoviesPort, o.MusicPort
 	if err := srv.Start(); err != nil {
 		a.Shutdown()
-		return nil, fmt.Errorf("could not start the anime side: %v (is mediaserver, or Nyakuro Hub, already running?)", err)
+		return nil, fmt.Errorf("could not start the anime side: %v (is mediaserver, or Aniko Hub, already running?)", err)
 	}
 	a.Start()
 	e := &Engine{app: a, srv: srv}
@@ -152,7 +152,7 @@ func openSettings(dataDir string) (*db.DB, *config.Store, error) {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return nil, nil, err
 	}
-	d, err := db.Open(filepath.Join(dataDir, "nyakuro.db"))
+	d, err := db.Open(filepath.Join(dataDir, "aniko.db"))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -175,7 +175,7 @@ func SetupCode(dataDir string) (string, error) {
 	if settings.Get().Server.Password != "" {
 		return "", nil
 	}
-	h, err := nyakurohub.New(d)
+	h, err := anikohub.New(d)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +195,7 @@ func ResetPassword(dataDir string) (string, error) {
 	if _, err := settings.Save(cfg); err != nil {
 		return "", err
 	}
-	h, err := nyakurohub.New(d)
+	h, err := anikohub.New(d)
 	if err != nil {
 		return "", err
 	}
@@ -218,8 +218,8 @@ func SetChannel(dataDir, channel string) error {
 	return err
 }
 
-// OldDataDir is where Nyakuro Hub kept its data (aniko-hub or kumo-hub, from
-// before Nyakuro's renames, else nyakuro-hub): mediaserver moves it into its
-// own folder, so a Pi that ran Nyakuro Hub keeps its library, logins, devices
+// OldDataDir is where Aniko Hub kept its data (nyakuro-hub or kumo-hub, from
+// before Aniko's renames, else aniko-hub): mediaserver moves it into its
+// own folder, so a Pi that ran Aniko Hub keeps its library, logins, devices
 // and password.
 func OldDataDir() string { return config.HubDataDir() }

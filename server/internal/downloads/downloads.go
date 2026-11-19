@@ -21,11 +21,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/events"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 const (
@@ -157,7 +157,7 @@ func (m *Manager) load() {
 	}
 }
 
-// Start resumes the downloads that were interrupted when Nyakuro last quit.
+// Start resumes the downloads that were interrupted when Aniko last quit.
 // Call it once the resolvers, and the extensions they rely on, are ready;
 // new downloads don't wait for it.
 func (m *Manager) Start() {
@@ -355,7 +355,7 @@ func (m *Manager) worker() {
 }
 
 // run downloads one: an extension gone wrong in it (a panic) fails that
-// download, not Nyakuro.
+// download, not Aniko.
 func (m *Manager) run(r *run) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -468,7 +468,7 @@ func (m *Manager) process(r *run) error {
 	// scanner skips it) and move only finished files into place: a failed or
 	// canceled download leaves nothing behind (half-written video, yt-dlp
 	// .part/.ytdl/fragment files, subtitles without their video).
-	work := filepath.Join(dir, ".nyakuro-download-"+it.ID)
+	work := filepath.Join(dir, ".aniko-download-"+it.ID)
 	_ = os.RemoveAll(work) // left over by a crash
 	if err := os.Mkdir(work, 0o755); err != nil {
 		return err
@@ -573,13 +573,13 @@ func (m *Manager) folderFor(cfg config.Settings, mediaID int, animeTitle string)
 	return filepath.Join(baseDir, util.SanitizeFilename(name)), nil
 }
 
-var reYtdlp = regexp.MustCompile(`NYAKURO\|\s*([\d.]+)%\|([^|]*)\|(.*)$`)
+var reYtdlp = regexp.MustCompile(`ANIKO\|\s*([\d.]+)%\|([^|]*)\|(.*)$`)
 
 func (m *Manager) ytdlp(r *run, res *Resolved, out string) error {
 	args := []string{
 		"--newline", "--no-colors", "--no-playlist", "--no-mtime",
 		"-N", "8", "--fragment-retries", "20", "--retries", "10",
-		"--progress-template", "download:NYAKURO|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
+		"--progress-template", "download:ANIKO|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
 		"--merge-output-format", "mp4",
 		"-o", strings.ReplaceAll(out, "%", "%%"),
 	}

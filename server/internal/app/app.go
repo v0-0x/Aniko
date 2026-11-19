@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/v0-0x/Nyakuro/server/internal/awake"
+	"github.com/v0-0x/Aniko/server/internal/awake"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,30 +17,30 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anicli"
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/discord"
-	"github.com/v0-0x/Nyakuro/server/internal/downloads"
-	"github.com/v0-0x/Nyakuro/server/internal/events"
-	"github.com/v0-0x/Nyakuro/server/internal/extensions"
-	"github.com/v0-0x/Nyakuro/server/internal/history"
-	"github.com/v0-0x/Nyakuro/server/internal/images"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/lifecycle"
-	"github.com/v0-0x/Nyakuro/server/internal/manga"
-	"github.com/v0-0x/Nyakuro/server/internal/metadata"
-	"github.com/v0-0x/Nyakuro/server/internal/notify"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
-	"github.com/v0-0x/Nyakuro/server/internal/player"
-	"github.com/v0-0x/Nyakuro/server/internal/playlist"
-	"github.com/v0-0x/Nyakuro/server/internal/share"
-	"github.com/v0-0x/Nyakuro/server/internal/stream"
-	"github.com/v0-0x/Nyakuro/server/internal/torrent"
-	"github.com/v0-0x/Nyakuro/server/internal/torrentstream"
-	"github.com/v0-0x/Nyakuro/server/internal/update"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anicli"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/discord"
+	"github.com/v0-0x/Aniko/server/internal/downloads"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/extensions"
+	"github.com/v0-0x/Aniko/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/images"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/lifecycle"
+	"github.com/v0-0x/Aniko/server/internal/manga"
+	"github.com/v0-0x/Aniko/server/internal/metadata"
+	"github.com/v0-0x/Aniko/server/internal/notify"
+	"github.com/v0-0x/Aniko/server/internal/player"
+	"github.com/v0-0x/Aniko/server/internal/playlist"
+	"github.com/v0-0x/Aniko/server/internal/share"
+	"github.com/v0-0x/Aniko/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/torrentstream"
+	"github.com/v0-0x/Aniko/server/internal/update"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 type App struct {
@@ -81,20 +81,20 @@ type App struct {
 	// MangaLib is the downloaded manga (MangaDir), MangaDL their downloads.
 	MangaLib *manga.Library
 	MangaDL  *manga.Downloader
-	// Exits ends Nyakuro from inside, e.g. to restart it after an update;
-	// cmd/nyakuro waits for it, next to the signals.
+	// Exits ends Aniko from inside, e.g. to restart it after an update;
+	// cmd/aniko waits for it, next to the signals.
 	Exits *lifecycle.Exits
 
 	// ShellToken authenticates the desktop window (see api middleware).
 	ShellToken string
 	DataDir    string
 
-	// HubStore is set when Nyakuro runs as a Nyakuro Hub (nyakuro --hub, package
-	// nyakurohub): it plays nothing, shares its library with the Nyakuro apps on
+	// HubStore is set when Aniko runs as an Aniko Hub (aniko --hub, package
+	// anikohub): it plays nothing, shares its library with the Aniko apps on
 	// the network and keeps them in step; the heavy parts don't run.
-	HubStore *nyakurohub.Store
-	Streams  *nyakurohub.Streams
-	Sampler  *nyakurohub.Sampler
+	HubStore *anikohub.Store
+	Streams  *anikohub.Streams
+	Sampler  *anikohub.Sampler
 
 	prefetch *prefetcher
 
@@ -148,9 +148,9 @@ func (l *LogBuffer) Lines() []string {
 	return append([]string(nil), l.lines...)
 }
 
-// Options say how Nyakuro runs.
+// Options say how Aniko runs.
 type Options struct {
-	// Hub: as a Nyakuro Hub (see App.HubStore).
+	// Hub: as an Aniko Hub (see App.HubStore).
 	Hub bool
 }
 
@@ -170,7 +170,7 @@ func New(dataDir string, opts ...Options) (*App, error) {
 	log.SetOutput(logs)
 	log.SetFlags(log.LstdFlags)
 
-	d, err := db.Open(filepath.Join(dataDir, "nyakuro.db"))
+	d, err := db.Open(filepath.Join(dataDir, "aniko.db"))
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
@@ -208,7 +208,7 @@ func New(dataDir string, opts ...Options) (*App, error) {
 	}
 	a.HLS = stream.NewHLS(a.Local, hlsDir(dataDir))
 	// Torrents streamed for the devices whose downloads come here (a TV
-	// has no torrent client): package torrentstream, as in Nyakuro.
+	// has no torrent client): package torrentstream, as in Aniko.
 	a.TorrentStream = torrentstream.New(torrentStreamDir(dataDir, opt.Hub))
 	a.TorrentStream.Free = func(dir string) (uint64, error) {
 		_, free, err := util.DiskSpace(dir)
@@ -222,17 +222,17 @@ func New(dataDir string, opts ...Options) (*App, error) {
 		return nil, fmt.Errorf("library sharing: %w", err)
 	}
 	if opt.Hub {
-		if a.HubStore, err = nyakurohub.New(d); err != nil {
+		if a.HubStore, err = anikohub.New(d); err != nil {
 			return nil, fmt.Errorf("hub: %w", err)
 		}
-		a.Streams = nyakurohub.NewStreams()
+		a.Streams = anikohub.NewStreams()
 		// It updates from its own releases (hub-v…).
 		a.Update.AsHub()
 		if err := a.hubSettings(); err != nil {
 			return nil, err
 		}
 	}
-	// Libraries other Nyakuro apps share with this one show with its own.
+	// Libraries other Aniko apps share with this one show with its own.
 	lib.Remote = a.Share.RemoteFiles
 	a.ShellToken = randomToken()
 	a.wireManga()
@@ -243,7 +243,7 @@ func New(dataDir string, opts ...Options) (*App, error) {
 // torrentStreamDir holds the pieces of the torrents being streamed, in
 // the cache folder (mediaserver's own, as a hub).
 func torrentStreamDir(dataDir string, hub bool) string {
-	name := "nyakuro"
+	name := "aniko"
 	if hub {
 		name = "mediaserver"
 	}
@@ -257,7 +257,7 @@ func torrentStreamDir(dataDir string, hub bool) string {
 // folder, not in /tmp, which is in memory on most Linux systems.
 func hlsDir(dataDir string) string {
 	if dir, err := os.UserCacheDir(); err == nil {
-		return filepath.Join(dir, "nyakuro", "hls")
+		return filepath.Join(dir, "aniko", "hls")
 	}
 	return filepath.Join(dataDir, "hls")
 }
@@ -269,7 +269,7 @@ func randomToken() string {
 }
 
 // WriteShellToken stores the desktop-window token where only this user can
-// read it ($XDG_RUNTIME_DIR/nyakuro/shell-token).
+// read it ($XDG_RUNTIME_DIR/aniko/shell-token).
 func (a *App) WriteShellToken() string {
 	p := filepath.Join(config.RuntimeDir(), "shell-token")
 	_ = os.WriteFile(p, []byte(a.ShellToken), 0o600)
@@ -278,14 +278,14 @@ func (a *App) WriteShellToken() string {
 
 func (a *App) wire() {
 	// Anime with files get all their data, also those shared with this
-	// Nyakuro (prefetch.go).
+	// Aniko (prefetch.go).
 	a.Scanner.OnScanned = a.prefetchLibrary
 	a.Scanner.OnNewFiles = a.Notify.NewFiles
 	a.Downloads.Done = func(it downloads.Item) bool {
 		return a.Notify.Downloaded(it.MediaID, it.Episode, it.AnimeTitle, it.Output)
 	}
 	a.Share.OnFiles = a.prefetchLibrary
-	// Nyakuros on the same AniList account keep their watch histories in step,
+	// Anikos on the same AniList account keep their watch histories in step,
 	// as positions are saved. A hub keeps every account's instead (hub.go).
 	if a.HubStore != nil {
 		a.wireHub()
@@ -302,7 +302,7 @@ func (a *App) wire() {
 			a.Hub.Publish("collection-updated", nil)
 		}
 	}
-	// The auto downloader sends what it finds where this Nyakuro's downloads
+	// The auto downloader sends what it finds where this Aniko's downloads
 	// go (a TV's computer), like a torrent added by hand.
 	a.AutoDL.Send = func(ctx context.Context, mediaID int, uris []string) (bool, error) {
 		host, err := a.Share.SendDownload(ctx, share.DownloadTorrent, share.TorrentDownload{MediaID: mediaID, URIs: uris})
@@ -318,11 +318,11 @@ func (a *App) wire() {
 		}
 		return 0
 	}
-	// ani-cli for the Nyakuros this one shares with; and where it runs for this
+	// ani-cli for the Anikos this one shares with; and where it runs for this
 	// one when it isn't here (Android).
 	a.Share.AniCliReady = a.AniCli.LocalReady
 	a.AniCli.SetRemote(a.Share.AniCliRemote())
-	// The AniList login a host shares with this Nyakuro, or this one shares.
+	// The AniList login a host shares with this Aniko, or this one shares.
 	a.Share.AccountToken = func() string {
 		if !a.Platform.LoggedIn() {
 			return ""
@@ -521,7 +521,7 @@ func pickSource(srcs []stream.Source, quality string) stream.Source {
 	return srcs[0]
 }
 
-// AccountChanged tells the app the AniList login changed (another Nyakuro's
+// AccountChanged tells the app the AniList login changed (another Aniko's
 // account shared with this one): the list comes from the new one.
 func (a *App) AccountChanged() {
 	a.Hub.Publish(events.SettingsUpdated, nil)
@@ -616,11 +616,11 @@ func (a *App) Start() {
 
 func (a *App) Shutdown() {
 	if a.HubStore != nil {
-		a.HubStore.Log(nyakurohub.Event{Kind: "stop", By: "hub", Text: "stopped"})
+		a.HubStore.Log(anikohub.Event{Kind: "stop", By: "hub", Text: "stopped"})
 	}
 	a.cancel()
 	// The player first: it saves where it stopped, which sharing then sends
-	// to the other Nyakuros before it stops.
+	// to the other Anikos before it stops.
 	a.Player.Stop()
 	a.Share.Stop()
 	a.Awake.Close()

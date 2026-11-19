@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// A shared file's image subtitles are drawn by its host from Nyakuro 2.0.63
+// A shared file's image subtitles are drawn by its host from Aniko 2.0.63
 // and mediaserver 1.0.22 on; an older host is named, an unknown version
 // (a build from source) is taken as able.
 func TestBurnsSubtitles(t *testing.T) {

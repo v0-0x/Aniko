@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Library tools › Clean up: how full the library's drive is, the episodes
-// watched (to put away), the episodes there twice, and Nyakuro's trash.
+// watched (to put away), the episodes there twice, and Aniko's trash.
 
 type cleanupFile struct {
 	Path       string `json:"path"`
@@ -224,7 +224,7 @@ func (s *Server) cleanupRoutes() {
 	// what went, to download it again.
 	m.HandleFunc("POST /api/library/delete", h(libraryEdited(func(r *http.Request) (any, error) {
 		if s.app.HubStore == nil {
-			return nil, notFound("only a Nyakuro Hub deletes files: here, Library tools › Clean up puts them in the trash")
+			return nil, notFound("only an Aniko Hub deletes files: here, Library tools › Clean up puts them in the trash")
 		}
 		if !isTrusted(r) {
 			return nil, forbidden("sign in to the hub first")
@@ -242,7 +242,7 @@ func (s *Server) cleanupRoutes() {
 		var ids []int64
 		if len(removed) > 0 {
 			by, ip := auditBy(r)
-			ids = s.app.LogDeleted(nyakurohub.Event{By: by, IP: ip, Text: "deleted"}, removed)
+			ids = s.app.LogDeleted(anikohub.Event{By: by, IP: ip, Text: "deleted"}, removed)
 			s.app.Hub.Publish("library-updated", nil)
 			s.app.Hub.Publish("hub-updated", nil)
 		}

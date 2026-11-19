@@ -19,7 +19,7 @@ type Props = {
     menu?: React.ReactNode // items of a menu opened with a "⋯" button or a right-click
     // Where it goes instead of the media's page (Home's Continue reading: the reader).
     to?: string
-    // A manga's new chapters: out since Nyakuro first looked at it, not read yet.
+    // A manga's new chapters: out since Aniko first looked at it, not read yet.
     fresh?: number
 }
 

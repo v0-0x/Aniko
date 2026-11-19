@@ -4,13 +4,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v0-0x/Nyakuro/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/db"
 )
 
 // The sub/dub saved by earlier versions whenever an episode played is
 // forgotten once (the default applies again); choices made since stay.
 func TestUnchosenModesForgottenOnce(t *testing.T) {
-	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/torrent"
 )
 
 // ProviderMedia is the media shape providers receive (hibike's Media).

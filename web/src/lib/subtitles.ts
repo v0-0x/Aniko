@@ -23,8 +23,8 @@ export const SUB_POSITIONS: { value: SubStyle["position"]; label: string }[] = [
     { value: "raised", label: "Higher up" },
 ]
 
-const STYLE_KEY = "nyakuro-sub-style"
-const DELAY_KEY = "nyakuro-sub-delay"
+const STYLE_KEY = "aniko-sub-style"
+const DELAY_KEY = "aniko-sub-delay"
 const DEFAULT_STYLE: SubStyle = { size: "m", background: "box", position: "bottom" }
 
 function readStyle(): SubStyle {

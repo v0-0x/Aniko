@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// The program reading from Nyakuro ends once Nyakuro's end of the pipe closes (as
-// when Nyakuro crashes), not only when it's stopped.
-func TestInhibitorEndsWithNyakuro(t *testing.T) {
+// The program reading from Aniko ends once Aniko's end of the pipe closes (as
+// when Aniko crashes), not only when it's stopped.
+func TestInhibitorEndsWithAniko(t *testing.T) {
 	c := &cmdInhibitor{args: []string{"cat"}, stdin: true}
 	if err := c.start(); err != nil {
 		t.Skip("no cat:", err)
@@ -24,7 +24,7 @@ func TestInhibitorEndsWithNyakuro(t *testing.T) {
 	if !running {
 		t.Fatal("ended at once")
 	}
-	// Nyakuro gone: its end of the pipe closed by the system.
+	// Aniko gone: its end of the pipe closed by the system.
 	_ = pipe.Close()
 	for i := 0; i < 50; i++ {
 		c.mu.Lock()
@@ -35,5 +35,5 @@ func TestInhibitorEndsWithNyakuro(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	t.Fatal("it went on without Nyakuro")
+	t.Fatal("it went on without Aniko")
 }

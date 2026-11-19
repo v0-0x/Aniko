@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // fakeJikan serves an anime's episodes in pages of two: 1..5, with 2 and 4

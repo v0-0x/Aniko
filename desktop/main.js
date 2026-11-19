@@ -1,6 +1,6 @@
-// Nyakuro desktop shell.
+// Aniko desktop shell.
 //
-// Starts the Nyakuro server (bound to 127.0.0.1) or attaches to one that is
+// Starts the Aniko server (bound to 127.0.0.1) or attaches to one that is
 // already running, then shows the UI in a native window. Every request the
 // window makes carries the per-run shell token, which is how the server
 // recognises its own desktop window when the browser Web UI is turned off.
@@ -20,23 +20,23 @@ const isMac = process.platform === "darwin"
 const EXIT_RESTART = 75
 const EXIT_INSTALLING = 76
 
-// Nyakuro was called Aniko until 3.0.58, and Kumo until 2.0.37.
-const OLD_NAMES = ["Aniko", "Kumo"] // newest first
+// Aniko was called Nyakuro for one beta (3.0.59), and Kumo until 2.0.37.
+const OLD_NAMES = ["Nyakuro", "Kumo"] // newest first
 
 // macOS: an older version's updater put this version in the app it had,
-// Aniko.app (or Kumo.app), which the Finder and Launchpad show under that
-// name. The app takes Nyakuro's name, then opens again from there, before
-// anything else starts from the old path (helpers, the server). Nyakuro's
-// own updates install as Nyakuro.app (server/internal/update/apply_mac.go).
+// Nyakuro.app (or Kumo.app), which the Finder and Launchpad show under that
+// name. The app takes Aniko's name, then opens again from there, before
+// anything else starts from the old path (helpers, the server). Aniko's
+// own updates install as Aniko.app (server/internal/update/apply_mac.go).
 function renameOldApp() {
     if (!isMac || !app.isPackaged) return false
     const bundle = path.resolve(process.execPath, "..", "..", "..")
-    const renamed = path.join(path.dirname(bundle), "Nyakuro.app")
+    const renamed = path.join(path.dirname(bundle), "Aniko.app")
     if (!OLD_NAMES.some(n => path.basename(bundle) === n + ".app") || fs.existsSync(renamed)) return false
     try {
         fs.renameSync(bundle, renamed)
     } catch (err) {
-        console.error(`couldn't rename ${path.basename(bundle)} to Nyakuro.app:`, err)
+        console.error(`couldn't rename ${path.basename(bundle)} to Aniko.app:`, err)
         return false
     }
     app.relaunch({ execPath: path.join(renamed, "Contents", "MacOS", path.basename(process.execPath)), args: process.argv.slice(1) })
@@ -48,10 +48,10 @@ if (renameOldApp()) return
 // On Windows this is the AppUserModelID, which must match "appId" in
 // electron-builder.yml: the installer's shortcuts carry it, and the taskbar
 // groups the window with them.
-const APP_ID = isWindows ? "app.kumo.desktop" : "nyakuro"
-app.setName("Nyakuro")
+const APP_ID = isWindows ? "app.kumo.desktop" : "aniko"
+app.setName("Aniko")
 app.setAppUserModelId?.(APP_ID)
-// The window only talks to Nyakuro's own server (and AniList's login page): run
+// The window only talks to Aniko's own server (and AniList's login page): run
 // Chromium's network service inside the app instead of a process of its
 // own, which saves about 80 MB.
 const features = ["NetworkServiceInProcess2"]
@@ -62,7 +62,7 @@ if (process.platform === "linux") {
 }
 app.commandLine.appendSwitch("enable-features", features.join(","))
 // The folder the window's data (the pages' settings, logins) was kept in
-// under an old name (Aniko, or Kumo before that) becomes Nyakuro's the first
+// under an old name (Nyakuro, or Kumo before that) becomes Aniko's the first
 // time. It returns the folder to use: the old one while it can't be moved
 // (Windows, when a file in it is still open), tried again on the next start.
 function movedFrom(oldDir, dir) {
@@ -75,26 +75,26 @@ function movedFrom(oldDir, dir) {
     return dir
 }
 // movedFromOld moves the newest of the old names' folders in parent (when
-// there is one, and Nyakuro's isn't there yet) to dir, as movedFrom does.
+// there is one, and Aniko's isn't there yet) to dir, as movedFrom does.
 function movedFromOld(parent, dir) {
     const old = OLD_NAMES.map(n => path.join(parent, n)).find(d => fs.existsSync(d))
     return old ? movedFrom(old, dir) : dir
 }
 if (isWindows && process.env.LOCALAPPDATA) {
     // Electron would keep the window's browser data (caches, the AniList
-    // login window's cookies) in %APPDATA%\Nyakuro, which is the server's data
-    // folder on Windows: keep it apart, with Nyakuro's other local files.
-    const local = movedFromOld(process.env.LOCALAPPDATA, path.join(process.env.LOCALAPPDATA, "Nyakuro"))
+    // login window's cookies) in %APPDATA%\Aniko, which is the server's data
+    // folder on Windows: keep it apart, with Aniko's other local files.
+    const local = movedFromOld(process.env.LOCALAPPDATA, path.join(process.env.LOCALAPPDATA, "Aniko"))
     app.setPath("userData", path.join(local, "electron"))
 } else if (isMac) {
-    // Electron would keep them in ~/Library/Application Support/Nyakuro, which
+    // Electron would keep them in ~/Library/Application Support/Aniko, which
     // is the server's data folder on macOS: keep them in a folder of their
     // own in it (an old name's moves with the server's data).
-    const support = movedFromOld(app.getPath("appData"), path.join(app.getPath("appData"), "Nyakuro"))
+    const support = movedFromOld(app.getPath("appData"), path.join(app.getPath("appData"), "Aniko"))
     app.setPath("userData", path.join(support, "electron"))
 } else {
-    // ~/.config/Nyakuro, after the app's name (app.setName above): what was
-    // ~/.config/Aniko, or ~/.config/Kumo, moves there.
+    // ~/.config/Aniko, after the app's name (app.setName above): what was
+    // ~/.config/Nyakuro, or ~/.config/Kumo, moves there.
     app.setPath("userData", movedFromOld(app.getPath("appData"), app.getPath("userData")))
 }
 
@@ -106,7 +106,7 @@ let tray = null
 
 // The desktop app's own preferences (Settings › Desktop app & programs),
 // kept next to its browser data.
-//   keepRunning     closing the window leaves Nyakuro running (tray icon, or the
+//   keepRunning     closing the window leaves Aniko running (tray icon, or the
 //                   Dock on a Mac): streaming to other devices, downloads and
 //                   the auto downloader keep going without the window's
 //                   memory. Off unless turned on (keepRunningChosen: it was
@@ -114,7 +114,7 @@ let tray = null
 //   freeWhenLocked  a few minutes after the computer is locked, the window
 //                   lets go of its page, and loads it again on unlocking.
 //   toldKeepRunning the notice about it was shown (the first time).
-//   window, mini    where Nyakuro's window and the small player were, and how
+//   window, mini    where Aniko's window and the small player were, and how
 //                   big (the window: whether maximized): they open there.
 //   zoom            the pages' zoom (Ctrl + and -), kept between runs.
 const prefs = { keepRunning: false, keepRunningChosen: false, freeWhenLocked: true, toldKeepRunning: false, window: null, mini: null, zoom: 1 }
@@ -138,11 +138,11 @@ function savePrefs() {
 
 // Starting with the computer (Settings › Desktop app & programs), off unless
 // turned on: the system's own login items on Windows and macOS, an autostart
-// entry on Linux. Started that way, Nyakuro opens in the background (tray, or
+// entry on Linux. Started that way, Aniko opens in the background (tray, or
 // the Dock on a Mac) when it keeps running without its window; otherwise
 // with its window, so it's never running unseen.
 const BACKGROUND = "--background"
-const autostartFile = () => path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"), "autostart", "nyakuro.desktop")
+const autostartFile = () => path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"), "autostart", "aniko.desktop")
 
 function startsAtLogin() {
     if (process.platform === "linux") return fs.existsSync(autostartFile())
@@ -160,9 +160,9 @@ function setStartAtLogin(on) {
                 return null
             }
             // The package's launcher, else this Electron with this app.
-            const exec = fs.existsSync("/usr/bin/nyakuro") ? "/usr/bin/nyakuro" : `"${process.execPath}" "${app.getAppPath()}"`
+            const exec = fs.existsSync("/usr/bin/aniko") ? "/usr/bin/aniko" : `"${process.execPath}" "${app.getAppPath()}"`
             fs.mkdirSync(path.dirname(file), { recursive: true })
-            fs.writeFileSync(file, ["[Desktop Entry]", "Type=Application", "Name=Nyakuro", "Comment=Nyakuro in the background", `Exec=${exec} ${BACKGROUND}`, "Icon=nyakuro", "Terminal=false", "X-GNOME-Autostart-enabled=true", ""].join("\n"))
+            fs.writeFileSync(file, ["[Desktop Entry]", "Type=Application", "Name=Aniko", "Comment=Aniko in the background", `Exec=${exec} ${BACKGROUND}`, "Icon=aniko", "Terminal=false", "X-GNOME-Autostart-enabled=true", ""].join("\n"))
             return null
         } catch (err) {
             return String(err?.message || err)
@@ -170,7 +170,7 @@ function setStartAtLogin(on) {
     }
     app.setLoginItemSettings(isWindows ? { openAtLogin: on, args: [BACKGROUND] } : { openAtLogin: on })
     if (isMac && on && app.getLoginItemSettings().status === "requires-approval") {
-        return "macOS asks you to allow it: in System Settings › General › Login Items (Login Items & Extensions), turn on Nyakuro."
+        return "macOS asks you to allow it: in System Settings › General › Login Items (Login Items & Extensions), turn on Aniko."
     }
     return startsAtLogin() === on ? null : "The system didn't take the change."
 }
@@ -186,33 +186,33 @@ function startedAtLogin() {
 function serverRuntimeDir() {
     if (isWindows) {
         const local = process.env.LOCALAPPDATA
-        return local ? path.join(local, "Nyakuro", "run") : path.join(os.tmpdir(), "nyakuro")
+        return local ? path.join(local, "Aniko", "run") : path.join(os.tmpdir(), "aniko")
     }
     // macOS: $TMPDIR, the user's own temporary folder.
-    if (isMac) return path.join(os.tmpdir(), "nyakuro")
-    return path.join(process.env.XDG_RUNTIME_DIR || os.tmpdir(), "nyakuro")
+    if (isMac) return path.join(os.tmpdir(), "aniko")
+    return path.join(process.env.XDG_RUNTIME_DIR || os.tmpdir(), "aniko")
 }
 
 function serverCandidates() {
     if (isWindows) {
         return [
-            process.env.NYAKURO_SERVER,
-            path.join(process.resourcesPath, "nyakuro.exe"), // installed or portable app: resources\nyakuro.exe
-            path.join(__dirname, "..", "dist", "windows", "nyakuro.exe"), // development checkout
+            process.env.ANIKO_SERVER,
+            path.join(process.resourcesPath, "aniko.exe"), // installed or portable app: resources\aniko.exe
+            path.join(__dirname, "..", "dist", "windows", "aniko.exe"), // development checkout
         ]
     }
     if (isMac) {
         return [
-            process.env.NYAKURO_SERVER,
-            path.join(process.resourcesPath, "nyakuro"), // Nyakuro.app/Contents/Resources/nyakuro
-            path.join(__dirname, "..", "dist", "nyakuro"), // development checkout
+            process.env.ANIKO_SERVER,
+            path.join(process.resourcesPath, "aniko"), // Aniko.app/Contents/Resources/aniko
+            path.join(__dirname, "..", "dist", "aniko"), // development checkout
         ]
     }
     return [
-        process.env.NYAKURO_SERVER,
-        path.join(__dirname, "..", "nyakuro"), // /usr/lib/nyakuro/app -> /usr/lib/nyakuro/nyakuro
-        path.join(__dirname, "..", "dist", "nyakuro"), // development checkout
-        "/usr/lib/nyakuro/nyakuro",
+        process.env.ANIKO_SERVER,
+        path.join(__dirname, "..", "aniko"), // /usr/lib/aniko/app -> /usr/lib/aniko/aniko
+        path.join(__dirname, "..", "dist", "aniko"), // development checkout
+        "/usr/lib/aniko/aniko",
     ]
 }
 
@@ -272,7 +272,7 @@ async function existingServer() {
 }
 
 // The server's last lines (without their timestamps): what went wrong, for
-// the box that says Nyakuro couldn't start.
+// the box that says Aniko couldn't start.
 const serverLines = []
 function noteServerOutput(text) {
     for (const line of text.split(/\r?\n/)) {
@@ -287,10 +287,10 @@ function startServer() {
         const bin = findServerBinary()
         if (!bin) {
             const msg = isWindows
-                ? "Nyakuro's server (nyakuro.exe) is missing from its folder. Install Nyakuro again."
+                ? "Aniko's server (aniko.exe) is missing from its folder. Install Aniko again."
                 : isMac
-                  ? "Nyakuro's server is missing from the app. Download Nyakuro again."
-                  : "Nyakuro's server (nyakuro) is missing. Install the package again."
+                  ? "Aniko's server is missing from the app. Download Aniko again."
+                  : "Aniko's server (aniko) is missing. Install the package again."
             return reject(new Error(msg))
         }
         // windowsHide: on Windows the server, and the ffmpeg, ffprobe and bash
@@ -312,14 +312,14 @@ function startServer() {
             }
             if (/could not start the server/.test(text) && !resolved) {
                 resolved = true
-                // Its port taken: by another program (Nyakuro itself would have
+                // Its port taken: by another program (Aniko itself would have
                 // been found running).
                 const port = /:(\d+): bind/.exec(text)?.[1]
                 reject(
                     new Error(
                         /address already in use|only one usage of each socket address/i.test(text)
-                            ? `Another program is using Nyakuro's port${port ? ` (${port})` : ""}. Close it, then try again.`
-                            : "Nyakuro's server couldn't start.",
+                            ? `Another program is using Aniko's port${port ? ` (${port})` : ""}. Close it, then try again.`
+                            : "Aniko's server couldn't start.",
                     ),
                 )
             }
@@ -330,38 +330,38 @@ function startServer() {
             // The server stopped for an update: no error box. After an
             // update was installed, the whole app starts again, so that its
             // window loads the new main.js too. On Windows an installer is
-            // replacing Nyakuro, and starts it when it's done; on macOS the
+            // replacing Aniko, and starts it when it's done; on macOS the
             // server has put the new app in place, and a helper opens it once
             // this one has quit.
             if (code === EXIT_RESTART || code === EXIT_INSTALLING) {
                 serverProc = null
                 app.isQuitting = true
                 // Windows: the installer works unseen for a moment; said, so
-                // Nyakuro doesn't just vanish.
-                if (code === EXIT_INSTALLING && Notification.isSupported()) new Notification({ title: "Updating Nyakuro", body: "Nyakuro opens again in a moment." }).show()
+                // Aniko doesn't just vanish.
+                if (code === EXIT_INSTALLING && Notification.isSupported()) new Notification({ title: "Updating Aniko", body: "Aniko opens again in a moment." }).show()
                 // With its window: not as started with the computer.
                 if (code === EXIT_RESTART) app.relaunch({ args: process.argv.slice(1).filter(a => a !== BACKGROUND) })
                 app.exit(0)
                 return
             }
-            if (!resolved) reject(new Error("Nyakuro's server stopped while starting."))
+            if (!resolved) reject(new Error("Aniko's server stopped while starting."))
             serverProc = null
             if (resolved && !app.isQuitting) {
                 // Stopped, not crashed (the computer shutting down or signing
-                // out stops it first): Nyakuro quits with it, quietly.
+                // out stops it first): Aniko quits with it, quietly.
                 if (code === 0 || ["SIGTERM", "SIGINT", "SIGHUP"].includes(signal)) {
                     app.isQuitting = true
                     app.quit()
                     return
                 }
-                const msg = "Nyakuro's server stopped unexpectedly."
+                const msg = "Aniko's server stopped unexpectedly."
                 if (mainWindow) {
                     const answer = dialog.showMessageBoxSync(mainWindow, {
                         type: "error",
-                        title: "Nyakuro",
+                        title: "Aniko",
                         message: msg,
                         detail: serverLines.slice(-6).join("\n"),
-                        buttons: ["Restart Nyakuro", "Quit"],
+                        buttons: ["Restart Aniko", "Quit"],
                         defaultId: 0,
                         cancelId: 1,
                     })
@@ -372,7 +372,7 @@ function startServer() {
                 }
                 // Running without a window: no box that would hold up
                 // anything, just a notice.
-                if (Notification.isSupported()) new Notification({ title: "Nyakuro stopped", body: msg + " Open it again to restart it." }).show()
+                if (Notification.isSupported()) new Notification({ title: "Aniko stopped", body: msg + " Open it again to restart it." }).show()
                 app.isQuitting = true
                 app.quit()
             }
@@ -380,13 +380,13 @@ function startServer() {
         setTimeout(() => {
             if (!resolved) {
                 resolved = true
-                reject(new Error("Nyakuro's server took too long to start."))
+                reject(new Error("Aniko's server took too long to start."))
             }
         }, 30000)
     })
 }
 
-// Nyakuro's address now: its port can be changed in Settings, the server moves
+// Aniko's address now: its port can be changed in Settings, the server moves
 // to it at once and writes it in server.json.
 let serverRead = 0
 function serverUrl() {
@@ -401,15 +401,15 @@ function serverUrl() {
 function installShellHeader() {
     const filter = { urls: ["http://127.0.0.1/*", "http://127.0.0.1:*/*"] }
     session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, cb) => {
-        // Only to Nyakuro: not to another program listening on this computer.
+        // Only to Aniko: not to another program listening on this computer.
         const token = isInternal(details.url) ? readToken() : ""
         if (token) details.requestHeaders["X-Kumo-Shell"] = token
         cb({ requestHeaders: details.requestHeaders })
     })
-    // The player's screenshots (PNG from a blob:) go straight to Pictures/Nyakuro, no Save dialog.
+    // The player's screenshots (PNG from a blob:) go straight to Pictures/Aniko, no Save dialog.
     session.defaultSession.on("will-download", (_e, item) => {
         if (!item.getURL().startsWith("blob:") || !item.getFilename().toLowerCase().endsWith(".png")) return
-        const dir = path.join(app.getPath("pictures"), "Nyakuro")
+        const dir = path.join(app.getPath("pictures"), "Aniko")
         fs.mkdirSync(dir, { recursive: true })
         item.setSavePath(path.join(dir, item.getFilename()))
         item.once("done", (_ev, state) => {
@@ -418,7 +418,7 @@ function installShellHeader() {
     })
 }
 
-// A page of Nyakuro's: at its address (the one it had when it started, or the
+// A page of Aniko's: at its address (the one it had when it started, or the
 // one it moved to).
 function isInternal(url) {
     try {
@@ -439,7 +439,7 @@ function appMenu() {
     const open = page => () => showWindowAt(page).catch(() => {})
     return Menu.buildFromTemplate([
         {
-            label: "Nyakuro",
+            label: "Aniko",
             submenu: [
                 { role: "about" },
                 { type: "separator" },
@@ -473,7 +473,7 @@ function appMenu() {
 }
 
 // The pages' zoom: Ctrl (Cmd) with + and - or the mouse wheel, 0 back to
-// normal; kept between runs, and the same in each page of Nyakuro's.
+// normal; kept between runs, and the same in each page of Aniko's.
 function zoomTo(f) {
     prefs.zoom = Math.round(Math.min(2, Math.max(0.5, f)) * 100) / 100
     savePrefs()
@@ -483,7 +483,7 @@ function zoomBy(d) {
     zoomTo(prefs.zoom + d)
 }
 
-// Where Nyakuro's window opens: where it was, if that's still on a screen;
+// Where Aniko's window opens: where it was, if that's still on a screen;
 // else in the middle of the main one, as big as fits (up to 1600×1000).
 function windowBounds() {
     const w = prefs.window
@@ -498,19 +498,19 @@ function windowBounds() {
     return { x: area.x + Math.round((area.width - width) / 2), y: area.y + Math.round((area.height - height) / 2), width, height }
 }
 
-// What the window shows while Nyakuro's server starts (a first start can take
+// What the window shows while Aniko's server starts (a first start can take
 // a few seconds), and if its page didn't load: in the app's colors.
 function waitingPage(text) {
-    // Nyakuro's logo (packaging/icons/nyakuro.svg).
+    // Aniko's logo (packaging/icons/aniko.svg).
     const logo =
         '<svg viewBox="0 0 64 64" width="64" height="64"><path d="M59.86 59.86C59.27 60.45 58.63 60.95 57.87 61.4C57.12 61.85 56.31 62.23 55.33 62.56C54.36 62.88 53.35 63.15 52.01 63.36C50.66 63.58 50.57 63.74 47.24 63.84C43.9 63.95 37.08 64 32 64C26.92 64 20.1 63.95 16.76 63.84C13.43 63.74 13.34 63.58 11.99 63.36C10.65 63.15 9.64 62.88 8.67 62.56C7.69 62.23 6.88 61.85 6.13 61.4C5.37 60.95 4.73 60.45 4.14 59.86C3.55 59.27 3.05 58.63 2.6 57.87C2.15 57.12 1.77 56.31 1.44 55.33C1.12 54.36 0.85 53.35 0.64 52.01C0.42 50.66 0.26 50.57 0.16 47.24C0.05 43.9 0 37.08 0 32C0 26.92 0.05 20.1 0.16 16.76C0.26 13.43 0.42 13.34 0.64 11.99C0.85 10.65 1.12 9.64 1.44 8.67C1.77 7.69 2.15 6.88 2.6 6.13C3.05 5.37 3.55 4.73 4.14 4.14C4.73 3.55 5.37 3.05 6.13 2.6C6.88 2.15 7.69 1.77 8.67 1.44C9.64 1.12 10.65 0.85 11.99 0.64C13.34 0.42 13.43 0.26 16.76 0.16C20.1 0.05 26.92 0 32 0C37.08 0 43.9 0.05 47.24 0.16C50.57 0.26 50.66 0.42 52.01 0.64C53.35 0.85 54.36 1.12 55.33 1.44C56.31 1.77 57.12 2.15 57.87 2.6C58.63 3.05 59.27 3.55 59.86 4.14C60.45 4.73 60.95 5.37 61.4 6.13C61.85 6.88 62.23 7.69 62.56 8.67C62.88 9.64 63.15 10.65 63.36 11.99C63.58 13.34 63.74 13.43 63.84 16.76C63.95 20.1 64 26.92 64 32C64 37.08 63.95 43.9 63.84 47.24C63.74 50.57 63.58 50.66 63.36 52.01C63.15 53.35 62.88 54.36 62.56 55.33C62.23 56.31 61.85 57.12 61.4 57.87C60.95 58.63 60.45 59.27 59.86 59.86Z" fill="#2A1D45"/><g transform="translate(-1.6 0)"><path d="M45 46.5C54.5 49.5 59.4 44.6 57.4 38.8 55.8 34.2 57.2 31 60.2 29.6" fill="none" stroke="#FFF1DC" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M23.5 10.5 29.6 18.4H34.4L40.5 10.5 50.5 49H41L32 39.5 23 49H13.5Z" fill="#FFF1DC" stroke="#FFF1DC" stroke-width="5" stroke-linejoin="round"/><path d="M24.2 14.6 27.2 18.6 23.2 19.4ZM39.8 14.6 36.8 18.6 40.8 19.4ZM19.9 35.4a2.5 1.4 0 1 0 5 0 2.5 1.4 0 1 0-5 0ZM39.1 35.4a2.5 1.4 0 1 0 5 0 2.5 1.4 0 1 0-5 0Z" fill="#FF8FB1"/><path d="M30.9 33.9h2.2l-1.1 1.3Z" fill="#FF8FB1" stroke="#FF8FB1" stroke-width=".9" stroke-linejoin="round"/><path d="M24.4 31.4q2.4-3 4.8 0M34.8 31.4q2.4-3 4.8 0" fill="none" stroke="#2A1D45" stroke-width="1.7" stroke-linecap="round"/><path d="M29.2 36.3q1.4 1.9 2.8 0 1.4 1.9 2.8 0" fill="none" stroke="#2A1D45" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.6 32.6 11.4 31.5M15.2 36 11 36.7M48.4 32.6 51.6 31.5M48.8 36 52 36.7" fill="none" stroke="#FFF1DC" stroke-width="1.5" stroke-linecap="round"/></g><path d="M54 5.82Q54.7 9.8 58.68 10.5 54.7 11.2 54 15.18 53.3 11.2 49.32 10.5 53.3 9.8 54 5.82Z" fill="#7CE0D6"/></svg>'
-    const html = `<!doctype html><meta charset="utf-8"><title>Nyakuro</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0a;color:#9a9a9a;font:14px system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none"><div style="display:grid;justify-items:center;gap:18px">${logo}<div>${text}</div></div></body>`
+    const html = `<!doctype html><meta charset="utf-8"><title>Aniko</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0a0a0a;color:#9a9a9a;font:14px system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none"><div style="display:grid;justify-items:center;gap:18px">${logo}<div>${text}</div></div></body>`
     return "data:text/html;charset=utf-8," + encodeURIComponent(html)
 }
 
 // The window's own icon. On Linux it's invisible: KDE and other desktops draw
-// it in the window's title bar, where Nyakuro shows none, while the taskbar and
-// the app menu take Nyakuro's icon from its desktop entry. On Windows the
+// it in the window's title bar, where Aniko shows none, while the taskbar and
+// the app menu take Aniko's icon from its desktop entry. On Windows the
 // window's icon is also the taskbar's.
 function windowIcon() {
     if (process.platform === "linux") return nativeImage.createFromBitmap(Buffer.alloc(32 * 32 * 4), { width: 32, height: 32 })
@@ -518,7 +518,7 @@ function windowIcon() {
     return iconPath ? nativeImage.createFromPath(iconPath) : undefined
 }
 
-// createWindow opens Nyakuro's window, at a page of it (page, "" for Home);
+// createWindow opens Aniko's window, at a page of it (page, "" for Home);
 // waiting: while the server starts, which shows it when it's ready (load).
 // (Not named path: that's the path module, used here.)
 function createWindow(page = "", waiting = false) {
@@ -527,7 +527,7 @@ function createWindow(page = "", waiting = false) {
         ...windowBounds(),
         minWidth: 960,
         minHeight: 620,
-        title: "Nyakuro",
+        title: "Aniko",
         backgroundColor: "#0a0a0a",
         autoHideMenuBar: true,
         show: false,
@@ -574,11 +574,11 @@ function createWindow(page = "", waiting = false) {
         if (cmd === "browser-backward") go(wc, -1)
         if (cmd === "browser-forward") go(wc, 1)
     })
-    // Nyakuro's page didn't load (the server busy, restarting): said, and
+    // Aniko's page didn't load (the server busy, restarting): said, and
     // tried again in a moment, instead of a blank window.
     wc.on("did-fail-load", (_e, code, _desc, url, mainFrame) => {
         if (!mainFrame || code === -3 || !isInternal(url)) return
-        wc.loadURL(waitingPage("Nyakuro isn't answering yet: trying again…")).catch(() => {})
+        wc.loadURL(waitingPage("Aniko isn't answering yet: trying again…")).catch(() => {})
         setTimeout(() => {
             if (mainWindow && !mainWindow.isDestroyed() && !parkedUrl) mainWindow.loadURL(url).catch(() => {})
         }, 2000)
@@ -587,7 +587,7 @@ function createWindow(page = "", waiting = false) {
     // opened again.
     wc.on("render-process-gone", (_e, details) => {
         if (details.reason === "clean-exit") return
-        console.error("Nyakuro's page stopped:", details.reason)
+        console.error("Aniko's page stopped:", details.reason)
         setTimeout(() => mainWindow?.webContents.reload(), 500)
     })
     // Where it is and how big, for the next time it opens.
@@ -604,14 +604,14 @@ function createWindow(page = "", waiting = false) {
     mainWindow.on("closed", () => {
         mainWindow = null
         parkedUrl = null
-        // Nyakuro quits with its window (not kept running): the small player
+        // Aniko quits with its window (not kept running): the small player
         // too, or nothing would be left to close it with.
         if (!prefs.keepRunning && !app.isQuitting) miniWindow?.close()
     })
     // Windows is shutting down or signing out, which stops the server too:
     // that isn't worth an error box (the event only exists on Windows).
     mainWindow.on("query-session-end", () => (app.isQuitting = true))
-    mainWindow.loadURL(waiting ? waitingPage("Starting Nyakuro…") : serverUrl() + page).catch(() => {})
+    mainWindow.loadURL(waiting ? waitingPage("Starting Aniko…") : serverUrl() + page).catch(() => {})
 }
 
 // go moves through the window's pages (-1 back, 1 forward), where there's one.
@@ -620,11 +620,11 @@ function go(wc, step) {
     if (step < 0 ? h.canGoBack() : h.canGoForward()) step < 0 ? h.goBack() : h.goForward()
 }
 
-// External links open in the system browser; Nyakuro's windows never navigate
-// away from Nyakuro.
+// External links open in the system browser; Aniko's windows never navigate
+// away from Aniko.
 function keepInside(contents) {
     // Right-click: cut, copy and paste in text fields, copy what's selected,
-    // and a link's own items. Nyakuro's own menus (a card's) come first: the
+    // and a link's own items. Aniko's own menus (a card's) come first: the
     // page handles those clicks itself.
     contents.on("context-menu", (_e, p) => {
         const items = []
@@ -655,14 +655,14 @@ function keepInside(contents) {
     })
 }
 
-// Picture in picture: Nyakuro's player in a small window on top of the others
+// Picture in picture: Aniko's player in a small window on top of the others
 // (its /mini page, the episode in its address), at the bottom right of the
-// screen Nyakuro's window is on, or where the last one was. Its button to go back hands the episode, where
-// it's at, to Nyakuro's window (pendingPlay until that window asks for it).
+// screen Aniko's window is on, or where the last one was. Its button to go back hands the episode, where
+// it's at, to Aniko's window (pendingPlay until that window asks for it).
 let miniWindow = null
 let pendingPlay = null
 
-ipcMain.handle("nyakuro:mini-open", (_e, page) => {
+ipcMain.handle("aniko:mini-open", (_e, page) => {
     const base = serverUrl()
     if (!base || typeof page !== "string" || !/^\/mini#/.test(page)) return false
     // One open already: a new one where it was (only its address's end would
@@ -689,7 +689,7 @@ ipcMain.handle("nyakuro:mini-open", (_e, page) => {
         y: bounds?.y ?? area.y + area.height - height - 24,
         minWidth: 320,
         minHeight: 180,
-        title: "Nyakuro",
+        title: "Aniko",
         frame: false,
         alwaysOnTop: true,
         fullscreenable: false,
@@ -719,13 +719,13 @@ ipcMain.handle("nyakuro:mini-open", (_e, page) => {
     win.loadURL(base + page).catch(() => {})
     return true
 })
-ipcMain.on("nyakuro:mini-close", () => miniWindow?.close())
-ipcMain.on("nyakuro:mini-expand", (_e, req) => {
+ipcMain.on("aniko:mini-close", () => miniWindow?.close())
+ipcMain.on("aniko:mini-expand", (_e, req) => {
     // An episode (see web/src/lib/pip.ts asRequest), small.
     if (!req || typeof req !== "object" || JSON.stringify(req).length > 4096) return
     miniWindow?.close()
     if (mainWindow && !mainWindow.webContents.isLoading()) {
-        mainWindow.webContents.send("nyakuro:play", req)
+        mainWindow.webContents.send("aniko:play", req)
         showWindow()
     } else {
         // Opened (or loading): it asks when it's ready.
@@ -733,7 +733,7 @@ ipcMain.on("nyakuro:mini-expand", (_e, req) => {
         showWindow()
     }
 })
-ipcMain.handle("nyakuro:take-play", () => {
+ipcMain.handle("aniko:take-play", () => {
     const req = pendingPlay
     pendingPlay = null
     return req
@@ -741,7 +741,7 @@ ipcMain.handle("nyakuro:take-play", () => {
 
 // AniList login: open the authorize page in a separate window and capture
 // the access token from the redirect (#access_token=…) or the PIN page.
-ipcMain.handle("nyakuro:anilist-login", async (_e, url) => {
+ipcMain.handle("aniko:anilist-login", async (_e, url) => {
     if (typeof url !== "string" || !url.startsWith("https://anilist.co/")) return null
     return new Promise(resolve => {
         const win = new BrowserWindow({
@@ -786,13 +786,13 @@ ipcMain.handle("nyakuro:anilist-login", async (_e, url) => {
     })
 })
 
-ipcMain.on("nyakuro:open-external", (_e, url) => {
+ipcMain.on("aniko:open-external", (_e, url) => {
     if (typeof url === "string" && /^https?:\/\//.test(url)) shell.openExternal(url)
 })
 
-ipcMain.handle("nyakuro:get-prefs", () => ({ keepRunning: prefs.keepRunning, freeWhenLocked: prefs.freeWhenLocked, startAtLogin: startsAtLogin() }))
+ipcMain.handle("aniko:get-prefs", () => ({ keepRunning: prefs.keepRunning, freeWhenLocked: prefs.freeWhenLocked, startAtLogin: startsAtLogin() }))
 // set-pref returns true, or { error } when it couldn't be done.
-ipcMain.handle("nyakuro:set-pref", (_e, name, value) => {
+ipcMain.handle("aniko:set-pref", (_e, name, value) => {
     if (typeof value !== "boolean") return { error: "not a setting" }
     if (name === "startAtLogin") {
         const error = setStartAtLogin(value)
@@ -806,11 +806,11 @@ ipcMain.handle("nyakuro:set-pref", (_e, name, value) => {
     return true
 })
 
-ipcMain.on("nyakuro:quit", () => app.quit())
+ipcMain.on("aniko:quit", () => app.quit())
 
 // ---------------------------------------------------------------------------
-// Updated while running: a package update (makepkg) replaces Nyakuro's files
-// but not the Nyakuro running in the background. Opened again, it restarts into
+// Updated while running: a package update (makepkg) replaces Aniko's files
+// but not the Aniko running in the background. Opened again, it restarts into
 // the version installed: the server stops asking to be started again
 // (exit code 75), and the app does, with its new files.
 
@@ -827,7 +827,7 @@ function installedVersion() {
     }
 }
 
-// serverCall makes a request to a running Nyakuro server as its desktop window.
+// serverCall makes a request to a running Aniko server as its desktop window.
 function serverCall(url, method, p) {
     return new Promise(resolve => {
         const req = http.request(url + p, { method, timeout: 3000, headers: { "X-Kumo-Shell": readToken() || "", "Content-Type": "application/json" } }, res => {
@@ -851,10 +851,10 @@ function serverCall(url, method, p) {
     })
 }
 
-// restartIfOutdated restarts the Nyakuro running at url when it's another
+// restartIfOutdated restarts the Aniko running at url when it's another
 // version than the one installed, and reports whether it did.
 async function restartIfOutdated(url) {
-    // Only a package (Arch) is updated under a running Nyakuro: Windows and
+    // Only a package (Arch) is updated under a running Aniko: Windows and
     // macOS updates restart it themselves. Not asked there, then (it runs
     // the server program, a moment on each click of the tray or the Dock).
     if (!url || process.platform !== "linux") return false
@@ -862,7 +862,7 @@ async function restartIfOutdated(url) {
     const running = (await serverCall(url, "GET", "/api/status"))?.version
     // 1.0.0: built by hand, its version unknown.
     if (!installed || !running || running === "1.0.0" || !olderVersion(running, installed)) return false
-    console.log(`Nyakuro ${running} is running, ${installed} is installed: restarting into it`)
+    console.log(`Aniko ${running} is running, ${installed} is installed: restarting into it`)
     return !!(await serverCall(url, "POST", "/api/update/restart"))
 }
 
@@ -880,11 +880,11 @@ function olderVersion(a, b) {
 
 let restarting = false
 
-// showWindow brings Nyakuro's window back, or opens a new one after it was
-// closed while Nyakuro kept running (the tray's and the Dock's handlers: what
+// showWindow brings Aniko's window back, or opens a new one after it was
+// closed while Aniko kept running (the tray's and the Dock's handlers: what
 // they pass isn't a page).
 function showWindow() {
-    return showWindowAt("").catch(err => console.error("couldn't show Nyakuro's window:", err))
+    return showWindowAt("").catch(err => console.error("couldn't show Aniko's window:", err))
 }
 
 // showWindowAt does, at a page of it when one is given ("/entry?id=1").
@@ -970,20 +970,20 @@ function backgroundAlert(a) {
     n.show()
 }
 
-// The tray icon, while Nyakuro keeps running with its window closed (Windows
+// The tray icon, while Aniko keeps running with its window closed (Windows
 // and Linux: on a Mac the Dock icon does it). Without a tray on the
-// desktop (GNOME without an extension), opening Nyakuro again shows its window.
+// desktop (GNOME without an extension), opening Aniko again shows its window.
 function updateTray() {
     if (isMac) return
     if (prefs.keepRunning && !tray) {
         const icon = nativeImage.createFromPath(path.join(__dirname, "icon.png"))
         tray = new Tray(icon.isEmpty() ? icon : icon.resize({ width: 32, height: 32, quality: "best" }))
-        tray.setToolTip("Nyakuro")
+        tray.setToolTip("Aniko")
         tray.setContextMenu(
             Menu.buildFromTemplate([
-                { label: "Open Nyakuro", click: showWindow },
+                { label: "Open Aniko", click: showWindow },
                 { type: "separator" },
-                { label: "Quit Nyakuro", click: () => app.quit() },
+                { label: "Quit Aniko", click: () => app.quit() },
             ]),
         )
         tray.on("click", showWindow)
@@ -993,23 +993,23 @@ function updateTray() {
     }
 }
 
-// The window was closed and Nyakuro keeps running: said once, in a box (a
+// The window was closed and Aniko keeps running: said once, in a box (a
 // notification may be turned off, or missed), with where to find it.
 function wentToBackground() {
     if (prefs.toldKeepRunning) return
     prefs.toldKeepRunning = true
     savePrefs()
     const where = isMac
-        ? "Click Nyakuro in the Dock to open it again, or quit it with Cmd+Q."
+        ? "Click Aniko in the Dock to open it again, or quit it with Cmd+Q."
         : isWindows
-          ? "Open or quit it from its icon at the right of the taskbar (under ^ when it's hidden there). Opening Nyakuro again also brings its window back."
-          : "Open or quit it from its tray icon (on GNOME, the AppIndicator extension shows it). Opening Nyakuro again also brings its window back."
+          ? "Open or quit it from its icon at the right of the taskbar (under ^ when it's hidden there). Opening Aniko again also brings its window back."
+          : "Open or quit it from its tray icon (on GNOME, the AppIndicator extension shows it). Opening Aniko again also brings its window back."
     const answer = dialog.showMessageBoxSync({
         type: "info",
-        title: "Nyakuro",
-        message: "Nyakuro keeps running",
+        title: "Aniko",
+        message: "Aniko keeps running",
         detail: `Streaming to your other devices, downloads and the auto downloader keep going while its window is closed. ${where}\n\nYou can change this in Settings › Desktop app & programs.`,
-        buttons: ["OK", "Quit Nyakuro"],
+        buttons: ["OK", "Quit Aniko"],
         defaultId: 0,
         cancelId: 0,
     })
@@ -1047,11 +1047,11 @@ function unparkPage() {
     if (mainWindow && isInternal(url)) mainWindow.loadURL(url).catch(() => {})
 }
 
-// Desktop shortcuts are copies of nyakuro.desktop: those made when Nyakuro was
-// Aniko (or Kumo) start /usr/bin/aniko (/usr/bin/kumo), which is gone. Point
-// them at Nyakuro (its program, name and icon), in place, so they keep their
+// Desktop shortcuts are copies of aniko.desktop: those made when Aniko was
+// Nyakuro (or Kumo) start /usr/bin/nyakuro (/usr/bin/kumo), which is gone. Point
+// them at Aniko (its program, name and icon), in place, so they keep their
 // permissions and the desktop's trust. Starting with the computer moves to
-// Nyakuro's entry too (aniko.desktop or kumo.desktop in autostart).
+// Aniko's entry too (nyakuro.desktop or kumo.desktop in autostart).
 function updateDesktopShortcuts() {
     if (process.platform !== "linux") return
     for (const name of OLD_NAMES) {
@@ -1072,12 +1072,12 @@ function updateDesktopShortcuts() {
         try {
             if (!fs.lstatSync(file).isFile()) continue // never through a link
             const text = fs.readFileSync(file, "utf8")
-            if (!/^Exec=(\/usr\/bin\/)?(aniko|kumo)(\s|$)/m.test(text)) continue
+            if (!/^Exec=(\/usr\/bin\/)?(nyakuro|kumo)(\s|$)/m.test(text)) continue
             const next = text
-                .replace(/^Exec=(\/usr\/bin\/)?(?:aniko|kumo)(?=\s|$)/gm, "Exec=$1nyakuro")
-                .replace(/^Icon=(?:aniko|kumo(-anime)?)[ \t]*$/gm, "Icon=nyakuro")
-                .replace(/^Name=(?:Aniko|Kumo)[ \t]*$/gm, "Name=Nyakuro")
-                .replace(/^StartupWMClass=(?:Aniko|Kumo)[ \t]*$/gm, "StartupWMClass=Nyakuro")
+                .replace(/^Exec=(\/usr\/bin\/)?(?:nyakuro|kumo)(?=\s|$)/gm, "Exec=$1aniko")
+                .replace(/^Icon=(?:nyakuro|kumo(-anime)?)[ \t]*$/gm, "Icon=aniko")
+                .replace(/^Name=(?:Nyakuro|Kumo)[ \t]*$/gm, "Name=Aniko")
+                .replace(/^StartupWMClass=(?:Nyakuro|Kumo)[ \t]*$/gm, "StartupWMClass=Aniko")
             fs.writeFileSync(file, next)
         } catch {
             // someone else's file, or one we can't write: leave it
@@ -1085,7 +1085,7 @@ function updateDesktopShortcuts() {
     }
 }
 
-// After an update on Linux the desktop can keep showing Nyakuro's icon from
+// After an update on Linux the desktop can keep showing Aniko's icon from
 // before (the app menu, the panel): it keeps its own copy of every icon.
 // Once per version, tell it they changed: KDE's signal for it (what its own
 // settings send), and the menu's database built again. Nothing is deleted;
@@ -1118,15 +1118,15 @@ function refreshDesktopIcons() {
     }
 }
 
-// Nyakuro couldn't start: why, the server's last lines, and Try again.
+// Aniko couldn't start: why, the server's last lines, and Try again.
 function startupFailed(err) {
     serverProc?.kill()
     serverProc = null
     const detail = [String(err?.message || err), serverLines.length ? "\n" + serverLines.slice(-8).join("\n") : ""].join("\n").trim()
     const answer = dialog.showMessageBoxSync({
         type: "error",
-        title: "Nyakuro",
-        message: "Nyakuro couldn't start",
+        title: "Aniko",
+        message: "Aniko couldn't start",
         detail,
         buttons: ["Try again", "Copy details", "Quit"],
         defaultId: 0,
@@ -1139,9 +1139,9 @@ function startupFailed(err) {
 }
 
 async function boot() {
-    // Started with the computer: in the background, if Nyakuro runs without
+    // Started with the computer: in the background, if Aniko runs without
     // its window (the tray icon or the Dock opens it). Otherwise the window
-    // shows at once, saying Nyakuro is starting.
+    // shows at once, saying Aniko is starting.
     const withWindow = !(startedAtLogin() && prefs.keepRunning)
     if (withWindow) createWindow("", true)
     try {
@@ -1170,7 +1170,7 @@ async function boot() {
 }
 
 if (!app.requestSingleInstanceLock()) {
-    // Nyakuro is running already and shows its window. When it's an older
+    // Aniko is running already and shows its window. When it's an older
     // version (updated while it ran in the background), it's asked to
     // restart into this one: versions before this check only know that.
     existingServer()
@@ -1178,8 +1178,8 @@ if (!app.requestSingleInstanceLock()) {
         .catch(() => {})
         .finally(() => app.quit())
 } else {
-    // Opening Nyakuro again shows its window, also after it was closed while
-    // Nyakuro kept running.
+    // Opening Aniko again shows its window, also after it was closed while
+    // Aniko kept running.
     app.on("second-instance", (_e, argv) => {
         // Started with the computer while already running: nothing to show.
         if (!argv.includes(BACKGROUND)) showWindow()

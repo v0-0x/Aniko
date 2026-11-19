@@ -8,7 +8,7 @@ import { tv } from "@/lib/tv"
 import { cn, img } from "@/lib/utils"
 
 // Home's bell: what's new of the anime and manga on your lists (Shows), and
-// what Nyakuro did or needs (System). The server puts both together and keeps
+// what Aniko did or needs (System). The server puts both together and keeps
 // what was seen, so every device agrees (GET /api/notifications). Not the
 // sidebar's bell, which mutes the toasts.
 

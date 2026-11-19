@@ -1,5 +1,5 @@
-// The programs Nyakuro uses and the setup that installs them: on Windows
-// server/internal/winsetup (Nyakuro downloads ffmpeg, yt-dlp, ani-cli, mpv…
+// The programs Aniko uses and the setup that installs them: on Windows
+// server/internal/winsetup (Aniko downloads ffmpeg, yt-dlp, ani-cli, mpv…
 // itself, into its own folder), on macOS server/internal/macsetup (the same,
 // in a Terminal window).
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -8,7 +8,7 @@ import { toast } from "@/lib/toast"
 import { api } from "./api"
 import type { Status } from "./types"
 
-// The programs that aren't installed, the ones most of Nyakuro needs first.
+// The programs that aren't installed, the ones most of Aniko needs first.
 export function missingPrograms(status?: Status) {
     const f = status?.features
     if (!f) return []
@@ -21,7 +21,7 @@ export function missingPrograms(status?: Status) {
     return all.filter(([, ok]) => !ok).map(([name]) => name)
 }
 
-// Whether Nyakuro can install its programs itself: on Windows and macOS, from
+// Whether Aniko can install its programs itself: on Windows and macOS, from
 // this computer (not from another device on the network).
 export function canInstallPrograms(status?: Status) {
     return (status?.platform === "windows" || status?.platform === "darwin") && status.client !== "lan"
@@ -38,7 +38,7 @@ export function useInstallPrograms(status?: Status) {
     return useMutation({
         mutationFn: () => api.post("/api/setup/programs"),
         onSuccess: () => {
-            if (status?.platform === "darwin") toast.success(`Nyakuro's setup opened in a ${setupWindow(status)} window`)
+            if (status?.platform === "darwin") toast.success(`Aniko's setup opened in a ${setupWindow(status)} window`)
             qc.invalidateQueries({ queryKey: ["status"] })
         },
         onError: (e: any) => toast.error(e.message),

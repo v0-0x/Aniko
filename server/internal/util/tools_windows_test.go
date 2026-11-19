@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// What the programs setup downloads into Nyakuro's folder is found like any
+// What the programs setup downloads into Aniko's folder is found like any
 // program on the PATH, and so is the bash of the Git it unpacks there.
 func TestToolsDirIsOnThePath(t *testing.T) {
 	dir := t.TempDir()
@@ -17,7 +17,7 @@ func TestToolsDirIsOnThePath(t *testing.T) {
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []string{filepath.Join(dir, "nyakuro-test-tool.exe"), filepath.Join(bin, "nyakuro-test-bash.exe")} {
+	for _, p := range []string{filepath.Join(dir, "aniko-test-tool.exe"), filepath.Join(bin, "aniko-test-bash.exe")} {
 		if err := os.WriteFile(p, nil, 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -31,7 +31,7 @@ func TestToolsDirIsOnThePath(t *testing.T) {
 	})
 
 	SetToolsDir(dir)
-	for name, want := range map[string]string{"nyakuro-test-tool": dir, "nyakuro-test-bash": bin} {
+	for name, want := range map[string]string{"aniko-test-tool": dir, "aniko-test-bash": bin} {
 		p, ok := LookPath(name)
 		if !ok || !strings.EqualFold(filepath.Dir(p), want) {
 			t.Errorf("LookPath(%s) = %q %v, want it in %s", name, p, ok, want)
@@ -39,7 +39,7 @@ func TestToolsDirIsOnThePath(t *testing.T) {
 	}
 	path := os.Getenv("PATH")
 	if !strings.HasPrefix(path, dir+string(os.PathListSeparator)+bin+string(os.PathListSeparator)) {
-		t.Errorf("PATH %q should start with Nyakuro's folder and its Git's bin", path)
+		t.Errorf("PATH %q should start with Aniko's folder and its Git's bin", path)
 	}
 	// Set again: not on the PATH twice.
 	SetToolsDir(dir)

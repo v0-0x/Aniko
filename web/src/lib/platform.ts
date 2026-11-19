@@ -1,4 +1,4 @@
-// The computer Nyakuro runs on (status.platform: Go's GOOS), for install hints
+// The computer Aniko runs on (status.platform: Go's GOOS), for install hints
 // and examples. The server's error messages use the same commands
 // (server/internal/util/hints.go).
 
@@ -23,8 +23,8 @@ export function installHint(platform: string | undefined, tool: Tool) {
 
 // Where the hint comes from, said before it.
 export function installSource(platform: string | undefined, tool: Tool) {
-    // Nyakuro downloads them itself on the computer it runs on (Settings › Desktop app & programs).
-    if (platform === "windows") return tool === "ani-cli" || tool === "mpv" ? "Nyakuro can download it (Desktop app & programs › Install), or get it from" : "Install it with"
+    // Aniko downloads them itself on the computer it runs on (Settings › Desktop app & programs).
+    if (platform === "windows") return tool === "ani-cli" || tool === "mpv" ? "Aniko can download it (Desktop app & programs › Install), or get it from" : "Install it with"
     if (platform === "darwin") return tool === "ani-cli" ? "Install it from its Homebrew tap (brew.sh):" : "Install it with Homebrew (brew.sh):"
     return tool === "ani-cli" ? "Install it from the AUR with" : "Install it with"
 }

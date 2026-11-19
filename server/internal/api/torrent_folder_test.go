@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v0-0x/Nyakuro/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/library"
 )
 
 func TestTorrentFolderReusesAnimeFolder(t *testing.T) {

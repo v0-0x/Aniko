@@ -159,7 +159,7 @@ export function relativeTime(unix: number) {
     return new Date(unix * 1000).toLocaleDateString()
 }
 
-// Compares two Nyakuro versions (1.0.<number of commits>): null when either
+// Compares two Aniko versions (1.0.<number of commits>): null when either
 // isn't one, or is 1.0.0 (built by hand: its version is unknown).
 export function compareVersions(a?: string, b?: string): number | null {
     const parse = (v?: string) => {
@@ -254,7 +254,7 @@ export function entryUrl(m: { id: number; type?: string }) {
     return m.type === "MANGA" ? `/manga/entry?id=${m.id}` : `/entry?id=${m.id}`
 }
 
-// Opens a link from outside Nyakuro (an extension, a torrent site, AniList) in
+// Opens a link from outside Aniko (an extension, a torrent site, AniList) in
 // the browser. Web pages only (not javascript: or file: links).
 export function openExternal(url?: string | null) {
     if (typeof url === "string" && /^https?:\/\//i.test(url)) window.open(url, "_blank", "noopener,noreferrer")

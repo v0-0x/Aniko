@@ -11,18 +11,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/config"
-	"github.com/v0-0x/Nyakuro/server/internal/db"
-	"github.com/v0-0x/Nyakuro/server/internal/events"
-	"github.com/v0-0x/Nyakuro/server/internal/history"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/config"
+	"github.com/v0-0x/Aniko/server/internal/db"
+	"github.com/v0-0x/Aniko/server/internal/events"
+	"github.com/v0-0x/Aniko/server/internal/history"
 )
 
 // newTestManager builds a Manager on a fresh database, with the network
 // features (AniList progress, AniSkip) off and mpv replaced by fakes.
 func newTestManager(t *testing.T, edit func(*config.Settings)) (*Manager, *fakeLauncher) {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "nyakuro.db"))
+	d, err := db.Open(filepath.Join(t.TempDir(), "aniko.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v0-0x/Nyakuro/server/internal/downloads"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/downloads"
+	"github.com/v0-0x/Aniko/server/internal/library"
 )
 
 func newHub(t *testing.T) (*App, string) {
@@ -55,16 +55,16 @@ func TestEmptyHubTrash(t *testing.T) {
 	if items := a.Trash.Items(); len(items) != 0 {
 		t.Errorf("still in the trash: %+v", items)
 	}
-	if entries, _ := os.ReadDir(filepath.Join(root, ".nyakuro-trash")); len(entries) != 0 {
+	if entries, _ := os.ReadDir(filepath.Join(root, ".aniko-trash")); len(entries) != 0 {
 		t.Errorf("still on the disk: %v", entries)
 	}
-	ev, _, _ := a.HubStore.Audit(nyakurohub.AuditQuery{Kinds: []string{"delete"}})
+	ev, _, _ := a.HubStore.Audit(anikohub.AuditQuery{Kinds: []string{"delete"}})
 	if len(ev) != 1 || ev[0].By != "hub" || len(ev[0].Files) != 1 || ev[0].Again == nil || !ev[0].Again.Dub || ev[0].Again.Provider != "ani-cli" || ev[0].Again.Episodes[0] != 3 {
 		t.Fatalf("noted: %+v", ev)
 	}
 	// Nothing in it: nothing noted.
 	a.emptyHubTrash()
-	if ev, _, _ := a.HubStore.Audit(nyakurohub.AuditQuery{Kinds: []string{"delete"}}); len(ev) != 1 {
+	if ev, _, _ := a.HubStore.Audit(anikohub.AuditQuery{Kinds: []string{"delete"}}); len(ev) != 1 {
 		t.Errorf("%d deletions noted", len(ev))
 	}
 }
@@ -77,7 +77,7 @@ func TestAuditDownload(t *testing.T) {
 	a.auditDownload(downloads.Item{MediaID: 9, Episode: 4, AnimeTitle: "Show", Status: downloads.StatusCompleted, Output: out})
 	a.auditDownload(downloads.Item{MediaID: 9, Episode: 5, AnimeTitle: "Show", Status: downloads.StatusFailed, Error: "no stream found"})
 	a.auditDownload(downloads.Item{MediaID: 9, Episode: 6, Status: downloads.StatusCanceled})
-	ev, _, _ := a.HubStore.Audit(nyakurohub.AuditQuery{Kinds: nyakurohub.AuditGroups["downloads"]})
+	ev, _, _ := a.HubStore.Audit(anikohub.AuditQuery{Kinds: anikohub.AuditGroups["downloads"]})
 	if len(ev) != 2 {
 		t.Fatalf("%d noted: %+v", len(ev), ev)
 	}

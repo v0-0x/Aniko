@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/v0-0x/Nyakuro/server/internal/metadata"
+	"github.com/v0-0x/Aniko/server/internal/metadata"
 )
 
 // filler: an anime's filler and recap episode numbers, from MyAnimeList

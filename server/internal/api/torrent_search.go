@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/torrent"
+	"github.com/v0-0x/Aniko/server/internal/torrent"
 )
 
 // allProviders is the provider id that searches every torrent provider.

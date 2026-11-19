@@ -142,7 +142,7 @@ func (s *setup) get(ctx context.Context, client *http.Client, u string, header h
 	// As it is, not compressed on the way: its size is known then, and a
 	// download can go on where it broke off.
 	req.Header.Set("Accept-Encoding", "identity")
-	req.Header.Set("User-Agent", "Nyakuro")
+	req.Header.Set("User-Agent", "Aniko")
 	for k, v := range header {
 		req.Header[k] = v
 	}

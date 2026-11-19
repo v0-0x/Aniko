@@ -26,16 +26,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Nyakuro's server, the same as on a computer, built for Android and shipped as
- * the app's "native library" libnyakuro.so (Android extracts those somewhere it
+ * Aniko's server, the same as on a computer, built for Android and shipped as
+ * the app's "native library" libaniko.so (Android extracts those somewhere it
  * may run them). The app shows the web UI it serves on 127.0.0.1.
  */
-final class NyakuroServer {
+final class AnikoServer {
     static final int PORT = 43211;
     static final String URL = "http://127.0.0.1:" + PORT + "/";
-    private static final String TAG = "nyakuro";
+    private static final String TAG = "aniko";
 
-    private static NyakuroServer instance;
+    private static AnikoServer instance;
 
     private final Context ctx;
     private Process process;
@@ -46,12 +46,12 @@ final class NyakuroServer {
     // The server's last lines, to show when it doesn't start.
     private final ArrayDeque<String> last = new ArrayDeque<>();
 
-    private NyakuroServer(Context ctx) {
+    private AnikoServer(Context ctx) {
         this.ctx = ctx.getApplicationContext();
     }
 
-    static synchronized NyakuroServer get(Context ctx) {
-        if (instance == null) instance = new NyakuroServer(ctx);
+    static synchronized AnikoServer get(Context ctx) {
+        if (instance == null) instance = new AnikoServer(ctx);
         return instance;
     }
 
@@ -66,7 +66,7 @@ final class NyakuroServer {
     }
 
     private File binary() {
-        return new File(ctx.getApplicationInfo().nativeLibraryDir, "libnyakuro.so");
+        return new File(ctx.getApplicationInfo().nativeLibraryDir, "libaniko.so");
     }
 
     /** Starts the server, unless it's running. */
@@ -78,7 +78,7 @@ final class NyakuroServer {
         }
         // The one this app started before it was ended may still be
         // stopping (saving where a video was): this one waits for its port.
-        // One that doesn't stop by itself (started by an older Nyakuro, which
+        // One that doesn't stop by itself (started by an older Aniko, which
         // didn't ask that) is asked to.
         waitForPort(40);
         if (portTaken()) {
@@ -100,9 +100,9 @@ final class NyakuroServer {
         cmd.add("--exit-with-stdin");
         ProcessBuilder pb = new ProcessBuilder(cmd).directory(files).redirectErrorStream(true);
         environment(pb.environment());
-        // The app's WebView proves it's Nyakuro's with it (a cookie): other
+        // The app's WebView proves it's Aniko's with it (a cookie): other
         // apps reach 127.0.0.1 too, and get nothing.
-        pb.environment().put("NYAKURO_SHELL_TOKEN", token());
+        pb.environment().put("ANIKO_SHELL_TOKEN", token());
         synchronized (last) {
             last.clear();
         }
@@ -121,21 +121,21 @@ final class NyakuroServer {
                 }
             } catch (IOException ignored) {
             }
-        }, "nyakuro-log");
+        }, "aniko-log");
         logs.setDaemon(true);
         logs.start();
     }
 
     /**
-     * The server's data: files/nyakuro. Nyakuro was called Aniko until 3.0.58
-     * (files/aniko) and Kumo before 2.0.37 (files/kumo): the newest of those
+     * The server's data: files/aniko. Aniko was called Nyakuro for one beta (3.0.59)
+     * (files/nyakuro) and Kumo before 2.0.37 (files/kumo): the newest of those
      * folders moves there the first time (or stays in use while it can't be).
      */
     private File dataDir() {
         File files = ctx.getFilesDir();
-        File data = new File(files, "nyakuro");
+        File data = new File(files, "aniko");
         if (data.exists()) return data;
-        for (String name : new String[] {"aniko", "kumo"}) {
+        for (String name : new String[] {"nyakuro", "kumo"}) {
             File old = new File(files, name);
             if (old.isDirectory()) return old.renameTo(data) ? data : old;
         }
@@ -150,9 +150,9 @@ final class NyakuroServer {
         env.put("XDG_RUNTIME_DIR", new File(cache, "run").getAbsolutePath());
         env.put("XDG_CACHE_HOME", cache.getAbsolutePath());
         env.put("XDG_CONFIG_HOME", new File(files, "config").getAbsolutePath());
-        env.put("NYAKURO_DATA_DIR", dataDir().getAbsolutePath());
+        env.put("ANIKO_DATA_DIR", dataDir().getAbsolutePath());
         env.put("TZ", TimeZone.getDefault().getID());
-        env.put("NYAKURO_DEVICE_NAME", deviceName());
+        env.put("ANIKO_DEVICE_NAME", deviceName());
     }
 
     /**
@@ -185,7 +185,7 @@ final class NyakuroServer {
                 }
             }
             p.destroy();
-        }, "nyakuro-stop").start();
+        }, "aniko-stop").start();
     }
 
     private static void waitForPort(int quarters) {
@@ -219,9 +219,9 @@ final class NyakuroServer {
             } catch (IOException e) {
                 continue; // another app's: not readable
             }
-            // Nyakuro's server, wherever an older install put it (libaniko.so
+            // Aniko's server, wherever an older install put it (libnyakuro.so
             // and libkumo.so: its names before the renames).
-            if (cmd.contains("/libnyakuro.so") || cmd.contains("/libaniko.so") || cmd.contains("/libkumo.so")) {
+            if (cmd.contains("/libaniko.so") || cmd.contains("/libnyakuro.so") || cmd.contains("/libkumo.so")) {
                 Log.i(TAG, "stopping the server left from before (" + pid + ")");
                 android.os.Process.sendSignal(pid, 15); // SIGTERM: it saves, then stops
             }
@@ -239,7 +239,7 @@ final class NyakuroServer {
     }
 
     /**
-     * What the app's WebView proves it's Nyakuro's with (in a cookie, see
+     * What the app's WebView proves it's Aniko's with (in a cookie, see
      * MainActivity): made once, kept where only this app can read it.
      */
     synchronized String token() {
@@ -343,7 +343,7 @@ final class NyakuroServer {
         List<String> found = new ArrayList<>();
         String mark = pid > 0 ? "(" + pad(pid) + ")" : null;
         for (String line : lc.lines) {
-            boolean ours = (mark != null && line.contains(mark)) || line.contains("libnyakuro");
+            boolean ours = (mark != null && line.contains(mark)) || line.contains("libaniko");
             // The server's own lines are shown already.
             if (!ours || line.startsWith("I/" + TAG)) continue;
             found.add(line);
@@ -411,7 +411,7 @@ final class NyakuroServer {
                     }
                 } catch (IOException ignored) {
                 }
-            }, "nyakuro-run");
+            }, "aniko-run");
             reader.setDaemon(true);
             reader.start();
             long until = System.currentTimeMillis() + ms;
@@ -445,7 +445,7 @@ final class NyakuroServer {
                 + ", " + TextUtils.join("/", Build.SUPPORTED_ABIS) + ", program: " + abi + ", " + (binary().length() / (1024 * 1024)) + " MB";
     }
 
-    /** What the other Nyakuro apps call this one: the device's name. */
+    /** What the other Aniko apps call this one: the device's name. */
     private String deviceName() {
         String name = null;
         if (Build.VERSION.SDK_INT >= 25) {
@@ -455,6 +455,6 @@ final class NyakuroServer {
             name = Settings.Secure.getString(ctx.getContentResolver(), "bluetooth_name");
         }
         if (name == null || name.trim().isEmpty()) name = Build.MODEL;
-        return name == null ? "Nyakuro" : name.trim();
+        return name == null ? "Aniko" : name.trim();
     }
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // Anime Filler List (animefillerlist.com): one page per long-running show,

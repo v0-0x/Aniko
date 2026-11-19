@@ -14,10 +14,10 @@ const videosFolder = "Videos"
 
 func defaultDataDir() string {
 	if d := os.Getenv("XDG_DATA_HOME"); d != "" {
-		return filepath.Join(d, "nyakuro")
+		return filepath.Join(d, "aniko")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".local", "share", "nyakuro")
+	return filepath.Join(home, ".local", "share", "aniko")
 }
 
 func runtimeDir() string {
@@ -25,10 +25,10 @@ func runtimeDir() string {
 	if base == "" {
 		base = os.TempDir()
 	}
-	dir := filepath.Join(base, "nyakuro")
+	dir := filepath.Join(base, "aniko")
 	// In a folder everyone writes to (no XDG_RUNTIME_DIR: a service),
-	// another account could have made it first, and own what Nyakuro keeps
-	// and runs from it: then it's a folder of Nyakuro's own data instead.
+	// another account could have made it first, and own what Aniko keeps
+	// and runs from it: then it's a folder of Aniko's own data instead.
 	_ = os.MkdirAll(dir, 0o700)
 	if !ownFolder(dir) {
 		dir = filepath.Join(DataDir(), "run")

@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Clapperboard, Gauge, KeyRound, Library, LogOut, Music2, ScrollText, Settings as SettingsIcon, Sparkles, Tv, Users, Wifi } from "lucide-react"
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { Toaster } from "sonner"
-import { NyakuroLogo } from "@/components/Sidebar"
+import { AnikoLogo } from "@/components/Sidebar"
 import { Badge, Button, Input, Spinner, Tabs, TooltipProvider } from "@/components/ui"
 import { api } from "@/lib/api"
 import { applyTheme, resolveTheme, useClassic } from "@/lib/themes"
@@ -17,7 +17,7 @@ import Overview from "./Overview"
 
 // mediaserver's dashboard, one for all of it, its owner's: signed in with
 // its password, set the first time with its setup code. The slider at the
-// top picks what it's about: Anime (the anime side, Nyakuro's server: what it
+// top picks what it's about: Anime (the anime side, Aniko's server: what it
 // streams to whom, its devices and AniList logins, its library, the
 // computer it runs on), Movies or TV (the movies side, Moviko's server,
 // asked through this one: media/), Music (the music side, Utako's server,
@@ -137,7 +137,7 @@ function Dashboard({ status }: { status: Status }) {
                 <header className={cn("sticky top-0 z-20 border-b border-line", classic ? "bg-bg/95 backdrop-blur" : "bg-bg")}>
                     <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-4 sm:px-6">
                         {side === "anime" ? (
-                            <NyakuroLogo className="size-9 shrink-0" />
+                            <AnikoLogo className="size-9 shrink-0" />
                         ) : (
                             <span className={cn("grid size-9 shrink-0 place-items-center text-fg", classic ? "rounded-[10px] bg-white/[0.06] [&>svg]:size-5" : "[&>svg]:size-6 [&>svg]:stroke-[1.5]")}>{side === "tv" ? <Tv /> : side === "music" ? <Music2 /> : <Clapperboard />}</span>
                         )}
@@ -287,7 +287,7 @@ function Setup() {
                     submit()
                 }}
             >
-                <NyakuroLogo className="size-11" />
+                <AnikoLogo className="size-11" />
                 <h1 className="mt-4 text-xl font-semibold">Set up your mediaserver</h1>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted">
                     Choose a password for this dashboard. The setup code was printed by the installer. To see it again, run
@@ -319,7 +319,7 @@ function Setup() {
 }
 
 // What the dashboard is about, a slider: Anime (the anime side, for the
-// Nyakuro apps), Movies or TV (the movies side, for the Moviko apps), Music
+// Aniko apps), Movies or TV (the movies side, for the Moviko apps), Music
 // (the music side, for the Utako apps).
 const SIDES: { value: Side; label: string; icon: React.ReactNode }[] = [
     { value: "anime", label: "Anime", icon: <Sparkles /> },

@@ -1,5 +1,5 @@
-// Package winsetup installs the programs Nyakuro uses on Windows (ffmpeg,
-// yt-dlp, Git's bash, ani-cli, aria2, fzf, mpv). Nyakuro downloads their
+// Package winsetup installs the programs Aniko uses on Windows (ffmpeg,
+// yt-dlp, Git's bash, ani-cli, aria2, fzf, mpv). Aniko downloads their
 // ready-made Windows builds itself, from their release pages into its own
 // folder (util.ToolsDir), as macsetup does on a Mac: no package manager, no
 // script, no window to follow and no administrator rights. The pages show
@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/v0-0x/Nyakuro/server/internal/util"
+	"github.com/v0-0x/Aniko/server/internal/util"
 )
 
 // What the setup is doing with a program.
@@ -63,9 +63,9 @@ func (p Progress) Outcome() (ok bool, text string) {
 	case len(failed) > 0:
 		return false, "Not installed: " + strings.Join(failed, ", ")
 	case installed:
-		return true, "Nyakuro's programs are installed"
+		return true, "Aniko's programs are installed"
 	}
-	return true, "Nyakuro's programs were there already"
+	return true, "Aniko's programs were there already"
 }
 
 var (
@@ -108,11 +108,11 @@ func Wait() Progress {
 // once: State follows it and Wait waits for it.
 func Start() error {
 	if runtime.GOOS != "windows" {
-		return errors.New("Nyakuro installs its programs itself on Windows only: install them with your package manager")
+		return errors.New("Aniko installs its programs itself on Windows only: install them with your package manager")
 	}
 	dir := util.ToolsDir()
 	if dir == "" {
-		return errors.New("Nyakuro has no folder for its programs")
+		return errors.New("Aniko has no folder for its programs")
 	}
 	mu.Lock()
 	defer mu.Unlock()

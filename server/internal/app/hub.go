@@ -6,14 +6,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/v0-0x/Nyakuro/server/internal/anilist"
-	"github.com/v0-0x/Nyakuro/server/internal/library"
-	"github.com/v0-0x/Nyakuro/server/internal/nyakurohub"
-	"github.com/v0-0x/Nyakuro/server/internal/stream"
+	"github.com/v0-0x/Aniko/server/internal/anikohub"
+	"github.com/v0-0x/Aniko/server/internal/anilist"
+	"github.com/v0-0x/Aniko/server/internal/library"
+	"github.com/v0-0x/Aniko/server/internal/stream"
 )
 
-// An Nyakuro Hub (nyakuro --hub) plays nothing: it shares its library with the Nyakuro
-// apps on the network and keeps them in step (share/hub.go, nyakurohub). What
+// An Aniko Hub (aniko --hub) plays nothing: it shares its library with the Aniko
+// apps on the network and keeps them in step (share/hub.go, anikohub). What
 // it doesn't need doesn't run: the player, Discord, extensions, the Discover
 // prefetching, the episode alerts. Its library's anime are fetched in full,
 // artwork and episode details included (prefetch.go), for its dashboard.
@@ -64,7 +64,7 @@ func (a *App) wireHub() {
 	a.Share.UseAccount, a.Share.DropAccount = nil, nil
 	// No library is shared with a hub.
 	a.Share.OnFiles = nil
-	a.Sampler = nyakurohub.NewSampler()
+	a.Sampler = anikohub.NewSampler()
 }
 
 // startHub runs a hub's few background jobs.
@@ -75,7 +75,7 @@ func (a *App) startHub() {
 	a.Scanner.StartWatcher()
 	a.background(func() { a.Torrents.RunCounter(a.ctx) })
 	a.background(func() { a.runPrefetch(a.ctx) })
-	a.HubStore.Log(nyakurohub.Event{Kind: "start", By: "hub", Text: "started (mediaserver " + a.Update.Version + ")"})
+	a.HubStore.Log(anikohub.Event{Kind: "start", By: "hub", Text: "started (mediaserver " + a.Update.Version + ")"})
 	a.emptyHubTrash()
 	a.background(a.pruneAudit)
 	a.background(func() {
