@@ -107,9 +107,11 @@ export default function DiscoverPage() {
             {/* Without a hero banner there is nothing to overlap. */}
             <div className={cn("relative z-10 flex flex-col gap-10 px-6 md:px-8 xl:px-10", hero ? "-mt-14" : "pt-20")}>
                 <PluginSlot slot="after-discover-screen-header" />
-                {/* From the user's own list, so it comes first. */}
+                {/* From the user's own list, so it comes first. The rows below the
+                    window aren't drawn till they're scrolled near (a hundred
+                    cards less to draw when the page opens). */}
                 {!manga && (recommended ?? []).map(r => (
-                    <section key={r.because.id}>
+                    <section key={r.because.id} className="[content-visibility:auto] [contain-intrinsic-size:auto_24rem]">
                         <SectionHeader
                             title={
                                 <span>
@@ -157,7 +159,7 @@ export default function DiscoverPage() {
                     </section>
                 )}
                 {shown.map(r => (
-                    <section key={r.key}>
+                    <section key={r.key} className="[content-visibility:auto] [contain-intrinsic-size:auto_24rem]">
                         <SectionHeader
                             title={r.title}
                             action={

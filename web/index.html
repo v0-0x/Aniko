@@ -10,6 +10,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Shown at once, before any script: the logo and a spinner while the
+         app, its first page and that page's pictures load (lib/splash.ts
+         takes it away). The spinner turns by a transform, which keeps going
+         while a slow device (a TV) is busy drawing the page under it. -->
+    <div id="splash">
+      <img src="/aniko.svg" width="76" height="76" alt="" />
+      <i></i>
+    </div>
+    <style>
+      #splash { position: fixed; inset: 0; z-index: 2147483000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; background: var(--frame, #0a0a0a); transition: opacity 0.25s; }
+      #splash.done { opacity: 0; pointer-events: none; }
+      #splash img { border-radius: 18px; }
+      #splash i { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid rgb(128 128 128 / 0.3); border-top-color: var(--text, #fff); animation: splash-turn 0.8s linear infinite; will-change: transform; }
+      @keyframes splash-turn { to { transform: rotate(360deg); } }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

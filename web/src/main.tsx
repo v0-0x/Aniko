@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom"
 import App from "./App"
 import { PageError } from "./components/PageError"
 import "./index.css"
+import { startSplash } from "./lib/splash"
 import { applyCachedTheme } from "./lib/themes"
 
 // Aniko was called Nyakuro for one beta (3.0.59), and Kumo before 2.0.37: what this
@@ -55,6 +56,9 @@ const queryClient = new QueryClient({
         },
     },
 })
+
+// The loading screen goes once the first page is there to use.
+startSplash(queryClient)
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

@@ -64,6 +64,7 @@ export function MediaCard({ media, listEntry, localCount, downloaded, className,
                         src={cover(media)}
                         alt=""
                         loading="lazy"
+                        decoding="async"
                         className="size-full object-cover transition-[filter] duration-300 group-hover/card:brightness-110"
                     />
                 )}

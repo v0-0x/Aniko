@@ -201,7 +201,7 @@ function AnikoApp() {
                     >
                         <Suspense
                             fallback={
-                                <div className="grid h-full place-items-center">
+                                <div data-page-loading className="grid h-full place-items-center">
                                     <Spinner className="size-7" />
                                 </div>
                             }
